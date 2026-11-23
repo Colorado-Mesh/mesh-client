@@ -38,7 +38,7 @@ export function registerLinuxBluetoothIpcHandlers(deps: LinuxBluetoothIpcDeps = 
       console.debug('[IPC] bluetooth-unpair success');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error('[IPC] bluetooth-unpair error:', sanitizeLogMessage(msg));
+      console.error('mcL0159 [IPC] bluetooth-unpair error:', sanitizeLogMessage(msg));
       throw new Error(sanitizeLogMessage(msg) || 'Failed to unpair device');
     }
   });
@@ -51,7 +51,7 @@ export function registerLinuxBluetoothIpcHandlers(deps: LinuxBluetoothIpcDeps = 
       console.debug('[IPC] bluetooth-start-scan success');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn('[IPC] bluetooth-start-scan error:', sanitizeLogMessage(msg));
+      console.warn('mcL0160 [IPC] bluetooth-start-scan error:', sanitizeLogMessage(msg));
       throw new Error(sanitizeLogMessage(msg));
     }
   });
@@ -64,7 +64,7 @@ export function registerLinuxBluetoothIpcHandlers(deps: LinuxBluetoothIpcDeps = 
       console.debug('[IPC] bluetooth-stop-scan done');
     } catch (err) {
       console.warn(
-        '[IPC] bluetooth-stop-scan error:',
+        'mcL0161 [IPC] bluetooth-stop-scan error:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       // Don't reject — stop scan failure is not critical
@@ -95,7 +95,7 @@ export function registerLinuxBluetoothIpcHandlers(deps: LinuxBluetoothIpcDeps = 
       console.debug('[IPC] bluetooth-pair success');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn('[IPC] bluetooth-pair error:', sanitizeLogMessage(msg));
+      console.warn('mcL0162 [IPC] bluetooth-pair error:', sanitizeLogMessage(msg));
       throw new Error(sanitizeLogMessage(msg) || 'pair failed');
     }
   });
@@ -114,7 +114,7 @@ export function registerLinuxBluetoothIpcHandlers(deps: LinuxBluetoothIpcDeps = 
       console.debug('[IPC] bluetooth-connect success');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn('[IPC] bluetooth-connect error:', sanitizeLogMessage(msg));
+      console.warn('mcL0163 [IPC] bluetooth-connect error:', sanitizeLogMessage(msg));
       throw new Error(sanitizeLogMessage(msg));
     }
   });
@@ -152,7 +152,11 @@ export function registerLinuxBluetoothIpcHandlers(deps: LinuxBluetoothIpcDeps = 
       const info = await client.getDeviceInfoText(macAddress);
       return info.slice(-2000);
     } catch (err) {
-      // catch-no-log-ok — get-info returns the failure text to the renderer
+      console.debug(
+        '[main/ipc/linux-bluetooth-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       const msg = err instanceof Error ? err.message : String(err);
       return sanitizeLogMessage(msg).slice(-2000);
     }

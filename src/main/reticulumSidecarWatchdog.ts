@@ -83,7 +83,7 @@ export function startSidecarWatchdog(opts: SidecarWatchdogOptions): () => void {
     } catch (err) {
       consecutiveFailures += 1;
       console.warn(
-        `[reticulumSidecarWatchdog] hung poll failure ${consecutiveFailures}/${failureThreshold}: ${
+        `mcL0288 [reticulumSidecarWatchdog] hung poll failure ${consecutiveFailures}/${failureThreshold}: ${
           err instanceof Error ? err.message : String(err)
         }`,
       );
@@ -96,13 +96,13 @@ export function startSidecarWatchdog(opts: SidecarWatchdogOptions): () => void {
       restartInFlight = true;
       setHealthy(false);
       try {
-        console.warn('[reticulumSidecarWatchdog] restarting hung sidecar');
+        console.warn('mcL0289 [reticulumSidecarWatchdog] restarting hung sidecar');
         await restartFn();
         consecutiveFailures = 0;
         setHealthy(true);
       } catch (restartErr) {
         console.error(
-          '[reticulumSidecarWatchdog] hung restart failed: ' +
+          'mcL0290 [reticulumSidecarWatchdog] hung restart failed: ' +
             (restartErr instanceof Error ? restartErr.message : String(restartErr)),
         );
         setHealthy(false);

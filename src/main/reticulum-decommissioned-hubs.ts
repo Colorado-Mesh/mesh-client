@@ -112,7 +112,7 @@ export function disableDecommissionedReticulumHubsInConfigDir(configDir: string)
     return disabledNames;
   } catch (err) {
     console.warn(
-      '[reticulum-decommissioned-hubs] failed to disable decommissioned hubs:',
+      'mcL0278 [reticulum-decommissioned-hubs] failed to disable decommissioned hubs:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     return [];

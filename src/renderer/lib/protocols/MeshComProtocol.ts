@@ -875,7 +875,7 @@ export const meshcomProtocol: Protocol = {
         }
       } catch (err) {
         console.error(
-          '[MeshComProtocol] inbound parse failed:',
+          'mcL0990 [MeshComProtocol] inbound parse failed:',
           err instanceof Error ? err.message : String(err),
         );
       }

@@ -111,7 +111,7 @@ export function ScheduledSendDialog({
       const ok = await onConfirm({ text: finalText, scheduledAt });
       if (!ok) setError(t('chatPanel.scheduleSendFailed'));
     } catch (err) {
-      console.warn('[ScheduledSendDialog] confirm failed', err);
+      console.warn('mcL0631 [ScheduledSendDialog] confirm failed', err);
       setError(t('chatPanel.scheduleSendFailed'));
     } finally {
       setBusy(false);

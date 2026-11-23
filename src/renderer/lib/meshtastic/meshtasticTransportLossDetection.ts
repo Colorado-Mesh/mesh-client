@@ -81,8 +81,8 @@ export function createSerializedWritableStream(
         activeWriter = null;
         try {
           writer.releaseLock();
-        } catch {
-          // catch-no-log-ok stream already closed/errored during teardown
+        } catch (e: unknown) {
+          console.debug('[renderer/lib/meshtastic/meshtasticTransportLossDetection] catch:', e);
         }
       }
     });
@@ -97,12 +97,12 @@ export function createSerializedWritableStream(
         } finally {
           try {
             writer.releaseLock();
-          } catch {
-            // catch-no-log-ok stream already closed/errored during teardown
+          } catch (e: unknown) {
+            console.debug('[renderer/lib/meshtastic/meshtasticTransportLossDetection] catch:', e);
           }
         }
-      } catch {
-        // catch-no-log-ok closed/errored inner stream during teardown (Illegal invocation)
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/meshtastic/meshtasticTransportLossDetection] catch:', e);
       }
     });
   };
@@ -112,7 +112,8 @@ export function createSerializedWritableStream(
     try {
       return Promise.resolve(activeWriter ? activeWriter.abort(reason) : inner.abort(reason));
     } catch (err) {
-      // catch-no-log-ok surfaced to the abort caller as a rejection
+      console.debug('[renderer/lib/meshtastic/meshtasticTransportLossDetection] catch:', err);
+
       return Promise.reject(err instanceof Error ? err : new Error(String(err)));
     }
   };
@@ -192,7 +193,7 @@ export function attachMeshtasticTransportLossWatch(
     if (!active || notified) return;
     notified = true;
     console.warn(
-      `[meshtasticTransportLoss] ${type} link lost (${source})` +
+      `mcL0962 [meshtasticTransportLoss] ${type} link lost (${source})` +
         (err ? `: ${errLikeToLogString(err)}` : ''),
     );
     if (type === 'serial') {
@@ -274,8 +275,9 @@ export function attachMeshtasticTransportLossWatch(
             value: originalToDevice,
           });
         }
-      } catch {
-        // catch-no-log-ok leave a soft-fail stub if restore fails
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/meshtastic/meshtasticTransportLossDetection] catch:', e);
+
         Object.defineProperty(transportObj, 'toDevice', {
           configurable: true,
           enumerable: true,

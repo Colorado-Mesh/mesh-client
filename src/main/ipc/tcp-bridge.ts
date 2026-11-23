@@ -76,7 +76,11 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
       try {
         validateHost(host);
       } catch (err) {
-        // catch-no-log-ok validation error forwarded to promise reject
+        console.debug(
+          '[main/ipc/tcp-bridge] catch:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+
         reject(err instanceof Error ? err : new Error(String(err)));
         return;
       }
@@ -122,7 +126,7 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
         const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
         if (chunk.length > TCP_BRIDGE_DATA_MAX_BYTES) {
           console.warn(
-            '[IPC]',
+            'mcL0215 [IPC]',
             dataChannel,
             'oversized chunk (',
             chunk.length,
@@ -180,7 +184,7 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
       });
       socket.on('error', (err) => {
         clearTimeout(connectTimeout);
-        console.error('[IPC]', connectChannel, 'error:', sanitizeLogMessage(err.message));
+        console.error('mcL0216 [IPC]', connectChannel, 'error:', sanitizeLogMessage(err.message));
         if (!settled) {
           settled = true;
           reject(err);
@@ -215,7 +219,7 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
         return 'no-socket';
       }
       const msg = `${writeChannel}: no active socket`;
-      console.warn('[IPC]', msg);
+      console.warn('mcL0217 [IPC]', msg);
       return Promise.reject(new Error(msg));
     }
     const sock = activeSocket;
@@ -231,7 +235,7 @@ export function createTcpBridge(deps: TcpBridgeDeps): TcpBridgeHandlers {
             resolve('no-socket');
             return;
           }
-          console.error('[IPC]', writeChannel, 'error:', sanitizeLogMessage(err.message));
+          console.error('mcL0218 [IPC]', writeChannel, 'error:', sanitizeLogMessage(err.message));
           reject(err);
         } else {
           // Ignore write completions from a superseded socket.

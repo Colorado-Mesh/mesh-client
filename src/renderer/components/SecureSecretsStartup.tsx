@@ -70,8 +70,9 @@ export function SecureSecretsStartup({
     try {
       await forgetUnavailableStartupCredentials(unavailableKeys);
       retry();
-    } catch {
-      // catch-no-log-ok never expose protected storage errors or credential values
+    } catch (e: unknown) {
+      console.debug('[renderer/components/SecureSecretsStartup] catch:', e);
+
       setUnavailableKeys(getUnavailableStartupCredentialKeys());
       setAcknowledged(false);
       setForgetFailed(true);
@@ -97,8 +98,8 @@ export function SecureSecretsStartup({
         markLaunchMilestone('secretsReady');
         setState('ready');
       })
-      .catch(() => {
-        // catch-no-log-ok initializer logs a sanitized failure; show safe recovery copy
+      .catch((e: unknown) => {
+        console.debug('[renderer/components/SecureSecretsStartup] catch:', e);
         if (active) {
           setUnavailableKeys(secretsAttempted ? getUnavailableStartupCredentialKeys() : []);
           setState('error');

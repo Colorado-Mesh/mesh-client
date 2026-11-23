@@ -69,7 +69,7 @@ export default function NomadPageServerPanel({
       if (!code) return;
       if (lastLoggedHostingError !== code) {
         lastLoggedHostingError = code;
-        console.warn('[NomadHosting]', code);
+        console.warn('mcL0500 [NomadHosting]', code);
       }
       setError(humanizeNomadPageError(code, t));
     },
@@ -167,7 +167,8 @@ export default function NomadPageServerPanel({
         }
         if (!opts?.skipRefresh) await refresh();
       } catch (e) {
-        // catch-no-log-ok surfaced in the panel error state
+        console.debug('[renderer/components/NomadPageServerPanel] catch:', e);
+
         setError(humanizeNomadPageError(String(e), t) || t(failKey));
       } finally {
         setBusy(false);
@@ -222,7 +223,7 @@ export default function NomadPageServerPanel({
       }
       const body = await setServingContentSource(picked.path);
       if (!body.ok) {
-        console.warn('[NomadHosting] content source set failed:', body.error);
+        console.warn('mcL0501 [NomadHosting] content source set failed:', body.error);
         setError(
           humanizeNomadPageError(body.error, t) || t('nomadNetwork.serving.contentSourceFailed'),
         );
@@ -254,7 +255,7 @@ export default function NomadPageServerPanel({
       // Pass the listed path through verbatim; it is what the read route expects.
       const res = await getServingPageRaw(entry.path);
       if (!res.ok) {
-        console.warn('[NomadHosting] page read failed:', res.error);
+        console.warn('mcL0502 [NomadHosting] page read failed:', res.error);
         // Do not open an empty editor over a page we failed to read.
         setError(humanizeNomadPageError(res.error, t) || t('nomadNetwork.serving.openError'));
         return;
@@ -271,7 +272,7 @@ export default function NomadPageServerPanel({
     try {
       const res = await deleteServingPage(path);
       if (!res.ok) {
-        console.warn('[NomadHosting] page delete failed:', res.error);
+        console.warn('mcL0503 [NomadHosting] page delete failed:', res.error);
         setError(humanizeNomadPageError(res.error, t) || t('nomadNetwork.serving.deleteError'));
         return;
       }
@@ -292,7 +293,8 @@ export default function NomadPageServerPanel({
         setCopied(false);
       }, 1500);
     } catch (e) {
-      // catch-no-log-ok surfaced in the panel error state
+      console.debug('[renderer/components/NomadPageServerPanel] catch:', e);
+
       setError(humanizeNomadPageError(String(e), t));
     }
   };

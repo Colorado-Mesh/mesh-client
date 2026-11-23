@@ -18,8 +18,9 @@ function readHttpUrl(text: string): URL | null {
     const url = new URL(href);
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
     return url;
-  } catch {
-    // catch-no-log-ok invalid user/mesh wire URL string
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcoreGifWire] catch:', e);
+
     return null;
   }
 }

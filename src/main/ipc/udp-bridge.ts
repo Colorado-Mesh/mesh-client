@@ -130,7 +130,11 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
       try {
         validateHost(host);
       } catch (err) {
-        // catch-no-log-ok validation error forwarded to promise reject
+        console.debug(
+          '[main/ipc/udp-bridge] catch:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+
         reject(err instanceof Error ? err : new Error(String(err)));
         return;
       }
@@ -163,7 +167,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
       };
 
       socket.once('error', (err) => {
-        console.error('[IPC]', CONNECT_CHANNEL, 'error:', sanitizeLogMessage(err.message));
+        console.error('mcL0219 [IPC]', CONNECT_CHANNEL, 'error:', sanitizeLogMessage(err.message));
         failConnect(err);
       });
 
@@ -174,7 +178,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           suppressedOversizedDrops += 1;
           if (now - lastOversizedLogAt >= UDP_BRIDGE_INBOUND_RATE_WINDOW_MS) {
             console.warn(
-              '[IPC] %s oversized datagram (>%d bytes; +%d dropped)',
+              'mcL0220 [IPC] %s oversized datagram (>%d bytes; +%d dropped)',
               DATA_CHANNEL,
               UDP_BRIDGE_INBOUND_MAX_BYTES,
               suppressedOversizedDrops,
@@ -223,7 +227,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
           suppressedInboundRateDrops += 1;
           if (now - lastInboundRateLogAt >= UDP_BRIDGE_INBOUND_RATE_WINDOW_MS) {
             console.warn(
-              '[IPC] %s rate-limited peer flood (%d/s; +%d dropped)',
+              'mcL0221 [IPC] %s rate-limited peer flood (%d/s; +%d dropped)',
               DATA_CHANNEL,
               UDP_BRIDGE_INBOUND_RATE_MAX,
               suppressedInboundRateDrops,
@@ -251,14 +255,18 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
         try {
           remoteHost = await resolveMeshcomUdpPeerHost(host);
         } catch (err) {
-          // catch-no-log-ok failConnect forwards the error to ipcMain.invoke rejection
+          console.debug(
+            '[main/ipc/udp-bridge] catch:',
+            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+          );
+
           failConnect(err instanceof Error ? err : new Error(String(err)));
           return;
         }
         socket.bind(MESHCOM_EXTUDP_PORT, () => {
           socket.removeAllListeners('error');
           socket.on('error', (err) => {
-            console.error('[IPC] meshcom:udp error:', sanitizeLogMessage(err.message));
+            console.error('mcL0222 [IPC] meshcom:udp error:', sanitizeLogMessage(err.message));
             if (activeSocket === socket) {
               closeSocket(true);
             }
@@ -272,7 +280,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
             } catch (connectErr) {
               peerConnected = false;
               console.warn(
-                '[IPC]',
+                'mcL0223 [IPC]',
                 CONNECT_CHANNEL,
                 'UDP connect failed; peer filter remains in handler:',
                 sanitizeLogMessage(
@@ -307,7 +315,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     }
     if (!activeSocket || !remoteHost) {
       const msg = `${WRITE_CHANNEL}: no active socket`;
-      console.warn('[IPC]', msg);
+      console.warn('mcL0224 [IPC]', msg);
       return Promise.reject(new Error(msg));
     }
     const sock = activeSocket;
@@ -316,7 +324,7 @@ export function createUdpBridge(deps: UdpBridgeDeps): UdpBridgeHandlers {
     return new Promise<void>((resolve, reject) => {
       const onSent = (err?: Error | null): void => {
         if (err) {
-          console.error('[IPC]', WRITE_CHANNEL, 'error:', sanitizeLogMessage(err.message));
+          console.error('mcL0225 [IPC]', WRITE_CHANNEL, 'error:', sanitizeLogMessage(err.message));
           reject(err);
         } else {
           resolve();

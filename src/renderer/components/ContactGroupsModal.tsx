@@ -121,7 +121,7 @@ export default function ContactGroupsModal({
       await onCreate(name);
       setNewGroupName('');
     } catch (e: unknown) {
-      console.error('[ContactGroupsModal] create failed: ' + errLikeToLogString(e));
+      console.error('mcL0417 [ContactGroupsModal] create failed: ' + errLikeToLogString(e));
       addToast(
         t('contactGroupsModal.failedCreateGroup', { message: errLikeToLogString(e) }),
         'error',
@@ -160,7 +160,7 @@ export default function ContactGroupsModal({
       await onLoadMembers(group.group_id);
       setManagingGroup(group);
     } catch (e) {
-      console.warn('[ContactGroupsModal] loadMembers failed: ' + errLikeToLogString(e));
+      console.warn('mcL0418 [ContactGroupsModal] loadMembers failed: ' + errLikeToLogString(e));
       addToast(
         t('contactGroupsModal.failedLoadMembers', {
           message: e instanceof Error ? e.message : String(e),
@@ -180,7 +180,7 @@ export default function ContactGroupsModal({
         await onAddMember(managingGroup.group_id, contactNodeId);
       }
     } catch (e) {
-      console.warn('[ContactGroupsModal] toggleMember failed: ' + errLikeToLogString(e));
+      console.warn('mcL0419 [ContactGroupsModal] toggleMember failed: ' + errLikeToLogString(e));
       addToast(
         t('contactGroupsModal.failedUpdateMember', {
           message: e instanceof Error ? e.message : String(e),

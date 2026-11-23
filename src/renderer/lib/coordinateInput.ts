@@ -104,8 +104,9 @@ function parseMgrs(text: string): LatLon | null {
   try {
     const [lon, lat] = mgrsToPoint(compact);
     return inRange(lat, lon);
-  } catch {
-    // catch-no-log-ok invalid MGRS grid square; caller shows the inline validation error
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/coordinateInput] catch:', e);
+
     return null;
   }
 }
@@ -119,8 +120,9 @@ function parseMapLink(text: string): LatLon | null {
   let url: URL;
   try {
     url = new URL(text);
-  } catch {
-    // catch-no-log-ok not a URL; fall through to plain coordinate formats
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/coordinateInput] catch:', e);
+
     return null;
   }
   const params = url.searchParams;

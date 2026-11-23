@@ -42,8 +42,9 @@ function decodeBase64ToBytes(base64: string): Uint8Array {
       bytes[i] = binary.codePointAt(i) ?? 0;
     }
     return bytes;
-  } catch {
-    // catch-no-log-ok malformed base64 from sidecar — render nothing rather than throw
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/rnshSessionStore] catch:', e);
+
     return new Uint8Array(0);
   }
 }

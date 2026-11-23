@@ -344,7 +344,7 @@ export function applyReticulumOutboundDeliveryStatus(
       : undefined;
   if (status === 'failed') {
     console.warn(
-      `[reticulumLxmfAck] FAILED hash=${normalizedHash.slice(0, 16)} detail=${opts?.error ?? wireStatus}`,
+      `mcL1015 [reticulumLxmfAck] FAILED hash=${normalizedHash.slice(0, 16)} detail=${opts?.error ?? wireStatus}`,
     );
   }
   const applied = persistReticulumOutboundMessageStatus(

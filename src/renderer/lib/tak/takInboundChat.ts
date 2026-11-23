@@ -173,7 +173,7 @@ export async function relayTakChatToMesh(
         consumeTakEcho(target.identityId, target.channelIndex, text, nowMs);
       }
       if (target.dmRef) reportTakDmOutcome(target.dmRef, 'not-sent');
-      console.warn('[TakInboundChat] mesh send failed ' + errLikeToLogString(e));
+      console.warn('mcL1168 [TakInboundChat] mesh send failed ' + errLikeToLogString(e));
     }
   }
   return sent;

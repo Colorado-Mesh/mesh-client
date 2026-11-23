@@ -126,7 +126,8 @@ export class ProviderCircuit {
       this.openUntilMs = nowMs + CIRCUIT_OPEN_MS;
       if (!wasOpen) {
         console.warn(
-          `[weather] circuit open for ${this.name}: ` + sanitizeLogMessage(message.slice(0, 200)),
+          `mcL0325 [weather] circuit open for ${this.name}: ` +
+            sanitizeLogMessage(message.slice(0, 200)),
         );
       }
     }

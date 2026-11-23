@@ -6,6 +6,11 @@ import { Worker } from 'node:worker_threads';
 import { ipcMain, net } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  resetTranslationManifestCacheForTests,
+  setTranslationManifestModForTests,
+} from '../translation/loadTranslationManifest';
+import * as translationManifest from '../translation/translationManifest';
 import { assertIpcSender } from '../validate-ipc-sender';
 import {
   createTranslationPackFetch,
@@ -37,6 +42,7 @@ describe('translation IPC', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     settings.clear();
+    setTranslationManifestModForTests(translationManifest);
     fixture.directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mesh-translation-ipc-'));
     dispose = registerTranslationHandlers({
       getSetting: (key) => settings.get(key),
@@ -48,6 +54,7 @@ describe('translation IPC', () => {
   });
   afterEach(async () => {
     dispose();
+    resetTranslationManifestCacheForTests();
     await fs.rm(fixture.directory, { recursive: true, force: true });
   });
   it.each(['linux', 'darwin', 'win32'])(

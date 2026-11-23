@@ -124,7 +124,7 @@ export async function resolveIncidentWithBeaconCancel(
 
   const route = resolveBeaconCancelRoute(current, isDmOnly);
   if (route == null) {
-    console.warn('[beaconCancel] no destination for originated beacon cancel', incident.id);
+    console.warn('mcL0863 [beaconCancel] no destination for originated beacon cancel', incident.id);
     return 'cancel-failed';
   }
 
@@ -147,7 +147,7 @@ export async function resolveIncidentWithBeaconCancel(
     useIncidentStore.getState().resolveIncident(incident.id);
     return outcome === 'sent' ? 'cancel-sent' : 'cancel-queued';
   } catch (err: unknown) {
-    console.warn('[beaconCancel] send failed ' + errLikeToLogString(err));
+    console.warn('mcL0864 [beaconCancel] send failed ' + errLikeToLogString(err));
     return 'cancel-failed';
   } finally {
     inFlight.delete(incident.id);

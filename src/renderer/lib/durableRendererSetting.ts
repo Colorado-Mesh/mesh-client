@@ -66,7 +66,7 @@ export function createDurableRendererSetting(
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.warn('[durableRendererSetting] read cache failed', errLikeToLogString(error));
+      console.warn('mcL0828 [durableRendererSetting] read cache failed', errLikeToLogString(error));
       return key === localKey ? fallbackRaw : null;
     }
   };
@@ -77,7 +77,10 @@ export function createDurableRendererSetting(
       if (key === localKey) cacheWriteFailed = false;
     } catch (error) {
       if (key === localKey) cacheWriteFailed = true;
-      console.warn('[durableRendererSetting] write cache failed', errLikeToLogString(error));
+      console.warn(
+        'mcL0829 [durableRendererSetting] write cache failed',
+        errLikeToLogString(error),
+      );
     }
   };
   let baseline = readLocal(localKey) ?? emptyValue;
@@ -96,7 +99,10 @@ export function createDurableRendererSetting(
         pending = { baseline: parsed.baseline, value: parsed.value };
       }
     } catch (error) {
-      console.warn('[durableRendererSetting] invalid pending write', errLikeToLogString(error));
+      console.warn(
+        'mcL0830 [durableRendererSetting] invalid pending write',
+        errLikeToLogString(error),
+      );
     }
   }
   let hydrated = false;
@@ -120,7 +126,7 @@ export function createDurableRendererSetting(
           failed = true;
           // Keep the journal and original cache; retry on the next edit or launch.
           console.warn(
-            '[durableRendererSetting] SQLite write failed',
+            'mcL0831 [durableRendererSetting] SQLite write failed',
             settingKey,
             errLikeToLogString(error),
           );

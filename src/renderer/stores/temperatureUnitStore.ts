@@ -8,8 +8,9 @@ export const USE_FAHRENHEIT_STORAGE_KEY = 'mesh-client:useFahrenheit';
 function loadUseFahrenheit(): boolean {
   try {
     return localStorage.getItem(USE_FAHRENHEIT_STORAGE_KEY) === 'true';
-  } catch {
-    // catch-no-log-ok: localStorage unavailable in node / restricted environments
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/temperatureUnitStore] catch:', e);
+
     return false;
   }
 }
@@ -17,8 +18,8 @@ function loadUseFahrenheit(): boolean {
 function persistUseFahrenheit(value: boolean): void {
   try {
     localStorage.setItem(USE_FAHRENHEIT_STORAGE_KEY, String(value));
-  } catch {
-    // catch-no-log-ok: localStorage unavailable in node / restricted environments
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/temperatureUnitStore] catch:', e);
   }
 }
 

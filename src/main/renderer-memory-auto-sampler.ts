@@ -94,7 +94,7 @@ export function createRendererMemoryAutoSampler(deps: RendererMemoryAutoSamplerD
         });
       } catch (error: unknown) {
         console.warn(
-          '[renderer-memory-auto-sampler] persist failed ' +
+          'mcL0276 [renderer-memory-auto-sampler] persist failed ' +
             sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
         );
       }

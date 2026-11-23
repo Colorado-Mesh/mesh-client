@@ -318,7 +318,8 @@ export async function applyInfraConfig(
       }
     }
   } catch (error) {
-    // catch-no-log-ok returned to the panel as an inline apply failure without secret-bearing replies
+    console.debug('[renderer/lib/meshcoreInfraConfig] catch:', error);
+
     result.error = error instanceof Error ? error : configError('infraConfig.commandRejected');
   }
   return result;

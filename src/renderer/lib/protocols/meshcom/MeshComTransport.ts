@@ -197,15 +197,16 @@ class WebSerialMeshComConnection implements MeshComConnection {
     } catch (err) {
       if (!this.closed) {
         console.warn(
-          '[MeshComTransport] serial read ' + (err instanceof Error ? err.message : String(err)),
+          'mcL0992 [MeshComTransport] serial read ' +
+            (err instanceof Error ? err.message : String(err)),
         );
         noteSerialTransportLoss({ connectionType: 'serial' });
       }
     } finally {
       try {
         reader.releaseLock();
-      } catch {
-        // catch-no-log-ok stream already closed during teardown
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/protocols/meshcom/MeshComTransport] catch:', e);
       }
       if (this.reader === reader) this.reader = null;
       if (!this.closed) {
@@ -235,13 +236,13 @@ class WebSerialMeshComConnection implements MeshComConnection {
     if (reader) {
       try {
         await reader.cancel();
-      } catch {
-        // catch-no-log-ok cancel during close race
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/protocols/meshcom/MeshComTransport] catch:', e);
       }
       try {
         reader.releaseLock();
-      } catch {
-        // catch-no-log-ok already released
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/protocols/meshcom/MeshComTransport] catch:', e);
       }
     }
     this.writable = null;
@@ -262,8 +263,8 @@ class WebSerialMeshComConnection implements MeshComConnection {
     } finally {
       try {
         writer.releaseLock();
-      } catch {
-        // catch-no-log-ok virtual writer release
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/protocols/meshcom/MeshComTransport] catch:', e);
       }
     }
   }
@@ -316,8 +317,8 @@ class IpcBleMeshComConnection implements MeshComConnection {
     const disconnectAborts = new Promise<never>((_, reject) => {
       rejectOnDisconnect = reject;
     });
-    disconnectAborts.catch(() => {
-      // catch-no-log-ok expected when handshake wins the race
+    disconnectAborts.catch((e: unknown) => {
+      console.debug('[renderer/lib/protocols/meshcom/MeshComTransport] catch:', e);
     });
 
     const offData = window.electronAPI.onGattFromRadio(({ sessionId: sid, bytes }) => {
@@ -345,8 +346,8 @@ class IpcBleMeshComConnection implements MeshComConnection {
     } catch (err) {
       try {
         await window.electronAPI.disconnectGatt(sessionId);
-      } catch {
-        // catch-no-log-ok best-effort disconnect after connect failure
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/protocols/meshcom/MeshComTransport] catch:', e);
       }
       releaseCleanupFns(this.cleanupFns);
       this.connected = false;

@@ -64,7 +64,7 @@ export function ReticulumPeerPathsDetail({
       }
     } catch (e) {
       if (gen !== refreshGenRef.current) return;
-      console.warn('[ReticulumPeerPathsDetail] load ' + errLikeToLogString(e));
+      console.warn('mcL0676 [ReticulumPeerPathsDetail] load ' + errLikeToLogString(e));
       setError(t('peerListPanel.pathsLoadFailed'));
     } finally {
       if (gen === refreshGenRef.current) {
@@ -118,7 +118,7 @@ export function ReticulumPeerPathsDetail({
       await refresh();
     } catch (e) {
       setResult(previous);
-      console.warn('[ReticulumPeerPathsDetail] pin ' + errLikeToLogString(e));
+      console.warn('mcL0677 [ReticulumPeerPathsDetail] pin ' + errLikeToLogString(e));
       setError(t('peerListPanel.pathsPinFailed'));
     } finally {
       setPinBusy(false);

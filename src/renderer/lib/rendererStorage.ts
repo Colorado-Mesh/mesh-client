@@ -46,14 +46,17 @@ export function createRendererStorage(environment: RendererStorageEnvironment) {
           } catch (error) {
             // Preserve damaged evidence without blocking independent valid pending keys.
             console.warn(
-              '[rendererStorage] invalid deletion journal entry',
+              'mcL1009 [rendererStorage] invalid deletion journal entry',
               errLikeToLogString(error),
             );
           }
         }
       }
     } catch (error) {
-      console.warn('[rendererStorage] deletion journal read failed', errLikeToLogString(error));
+      console.warn(
+        'mcL1010 [rendererStorage] deletion journal read failed',
+        errLikeToLogString(error),
+      );
     }
   }
 
@@ -84,7 +87,10 @@ export function createRendererStorage(environment: RendererStorageEnvironment) {
         settings = await environment.readSettings();
       } catch (error) {
         failed = true;
-        console.warn('[rendererStorage] deletion state read failed', errLikeToLogString(error));
+        console.warn(
+          'mcL1011 [rendererStorage] deletion state read failed',
+          errLikeToLogString(error),
+        );
         return;
       }
       while (pending.size > 0) {
@@ -107,7 +113,7 @@ export function createRendererStorage(environment: RendererStorageEnvironment) {
         } catch (error) {
           failed = true;
           console.warn(
-            '[rendererStorage] deletion intent persistence failed',
+            'mcL1012 [rendererStorage] deletion intent persistence failed',
             errLikeToLogString(error),
           );
           break;
@@ -140,7 +146,10 @@ export function createRendererStorage(environment: RendererStorageEnvironment) {
       storage.setItem(`${RENDERER_STORAGE_DELETION_PREFIX}${key}`, JSON.stringify(intent));
     } catch (error) {
       cached = false;
-      console.warn('[rendererStorage] deletion journal write failed', errLikeToLogString(error));
+      console.warn(
+        'mcL1013 [rendererStorage] deletion journal write failed',
+        errLikeToLogString(error),
+      );
     }
     void flushRendererStorageDeletions();
     return cached;

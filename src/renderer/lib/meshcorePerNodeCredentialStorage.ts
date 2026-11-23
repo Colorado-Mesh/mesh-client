@@ -40,8 +40,9 @@ export function parseLegacyCredentialRaw<T>(
     let parsed: unknown;
     try {
       parsed = JSON.parse(raw) as unknown;
-    } catch {
-      // catch-no-log-ok legacy plain-string credential is not JSON
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshcorePerNodeCredentialStorage] catch:', e);
+
       return mappers.fromPlainString(raw);
     }
     return parseLegacyCredentialRaw(parsed, mappers);
@@ -78,7 +79,7 @@ export function createMeshcorePerNodeCredentialStorage<T>(
       if (cred == null) await removeSecureSecret(secureKey);
       else await setSecureSecret(secureKey, config.serialize(cred));
     } catch (e: unknown) {
-      console.warn(`[${config.logTag}] secure store failed ` + errLikeToLogString(e));
+      console.warn(`mcL0912 [${config.logTag}] secure store failed ` + errLikeToLogString(e));
       throw e instanceof Error ? e : new Error(String(e));
     }
   };

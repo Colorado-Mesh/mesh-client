@@ -201,7 +201,7 @@ export function MecpComposeModal({
       const gps = `${pos.lat.toFixed(5)},${pos.lon.toFixed(5)}`;
       setFreetext((prev) => (prev.trim() ? `${prev.trim()} ${gps}` : gps));
     } catch (e) {
-      console.warn('[MecpComposeModal] GPS failed', e instanceof Error ? e.message : e);
+      console.warn('mcL0666 [MecpComposeModal] GPS failed', e instanceof Error ? e.message : e);
       setError(t('mecp.compose.gpsFailed'));
     }
   }, [clearError, resolveGps, t]);
@@ -218,7 +218,7 @@ export function MecpComposeModal({
       setFreetext('');
       setSeverity(DEFAULT_MECP_SEVERITY);
     } catch (e) {
-      console.warn('[MecpComposeModal] send failed', e instanceof Error ? e.message : e);
+      console.warn('mcL0667 [MecpComposeModal] send failed', e instanceof Error ? e.message : e);
       const msg = e instanceof Error && e.message.trim() ? e.message : t('mecp.compose.sendFailed');
       setError(msg);
     } finally {

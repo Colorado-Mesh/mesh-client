@@ -34,7 +34,7 @@ export function registerGeoIpcHandlers(): void {
       return await getResolver().resolve(request);
     } catch (err) {
       console.warn(
-        '[geo] resolvePlace failed:',
+        'mcL0157 [geo] resolvePlace failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       return null;

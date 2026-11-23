@@ -6,9 +6,13 @@
  * call and no rethrow (throw statement). Silent catches make post-mortem
  * debugging impossible.
  *
- * To suppress a false positive (e.g., intentional teardown cleanup), add:
+ * To suppress a false positive (e.g., extreme hot-path where even debug would spam), add:
  *   // catch-no-log-ok <reason>
  * on the catch line itself or anywhere inside the catch body.
+ *
+ * Prefer `logCaughtDebug` / `logCaughtWarn` / `reportCaughtSeriousError` from
+ * caughtErrorPolicy (main or renderer) over suppressions. Semgrep does not own
+ * catch hygiene — do not add empty-catch rules to .semgrep.yml.
  *
  * Note: catch blocks that only rethrow (throw e / throw new Error(...)) are
  * also allowed without logging — the caller is responsible for logging there.
@@ -27,6 +31,8 @@ const SUPPRESSION = /\/\/\s*catch-no-log-ok\b/;
 // Also recognise `original.(debug|...)` — the pre-patch console alias used in log-service.ts
 // and `debugLogService(...)` — sanitized internal logging in log-service.ts
 const HAS_CONSOLE = /(?:console|original)\.(log|warn|error|info|debug)\s*\(|debugLogService\s*\(/;
+const HAS_CAUGHT_HELPER =
+  /\b(?:logCaughtDebug|logCaughtWarn|reportCaughtSeriousError|warnWithLogId|errorWithLogId)\s*\(/;
 const HAS_THROW = /\bthrow\b/;
 /** Main-process db IPC handlers delegate logging/rethrow to these helpers. */
 const DELEGATES_DB_IPC_ERROR = /\bfinishDbIpc(?:Read)?Handler\s*\(/;
@@ -133,6 +139,8 @@ function checkFile(filePath) {
     if (SUPPRESSION.test(catchContext) || SUPPRESSION.test(body)) continue;
     // Has a console.* call — logged
     if (HAS_CONSOLE.test(body)) continue;
+    // Caught-error policy helpers
+    if (HAS_CAUGHT_HELPER.test(body)) continue;
     // Rethrows — the caller handles logging
     if (HAS_THROW.test(body)) continue;
     // Delegates to finishDbIpcHandler / finishDbIpcReadHandler (logs or rethrows)

@@ -62,7 +62,7 @@ function sendUpdates(updates: TAKNodeUpdate[]): void {
   for (let i = 0; i < updates.length; i += TAK_NODE_UPDATE_BATCH_MAX) {
     const batch = updates.slice(i, i + TAK_NODE_UPDATE_BATCH_MAX);
     window.electronAPI.tak.pushNodeUpdates(batch).catch((e: unknown) => {
-      console.warn('[TakReplicator] pushNodeUpdates failed ' + errLikeToLogString(e));
+      console.warn('mcL0774 [TakReplicator] pushNodeUpdates failed ' + errLikeToLogString(e));
     });
   }
 }

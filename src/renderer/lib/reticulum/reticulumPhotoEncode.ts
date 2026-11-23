@@ -25,7 +25,7 @@ export async function encodePhotoForLxmf(file: Blob, maxBytes: number): Promise<
   try {
     bitmap = await createImageBitmap(file);
   } catch (e) {
-    console.warn('[reticulumPhotoEncode] decode failed:', e);
+    console.warn('mcL1040 [reticulumPhotoEncode] decode failed:', e);
     return { status: 'failed' };
   }
   try {

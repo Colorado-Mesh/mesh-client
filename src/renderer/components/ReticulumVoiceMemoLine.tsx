@@ -67,8 +67,9 @@ export function ReticulumVoiceMemoLine({
           const binary = atob(res.dataBase64);
           bytes = new Uint8Array(binary.length);
           for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        } catch {
-          // catch-no-log-ok: malformed base64 from cache — surface loadError UI only
+        } catch (e: unknown) {
+          console.debug('[renderer/components/ReticulumVoiceMemoLine] catch:', e);
+
           setLoadError(true);
           setReady(false);
           return;
@@ -92,8 +93,9 @@ export function ReticulumVoiceMemoLine({
         }
         setBars(computeWaveform(buffer.getChannelData(0), BAR_COUNT));
         setReady(true);
-      } catch {
-        // catch-no-log-ok: attachment may be absent, jailed, or undecodable
+      } catch (e: unknown) {
+        console.debug('[renderer/components/ReticulumVoiceMemoLine] catch:', e);
+
         if (!cancelled) {
           setLoadError(true);
           setReady(false);
@@ -106,8 +108,8 @@ export function ReticulumVoiceMemoLine({
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       try {
         sourceRef.current?.stop();
-      } catch {
-        // catch-no-log-ok: source may already be stopped
+      } catch (e: unknown) {
+        console.debug('[renderer/components/ReticulumVoiceMemoLine] catch:', e);
       }
       sourceRef.current = null;
       const ctx = audioCtxRef.current;
@@ -146,8 +148,8 @@ export function ReticulumVoiceMemoLine({
     }
     try {
       sourceRef.current?.stop();
-    } catch {
-      // catch-no-log-ok: source may already be stopped
+    } catch (e: unknown) {
+      console.debug('[renderer/components/ReticulumVoiceMemoLine] catch:', e);
     }
     sourceRef.current = null;
     setPlaying(false);

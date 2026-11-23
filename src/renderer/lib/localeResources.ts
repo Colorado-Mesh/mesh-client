@@ -37,7 +37,7 @@ const localeBundles: Record<
 export async function ensureLocaleLoaded(i18n: I18nInstance, code: string): Promise<boolean> {
   if (code === 'en' || loadedLocales.has(code)) return true;
   if (!isSupportedLocale(code)) {
-    console.warn('[i18n] requested locale is not selectable');
+    console.warn('mcL0861 [i18n] requested locale is not selectable');
     return false;
   }
 
@@ -49,7 +49,7 @@ export async function ensureLocaleLoaded(i18n: I18nInstance, code: string): Prom
     return true;
   } catch (err) {
     console.error(
-      'ensureLocaleLoaded: failed to load locale ' + code + ' ' + errLikeToLogString(err),
+      'mcL0862 ensureLocaleLoaded: failed to load locale ' + code + ' ' + errLikeToLogString(err),
     );
     await i18n.changeLanguage('en');
     return false;

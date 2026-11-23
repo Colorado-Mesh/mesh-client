@@ -1,5 +1,7 @@
 import fs from 'fs';
 
+import { sanitizeLogMessage } from './sanitize-log-message';
+
 export interface WindowBounds {
   x: number;
   y: number;
@@ -89,8 +91,12 @@ export function readWindowState(statePath: string): WindowState {
   try {
     const raw = JSON.parse(fs.readFileSync(statePath, 'utf-8')) as unknown;
     return parseWindowState(raw) ?? DEFAULT_WINDOW_STATE;
-  } catch {
-    // catch-no-log-ok: a missing or unreadable file falls back to the default placement.
+  } catch (e: unknown) {
+    console.debug(
+      '[main/windowState] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return DEFAULT_WINDOW_STATE;
   }
 }
@@ -99,8 +105,11 @@ export function readWindowState(statePath: string): WindowState {
 export function writeWindowState(statePath: string, state: WindowState): void {
   try {
     fs.writeFileSync(statePath, JSON.stringify(state), 'utf-8');
-  } catch {
-    // catch-no-log-ok: non-critical persistence failure
+  } catch (e: unknown) {
+    console.debug(
+      '[main/windowState] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 }
 

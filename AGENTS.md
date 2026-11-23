@@ -85,8 +85,9 @@ Adding a cross-boundary feature:
 
 ## 3. Security & Error Handling
 
-- Catches must log, rethrow, or `// catch-no-log-ok <reason>`. Prefer Result types over deep nesting.
-- **Logging:** `console.debug` / `warn` / `error` as appropriate; no bare `console.log`.
+- Catches must log (`logCaughtDebug` / `console.debug` / warn / error), rethrow, or (rarely) `// catch-no-log-ok <reason>` when even debug would be harmful. Prefer `logCaughtDebug` from `caughtErrorPolicy` (main or renderer). Soft catches must **not** rethrow. Serious unexpected main failures may use `reportCaughtSeriousError` (consent-gated crash dialog; still no rethrow). Prefer Result types over deep nesting.
+- **Logging:** `console.debug` / `warn` / `error` as appropriate; no bare `console.log`. **Warn/error must include a stable `mcL####` log ID** (allocate in [`src/shared/logMessageIds.ts`](src/shared/logMessageIds.ts); never reuse; enforced by `pnpm run check:log-ids`). Debug/info have no IDs.
+- **Verbose logging:** By default only warn/error are written to disk and the Log panel. Users enable debug/info via **App → Support → Include debug and info in logs** (`verboseLogging` app setting) before reproducing a bug, then Export for GitHub. Agents diagnosing locally may set `MESH_CLIENT_VERBOSE_LOG=1`.
 - **Log injection:** Call `sanitizeLogMessage()` on user-controlled strings before `appendLine()` or loggers.
 - **IPC:** Namespaced channels (`db:*`, `mqtt:*`, etc.); expose only via `contextBridge` in preload; **never** expose `ipcRenderer` directly.
 - **System boundaries:** Follow repo security rules for subprocess APIs, DOM/HTML sinks, and dynamic code. Validate external inputs; do not over-validate internal code.

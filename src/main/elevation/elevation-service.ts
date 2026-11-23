@@ -114,8 +114,12 @@ export function createElevationService(deps: ElevationServiceDeps): ElevationSer
     let parsed: unknown;
     try {
       parsed = JSON.parse(fetched.body.toString('utf8'));
-    } catch {
-      // catch-no-log-ok invalid Open-Meteo JSON → treat as missing elevations
+    } catch (e: unknown) {
+      console.debug(
+        '[main/elevation/elevation-service] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return points.map(() => null);
     }
     const elevRaw =
@@ -195,7 +199,7 @@ export function createElevationService(deps: ElevationServiceDeps): ElevationSer
             await sampleCache.flush();
           } catch (err: unknown) {
             console.warn(
-              '[elevation] sampleCache.flush ' +
+              'mcL0025 [elevation] sampleCache.flush ' +
                 sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
             );
           }
@@ -321,7 +325,7 @@ export function createElevationService(deps: ElevationServiceDeps): ElevationSer
         return { ok: true, data: { completed, failed } };
       } catch (err) {
         console.warn(
-          '[elevation] downloadHgt ' +
+          'mcL0026 [elevation] downloadHgt ' +
             sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
         return { ok: false, error: { code: 'fetch_failed', message: 'fetch_failed' } };
@@ -353,8 +357,11 @@ export function createElevationService(deps: ElevationServiceDeps): ElevationSer
       const hgt = await listHgtTiles(cacheDir);
       const fs = await import('fs/promises');
       for (const name of hgt.names) {
-        await fs.unlink(joinUnderRoot(cacheDir, 'hgt', `${name}.hgt`)).catch(() => {
-          // catch-no-log-ok
+        await fs.unlink(joinUnderRoot(cacheDir, 'hgt', `${name}.hgt`)).catch((e: unknown) => {
+          console.debug(
+            '[main/elevation/elevation-service] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         });
       }
     },

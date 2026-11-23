@@ -57,7 +57,7 @@ export function registerFlasherHandlers(): void {
         return { saved: true, path: result.filePath };
       } catch (err) {
         console.error(
-          '[IPC] flasher:saveFirmwareBackup failed:',
+          'mcL0155 [IPC] flasher:saveFirmwareBackup failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
         throw err;

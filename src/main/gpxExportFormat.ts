@@ -1,6 +1,6 @@
 /** Pure GPX 1.1 track formatter for position_history rows. */
-
 import { escapeXml } from '../shared/xmlEscape';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 export interface GpxTrackPoint {
   node_id: number;
@@ -18,8 +18,12 @@ function toIsoUtc(ms: number): string | null {
   if (Math.abs(ms) > 8.64e15) return null;
   try {
     return new Date(ms).toISOString();
-  } catch {
-    // catch-no-log-ok Invalid Date range — skip point in caller.
+  } catch (e: unknown) {
+    console.debug(
+      '[main/gpxExportFormat] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 }

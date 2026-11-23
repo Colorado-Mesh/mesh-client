@@ -208,8 +208,9 @@ function decodeTraceRouteFromDecodedPayload(
       replyId: finiteOptionalNumber(value.replyId),
       requestId: finiteOptionalNumber(value.requestId),
     };
-  } catch {
-    // catch-no-log-ok non-traceroute payload on TRACEROUTE_APP
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/protocols/MeshtasticProtocol] catch:', e);
+
     return null;
   }
 }
@@ -842,8 +843,9 @@ export class MeshtasticProtocol implements Protocol {
     let text: string;
     try {
       text = new TextDecoder('utf-8', { fatal: true }).decode(data.payload);
-    } catch {
-      // catch-no-log-ok malformed inbound text is dropped before reaching UI or persistence
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/protocols/MeshtasticProtocol] catch:', e);
+
       return [];
     }
     return [
@@ -1343,8 +1345,9 @@ export class MeshtasticProtocol implements Protocol {
         ...(relayNode > 0 ? { relayNode } : {}),
       };
       return [{ type: 'raw_packet', payload }];
-    } catch {
-      // catch-no-log-ok serialization failures are non-critical
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/protocols/MeshtasticProtocol] catch:', e);
+
       return [];
     }
   }

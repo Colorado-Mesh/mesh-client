@@ -46,7 +46,7 @@ export default function NomadPageAccessDialog({
       const res = await getServingPageAcl(path);
       if (cancelled) return;
       if (!res.ok) {
-        console.warn('[NomadHosting] page access read failed:', res.error);
+        console.warn('mcL0497 [NomadHosting] page access read failed:', res.error);
         setError(
           humanizeNomadPageError(res.error, t) || t('nomadNetwork.serving.restrictLoadError'),
         );
@@ -82,7 +82,7 @@ export default function NomadPageAccessDialog({
     try {
       const res = await putServingPageAcl(path, draft);
       if (!res.ok) {
-        console.warn('[NomadHosting] page access save failed:', res.error);
+        console.warn('mcL0498 [NomadHosting] page access save failed:', res.error);
         setError(
           humanizeNomadPageError(res.error, t) || t('nomadNetwork.serving.restrictSaveError'),
         );
@@ -101,7 +101,7 @@ export default function NomadPageAccessDialog({
     try {
       const res = await deleteServingPageAcl(path);
       if (!res.ok) {
-        console.warn('[NomadHosting] page access remove failed:', res.error);
+        console.warn('mcL0499 [NomadHosting] page access remove failed:', res.error);
         setError(
           humanizeNomadPageError(res.error, t) || t('nomadNetwork.serving.restrictRemoveError'),
         );

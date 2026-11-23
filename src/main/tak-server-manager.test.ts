@@ -220,7 +220,7 @@ describe('TakServerManager server error sanitization', () => {
 
     fakeServer.emit('error', new Error('boom\r\ninjected'));
 
-    const logged = consoleSpy.mock.calls.find((c) => c[0] === '[TakServer]')?.[1];
+    const logged = consoleSpy.mock.calls.find((c) => String(c[0]).includes('[TakServer]'))?.[1];
     expect(typeof logged).toBe('string');
     expect(logged).not.toMatch(/[\r\n]/);
     expect(manager.getStatus().error).toBe(logged);

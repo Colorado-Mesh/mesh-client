@@ -94,7 +94,8 @@ function notifyHopCorrectedListeners(): void {
       listener();
     } catch (e) {
       console.warn(
-        '[meshcoreLateRfHopEnrichment] hop-corrected listener failed ' + errLikeToLogString(e),
+        'mcL0907 [meshcoreLateRfHopEnrichment] hop-corrected listener failed ' +
+          errLikeToLogString(e),
       );
     }
   }
@@ -404,7 +405,7 @@ export function applyMeshcoreLateRfHopEnrichment(
     .saveMeshcoreMessage(messageToDbRow(chat, getConnection(identityId)?.myNodeNum))
     .catch((e: unknown) => {
       console.warn(
-        '[meshcoreLateRfHopEnrichment] saveMeshcoreMessage failed ' + errLikeToLogString(e),
+        'mcL0908 [meshcoreLateRfHopEnrichment] saveMeshcoreMessage failed ' + errLikeToLogString(e),
       );
     });
 

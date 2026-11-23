@@ -89,7 +89,7 @@ function notifyConversationPrefsChanged(protocol: MeshProtocol, identityId: stri
     try {
       listener(protocol, identityId);
     } catch (e) {
-      console.warn('[conversationPinStorage] listener failed ' + errLikeToLogString(e));
+      console.warn('mcL0813 [conversationPinStorage] listener failed ' + errLikeToLogString(e));
     }
   }
 }
@@ -109,7 +109,7 @@ export function saveConversationPrefs(
       localStorage.setItem(key, JSON.stringify(next));
     }
   } catch (e) {
-    console.warn('[conversationPinStorage] save failed ' + errLikeToLogString(e));
+    console.warn('mcL0814 [conversationPinStorage] save failed ' + errLikeToLogString(e));
     return false;
   }
   notifyConversationPrefsChanged(protocol, identityId ?? null);

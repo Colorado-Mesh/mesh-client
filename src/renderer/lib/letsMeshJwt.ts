@@ -152,7 +152,8 @@ export async function tryPersistMeshcorePublicKeyFromRadio(
       return true;
     } catch (err) {
       console.warn(
-        '[letsMeshJwt] tryPersistMeshcorePublicKeyFromRadio failed ' + errLikeToLogString(err),
+        'mcL0858 [letsMeshJwt] tryPersistMeshcorePublicKeyFromRadio failed ' +
+          errLikeToLogString(err),
       );
       return false;
     }
@@ -213,7 +214,8 @@ export async function tryPersistMeshcoreIdentityFromRadioExport(
         localStorage.removeItem(MESHCORE_ENC_PK_KEY);
       } catch (legacyCleanupError) {
         console.warn(
-          '[letsMeshJwt] legacy identity cleanup failed ' + errLikeToLogString(legacyCleanupError),
+          'mcL0859 [letsMeshJwt] legacy identity cleanup failed ' +
+            errLikeToLogString(legacyCleanupError),
         );
       }
       window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
@@ -221,7 +223,8 @@ export async function tryPersistMeshcoreIdentityFromRadioExport(
     } catch (err) {
       // Still return false (no partial identity write); log for safeStorage / quota / private mode.
       console.warn(
-        '[letsMeshJwt] tryPersistMeshcoreIdentityFromRadioExport failed ' + errLikeToLogString(err),
+        'mcL0860 [letsMeshJwt] tryPersistMeshcoreIdentityFromRadioExport failed ' +
+          errLikeToLogString(err),
       );
       return false;
     }
@@ -248,8 +251,8 @@ export function readMeshcoreIdentityAsync(): Promise<{
     try {
       const private_key = JSON.parse(plaintext) as number[];
       return Promise.resolve({ ...base, private_key });
-    } catch {
-      // catch-no-log-ok corrupt session cache is treated as missing key material
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/letsMeshJwt] catch:', e);
     }
   }
   return Promise.resolve(base);
@@ -268,8 +271,9 @@ export function readMeshcoreIdentity(): {
       public_key?: string | number[];
     };
     return { public_key: parsed.public_key };
-  } catch {
-    // catch-no-log-ok localStorage read — non-critical identity cache; returns null on any parse error
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/letsMeshJwt] catch:', e);
+
     return null;
   }
 }
@@ -308,8 +312,8 @@ function normalizePublicKeyHex(publicKey: string | number[] | undefined): string
     if (bin.length === MESHCORE_PUBLIC_KEY_LENGTH) {
       return Array.from(bin, (c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
     }
-  } catch {
-    // catch-no-log-ok base64 decode attempt for public key
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/letsMeshJwt] catch:', e);
   }
   return null;
 }

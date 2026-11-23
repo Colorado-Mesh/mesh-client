@@ -5,6 +5,7 @@
  */
 import dbus from 'dbus-next';
 
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { BLUEZ_AGENT_CAPABILITY, BLUEZ_AGENT_PATH, BluezPairingAgent } from './agent';
 import { formatBluezError, isBluezAlreadyExistsOrInProgress } from './errors';
 import { isMacAddress, macToDeviceSuffix } from './mac';
@@ -148,8 +149,11 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
   function disconnectBus(bus: dbus.MessageBus): void {
     try {
       bus.disconnect();
-    } catch {
-      // catch-no-log-ok — best-effort bus disconnect
+    } catch (e: unknown) {
+      console.debug(
+        '[main/linux-bluez/client] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
 
@@ -289,8 +293,11 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
       if (discoveryStarted) {
         try {
           await getMethod(adapter, 'StopDiscovery')();
-        } catch {
-          // catch-no-log-ok — best-effort stop discovery
+        } catch (e: unknown) {
+          console.debug(
+            '[main/linux-bluez/client] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         }
       }
     }
@@ -369,19 +376,28 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
                   'Trusted',
                   new Variant('b', true),
                 );
-              } catch {
-                // catch-no-log-ok — trust is best-effort after successful pair
+              } catch (e: unknown) {
+                console.debug(
+                  '[main/linux-bluez/client] catch:',
+                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                );
               }
             } finally {
               try {
                 await unregisterAgent(BLUEZ_AGENT_PATH);
-              } catch {
-                // catch-no-log-ok — agent cleanup
+              } catch (e: unknown) {
+                console.debug(
+                  '[main/linux-bluez/client] catch:',
+                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                );
               }
               try {
                 bus.unexport(BLUEZ_AGENT_PATH, agent);
-              } catch {
-                // catch-no-log-ok — agent cleanup
+              } catch (e: unknown) {
+                console.debug(
+                  '[main/linux-bluez/client] catch:',
+                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                );
               }
             }
           })(),
@@ -504,15 +520,21 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
               const adapter = await getAdapterInterface(bus, primaryAdapterPath(objects));
               try {
                 await getMethod(adapter, 'StopDiscovery')();
-              } catch {
-                // catch-no-log-ok — stop discovery failure is not critical
+              } catch (e: unknown) {
+                console.debug(
+                  '[main/linux-bluez/client] catch:',
+                  sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+                );
               }
             })(),
             SHORT_TIMEOUT_MS,
             'bluetooth-stop-scan',
           ),
-        ).catch(() => {
-          // catch-no-log-ok — stop-scan must not reject (match prior bluetoothctl handler)
+        ).catch((e: unknown) => {
+          console.debug(
+            '[main/linux-bluez/client] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         });
         return;
       }
@@ -523,15 +545,21 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
             const adapter = await getAdapterInterface(session.bus, session.adapterPath);
             try {
               await getMethod(adapter, 'StopDiscovery')();
-            } catch {
-              // catch-no-log-ok — stop discovery failure is not critical
+            } catch (e: unknown) {
+              console.debug(
+                '[main/linux-bluez/client] catch:',
+                sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+              );
             }
           })(),
           SHORT_TIMEOUT_MS,
           'bluetooth-stop-scan',
         );
-      } catch {
-        // catch-no-log-ok — stop-scan must not reject (match prior bluetoothctl handler)
+      } catch (e: unknown) {
+        console.debug(
+          '[main/linux-bluez/client] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       } finally {
         session.settleBusErrors();
         disconnectBus(session.bus);

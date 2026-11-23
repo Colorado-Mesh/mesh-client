@@ -85,7 +85,7 @@ export default function TeamContactsPanel({
     try {
       await deleteMember(member.unitId);
     } catch (err: unknown) {
-      console.warn('[TeamContacts] delete failed ' + errLikeToLogString(err));
+      console.warn('mcL0691 [TeamContacts] delete failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.deleteFailed'), 'error');
     }
   };
@@ -94,7 +94,7 @@ export default function TeamContactsPanel({
     try {
       await removeLink(unitId, protocol, durableKey);
     } catch (err: unknown) {
-      console.warn('[TeamContacts] unlink failed ' + errLikeToLogString(err));
+      console.warn('mcL0692 [TeamContacts] unlink failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.unlinkFailed'), 'error');
     }
   };
@@ -108,7 +108,7 @@ export default function TeamContactsPanel({
         onRoster: false,
       });
     } catch (err: unknown) {
-      console.warn('[TeamContacts] roster clear failed ' + errLikeToLogString(err));
+      console.warn('mcL0693 [TeamContacts] roster clear failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
     }
   };
@@ -127,7 +127,7 @@ export default function TeamContactsPanel({
         });
       }
     } catch (err: unknown) {
-      console.warn('[TeamContacts] roster devices failed ' + errLikeToLogString(err));
+      console.warn('mcL0694 [TeamContacts] roster devices failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
       await refreshTeamRosterStoreFromDb();
       throw err;

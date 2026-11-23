@@ -44,6 +44,7 @@ import { classifyEndpoint, validateAiEndpointUrl } from '../ai/urlPolicy';
 import { validateAiConfig, validateAiRequest } from '../ai/validation';
 import { getDbForIpc } from '../db-ipc-lifecycle';
 import { createIpcRateLimiter } from '../ipcRateLimit';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { assertIpcSender } from '../validate-ipc-sender';
 
 interface Dependencies {
@@ -279,7 +280,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       !mlxEnsureInFlight
     ) {
       void runEnsureMlxHelper().catch((error: unknown) => {
-        console.warn('[ai] ensureMlxHelper failed', error instanceof Error ? error.message : error);
+        console.warn(
+          'mcL0153 [ai] ensureMlxHelper failed',
+          error instanceof Error ? error.message : error,
+        );
       });
     }
     return statusSnapshot();
@@ -343,7 +347,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       mlxEnsureAttempted = false;
       void runEnsureMlxHelper().catch((error: unknown) => {
         console.warn(
-          '[ai] ensureMlxHelper on enable failed',
+          'mcL0154 [ai] ensureMlxHelper on enable failed',
           error instanceof Error ? error.message : error,
         );
       });
@@ -467,8 +471,12 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     try {
       await endpointModels();
       return { ok: true };
-    } catch {
-      // catch-no-log-ok test failures never expose response bodies
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ipc/ai-handlers] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return {
         ok: false,
         reason: 'httpError',
@@ -511,8 +519,12 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     });
     try {
       ready = await Promise.race([check(), cancelled]);
-    } catch {
-      // catch-no-log-ok readiness errors must not expose configuration
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ipc/ai-handlers] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       return { ok: false, reason: controller.signal.aborted ? 'cancelled' : 'engineNotReady' };
     } finally {
@@ -717,7 +729,11 @@ export function registerAiHandlers(deps: Dependencies): () => void {
             truncated: prompt.truncated,
           });
       } catch (error) {
-        // catch-no-log-ok summaries contain private conversation text
+        console.debug(
+          '[main/ipc/ai-handlers] catch:',
+          sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+        );
+
         if (before === revision && enabled())
           send('ai:summaryError', {
             requestId: request.requestId,
@@ -742,8 +758,11 @@ export function registerAiHandlers(deps: Dependencies): () => void {
         createAiModelProtocol({ enabled, directory, packs, fetchFile: (url) => net.fetch(url) }),
       );
     })
-    .catch(() => {
-      // catch-no-log-ok app shutdown can prevent protocol registration
+    .catch((e: unknown) => {
+      console.debug(
+        '[main/ipc/ai-handlers] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
   return () => {
     stop();

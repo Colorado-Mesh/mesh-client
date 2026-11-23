@@ -36,14 +36,14 @@ export function mergeMeshcoreNeighborPage(
   }
   if (!existing) {
     console.warn(
-      '[meshcoreNeighborPageMerge] skipping mid-list neighbors page with empty cache offset=' +
+      'mcL0910 [meshcoreNeighborPageMerge] skipping mid-list neighbors page with empty cache offset=' +
         String(safeOffset),
     );
     return { action: 'skip' };
   }
   if (existing.neighbours.length !== safeOffset) {
     console.warn(
-      '[meshcoreNeighborPageMerge] neighbors append offset mismatch expected=' +
+      'mcL0911 [meshcoreNeighborPageMerge] neighbors append offset mismatch expected=' +
         String(existing.neighbours.length) +
         ' got=' +
         String(safeOffset),

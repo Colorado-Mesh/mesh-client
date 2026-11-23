@@ -122,7 +122,7 @@ describe('generateDataPackage', () => {
       '/tmp/test-tak/tak-package.zip',
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      '[TAK] show data package in folder failed:',
+      'mcL0294 [TAK] show data package in folder failed:',
       'native shell failed',
     );
 

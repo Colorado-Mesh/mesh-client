@@ -592,7 +592,7 @@ export class MeshCoreProtocol implements Protocol {
   private decodeDmAck(raw: unknown): DomainEvent[] {
     const d = raw as { ackCode?: number; roundTrip?: number };
     if (typeof d.ackCode !== 'number' || !Number.isFinite(d.ackCode)) {
-      console.warn('[MeshCoreProtocol] event 130: non-numeric ackCode', d.ackCode);
+      console.warn('mcL0991 [MeshCoreProtocol] event 130: non-numeric ackCode', d.ackCode);
       return [];
     }
     return [

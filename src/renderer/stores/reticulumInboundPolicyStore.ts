@@ -34,7 +34,7 @@ export const useReticulumInboundPolicyStore = create<ReticulumInboundPolicyStore
         }
         set({ policies: map, hydrated: true, loading: false });
       } catch (e) {
-        console.warn('[reticulumInboundPolicyStore] hydrate ' + errLikeToLogString(e));
+        console.warn('mcL1442 [reticulumInboundPolicyStore] hydrate ' + errLikeToLogString(e));
         set({ loading: false });
       }
     },
@@ -58,7 +58,7 @@ export const useReticulumInboundPolicyStore = create<ReticulumInboundPolicyStore
           return { policies };
         });
       } catch (e) {
-        console.warn('[reticulumInboundPolicyStore] upsert ' + errLikeToLogString(e));
+        console.warn('mcL1443 [reticulumInboundPolicyStore] upsert ' + errLikeToLogString(e));
       }
     },
 
@@ -72,7 +72,7 @@ export const useReticulumInboundPolicyStore = create<ReticulumInboundPolicyStore
           return { policies };
         });
       } catch (e) {
-        console.warn('[reticulumInboundPolicyStore] remove ' + errLikeToLogString(e));
+        console.warn('mcL1444 [reticulumInboundPolicyStore] remove ' + errLikeToLogString(e));
       }
     },
 

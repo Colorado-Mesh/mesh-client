@@ -22,8 +22,9 @@ const AUTO_CACHE_KEY = 'mesh-client:offlineMapsAutoCache';
 function readAutoCache(): boolean {
   try {
     return localStorage.getItem(AUTO_CACHE_KEY) === '1';
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug('[renderer/components/map/OfflineMapsSection] catch:', e);
+
     return false;
   }
 }
@@ -31,8 +32,8 @@ function readAutoCache(): boolean {
 function writeAutoCache(on: boolean): void {
   try {
     localStorage.setItem(AUTO_CACHE_KEY, on ? '1' : '0');
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug('[renderer/components/map/OfflineMapsSection] catch:', e);
   }
 }
 

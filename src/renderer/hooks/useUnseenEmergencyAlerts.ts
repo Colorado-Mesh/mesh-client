@@ -26,7 +26,7 @@ export function useUnseenEmergencyAlerts(enabled: boolean, repeatMinutes: number
     knownIdsRef.current = ids;
     if (!hasNew) return;
     window.electronAPI.app.requestAttention().catch((e: unknown) => {
-      console.warn('[useUnseenEmergencyAlerts] requestAttention failed', e);
+      console.warn('mcL0776 [useUnseenEmergencyAlerts] requestAttention failed', e);
     });
   }, [idsKey]);
 

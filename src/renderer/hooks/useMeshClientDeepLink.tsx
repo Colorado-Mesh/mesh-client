@@ -52,7 +52,9 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
           const outcome = await handleReticulumQrIngest(parsed.uri);
           showReticulumQrIngestToast(outcome, { t, addToast });
         })().catch((err: unknown) => {
-          console.error('[MeshClientDeepLinkHost] paper ingest failed: ' + errLikeToLogString(err));
+          console.error(
+            'mcL0754 [MeshClientDeepLinkHost] paper ingest failed: ' + errLikeToLogString(err),
+          );
           addToast(t('qrIngest.unknownLink'), 'error');
         });
         return;
@@ -165,7 +167,8 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
               return true;
             } catch (err) {
               console.error(
-                '[MeshClientDeepLinkHost] meshcore contact save failed: ' + errLikeToLogString(err),
+                'mcL0755 [MeshClientDeepLinkHost] meshcore contact save failed: ' +
+                  errLikeToLogString(err),
               );
               return false;
             }

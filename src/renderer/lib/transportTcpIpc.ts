@@ -63,13 +63,13 @@ export class TransportTcpIpc implements Types.Transport {
     this._fromRadioUnsub = window.electronAPI.meshtastic.tcp.onData((bytes) => {
       stats.rawBytes += bytes.length;
       stats.lastRawAt = Date.now();
-      void this._framerWriter.write(bytes).catch(() => {
-        // catch-no-log-ok framer writer closed during teardown race
+      void this._framerWriter.write(bytes).catch((e: unknown) => {
+        console.debug('[renderer/lib/transportTcpIpc] catch:', e);
       });
     });
     this._disconnectUnsub = window.electronAPI.meshtastic.tcp.onDisconnected(() => {
-      void this._framerWriter.close().catch(() => {
-        // catch-no-log-ok framer writer already closed
+      void this._framerWriter.close().catch((e: unknown) => {
+        console.debug('[renderer/lib/transportTcpIpc] catch:', e);
       });
     });
 
@@ -102,8 +102,8 @@ export class TransportTcpIpc implements Types.Transport {
    */
   retireInbound(): void {
     this._teardownListeners();
-    void this._framerWriter.close().catch(() => {
-      // catch-no-log-ok framer writer already closed
+    void this._framerWriter.close().catch((e: unknown) => {
+      console.debug('[renderer/lib/transportTcpIpc] catch:', e);
     });
   }
 

@@ -64,7 +64,7 @@ export function useLiveMapWindow(
         setReadyRevision((revision) => revision + 1);
       })
       .catch((cause: unknown) => {
-        console.warn('[live-map] pop-out state unavailable', cause);
+        console.warn('mcL0748 [live-map] pop-out state unavailable', cause);
       });
     return () => {
       cancelled = true;
@@ -73,7 +73,7 @@ export function useLiveMapWindow(
       // The data source is going away (protocol disabled); its pop-out would only freeze.
       if (openRef.current)
         api.close(protocol).catch((cause: unknown) => {
-          console.warn('[live-map] pop-out failed to close', cause);
+          console.warn('mcL0749 [live-map] pop-out failed to close', cause);
         });
     };
   }, [api, available, protocol]);
@@ -131,7 +131,7 @@ export function useLiveMapWindow(
     (view: LiveMapView | null) => {
       if (!available || protocol === null) return;
       api.open(protocol, view).catch((cause: unknown) => {
-        console.warn('[live-map] pop-out failed to open', cause);
+        console.warn('mcL0750 [live-map] pop-out failed to open', cause);
       });
     },
     [api, available, protocol],
@@ -139,7 +139,7 @@ export function useLiveMapWindow(
   const dock = useCallback(() => {
     if (!available || protocol === null) return;
     api.close(protocol).catch((cause: unknown) => {
-      console.warn('[live-map] pop-out failed to close', cause);
+      console.warn('mcL0751 [live-map] pop-out failed to close', cause);
     });
   }, [api, available, protocol]);
 

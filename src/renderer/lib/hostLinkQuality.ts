@@ -68,8 +68,9 @@ export function parseTcpProbeTarget(
     const { host, port } =
       protocol === 'meshcore' ? parseTcpAddress(trimmed) : parseMeshtasticTcpAddress(trimmed);
     return { host: formatHostForSocket(host), port };
-  } catch {
-    // catch-no-log-ok invalid address for link-quality probe
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/hostLinkQuality] catch:', e);
+
     return null;
   }
 }

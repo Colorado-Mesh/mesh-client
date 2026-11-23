@@ -48,7 +48,7 @@ export class PlaceResolver {
       this.index = parseGazetteerTsv(fs.readFileSync(this.deps.gazetteerPath, 'utf8'));
     } catch (err) {
       console.warn(
-        '[geo] gazetteer unavailable; offline place lookup disabled:',
+        'mcL0036 [geo] gazetteer unavailable; offline place lookup disabled:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       this.index = { byName: new Map(), size: 0 };

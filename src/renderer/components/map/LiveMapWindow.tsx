@@ -51,7 +51,7 @@ export function LiveMapWindow() {
         setData(queued.reduce(applyLiveMapSnapshot, emptyLiveMapWindowData(value.protocol)));
       })
       .catch((cause: unknown) => {
-        console.error('[live-map] window init failed', cause);
+        console.error('mcL0657 [live-map] window init failed', cause);
         if (!cancelled) setInit(null);
       });
     const stopApplyView = api.onApplyView?.((view) => {
@@ -84,12 +84,12 @@ export function LiveMapWindow() {
   );
   const toggleAlwaysOnTop = useCallback(() => {
     api.setAlwaysOnTop(!alwaysOnTop).then(setAlwaysOnTop, (cause: unknown) => {
-      console.warn('[live-map] keep on top failed', cause);
+      console.warn('mcL0658 [live-map] keep on top failed', cause);
     });
   }, [api, alwaysOnTop]);
   const returnToMainWindow = useCallback(() => {
     api.dock().catch((cause: unknown) => {
-      console.warn('[live-map] return to main window failed', cause);
+      console.warn('mcL0659 [live-map] return to main window failed', cause);
     });
   }, [api]);
 

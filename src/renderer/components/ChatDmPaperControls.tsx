@@ -191,7 +191,8 @@ export function ChatDmPaperShareControl({
                       })
                       .catch((err: unknown) => {
                         console.warn(
-                          '[ChatDmPaperShareControl] clipboard failed: ' + errLikeToLogString(err),
+                          'mcL0384 [ChatDmPaperShareControl] clipboard failed: ' +
+                            errLikeToLogString(err),
                         );
                         addToast(t('chatPanel.shareAsPaperCopyFailed'), 'error');
                       });
@@ -252,7 +253,9 @@ export function ChatPaperScanControl({ sidecarRunning }: Readonly<ChatPaperScanC
                   if (outcome.handled && outcome.toast.variant === 'success') setExpanded(false);
                 }
               })().catch((err: unknown) => {
-                console.error('[ChatPaperScanControl] ingest failed: ' + errLikeToLogString(err));
+                console.error(
+                  'mcL0385 [ChatPaperScanControl] ingest failed: ' + errLikeToLogString(err),
+                );
                 addToast(t('qrIngest.unknownLink'), 'error');
               });
             }}

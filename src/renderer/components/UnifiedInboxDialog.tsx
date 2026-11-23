@@ -47,8 +47,9 @@ function formatTime(ts: number): string {
   if (!ts) return '';
   try {
     return new Date(ts).toLocaleString();
-  } catch {
-    // catch-no-log-ok Invalid Date / locale edge; empty label is fine
+  } catch (e: unknown) {
+    console.debug('[renderer/components/UnifiedInboxDialog] catch:', e);
+
     return '';
   }
 }
@@ -167,7 +168,7 @@ function UnifiedInboxDialogBody({
         await writeClipboardText(text);
         addToast(t('unifiedInbox.copied', { count: selectedCount }), 'success');
       } catch (e: unknown) {
-        console.warn('[UnifiedInbox] copy failed ' + errLikeToLogString(e));
+        console.warn('mcL0625 [UnifiedInbox] copy failed ' + errLikeToLogString(e));
         addToast(t('unifiedInbox.copyFailed'), 'error');
       }
     })();
@@ -184,7 +185,7 @@ function UnifiedInboxDialogBody({
           addToast(t('unifiedInbox.exportFailed'), 'error');
         }
       } catch (e: unknown) {
-        console.warn('[UnifiedInbox] export failed ' + errLikeToLogString(e));
+        console.warn('mcL0626 [UnifiedInbox] export failed ' + errLikeToLogString(e));
         addToast(t('unifiedInbox.exportFailed'), 'error');
       }
     })();
@@ -220,7 +221,7 @@ function UnifiedInboxDialogBody({
         void window.electronAPI.db
           .deleteReticulumMessage(reticulumIdentityId, hash)
           .catch((e: unknown) => {
-            console.warn('[UnifiedInbox] reticulum delete failed ' + errLikeToLogString(e));
+            console.warn('mcL0627 [UnifiedInbox] reticulum delete failed ' + errLikeToLogString(e));
           });
       }
       if (item.message.storeId) deleteMessage(reticulumIdentityId, item.message.storeId);

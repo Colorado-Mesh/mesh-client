@@ -235,7 +235,7 @@ export function RemoteTransferSection({
     try {
       await window.electronAPI.reticulum.rncp.cancel({ transfer_id: transferId });
     } catch (e) {
-      console.warn('[RemoteTransferSection] cancel ' + errLikeToLogString(e));
+      console.warn('mcL0671 [RemoteTransferSection] cancel ' + errLikeToLogString(e));
     }
   }, []);
 
@@ -293,7 +293,7 @@ export function RemoteTransferSection({
           }
         }
       } catch (e) {
-        console.warn('[RemoteTransferSection] retry ' + errLikeToLogString(e));
+        console.warn('mcL0672 [RemoteTransferSection] retry ' + errLikeToLogString(e));
       } finally {
         retryInFlightRef.current.delete(transferId);
       }
@@ -361,7 +361,7 @@ export function RemoteTransferSection({
       await upsertInboundPolicy({ identity_hash: identityHash, decision });
       const push = await pushRncpListenerPolicy();
       if (!push.ok) {
-        console.warn('[RemoteTransferSection] pushPolicy ' + (push.error ?? ''));
+        console.warn('mcL0673 [RemoteTransferSection] pushPolicy ' + (push.error ?? ''));
         if (isRncpPickerAllowlistError(push.error)) {
           addToast(t('reticulumRemote.settings.rechooseSaveDir'), 'error');
         }

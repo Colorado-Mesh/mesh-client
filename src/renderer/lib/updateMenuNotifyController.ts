@@ -26,8 +26,8 @@ export function createUpdateMenuNotifyController(
       if (!pendingMenuUpdateNotify) return;
       pendingMenuUpdateNotify = false;
       const { title, body } = titlesForMenuUpdateSettled(kind, t, extras);
-      void notifyShow(title, body).catch(() => {
-        // catch-no-log-ok OS notification may be disabled or unsupported
+      void notifyShow(title, body).catch((e: unknown) => {
+        console.debug('[renderer/lib/updateMenuNotifyController] catch:', e);
       });
     },
   };

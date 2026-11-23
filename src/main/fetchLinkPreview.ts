@@ -57,8 +57,11 @@ export function isLinkPreviewImageMime(contentType: string): boolean {
 export async function discardResponseBody(response: Response): Promise<void> {
   try {
     await response.body?.cancel();
-  } catch {
-    // catch-no-log-ok body may already be locked or aborted
+  } catch (e: unknown) {
+    console.debug(
+      '[main/fetchLinkPreview] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 }
 
@@ -89,8 +92,11 @@ function titleFromImageUrl(url: URL): string {
   let title = seg;
   try {
     title = decodeURIComponent(seg);
-  } catch {
-    // catch-no-log-ok malformed percent-encoding retains the original segment
+  } catch (e: unknown) {
+    console.debug(
+      '[main/fetchLinkPreview] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   return title || url.hostname;
 }
@@ -183,8 +189,11 @@ async function fetchWithResolvedHost(urlString: string, init: RequestInit): Prom
     const closeAgent = (): void => {
       if (closed) return;
       closed = true;
-      void agent.close().catch(() => {
-        // catch-no-log-ok agent may already be closed after abort
+      void agent.close().catch((e: unknown) => {
+        console.debug(
+          '[main/fetchLinkPreview] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       });
     };
 
@@ -203,7 +212,11 @@ async function fetchWithResolvedHost(urlString: string, init: RequestInit): Prom
             }
             controller.enqueue(value);
           } catch (err) {
-            // catch-no-log-ok forward stream failure to consumer via controller.error
+            console.debug(
+              '[main/fetchLinkPreview] catch:',
+              sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+            );
+
             closeAgent();
             controller.error(err);
           }
@@ -211,8 +224,11 @@ async function fetchWithResolvedHost(urlString: string, init: RequestInit): Prom
         async cancel(reason) {
           try {
             await reader.cancel(reason);
-          } catch {
-            // catch-no-log-ok cancel may race with stream abort
+          } catch (e: unknown) {
+            console.debug(
+              '[main/fetchLinkPreview] catch:',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+            );
           } finally {
             closeAgent();
           }
@@ -297,8 +313,12 @@ export async function isBlockedHostnameResolved(hostname: string): Promise<boole
   try {
     await resolvePinnedPreviewAddress(hostname);
     return false;
-  } catch {
-    // catch-no-log-ok DNS failure or blocked target — fail closed for preview fetch
+  } catch (e: unknown) {
+    console.debug(
+      '[main/fetchLinkPreview] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return true;
   }
 }
@@ -306,8 +326,12 @@ export async function isBlockedHostnameResolved(hostname: string): Promise<boole
 export function shouldProxyPreviewImageUrl(imageUrl: string): boolean {
   try {
     return LINK_PREVIEW_IMAGE_PROXY_HOSTS.has(new URL(imageUrl).hostname.toLowerCase());
-  } catch {
-    // catch-no-log-ok invalid image URL string
+  } catch (e: unknown) {
+    console.debug(
+      '[main/fetchLinkPreview] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }
@@ -317,8 +341,12 @@ async function isAllowedHttpsPreviewUrl(urlString: string): Promise<boolean> {
   let parsed: URL;
   try {
     parsed = new URL(urlString);
-  } catch {
-    // catch-no-log-ok invalid preview URL string
+  } catch (e: unknown) {
+    console.debug(
+      '[main/fetchLinkPreview] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
   if (parsed.protocol !== 'https:') return false;
@@ -343,8 +371,11 @@ async function readResponseBodyUpTo(
   } finally {
     try {
       await reader.cancel();
-    } catch {
-      // catch-no-log-ok: stream may already be aborted when AbortSignal.timeout fires
+    } catch (e: unknown) {
+      console.debug(
+        '[main/fetchLinkPreview] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
   if (total === 0) return null;
@@ -380,8 +411,12 @@ async function fetchPreviewResponseWithRedirectGuard(
     let nextUrl: string;
     try {
       nextUrl = new URL(location, urlString).href;
-    } catch {
-      // catch-no-log-ok malformed redirect Location header
+    } catch (e: unknown) {
+      console.debug(
+        '[main/fetchLinkPreview] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       await discardResponseBody(response);
       return null;
     }
@@ -489,8 +524,12 @@ async function fetchYouTubeOEmbedPreview(pageUrl: URL): Promise<LinkPreviewMetad
   let parsed: unknown;
   try {
     parsed = JSON.parse(new TextDecoder().decode(merged)) as unknown;
-  } catch {
-    // catch-no-log-ok malformed oEmbed JSON
+  } catch (e: unknown) {
+    console.debug(
+      '[main/fetchLinkPreview] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
   if (!parsed || typeof parsed !== 'object') return null;
@@ -709,8 +748,12 @@ export async function fetchLinkPreview(urlString: string): Promise<LinkPreviewMe
   try {
     url = new URL(urlString);
     if (url.protocol !== 'https:') return null;
-  } catch {
-    // catch-no-log-ok invalid URL strings fail closed without preview work
+  } catch (e: unknown) {
+    console.debug(
+      '[main/fetchLinkPreview] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 

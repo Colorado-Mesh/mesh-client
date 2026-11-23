@@ -49,7 +49,7 @@ export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStore
           }
           set({ addresses: map, hydrated: true, loading: false });
         } catch (e) {
-          console.warn('[reticulumRemoteAddressStore] hydrate ' + errLikeToLogString(e));
+          console.warn('mcL1469 [reticulumRemoteAddressStore] hydrate ' + errLikeToLogString(e));
           if (gen === clearGeneration) set({ loading: false });
         }
       };
@@ -73,7 +73,7 @@ export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStore
           ) ?? null
         );
       } catch (e) {
-        console.warn('[reticulumRemoteAddressStore] upsert ' + errLikeToLogString(e));
+        console.warn('mcL1470 [reticulumRemoteAddressStore] upsert ' + errLikeToLogString(e));
         return null;
       }
     },
@@ -87,7 +87,7 @@ export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStore
           return { addresses };
         });
       } catch (e) {
-        console.warn('[reticulumRemoteAddressStore] remove ' + errLikeToLogString(e));
+        console.warn('mcL1471 [reticulumRemoteAddressStore] remove ' + errLikeToLogString(e));
       }
     },
 

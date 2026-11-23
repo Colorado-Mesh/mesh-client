@@ -59,7 +59,7 @@ export async function pushRncpListenerPolicy(
     return { ok: true };
   } catch (e) {
     console.warn(
-      '[pushRncpListenerPolicy] setListener failed: ' +
+      'mcL0998 [pushRncpListenerPolicy] setListener failed: ' +
         (e instanceof Error ? e.message : String(e)),
     );
     return { ok: false, error: e instanceof Error ? e.message : String(e) };

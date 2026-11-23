@@ -58,7 +58,8 @@ export function ReticulumPropagationEstablishRecoveryCallout({
         setEnabledTcpCount(countEnabledTcpInterfaces(body.interfaces ?? []));
       } catch (e) {
         console.warn(
-          '[ReticulumPropagationEstablishRecoveryCallout] interfaces read ' + errLikeToLogString(e),
+          'mcL0583 [ReticulumPropagationEstablishRecoveryCallout] interfaces read ' +
+            errLikeToLogString(e),
         );
       }
     })();
@@ -114,7 +115,7 @@ export function ReticulumPropagationEstablishRecoveryCallout({
       setNowMs(Date.now());
     } catch (e) {
       console.warn(
-        '[ReticulumPropagationEstablishRecoveryCallout] announce ' + errLikeToLogString(e),
+        'mcL0584 [ReticulumPropagationEstablishRecoveryCallout] announce ' + errLikeToLogString(e),
       );
       addToast(t('reticulumIdentity.announceNowFailed', { error: errLikeToLogString(e) }), 'error');
     } finally {

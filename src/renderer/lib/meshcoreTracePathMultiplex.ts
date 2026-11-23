@@ -131,7 +131,8 @@ function getMuxState(conn: object): MuxState {
       const result = traceDataPayloadToResult(response);
       p.resolve(result);
     } catch (err) {
-      // catch-no-log-ok bad TraceData shape; caller gets Error via p.reject
+      console.debug('[renderer/lib/meshcoreTracePathMultiplex] catch:', err);
+
       p.reject(unknownToError(err, 'invalid trace response'));
     }
   };
@@ -212,8 +213,9 @@ function unknownToError(e: unknown, fallback: string): Error {
     return new Error(String(e));
   try {
     return new Error(JSON.stringify(e));
-  } catch {
-    // catch-no-log-ok JSON.stringify throws on circular structures
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcoreTracePathMultiplex] catch:', e);
+
     return new Error(fallback);
   }
 }
@@ -326,7 +328,8 @@ export function startMeshcoreTracePathMultiplexed(
         pending.awaitingResponse = true;
         incrementTraceResponsesInFlight();
       } catch (e) {
-        // catch-no-log-ok trace send/Sent path; fail() rejects the multiplex Promise
+        console.debug('[renderer/lib/meshcoreTracePathMultiplex] catch:', e);
+
         if (isSettled()) return;
         fail(e);
       }

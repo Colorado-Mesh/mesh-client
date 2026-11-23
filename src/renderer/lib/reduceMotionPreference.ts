@@ -21,7 +21,7 @@ function notifyReduceMotionListeners(): void {
     try {
       listener();
     } catch (e) {
-      console.warn('[reduceMotion] listener notification failed ' + errLikeToLogString(e));
+      console.warn('mcL1004 [reduceMotion] listener notification failed ' + errLikeToLogString(e));
     }
   }
 }
@@ -50,8 +50,8 @@ export function initReduceMotionDefaultIfAbsent(): void {
       applyDocumentDataset(true);
     }
     localStorage.setItem(REDUCE_MOTION_INIT_KEY, '1');
-  } catch {
-    // catch-no-log-ok localStorage or matchMedia unavailable in restricted environments
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reduceMotionPreference] catch:', e);
   }
 }
 
@@ -68,7 +68,7 @@ export function writeReduceMotion(enabled: boolean): void {
   try {
     applyDocumentDataset(enabled);
   } catch (e) {
-    console.warn('[reduceMotion] dataset apply failed ' + errLikeToLogString(e));
+    console.warn('mcL1005 [reduceMotion] dataset apply failed ' + errLikeToLogString(e));
     return;
   }
 
@@ -76,9 +76,9 @@ export function writeReduceMotion(enabled: boolean): void {
     try {
       applyDocumentDataset(previous);
     } catch (e) {
-      console.warn('[reduceMotion] dataset rollback failed ' + errLikeToLogString(e));
+      console.warn('mcL1006 [reduceMotion] dataset rollback failed ' + errLikeToLogString(e));
     }
-    console.warn('[reduceMotion] persist failed; reverted dataset to match storage');
+    console.warn('mcL1007 [reduceMotion] persist failed; reverted dataset to match storage');
     return;
   }
 
@@ -96,6 +96,6 @@ export function syncReduceMotionDatasetFromStorage(): void {
   try {
     applyDocumentDataset(readReduceMotion());
   } catch (e) {
-    console.warn('[reduceMotion] dataset sync failed ' + errLikeToLogString(e));
+    console.warn('mcL1008 [reduceMotion] dataset sync failed ' + errLikeToLogString(e));
   }
 }

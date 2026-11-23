@@ -64,6 +64,7 @@ export async function ensureMediaAccess(
       await deps.openExternal(privacyUrls.darwin);
     } catch (e) {
       console.warn(
+        'mcL0230',
         logTag,
         'Failed to open macOS',
         mediaType,
@@ -81,6 +82,7 @@ export async function ensureMediaAccess(
         await deps.openExternal(privacyUrls.win32);
       } catch (e) {
         console.warn(
+          'mcL0231',
           logTag,
           'Failed to open Windows',
           mediaType,

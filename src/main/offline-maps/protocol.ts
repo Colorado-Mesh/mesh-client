@@ -47,19 +47,24 @@ async function readBoundedResponseBody(
       if (done || !value) break;
       total += value.length;
       if (total > maxBytes) {
-        await reader.cancel().catch(() => {
-          // catch-no-log-ok stream may already be closed
+        await reader.cancel().catch((e: unknown) => {
+          console.debug(
+            '[main/offline-maps/protocol] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         });
         return null;
       }
       chunks.push(value);
     }
   } catch {
-    // catch-no-log-ok aborted / truncated body → treat as miss
     try {
       await reader.cancel();
-    } catch {
-      // catch-no-log-ok already closed
+    } catch (e: unknown) {
+      console.debug(
+        '[main/offline-maps/protocol] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
     return null;
   }
@@ -126,8 +131,12 @@ export function parseMeshTilesRequestUrl(url: string): {
   let parsed: URL;
   try {
     parsed = new URL(url);
-  } catch {
-    // catch-no-log-ok invalid URL
+  } catch (e: unknown) {
+    console.debug(
+      '[main/offline-maps/protocol] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
   if (parsed.protocol !== 'mesh-tiles:') return null;
@@ -166,8 +175,12 @@ export function createMeshTilesProtocolHandler(
     let addresses: string[];
     try {
       addresses = await resolveHost(host);
-    } catch {
-      // catch-no-log-ok unresolvable host → treated as not public (blank tile)
+    } catch (e: unknown) {
+      console.debug(
+        '[main/offline-maps/protocol] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return null;
     }
     if (addresses.length === 0 || !addresses.every((a) => isGlobalIpLiteral(a) === true)) {
@@ -193,7 +206,7 @@ export function createMeshTilesProtocolHandler(
         return tile && mime ? pngResponse(tile, 200, mime) : emptyResponse(404);
       } catch (e: unknown) {
         console.warn(
-          '[mesh-tiles] mbtiles read failed:',
+          'mcL0270 [mesh-tiles] mbtiles read failed:',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         return emptyResponse(404);
@@ -205,7 +218,7 @@ export function createMeshTilesProtocolHandler(
       if (hit) return pngResponse(hit, 200, sniffRasterTileMime(hit) ?? 'image/png');
     } catch (e: unknown) {
       console.warn(
-        '[mesh-tiles] cache read failed:',
+        'mcL0271 [mesh-tiles] cache read failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
     }
@@ -217,7 +230,7 @@ export function createMeshTilesProtocolHandler(
     const pinnedAddress = await resolvePinnedPublicAddress(v.host);
     if (!pinnedAddress) {
       console.warn(
-        '[mesh-tiles] custom host blocked (non-public address):',
+        'mcL0272 [mesh-tiles] custom host blocked (non-public address):',
         sanitizeLogMessage(v.host),
       );
       return emptyResponse(404);
@@ -245,7 +258,7 @@ export function createMeshTilesProtocolHandler(
         await deps.cache.putCachedTile(coords, buf);
       } catch (e: unknown) {
         console.warn(
-          '[mesh-tiles] cache write failed:',
+          'mcL0273 [mesh-tiles] cache write failed:',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }
@@ -257,8 +270,11 @@ export function createMeshTilesProtocolHandler(
       );
       return emptyResponse(404);
     } finally {
-      await agent.destroy().catch(() => {
-        // catch-no-log-ok agent may already be destroyed after abort
+      await agent.destroy().catch((e: unknown) => {
+        console.debug(
+          '[main/offline-maps/protocol] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       });
     }
   };
@@ -288,7 +304,7 @@ export function createMeshTilesProtocolHandler(
       }
     } catch (e: unknown) {
       console.warn(
-        '[mesh-tiles] cache read failed:',
+        'mcL0274 [mesh-tiles] cache read failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
     }
@@ -315,7 +331,7 @@ export function createMeshTilesProtocolHandler(
         await deps.cache.putCachedTile(coords, buf);
       } catch (e: unknown) {
         console.warn(
-          '[mesh-tiles] cache write failed:',
+          'mcL0275 [mesh-tiles] cache write failed:',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }

@@ -62,8 +62,8 @@ export async function createMeshCoreConnection(
 function rendererLikelyWin32(): boolean {
   try {
     if (typeof process !== 'undefined' && process.platform === 'win32') return true;
-  } catch {
-    // catch-no-log-ok process access can throw in renderer bundles
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/protocols/meshcore/MeshCoreTransport] catch:', e);
   }
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
@@ -77,8 +77,8 @@ function rendererLikelyWin32(): boolean {
 function rendererLikelyLinux(): boolean {
   try {
     if (typeof process !== 'undefined' && process.platform === 'linux') return true;
-  } catch {
-    // catch-no-log-ok process access can throw in renderer bundles
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/protocols/meshcore/MeshCoreTransport] catch:', e);
   }
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
@@ -159,7 +159,7 @@ class IpcTcpConnection {
             if (isMeshcoreTcpOpenHopDeadAccepted()) {
               console.debug('[IpcTcpConnection] write on OpenHop dead bridge', e);
             } else {
-              console.error('[IpcTcpConnection] write error', e);
+              console.error('mcL0993 [IpcTcpConnection] write error', e);
             }
             // Fail closed so meshcore.js stops issuing RPCs after the bridge is gone
             // (n7eal: peer FIN → no active socket write storm).
@@ -189,7 +189,7 @@ class IpcTcpConnection {
         await window.electronAPI.meshcore.tcp.connect(this.host, this.port);
         await instance.onConnected();
       } catch (e) {
-        console.error('[IpcTcpConnection] connect/onConnected error', e);
+        console.error('mcL0994 [IpcTcpConnection] connect/onConnected error', e);
         this.releaseIpcListeners();
         throw e;
       }
@@ -356,7 +356,7 @@ class IpcSidecarGattConnection {
       });
       const offDisc = window.electronAPI.onGattDisconnected((sid) => {
         if (sid !== sessionId) return;
-        console.warn(`[IpcSidecarGattConnection:${sessionId}] peripheral disconnected`);
+        console.warn(`mcL0995 [IpcSidecarGattConnection:${sessionId}] peripheral disconnected`);
         releaseListeners();
         instance.onDisconnected();
         const r = rejectHandshakeOnDisconnect;
@@ -390,7 +390,7 @@ class IpcSidecarGattConnection {
 
         if (rejectHandshakeOnDisconnect === undefined) {
           console.warn(
-            `[IpcSidecarGattConnection:${sessionId}] disconnect raced ahead of handshake — will fail immediately`,
+            `mcL0996 [IpcSidecarGattConnection:${sessionId}] disconnect raced ahead of handshake — will fail immediately`,
           );
         }
 
@@ -414,8 +414,8 @@ class IpcSidecarGattConnection {
       } catch (err) {
         try {
           await window.electronAPI.disconnectGatt(sessionId);
-        } catch {
-          // catch-no-log-ok best-effort disconnect after connect failure
+        } catch (e: unknown) {
+          console.debug('[renderer/lib/protocols/meshcore/MeshCoreTransport] catch:', e);
         }
         this.releaseIpcListeners();
         this.inner = null;
@@ -466,7 +466,7 @@ async function connectBleGatt(blePeripheralId: string): Promise<Connection> {
       const msg = err instanceof Error ? err.message : String(err);
       const isRetryable = isMeshcoreRetryableBleErrorMessage(msg);
       console.warn(
-        `[MeshCoreTransport] GATT BLE attempt ${attempt}/${GATT_IPC_CONNECT_MAX_ATTEMPTS} failed: ${msg}`,
+        `mcL0997 [MeshCoreTransport] GATT BLE attempt ${attempt}/${GATT_IPC_CONNECT_MAX_ATTEMPTS} failed: ${msg}`,
       );
       gattConn.cleanup();
       if (!isRetryable || attempt >= GATT_IPC_CONNECT_MAX_ATTEMPTS) throw err;

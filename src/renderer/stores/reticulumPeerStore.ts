@@ -191,8 +191,9 @@ function loadDismissedContactHashes(): Set<string> {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return new Set();
     return new Set(parsed.filter((h): h is string => typeof h === 'string').map(normalizeHash));
-  } catch {
-    // catch-no-log-ok localStorage JSON parse failure — start with empty dismissed set
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/reticulumPeerStore] catch:', e);
+
     return new Set();
   }
 }
@@ -645,7 +646,7 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
       } else {
         get().updatePeer(key, { favorited: !favorited });
       }
-      console.warn('[reticulumPeerStore] toggleFavorite ' + errLikeToLogString(e));
+      console.warn('mcL1445 [reticulumPeerStore] toggleFavorite ' + errLikeToLogString(e));
       throw e;
     }
   },
@@ -663,7 +664,7 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
         last_heard: hasReticulumHistory(peer) ? peer.last_heard : undefined,
       });
     } catch (e) {
-      console.warn('[reticulumPeerStore] setCustomDisplayName ' + errLikeToLogString(e));
+      console.warn('mcL1446 [reticulumPeerStore] setCustomDisplayName ' + errLikeToLogString(e));
     }
   },
 
@@ -684,7 +685,7 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
         is_contact: false,
       });
     } catch (e) {
-      console.warn('[reticulumPeerStore] removeContact db ' + errLikeToLogString(e));
+      console.warn('mcL1447 [reticulumPeerStore] removeContact db ' + errLikeToLogString(e));
     }
   },
 
@@ -703,7 +704,9 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
       }
       clearedSidecar = typeof body?.cleared === 'number' ? body.cleared : 0;
     } catch (e) {
-      console.warn('[reticulumPeerStore] clearAllContacts sidecar ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1448 [reticulumPeerStore] clearAllContacts sidecar ' + errLikeToLogString(e),
+      );
       throw e;
     }
 
@@ -712,13 +715,13 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
       const result = await window.electronAPI.db.clearReticulumContactDestinations();
       clearedDb = result.changes ?? 0;
     } catch (e) {
-      console.warn('[reticulumPeerStore] clearAllContacts db ' + errLikeToLogString(e));
+      console.warn('mcL1449 [reticulumPeerStore] clearAllContacts db ' + errLikeToLogString(e));
       // Sidecar already cleared — reconcile UI from canonical sources so retry is safe.
       try {
         await refreshReticulumPeersFromSidecar();
       } catch (refreshErr) {
         console.warn(
-          '[reticulumPeerStore] clearAllContacts refresh after db fail ' +
+          'mcL1450 [reticulumPeerStore] clearAllContacts refresh after db fail ' +
             errLikeToLogString(refreshErr),
         );
       }
@@ -760,7 +763,9 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
     try {
       await refreshReticulumPeersFromSidecar();
     } catch (e) {
-      console.warn('[reticulumPeerStore] clearAllContacts refresh ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1451 [reticulumPeerStore] clearAllContacts refresh ' + errLikeToLogString(e),
+      );
     }
 
     return { clearedSidecar, clearedDb };
@@ -781,7 +786,7 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
         (await window.electronAPI.db.getReticulumDestinations()) as ReticulumDestinationDbRow[];
       set({ peerAppearanceByHash: appearancesFromDbRows(rows) });
     } catch (e) {
-      console.warn('[reticulumPeerStore] hydratePeerAppearances ' + errLikeToLogString(e));
+      console.warn('mcL1452 [reticulumPeerStore] hydratePeerAppearances ' + errLikeToLogString(e));
     }
   },
 
@@ -1328,7 +1333,7 @@ export function refreshReticulumPeersFromSidecar(
         console.debug('[reticulumPeerStore] refresh ' + msg);
         throw e instanceof Error ? e : new Error(msg);
       }
-      console.warn('[reticulumPeerStore] refresh ' + msg);
+      console.warn('mcL1453 [reticulumPeerStore] refresh ' + msg);
       return [];
     } finally {
       peerRefreshInFlight = null;

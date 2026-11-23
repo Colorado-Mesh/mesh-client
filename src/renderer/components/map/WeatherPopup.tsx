@@ -63,7 +63,7 @@ export function WeatherPopup(): React.JSX.Element | null {
         else setState({ status: 'error', lat, lon, offline: res.error.code === 'offline' });
       })
       .catch((err: unknown) => {
-        console.warn('[WeatherPopup] ' + errLikeToLogString(err));
+        console.warn('mcL0664 [WeatherPopup] ' + errLikeToLogString(err));
         if (requestId !== requestIdRef.current) return;
         setState({ status: 'error', lat, lon });
       });

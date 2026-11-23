@@ -43,7 +43,7 @@ export function ReticulumShareForOtherApps({ sidecarApiReady }: ReticulumShareFo
         setState({ kind: 'ready', snippet: buildReticulumSharedInstanceClientSnippet(settings) });
       }
     } catch (e) {
-      console.warn('[ReticulumShareForOtherApps] load ' + errLikeToLogString(e));
+      console.warn('mcL0679 [ReticulumShareForOtherApps] load ' + errLikeToLogString(e));
       setState({ kind: 'failed' });
     }
   };
@@ -53,7 +53,7 @@ export function ReticulumShareForOtherApps({ sidecarApiReady }: ReticulumShareFo
       await writeClipboardText(snippet);
       setCopied(true);
     } catch (e) {
-      console.warn('[ReticulumShareForOtherApps] copy ' + errLikeToLogString(e));
+      console.warn('mcL0680 [ReticulumShareForOtherApps] copy ' + errLikeToLogString(e));
     }
   };
 

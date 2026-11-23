@@ -34,8 +34,8 @@ export function scheduleReticulumVacuumIfNeeded(): void {
       const n = Number(raw);
       if (Number.isFinite(n) && n > 0) lastMs = n;
     }
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable in tests
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/startupDbPrune] catch:', e);
   }
   if (Date.now() - lastMs < RETICULUM_VACUUM_MIN_INTERVAL_MS) return;
 
@@ -46,12 +46,12 @@ export function scheduleReticulumVacuumIfNeeded(): void {
       .then(() => {
         try {
           localStorage.setItem(RETICULUM_VACUUM_LAST_MS_KEY, String(Date.now()));
-        } catch {
-          // catch-no-log-ok
+        } catch (e: unknown) {
+          console.debug('[renderer/lib/startupDbPrune] catch:', e);
         }
       })
       .catch((e: unknown) => {
-        console.warn('[App] idle vacuumReticulumTables failed ' + errLikeToLogString(e));
+        console.warn('mcL1142 [App] idle vacuumReticulumTables failed ' + errLikeToLogString(e));
       });
   };
 
@@ -97,8 +97,8 @@ export function runStartupDbPrune(opts?: DbPruneOptions): Promise<void> {
 export async function afterStartupDbPrune(): Promise<void> {
   const prune = startupDbPrunePromise;
   if (!prune) return;
-  await prune.catch(() => {
-    /* catch-no-log-ok useAppStartupDbPrune logs a failed startup prune; loads go ahead anyway */
+  await prune.catch((e: unknown) => {
+    console.debug('[renderer/lib/startupDbPrune] catch:', e);
   });
 }
 
@@ -126,17 +126,17 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
   // Retention runs for all protocols every startup/session — not only the last-active tab.
   ops.push(
     window.electronAPI.db.migrateRfStubNodes().catch((e: unknown) => {
-      console.warn(`[App] ${label} migrateRfStubNodes failed ` + errLikeToLogString(e));
+      console.warn(`mcL1143 [App] ${label} migrateRfStubNodes failed ` + errLikeToLogString(e));
     }),
     window.electronAPI.db.deleteNodesNeverHeard().catch((e: unknown) => {
-      console.warn(`[App] ${label} deleteNodesNeverHeard failed ` + errLikeToLogString(e));
+      console.warn(`mcL1144 [App] ${label} deleteNodesNeverHeard failed ` + errLikeToLogString(e));
     }),
   );
   if (s.autoPruneEnabled) {
     const days = typeof s.autoPruneDays === 'number' && s.autoPruneDays > 0 ? s.autoPruneDays : 30;
     ops.push(
       window.electronAPI.db.deleteNodesByAge(days).catch((e: unknown) => {
-        console.warn(`[App] ${label} deleteNodesByAge failed ` + errLikeToLogString(e));
+        console.warn(`mcL1145 [App] ${label} deleteNodesByAge failed ` + errLikeToLogString(e));
       }),
     );
   }
@@ -147,14 +147,16 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
         : MAX_MESH_ENTITY_CAP;
     ops.push(
       window.electronAPI.db.pruneNodesByCount(cap).catch((e: unknown) => {
-        console.warn(`[App] ${label} pruneNodesByCount failed ` + errLikeToLogString(e));
+        console.warn(`mcL1146 [App] ${label} pruneNodesByCount failed ` + errLikeToLogString(e));
       }),
     );
   }
   if (s.pruneEmptyNamesEnabled) {
     ops.push(
       window.electronAPI.db.deleteNodesWithoutLongname().catch((e: unknown) => {
-        console.warn(`[App] ${label} deleteNodesWithoutLongname failed ` + errLikeToLogString(e));
+        console.warn(
+          `mcL1147 [App] ${label} deleteNodesWithoutLongname failed ` + errLikeToLogString(e),
+        );
       }),
     );
   }
@@ -174,17 +176,21 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
         : window.electronAPI.db.prunePositionHistoryPerNode(2000);
     ops.push(
       prunePosition.catch((e: unknown) => {
-        console.warn(`[App] ${label} prunePositionHistory failed ` + errLikeToLogString(e));
+        console.warn(`mcL1148 [App] ${label} prunePositionHistory failed ` + errLikeToLogString(e));
       }),
       prunePositionPerNode.catch((e: unknown) => {
-        console.warn(`[App] ${label} prunePositionHistoryPerNode failed ` + errLikeToLogString(e));
+        console.warn(
+          `mcL1149 [App] ${label} prunePositionHistoryPerNode failed ` + errLikeToLogString(e),
+        );
       }),
     );
   }
 
   ops.push(
     window.electronAPI.db.pruneEnvironmentTelemetry().catch((e: unknown) => {
-      console.warn(`[App] ${label} pruneEnvironmentTelemetry failed ` + errLikeToLogString(e));
+      console.warn(
+        `mcL1150 [App] ${label} pruneEnvironmentTelemetry failed ` + errLikeToLogString(e),
+      );
     }),
   );
 
@@ -192,7 +198,8 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
     ops.push(
       window.electronAPI.db.deleteMeshcoreContactsNeverAdvertised().catch((e: unknown) => {
         console.warn(
-          `[App] ${label} deleteMeshcoreContactsNeverAdvertised failed ` + errLikeToLogString(e),
+          `mcL1151 [App] ${label} deleteMeshcoreContactsNeverAdvertised failed ` +
+            errLikeToLogString(e),
         );
       }),
     );
@@ -204,7 +211,9 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
         : 30;
     ops.push(
       window.electronAPI.db.deleteMeshcoreContactsByAge(days).catch((e: unknown) => {
-        console.warn(`[App] ${label} deleteMeshcoreContactsByAge failed ` + errLikeToLogString(e));
+        console.warn(
+          `mcL1152 [App] ${label} deleteMeshcoreContactsByAge failed ` + errLikeToLogString(e),
+        );
       }),
     );
   }
@@ -215,7 +224,9 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
         : MAX_MESH_ENTITY_CAP;
     ops.push(
       window.electronAPI.db.pruneMeshcoreContactsByCount(cap).catch((e: unknown) => {
-        console.warn(`[App] ${label} pruneMeshcoreContactsByCount failed ` + errLikeToLogString(e));
+        console.warn(
+          `mcL1153 [App] ${label} pruneMeshcoreContactsByCount failed ` + errLikeToLogString(e),
+        );
       }),
     );
   }
@@ -228,12 +239,13 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
     ops.push(
       window.electronAPI.db.deleteReticulumDestinationsByAge(days).catch((e: unknown) => {
         console.warn(
-          `[App] ${label} deleteReticulumDestinationsByAge failed ` + errLikeToLogString(e),
+          `mcL1154 [App] ${label} deleteReticulumDestinationsByAge failed ` + errLikeToLogString(e),
         );
       }),
       window.electronAPI.db.pruneReticulumIdentityActivityByAge(days).catch((e: unknown) => {
         console.warn(
-          `[App] ${label} pruneReticulumIdentityActivityByAge failed ` + errLikeToLogString(e),
+          `mcL1155 [App] ${label} pruneReticulumIdentityActivityByAge failed ` +
+            errLikeToLogString(e),
         );
       }),
     );
@@ -246,7 +258,8 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
     ops.push(
       window.electronAPI.db.pruneReticulumDestinationsByCount(cap).catch((e: unknown) => {
         console.warn(
-          `[App] ${label} pruneReticulumDestinationsByCount failed ` + errLikeToLogString(e),
+          `mcL1156 [App] ${label} pruneReticulumDestinationsByCount failed ` +
+            errLikeToLogString(e),
         );
       }),
     );
@@ -259,7 +272,9 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
         if (r.meshtasticEnabled) {
           innerOps.push(
             window.electronAPI.db.pruneMessagesByCount(r.meshtasticCount).catch((e: unknown) => {
-              console.warn(`[App] ${label} pruneMessagesByCount failed ` + errLikeToLogString(e));
+              console.warn(
+                `mcL1157 [App] ${label} pruneMessagesByCount failed ` + errLikeToLogString(e),
+              );
             }),
           );
         }
@@ -269,7 +284,8 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
               .pruneMeshcoreMessagesByCount(r.meshcoreCount)
               .catch((e: unknown) => {
                 console.warn(
-                  `[App] ${label} pruneMeshcoreMessagesByCount failed ` + errLikeToLogString(e),
+                  `mcL1158 [App] ${label} pruneMeshcoreMessagesByCount failed ` +
+                    errLikeToLogString(e),
                 );
               }),
           );
@@ -280,7 +296,8 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
               .pruneMeshcomMessagesByCount(r.meshcomCount)
               .catch((e: unknown) => {
                 console.warn(
-                  `[App] ${label} pruneMeshcomMessagesByCount failed ` + errLikeToLogString(e),
+                  `mcL1159 [App] ${label} pruneMeshcomMessagesByCount failed ` +
+                    errLikeToLogString(e),
                 );
               }),
           );
@@ -291,7 +308,8 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
             .pruneMeshcomContactsByCount(MESHCOM_CONTACT_CAP_DEFAULT)
             .catch((e: unknown) => {
               console.warn(
-                `[App] ${label} pruneMeshcomContactsByCount failed ` + errLikeToLogString(e),
+                `mcL1160 [App] ${label} pruneMeshcomContactsByCount failed ` +
+                  errLikeToLogString(e),
               );
             }),
         );
@@ -301,7 +319,8 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
               .pruneReticulumMessagesByCount(r.reticulumCount)
               .catch((e: unknown) => {
                 console.warn(
-                  `[App] ${label} pruneReticulumMessagesByCount failed ` + errLikeToLogString(e),
+                  `mcL1161 [App] ${label} pruneReticulumMessagesByCount failed ` +
+                    errLikeToLogString(e),
                 );
               }),
           );
@@ -310,14 +329,14 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
           innerOps.push(
             window.electronAPI.db.pruneRrcMessagesByCount(r.rrcCount).catch((e: unknown) => {
               console.warn(
-                `[App] ${label} pruneRrcMessagesByCount failed ` + errLikeToLogString(e),
+                `mcL1162 [App] ${label} pruneRrcMessagesByCount failed ` + errLikeToLogString(e),
               );
             }),
             window.electronAPI.db
               .pruneRrcMessagesByAge(RRC_MESSAGE_RETENTION_DEFAULT_AGE_DAYS)
               .catch((e: unknown) => {
                 console.warn(
-                  `[App] ${label} pruneRrcMessagesByAge failed ` + errLikeToLogString(e),
+                  `mcL1163 [App] ${label} pruneRrcMessagesByAge failed ` + errLikeToLogString(e),
                 );
               }),
           );
@@ -325,7 +344,9 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
         return Promise.all(innerOps);
       })
       .catch((e: unknown) => {
-        console.warn(`[App] ${label} message retention prune failed ` + errLikeToLogString(e));
+        console.warn(
+          `mcL1164 [App] ${label} message retention prune failed ` + errLikeToLogString(e),
+        );
       }),
   );
 

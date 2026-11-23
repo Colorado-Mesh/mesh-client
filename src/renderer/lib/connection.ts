@@ -65,8 +65,8 @@ async function connectTransportWithTimeout(
   } catch (err) {
     try {
       await transport.disconnect();
-    } catch {
-      // catch-no-log-ok best-effort disconnect after connect failure
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/connection] catch:', e);
     }
     throw err;
   } finally {
@@ -113,7 +113,7 @@ function rethrowIfTransportWebSerialPipeToFailed(err: unknown, phase: string): n
     ...getMeshtasticStreamsDiagnostics(),
   });
   console.error(
-    `[connection] Meshtastic serial ${phase}: pipeTo failure err=${msg} diagnostics=${diagJson}`,
+    `mcL0804 [connection] Meshtastic serial ${phase}: pipeTo failure err=${msg} diagnostics=${diagJson}`,
   );
   throw new Error(
     `Meshtastic serial failed during ${phase} (Web Streams pipe). Often occurs when @meshtastic/core stream helpers are unavailable or the serial port streams are invalid. Diagnostics were logged to the console.`,
@@ -176,7 +176,7 @@ export async function createBleConnection(
         const noMoreAttempts =
           isBleScanBusyErrorMessage(message) || isBlePeripheralConflictErrorMessage(message);
         console.warn(
-          `[connection] createBleConnection attempt failed ${formatJsonForRendererLog({
+          `mcL0805 [connection] createBleConnection attempt failed ${formatJsonForRendererLog({
             sessionId,
             peripheralId,
             attempt,
@@ -431,7 +431,7 @@ export async function reconnectSerial(lastPortId?: string | null): Promise<MeshD
     );
   } catch (err) {
     console.warn(
-      `[connection] TransportWebSerial.createFromPort failed ${err instanceof Error ? err.message : String(err)}`,
+      `mcL0806 [connection] TransportWebSerial.createFromPort failed ${err instanceof Error ? err.message : String(err)}`,
     );
     logLoraSerialConnectedSnapshot('open failed', 'meshtastic');
     logMeshtasticSerialStreamDiagnostics('reconnectSerial createFromPort failed', null, port);
@@ -526,7 +526,7 @@ export async function safeDisconnect(device: MeshDevice): Promise<void> {
     const msg = err instanceof Error ? err.message : String(err);
     if (!isBenignMeshtasticDisconnectError(msg)) {
       console.warn(
-        `[useMeshtasticRuntime] Disconnect error: ${err instanceof Error ? err.message : String(err)}`,
+        `mcL0807 [useMeshtasticRuntime] Disconnect error: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
     // HTTP and torn-down transports may lack disconnect() or already-closed streams.

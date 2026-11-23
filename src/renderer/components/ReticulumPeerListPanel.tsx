@@ -413,7 +413,8 @@ export default function ReticulumPeerListPanel({
         setVerifiedHashes(next);
       } catch (err) {
         console.warn(
-          '[ReticulumPeerListPanel] load verified destinations failed: ' + errLikeToLogString(err),
+          'mcL0577 [ReticulumPeerListPanel] load verified destinations failed: ' +
+            errLikeToLogString(err),
         );
       }
     })();
@@ -431,7 +432,7 @@ export default function ReticulumPeerListPanel({
         await refreshReticulumPeersFromSidecar({ forceRefresh: true });
       }
     } catch (e) {
-      console.warn('[ReticulumPeerListPanel] refresh ' + errLikeToLogString(e));
+      console.warn('mcL0578 [ReticulumPeerListPanel] refresh ' + errLikeToLogString(e));
     } finally {
       setRefreshing(false);
     }
@@ -446,7 +447,7 @@ export default function ReticulumPeerListPanel({
         await refreshReticulumPeersFromSidecar();
       }
     } catch (e) {
-      console.warn('[ReticulumPeerListPanel] soft refresh ' + errLikeToLogString(e));
+      console.warn('mcL0579 [ReticulumPeerListPanel] soft refresh ' + errLikeToLogString(e));
     } finally {
       setRefreshing(false);
     }
@@ -588,7 +589,7 @@ export default function ReticulumPeerListPanel({
         });
       }
     } catch (e) {
-      console.warn('[ReticulumPeerListPanel] path ' + errLikeToLogString(e));
+      console.warn('mcL0580 [ReticulumPeerListPanel] path ' + errLikeToLogString(e));
     } finally {
       setActionBusyHash(null);
     }
@@ -611,7 +612,7 @@ export default function ReticulumPeerListPanel({
         await refreshReticulumPeerRouteFromPaths(hash);
       }
     } catch (e) {
-      console.warn('[ReticulumPeerListPanel] probe ' + errLikeToLogString(e));
+      console.warn('mcL0581 [ReticulumPeerListPanel] probe ' + errLikeToLogString(e));
     } finally {
       setActionBusyHash(null);
     }
@@ -646,7 +647,7 @@ export default function ReticulumPeerListPanel({
         onPeerClick(parsed);
       }
     } catch (e) {
-      console.warn('[ReticulumPeerListPanel] lookup ' + errLikeToLogString(e));
+      console.warn('mcL0582 [ReticulumPeerListPanel] lookup ' + errLikeToLogString(e));
     } finally {
       setLookupBusy(false);
     }

@@ -64,8 +64,9 @@ export function deserializeMeshcoreUserMessage(stored: string): MeshcoreUserMess
   if (stored.startsWith(I18N_JSON_PREFIX)) {
     try {
       return JSON.parse(stored.slice(I18N_JSON_PREFIX.length)) as MeshcoreUserMessage;
-    } catch {
-      // catch-no-log-ok corrupt stored i18n payload falls back to raw string
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshcore/meshcoreMessageI18n] catch:', e);
+
       return stored;
     }
   }

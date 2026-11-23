@@ -27,8 +27,12 @@ function isTrustedFeedResponse(responseUrl: string, requestUrl: string): boolean
   let parsed: URL;
   try {
     parsed = new URL(candidate);
-  } catch {
-    // catch-no-log-ok invalid URL is rejected by the caller
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ipc/service-announcement-handlers] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
   return parsed.protocol === 'https:' && parsed.hostname === TRUSTED_FEED_HOST;
@@ -57,7 +61,7 @@ function failure(e: unknown, stage: string): ServiceAnnouncementFetchResult {
     console.debug(`${LOG_TAG} offline / network skip (${stage}): ${errText(e)}`);
     return { status: 'offline' };
   }
-  console.warn(`${LOG_TAG} ${stage} failed: ${errText(e)}`);
+  console.warn(`mcL0196 ${LOG_TAG} ${stage} failed: ${errText(e)}`);
   return { status: 'error' };
 }
 
@@ -104,18 +108,22 @@ export function createServiceAnnouncementFetcher(
         signal: AbortSignal.timeout(SERVICE_ANNOUNCEMENT_FETCH_TIMEOUT_MS),
       });
     } catch (e: unknown) {
-      // catch-no-log-ok failure() logs debug/warn
+      console.debug(
+        '[main/ipc/service-announcement-handlers] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return failure(e, 'fetch');
     }
 
     if (!isTrustedFeedResponse(res.url, feedUrl)) {
-      console.warn(`${LOG_TAG} ignored feed response from an untrusted URL`);
+      console.warn(`mcL0197 ${LOG_TAG} ignored feed response from an untrusted URL`);
       return { status: 'error' };
     }
 
     if (res.status === 304) {
       if (cache) return { status: 'ok', announcements: cache.announcements };
-      console.warn(`${LOG_TAG} 304 without a cached feed`);
+      console.warn(`mcL0198 ${LOG_TAG} 304 without a cached feed`);
       return { status: 'error' };
     }
     if (res.status === 404) {
@@ -123,13 +131,13 @@ export function createServiceAnnouncementFetcher(
       return accept([], null);
     }
     if (!res.ok) {
-      console.warn(`${LOG_TAG} feed responded with HTTP ${String(res.status)}`);
+      console.warn(`mcL0199 ${LOG_TAG} feed responded with HTTP ${String(res.status)}`);
       return { status: 'error' };
     }
 
     const declared = Number(res.headers.get('content-length'));
     if (Number.isFinite(declared) && declared > SERVICE_ANNOUNCEMENT_MAX_FEED_BYTES) {
-      console.warn(`${LOG_TAG} feed too large (${String(declared)} bytes)`);
+      console.warn(`mcL0200 ${LOG_TAG} feed too large (${String(declared)} bytes)`);
       return { status: 'error' };
     }
 
@@ -137,20 +145,24 @@ export function createServiceAnnouncementFetcher(
     try {
       const bytes = new Uint8Array(await res.arrayBuffer());
       if (bytes.byteLength > SERVICE_ANNOUNCEMENT_MAX_FEED_BYTES) {
-        console.warn(`${LOG_TAG} feed too large (${String(bytes.byteLength)} bytes)`);
+        console.warn(`mcL0201 ${LOG_TAG} feed too large (${String(bytes.byteLength)} bytes)`);
         return { status: 'error' };
       }
       text = await decodeGithubApiBody(bytes, {
         maxOutputBytes: SERVICE_ANNOUNCEMENT_MAX_FEED_BYTES,
       });
     } catch (e: unknown) {
-      // catch-no-log-ok failure() logs debug/warn
+      console.debug(
+        '[main/ipc/service-announcement-handlers] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return failure(e, 'read body');
     }
 
     const parsed = parseServiceAnnouncementFeedText(text);
     if (!parsed.ok) {
-      console.warn(`${LOG_TAG} feed ignored: ${sanitizeLogMessage(parsed.reason)}`);
+      console.warn(`mcL0202 ${LOG_TAG} feed ignored: ${sanitizeLogMessage(parsed.reason)}`);
       return { status: 'error' };
     }
     if (parsed.rejected.length > 0) {
@@ -159,7 +171,7 @@ export function createServiceAnnouncementFetcher(
         .map((r) => `#${String(r.index)} ${r.reason}`)
         .join('; ');
       console.warn(
-        `${LOG_TAG} skipped ${String(parsed.rejected.length)} invalid row(s): ${sanitizeLogMessage(detail)}`,
+        `mcL0203 ${LOG_TAG} skipped ${String(parsed.rejected.length)} invalid row(s): ${sanitizeLogMessage(detail)}`,
       );
     }
 
@@ -208,14 +220,14 @@ export function registerServiceAnnouncementIpcHandlers({
     assertIpcSender(event, 'serviceAnnouncements:open-url');
     const href = parseHttpsUrl(url);
     if (!href || !fetcher.isKnownUrl(href)) {
-      console.warn(`${LOG_TAG} open-url rejected (not an https link from the feed)`);
+      console.warn(`mcL0204 ${LOG_TAG} open-url rejected (not an https link from the feed)`);
       return false;
     }
     try {
       await openExternal(href);
       return true;
     } catch (e: unknown) {
-      console.warn(`${LOG_TAG} open-url failed: ${errText(e)}`);
+      console.warn(`mcL0205 ${LOG_TAG} open-url failed: ${errText(e)}`);
       return false;
     }
   });

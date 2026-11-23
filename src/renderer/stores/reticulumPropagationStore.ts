@@ -45,8 +45,9 @@ export const RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY =
 function readChatNoticeDismissed(): boolean {
   try {
     return localStorage.getItem(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY) === '1';
-  } catch {
-    // catch-no-log-ok localStorage unavailable in private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/reticulumPropagationStore] catch:', e);
+
     return false;
   }
 }
@@ -58,8 +59,8 @@ function writeChatNoticeDismissed(dismissed: boolean): void {
     } else {
       localStorage.removeItem(RETICULUM_PROPAGATION_NOTICE_DISMISSED_KEY);
     }
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/reticulumPropagationStore] catch:', e);
   }
 }
 
@@ -298,7 +299,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       await get().refreshDiscoveredFromSidecar();
     } catch (e) {
       if (!isReticulumSidecarExpectedProxyError(e)) {
-        console.warn('[reticulumPropagationStore] refresh ' + errLikeToLogString(e));
+        console.warn('mcL1454 [reticulumPropagationStore] refresh ' + errLikeToLogString(e));
       }
     }
   },
@@ -315,7 +316,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       set({ discovered: body.discovered ?? [] });
     } catch (e) {
       if (!isReticulumSidecarExpectedProxyError(e)) {
-        console.warn('[reticulumPropagationStore] discovered ' + errLikeToLogString(e));
+        console.warn('mcL1455 [reticulumPropagationStore] discovered ' + errLikeToLogString(e));
       }
     }
   },
@@ -331,7 +332,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         return true;
       }
     } catch (e) {
-      console.warn('[reticulumPropagationStore] preferred ' + errLikeToLogString(e));
+      console.warn('mcL1456 [reticulumPropagationStore] preferred ' + errLikeToLogString(e));
     }
     return false;
   },
@@ -347,7 +348,9 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         return true;
       }
     } catch (e) {
-      console.warn('[reticulumPropagationStore] auto-sync interval ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1457 [reticulumPropagationStore] auto-sync interval ' + errLikeToLogString(e),
+      );
     }
     return false;
   },
@@ -359,7 +362,9 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       })) as { ok?: boolean };
       return res.ok === true;
     } catch (e) {
-      console.warn('[reticulumPropagationStore] set propagation mode ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1458 [reticulumPropagationStore] set propagation mode ' + errLikeToLogString(e),
+      );
       return false;
     }
   },
@@ -387,7 +392,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
           : 'networkPanel.reticulumPnHosting.saveFailed',
       });
     } catch (e) {
-      console.warn('[reticulumPropagationStore] hosting policy ' + errLikeToLogString(e));
+      console.warn('mcL1459 [reticulumPropagationStore] hosting policy ' + errLikeToLogString(e));
       set({ lastHostingPolicyError: 'networkPanel.reticulumPnHosting.saveFailed' });
     }
     return false;
@@ -466,7 +471,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     } catch (e) {
       if (get().activePropagationSyncAttemptAt !== attemptAt) return 'deferred';
       clearPropagationSyncStallWatchdog();
-      console.warn('[reticulumPropagationStore] sync ' + errLikeToLogString(e));
+      console.warn('mcL1460 [reticulumPropagationStore] sync ' + errLikeToLogString(e));
       set({
         sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
         lastSyncError: mapPropagationSyncError(null),
@@ -510,7 +515,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       applyCancelIdle(resolveCancelError(get().lastSyncError, fallback));
       return true;
     } catch (e) {
-      console.warn('[reticulumPropagationStore] cancel ' + errLikeToLogString(e));
+      console.warn('mcL1461 [reticulumPropagationStore] cancel ' + errLikeToLogString(e));
       // Proxy failure must not leave sync.active stuck true.
       const fallback = opts?.reasonKey ?? PROPAGATION_SYNC_USER_CANCEL_KEY;
       applyCancelIdle(resolveCancelError(get().lastSyncError, fallback));
@@ -535,7 +540,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         });
       }
     } catch (e) {
-      console.warn('[reticulumPropagationStore] add node ' + errLikeToLogString(e));
+      console.warn('mcL1462 [reticulumPropagationStore] add node ' + errLikeToLogString(e));
       set({ lastAddError: 'reticulumPropagation.addFailed' });
     }
     return false;
@@ -570,7 +575,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         return true;
       }
     } catch (e) {
-      console.warn('[reticulumPropagationStore] remove node ' + errLikeToLogString(e));
+      console.warn('mcL1463 [reticulumPropagationStore] remove node ' + errLikeToLogString(e));
     }
     return false;
   },
@@ -586,7 +591,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         return true;
       }
     } catch (e) {
-      console.warn('[reticulumPropagationStore] rename node ' + errLikeToLogString(e));
+      console.warn('mcL1464 [reticulumPropagationStore] rename node ' + errLikeToLogString(e));
     }
     return false;
   },
@@ -602,10 +607,12 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         return true;
       }
       if (res.error) {
-        console.warn('[reticulumPropagationStore] auto-blacklist add: ' + res.error);
+        console.warn('mcL1465 [reticulumPropagationStore] auto-blacklist add: ' + res.error);
       }
     } catch (e) {
-      console.warn('[reticulumPropagationStore] auto-blacklist add ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1466 [reticulumPropagationStore] auto-blacklist add ' + errLikeToLogString(e),
+      );
     }
     return false;
   },
@@ -621,10 +628,12 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         return true;
       }
       if (res.error) {
-        console.warn('[reticulumPropagationStore] auto-blacklist remove: ' + res.error);
+        console.warn('mcL1467 [reticulumPropagationStore] auto-blacklist remove: ' + res.error);
       }
     } catch (e) {
-      console.warn('[reticulumPropagationStore] auto-blacklist remove ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1468 [reticulumPropagationStore] auto-blacklist remove ' + errLikeToLogString(e),
+      );
     }
     return false;
   },

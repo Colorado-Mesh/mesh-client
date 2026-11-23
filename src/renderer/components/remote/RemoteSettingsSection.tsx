@@ -272,7 +272,7 @@ export function RemoteSettingsSection({
         });
       }
       if (isRemoteOkFailure(res)) {
-        console.warn('[RemoteSettingsSection] pushPolicy ' + (res.error ?? ''));
+        console.warn('mcL0668 [RemoteSettingsSection] pushPolicy ' + (res.error ?? ''));
         if (isRncpPickerAllowlistError(res.error)) {
           addToast(t('reticulumRemote.settings.rechooseSaveDir'), 'error');
         }
@@ -287,7 +287,7 @@ export function RemoteSettingsSection({
       });
       await refreshListener();
     } catch (e) {
-      console.warn('[RemoteSettingsSection] pushPolicy ' + errLikeToLogString(e));
+      console.warn('mcL0669 [RemoteSettingsSection] pushPolicy ' + errLikeToLogString(e));
     }
   }, [
     addToast,

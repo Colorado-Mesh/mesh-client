@@ -134,8 +134,8 @@ export function decodeTakPacket(bytes: Uint8Array): TakPacketSummary | null {
     ) {
       return summary;
     }
-  } catch {
-    // catch-no-log-ok not a v2 packet; fall through to the v1 attempt
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtastic/takPacketDecode] catch:', e);
   }
 
   try {
@@ -148,8 +148,8 @@ export function decodeTakPacket(bytes: Uint8Array): TakPacketSummary | null {
     ) {
       return summary;
     }
-  } catch {
-    // catch-no-log-ok neither wire format matched
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtastic/takPacketDecode] catch:', e);
   }
 
   return null;

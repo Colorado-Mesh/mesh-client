@@ -1,4 +1,5 @@
 import { isGlobalIpLiteral } from '../../shared/ipLiteral';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 
 export type EndpointClass = 'local' | 'remote';
 
@@ -27,8 +28,12 @@ export function classifyEndpoint(
       globalLiteral == null ? host === 'localhost' || host.endsWith('.local') : !globalLiteral;
     if (!local && url.protocol !== 'https:') return { ok: false, reason: 'insecure' };
     return { ok: true, cls: local ? 'local' : 'remote', url: url.href.replace(/\/+$/, '') };
-  } catch {
-    // catch-no-log-ok invalid user input is reported without disclosing endpoints
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ai/urlPolicy] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return { ok: false, reason: 'invalid' };
   }
 }

@@ -720,6 +720,11 @@ if ! pnpm run check:console-log; then
   exit 1
 fi
 
+if ! pnpm run check:log-ids; then
+  print_error "Log message ID check failed."
+  exit 1
+fi
+
 if ! pnpm run check:silent-catches; then
   print_error "Silent catch policy check failed."
   exit 1

@@ -537,7 +537,9 @@
     "dangerZoneEnvironmentHistoryDesc": "Entfernen Sie alle gespeicherten Messwerte für Temperatur, Luftfeuchtigkeit, Druck und Luftqualität für jedes Protokoll und jede Identität.",
     "clearAllRooms": "Alle Räume löschen",
     "clearAllRoomsConfirm": "Dadurch werden alle nicht zu den Favoriten gehörenden MeshCore-Room-Server aus dem verbundenen Radio und der lokalen Datenbank entfernt. Räume werden wieder angezeigt, wenn sie erneut angekündigt werden. Dieser Vorgang kann nicht rückgängig gemacht werden.",
-    "meshcomWatchlistHeading": "MeshCom-Rufzeichen-Beobachtungsliste"
+    "meshcomWatchlistHeading": "MeshCom-Rufzeichen-Beobachtungsliste",
+    "verboseLogging": "Debugging- und Info-Daten in Protokolle aufnehmen",
+    "verboseLoggingDesc": "Standardmäßig deaktiviert, damit die Exporte klein bleiben. Aktivieren Sie die Option, reproduzieren Sie das Problem und exportieren Sie dann für GitHub. Geben Sie beim Melden eines Problems alle mcL####-Codes aus dem Protokoll an."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -2703,6 +2705,14 @@
       "gps": {
         "label": "IP-Standort-Suche fehlgeschlagen",
         "recommendation": "Der IP-basierte Standort-Fallback ist fehlgeschlagen. Überprüfen Sie die Erreichbarkeit des Internets; Funk-GPS und ein manuell festgelegter statischer Standort sind von dieser IP-Suche getrennt."
+      },
+      "caught-serious-error": {
+        "label": "Schwerwiegende Fehler erkannt",
+        "recommendation": "Ein schwerwiegender Fehler wurde ohne Absturz erkannt. Geben Sie alle mcL####-Codes an, aktivieren Sie bei Bedarf die ausführliche Protokollierung, reproduzieren Sie den Fehler, exportieren Sie ihn dann für GitHub und melden Sie den Fehler."
+      },
+      "path-containment": {
+        "label": "Pfad-Eindämmung",
+        "recommendation": "Ein Pfad ist aus seinem zulässigen Stammverzeichnis (Jail) entkommen. Wenn dies unerwartet war, exportieren Sie für GitHub und melden Sie es; geben Sie alle mcL####-Codes im Protokoll an."
       }
     },
     "recommendationGroups": {
@@ -2735,7 +2745,8 @@
     "deviceSource": "Gerät ({{count}})",
     "narrowLogPanel": "Schmales Blockholzpaneel",
     "widenLogPanel": "Verbreitern Sie die Holzplatte",
-    "clearFailed": "Das Protokoll konnte nicht gelöscht werden"
+    "clearFailed": "Das Protokoll konnte nicht gelöscht werden",
+    "verboseLoggingOn": "Ausführliche Protokollierung aktiviert – Debug- und Info-Daten werden aufgezeichnet."
   },
   "mapPanel": {
     "locationUnavailable": "Standort nicht verfügbar.",

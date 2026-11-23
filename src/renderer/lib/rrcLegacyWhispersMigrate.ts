@@ -25,8 +25,9 @@ function migratedKey(hubHash: string): string {
 function hasMigrated(hubHash: string): boolean {
   try {
     return localStorage.getItem(migratedKey(hubHash)) === '1';
-  } catch {
-    // catch-no-log-ok private mode / blocked storage — treat as not migrated so we retry
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcLegacyWhispersMigrate] catch:', e);
+
     return false;
   }
 }
@@ -34,8 +35,8 @@ function hasMigrated(hubHash: string): boolean {
 function markMigrated(hubHash: string): void {
   try {
     localStorage.setItem(migratedKey(hubHash), '1');
-  } catch {
-    // catch-no-log-ok private mode / quota — next session may re-run; INSERT OR IGNORE is safe
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcLegacyWhispersMigrate] catch:', e);
   }
 }
 
@@ -51,8 +52,8 @@ export function resetRrcLegacyWhispersMigrateForTests(hubHash?: string): void {
       }
       for (const k of keys) localStorage.removeItem(k);
     }
-  } catch {
-    // catch-no-log-ok test cleanup best-effort when Storage is unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcLegacyWhispersMigrate] catch:', e);
   }
 }
 
@@ -73,7 +74,7 @@ export async function migrateLegacyWhispersForHub(hubHash: string): Promise<void
       RRC_ROOM_HISTORY_LOAD_COUNT,
     );
   } catch (e) {
-    console.warn('[rrcLegacyWhispersMigrate] list failed ' + errLikeToLogString(e));
+    console.warn('mcL1102 [rrcLegacyWhispersMigrate] list failed ' + errLikeToLogString(e));
     // Leave unmarked so a later run can retry when SQLite is healthy again.
     return;
   }
@@ -129,7 +130,7 @@ export async function migrateLegacyWhispersForHub(hubHash: string): Promise<void
         });
       } catch (e) {
         writeFailed = true;
-        console.warn('[rrcLegacyWhispersMigrate] insert failed ' + errLikeToLogString(e));
+        console.warn('mcL1103 [rrcLegacyWhispersMigrate] insert failed ' + errLikeToLogString(e));
       }
     }
   }

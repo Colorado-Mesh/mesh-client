@@ -61,7 +61,7 @@ export function useLiveChannelKeysSync({
       })
       .catch((e: unknown) => {
         console.warn(
-          `[useLiveChannelKeysSync] ${protocol} rehydrate failed ` + errLikeToLogString(e),
+          `mcL0747 [useLiveChannelKeysSync] ${protocol} rehydrate failed ` + errLikeToLogString(e),
         );
       });
     return () => {

@@ -156,7 +156,7 @@ export function loadTakStyleSettings(): TakStyleSettings {
     return parseTakStyleSettings(JSON.parse(fs.readFileSync(file, 'utf-8')));
   } catch (err) {
     console.warn(
-      '[TakStyle] saved style settings unreadable, using defaults:',
+      'mcL0301 [TakStyle] saved style settings unreadable, using defaults:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     return DEFAULT_TAK_STYLE_SETTINGS;

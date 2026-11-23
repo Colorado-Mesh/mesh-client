@@ -10,6 +10,7 @@ import {
   normalizeTranslationLanguage,
   translationPath,
 } from '../../shared/translationLanguages';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import type { BergamotWorker } from './bergamotWorker';
 import type { WorkerModelFiles } from './bergamotWorkerRuntime';
 import type { LibreTranslateClient } from './libreTranslateClient';
@@ -49,8 +50,12 @@ export class TranslationRouter {
     try {
       const result = await this.deps.worker.run({ text, engine: this.engineFiles() });
       return this.current(generation) ? (result.detection ?? null) : null;
-    } catch {
-      // catch-no-log-ok caller receives an unavailable detector; never log message contents
+    } catch (e: unknown) {
+      console.debug(
+        '[main/translation/translationRouter] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return null;
     }
   }
@@ -69,8 +74,12 @@ export class TranslationRouter {
         );
         if (!this.current(generation)) return { ok: false, reason: 'disabled' };
         return { ok: true, text, detectedLang: request.source ?? 'auto', provider: 'libre' };
-      } catch {
-        // catch-no-log-ok return a safe error; online responses may contain private message text
+      } catch (e: unknown) {
+        console.debug(
+          '[main/translation/translationRouter] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return { ok: false, reason: 'error' };
       }
     }
@@ -117,8 +126,12 @@ export class TranslationRouter {
       if (typeof result.text !== 'string' || result.text.length > 32_768)
         return { ok: false, reason: 'error' };
       return { ok: true, text: result.text, detectedLang: source, provider: 'offline' };
-    } catch {
-      // catch-no-log-ok worker failure is returned to the UI; the next call starts a fresh worker
+    } catch (e: unknown) {
+      console.debug(
+        '[main/translation/translationRouter] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return { ok: false, reason: 'error' };
     }
   }

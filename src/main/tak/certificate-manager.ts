@@ -5,6 +5,7 @@ import fs from 'fs';
 import * as forge from 'node-forge';
 
 import { joinUnderRoot } from '../../shared/pathUnderRoot';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 
 export interface CertBundle {
   caCert: string;
@@ -152,8 +153,12 @@ export function serverCertMatchesIdentity(
       if (trimmed && isIpv4Literal(trimmed) && !ips.has(trimmed)) return false;
     }
     return true;
-  } catch {
-    // catch-no-log-ok: malformed PEM / extension parse → treat as identity mismatch
+  } catch (e: unknown) {
+    console.debug(
+      '[main/tak/certificate-manager] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }

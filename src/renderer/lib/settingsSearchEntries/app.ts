@@ -305,6 +305,13 @@ const appEntries: readonly SettingSearchEntry[] = [
     ],
   },
   {
+    id: 'app.support.verboseLogging',
+    slot: 'App',
+    labelKey: 'appPanel.verboseLogging',
+    sectionKey: 'appPanel.supportSection',
+    keywords: ['debug', 'info', 'verbose', 'logs', 'support'],
+  },
+  {
     id: 'app.support.exportForGitHub',
     slot: 'App',
     labelKey: 'appPanel.exportForGitHubButton',
@@ -986,6 +993,7 @@ export const appSurface: SettingsSearchSurface = {
     'appPanel.capStoredMessages': 'accessible name of the indexed stored-message caps',
     'appPanel.capStoredRrcMessages': 'accessible name of the indexed RRC message cap',
     'appPanel.supportSectionDesc': 'section prose, no control',
+    'appPanel.verboseLoggingDesc': 'help text under the indexed verbose logging checkbox',
     'appPanel.memorySampleNow': 'child action of the indexed renderer memory section',
     'appPanel.memorySampling': 'busy label of the indexed memory sample action',
     'appPanel.memoryRendererProcess': 'scope label for the indexed renderer memory measurement',

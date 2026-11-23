@@ -537,7 +537,9 @@
     "dangerZoneEnvironmentHistoryDesc": "Verwijdert alle opgeslagen temperatuur-, vochtigheids-, druk- en luchtkwaliteitsmetingen voor elk protocol en elke identiteit.",
     "clearAllRooms": "Alle ruimtes wissen",
     "clearAllRoomsConfirm": "Hiermee worden alle niet-favoriete MeshCore-roomservers van de aangesloten radio en de lokale database verwijderd. Ruimtes verschijnen opnieuw wanneer ze weer worden aangekondigd. Dit kan niet ongedaan worden gemaakt.",
-    "meshcomWatchlistHeading": "Watchlist voor MeshCom-roepnamen"
+    "meshcomWatchlistHeading": "Watchlist voor MeshCom-roepnamen",
+    "verboseLogging": "Debug- en infogegevens opnemen in logboeken",
+    "verboseLoggingDesc": "Standaard uitgeschakeld, zodat exporten klein blijven. Schakel in, reproduceer het probleem en exporteer vervolgens voor GitHub. Vermeld eventuele mcL####-codes uit het logboek wanneer u een probleem meldt."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -2703,6 +2705,14 @@
       "gps": {
         "label": "Opzoeken IP-locatie mislukt",
         "recommendation": "De terugval van de IP-gebaseerde locatie is mislukt. Controleer de internetbereikbaarheid; radio GPS en een handmatig ingestelde statische locatie staan los van deze IP-opzoeking."
+      },
+      "caught-serious-error": {
+        "label": "Ernstige fouten gevonden",
+        "recommendation": "Er is een ernstige fout opgetreden zonder dat het programma crashte. Vermeld eventuele mcL####-codes, schakel indien nodig uitgebreide logregistratie in, reproduceer, exporteer vervolgens voor GitHub en meld de bug."
+      },
+      "path-containment": {
+        "label": "Padbeperking",
+        "recommendation": "Een pad is uit zijn toegestane root (jail) ontsnapt. Als dit onverwacht was, exporteer dan voor GitHub en meld het; vermeld eventuele mcL####-codes in het logboek."
       }
     },
     "recommendationGroups": {
@@ -2735,7 +2745,8 @@
     "warnError": "Waarschuw / fout",
     "narrowLogPanel": "Smal houtpaneel",
     "widenLogPanel": "Verbreed het houtpaneel",
-    "clearFailed": "Kan het logboek niet wissen"
+    "clearFailed": "Kan het logboek niet wissen",
+    "verboseLoggingOn": "Uitgebreide logregistratie ingeschakeld — debug- en infogegevens worden geregistreerd."
   },
   "mapPanel": {
     "locationUnavailable": "Locatie niet beschikbaar.",

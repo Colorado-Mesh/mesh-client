@@ -92,8 +92,8 @@ export class ConnectionDriver {
       () => gate,
       () => gate,
     );
-    await prev.catch(() => {
-      // catch-no-log-ok prior lifecycle failure must not block the next connect/disconnect
+    await prev.catch((e: unknown) => {
+      console.debug('[renderer/lib/drivers/ConnectionDriver] catch:', e);
     });
     try {
       return await fn();
@@ -214,7 +214,9 @@ export class ConnectionDriver {
           info = await protocol.discoverSelf(handle);
         } catch (err) {
           await protocol.destroyDevice(handle).catch((e: unknown) => {
-            console.warn('[ConnectionDriver] destroy after discoverSelf failure ' + String(e));
+            console.warn(
+              'mcL0820 [ConnectionDriver] destroy after discoverSelf failure ' + String(e),
+            );
           });
           if (createdProvisional) removeIdentityFromStore(identityId);
           throw err;
@@ -249,7 +251,7 @@ export class ConnectionDriver {
           packetRouter.dispatch(event, resolvedIdentityId);
         } catch (err) {
           console.error(
-            '[ConnectionDriver] packetRouter.dispatch failed:',
+            'mcL0821 [ConnectionDriver] packetRouter.dispatch failed:',
             err instanceof Error ? err.message : String(err),
           );
         }
@@ -295,10 +297,10 @@ export class ConnectionDriver {
         try {
           slot.teardown();
         } catch (e) {
-          console.warn('[ConnectionDriver] teardown error ' + errLikeToLogString(e));
+          console.warn('mcL0822 [ConnectionDriver] teardown error ' + errLikeToLogString(e));
         }
         await slot.protocol.destroyDevice(slot.handle).catch((e: unknown) => {
-          console.warn('[ConnectionDriver] destroy error ' + errLikeToLogString(e));
+          console.warn('mcL0823 [ConnectionDriver] destroy error ' + errLikeToLogString(e));
         });
         this.slots.delete(slot.transportId);
         removeTransport(identityId, slot.transportId);
@@ -358,7 +360,7 @@ export class ConnectionDriver {
       try {
         teardown();
       } catch (e) {
-        console.warn('[ConnectionDriver] external teardown error ' + errLikeToLogString(e));
+        console.warn('mcL0824 [ConnectionDriver] external teardown error ' + errLikeToLogString(e));
       }
       this.slots.delete(transportId);
       removeTransport(identityId, transportId);

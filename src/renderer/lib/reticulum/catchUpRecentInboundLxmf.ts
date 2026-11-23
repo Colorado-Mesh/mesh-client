@@ -124,7 +124,7 @@ async function catchUpRecentInboundLxmfOnce(
   });
   if (rateLimited) {
     console.warn(
-      `[catchUpRecentInboundLxmf] rateLimited reason=${opts.reason ?? 'catch-up'} — skipped (not empty inbox)`,
+      `mcL1016 [catchUpRecentInboundLxmf] rateLimited reason=${opts.reason ?? 'catch-up'} — skipped (not empty inbox)`,
     );
     return null;
   }
@@ -137,7 +137,7 @@ async function catchUpRecentInboundLxmfOnce(
   if (allKnown) {
     console.debug(logLine);
   } else {
-    console.warn(logLine);
+    console.warn(`mcL1017 ${logLine}`);
   }
 
   let maxTs = opts.sinceTs ?? 0;

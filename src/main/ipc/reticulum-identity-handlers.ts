@@ -41,7 +41,7 @@ export function registerReticulumIdentityIpcHandlers({ ipcMain }: ReticulumIdent
       return await setIdentityVaultPasscode(passcode as string, secret as string);
     } catch (err) {
       console.warn(
-        '[vault:setPasscode] failed:',
+        'mcL0192 [vault:setPasscode] failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       return { ok: false, error: 'set passcode failed' };
@@ -56,7 +56,7 @@ export function registerReticulumIdentityIpcHandlers({ ipcMain }: ReticulumIdent
       return await unlockIdentityVault(passcode as string);
     } catch (err) {
       console.warn(
-        '[vault:unlock] failed:',
+        'mcL0193 [vault:unlock] failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       return { ok: false, error: 'unlock failed' };
@@ -69,7 +69,7 @@ export function registerReticulumIdentityIpcHandlers({ ipcMain }: ReticulumIdent
       return lockIdentityVault();
     } catch (err) {
       console.warn(
-        '[vault:lock] failed:',
+        'mcL0194 [vault:lock] failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       return { ok: false, error: 'lock failed' };
@@ -82,7 +82,7 @@ export function registerReticulumIdentityIpcHandlers({ ipcMain }: ReticulumIdent
       return getIdentityVaultStatus();
     } catch (err) {
       console.warn(
-        '[vault:status] failed:',
+        'mcL0195 [vault:status] failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       return { configured: false, unlocked: false };

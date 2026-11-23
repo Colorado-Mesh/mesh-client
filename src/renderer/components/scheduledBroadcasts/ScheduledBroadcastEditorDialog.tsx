@@ -218,7 +218,7 @@ export function ScheduledBroadcastEditorDialog({
       });
       onClose();
     } catch (err) {
-      console.warn('[ScheduledBroadcasts] save failed:', err);
+      console.warn('mcL0682 [ScheduledBroadcasts] save failed:', err);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);

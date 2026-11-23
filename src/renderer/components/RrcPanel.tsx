@@ -121,8 +121,9 @@ type RrcListView = 'rooms' | 'hubs';
 function readListView(): RrcListView {
   try {
     return localStorage.getItem(LIST_VIEW_KEY) === 'hubs' ? 'hubs' : 'rooms';
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/components/RrcPanel] catch:', e);
+
     return 'rooms';
   }
 }
@@ -140,8 +141,9 @@ function hubMatchesSearch(hub: RrcHubInfo, q: string): boolean {
 function readCollapsed(key: string): boolean {
   try {
     return localStorage.getItem(key) === '1';
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/components/RrcPanel] catch:', e);
+
     return false;
   }
 }
@@ -149,8 +151,8 @@ function readCollapsed(key: string): boolean {
 function persistCollapsed(key: string, next: boolean) {
   try {
     localStorage.setItem(key, next ? '1' : '0');
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/components/RrcPanel] catch:', e);
   }
 }
 
@@ -250,8 +252,8 @@ export default function RrcPanel({
     try {
       const nick = localStorage.getItem(NICK_KEY);
       if (nick) setNickname(nick);
-    } catch {
-      // catch-no-log-ok localStorage may be unavailable
+    } catch (e: unknown) {
+      console.debug('[renderer/components/RrcPanel] catch:', e);
     }
   }, [setNickname]);
 
@@ -739,9 +741,10 @@ export default function RrcPanel({
           }
         }
       } catch (e) {
+        console.debug('[renderer/components/RrcPanel] catch:', e);
         const msg = errLikeToLogString(e);
         if (/cancelled/i.test(msg)) return;
-        // catch-no-log-ok error surfaced via setError
+
         setError(formatRrcErrorMessage(msg, t), target);
         const cur = useRrcSessionStore.getState().sessionsByHub.get(target);
         if (cur?.status === 'connecting' || cur?.status === 'awaiting_welcome') {
@@ -775,7 +778,7 @@ export default function RrcPanel({
       setRrcHubDisconnectSuppressed(target, true);
       clearHubSession(target);
     } catch (e) {
-      console.warn('[RrcPanel] disconnect ' + errLikeToLogString(e));
+      console.warn('mcL0613 [RrcPanel] disconnect ' + errLikeToLogString(e));
       setDisconnectIntent(false, target);
       setError(formatRrcErrorMessage(errLikeToLogString(e), t), target);
     }
@@ -830,7 +833,8 @@ export default function RrcPanel({
           setRecentRoomsEpoch((n) => n + 1);
         }
       } catch (e) {
-        // catch-no-log-ok error surfaced via setError
+        console.debug('[renderer/components/RrcPanel] catch:', e);
+
         setError(formatRrcErrorMessage(errLikeToLogString(e), t));
       } finally {
         setActionBusy(false);
@@ -904,7 +908,7 @@ export default function RrcPanel({
           setError(formatRrcErrorMessage(res.error ?? t('rrc.partFailed'), t));
         }
       } catch (e) {
-        console.warn('[RrcPanel] part ' + errLikeToLogString(e));
+        console.warn('mcL0614 [RrcPanel] part ' + errLikeToLogString(e));
         useRrcSessionStore.getState().clearPartIntent(target);
         setError(formatRrcErrorMessage(errLikeToLogString(e), t));
       } finally {
@@ -975,8 +979,8 @@ export default function RrcPanel({
             setNickname(parsed.nickname);
             try {
               localStorage.setItem(NICK_KEY, parsed.nickname);
-            } catch {
-              // catch-no-log-ok
+            } catch (e: unknown) {
+              console.debug('[renderer/components/RrcPanel] catch:', e);
             }
             if (status === 'active' && hubDestHash) {
               const nickRes = await window.electronAPI.reticulum.rrc.setNickname({
@@ -1085,7 +1089,7 @@ export default function RrcPanel({
                 dst_hash: resolved.identity_hash,
               });
             } catch (e) {
-              console.warn('[RrcPanel] /msg send ' + errLikeToLogString(e));
+              console.warn('mcL0615 [RrcPanel] /msg send ' + errLikeToLogString(e));
               throw new RrcMsgNotSentError(formatRrcErrorMessage(errLikeToLogString(e), t));
             }
             if (!res.ok) {
@@ -1233,7 +1237,7 @@ export default function RrcPanel({
       } catch (e) {
         // Keep the draft: ChatComposer only clears after onInterceptSend resolves.
         if (e instanceof RrcComposerPreflightError || e instanceof RrcMsgNotSentError) throw e;
-        console.warn('[RrcPanel] send ' + errLikeToLogString(e));
+        console.warn('mcL0616 [RrcPanel] send ' + errLikeToLogString(e));
         useRrcSessionStore.getState().setError(formatRrcErrorMessage(errLikeToLogString(e), t));
       }
     },
@@ -1315,7 +1319,7 @@ export default function RrcPanel({
           });
         }
       } catch (e) {
-        console.warn('[RrcPanel] react ' + errLikeToLogString(e));
+        console.warn('mcL0617 [RrcPanel] react ' + errLikeToLogString(e));
         setRrcSendError(formatRrcErrorMessage(errLikeToLogString(e), t));
       }
     },
@@ -1369,8 +1373,8 @@ export default function RrcPanel({
     setListView(view);
     try {
       localStorage.setItem(LIST_VIEW_KEY, view);
-    } catch {
-      // catch-no-log-ok localStorage may be unavailable
+    } catch (e: unknown) {
+      console.debug('[renderer/components/RrcPanel] catch:', e);
     }
   };
   const namedRoomOpen =
@@ -1470,8 +1474,8 @@ export default function RrcPanel({
             setNickname(v);
             try {
               localStorage.setItem(NICK_KEY, v);
-            } catch {
-              // catch-no-log-ok
+            } catch (e: unknown) {
+              console.debug('[renderer/components/RrcPanel] catch:', e);
             }
           }}
           maxNickBytes={limits.max_nick_bytes}

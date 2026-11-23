@@ -25,6 +25,7 @@ import {
   isRegionalObject as isObject,
   regionalDirectoryItems as directoryItems,
 } from './regional-feed-data';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 const FETCH_TIMEOUT_MS = 15 * MS_PER_SECOND;
 const DNS_TIMEOUT_MS = 3 * MS_PER_SECOND;
@@ -60,8 +61,12 @@ export function parseBeaconConnectRequest(value: unknown): BeaconConnectRequest 
   let url: URL;
   try {
     url = new URL(value.baseUrl.trim());
-  } catch {
-    // catch-no-log-ok Return a fixed validation message without echoing URL credentials.
+  } catch (e: unknown) {
+    console.debug(
+      '[main/beacon-feed] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     throw new Error('Enter a valid HTTPS regional map URL.');
   }
   if (
@@ -161,8 +166,12 @@ function getJson(url: URL, address: BeaconAddress, signal: AbortSignal): Promise
         response.on('end', () => {
           try {
             resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown);
-          } catch {
-            // catch-no-log-ok Fixed error propagated to connection UI, no remote body logging.
+          } catch (e: unknown) {
+            console.debug(
+              '[main/beacon-feed] catch:',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+            );
+
             reject(new Error('Regional map returned invalid JSON.'));
           }
         });
@@ -290,8 +299,11 @@ export class BeaconFeedClient {
       this.readPages(request, address, signal, 'nodes', MAX_NODES),
       this.readPages(request, address, signal, 'observers', MAX_OBSERVERS),
       this.readSnapshotJson(regionUrl, address, signal),
-      this.readSnapshotJson(messageUrl, address, signal).catch(() => {
-        // catch-no-log-ok Public messages are optional on older Beacon versions.
+      this.readSnapshotJson(messageUrl, address, signal).catch((e: unknown) => {
+        console.debug(
+          '[main/beacon-feed] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
         return [];
       }),
     ]);
@@ -431,8 +443,12 @@ export class BeaconFeedClient {
             ? Buffer.from(data)
             : data;
         message = JSON.parse(bytes.toString('utf8')) as unknown;
-      } catch {
-        // catch-no-log-ok Malformed public messages are ignored without reconnect/log floods.
+      } catch (e: unknown) {
+        console.debug(
+          '[main/beacon-feed] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return;
       }
       if (!isObject(message)) return;

@@ -103,7 +103,7 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
       );
     } catch (e) {
       addToast(t('radioPanel.actionFailed', { message: errLikeToLogString(e) }), 'error');
-      console.warn('[ReticulumAdminPanel] factory reset ' + errLikeToLogString(e));
+      console.warn('mcL0542 [ReticulumAdminPanel] factory reset ' + errLikeToLogString(e));
     } finally {
       setResetInFlight(false);
     }

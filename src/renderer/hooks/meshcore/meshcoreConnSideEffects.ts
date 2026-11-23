@@ -236,7 +236,8 @@ async function ingestMeshcoreWaitingMessageItem(
     }
   } catch (e: unknown) {
     console.warn(
-      '[meshcoreConnSideEffects] processWaitingMessages ingest error ' + errLikeToLogString(e),
+      'mcL0701 [meshcoreConnSideEffects] processWaitingMessages ingest error ' +
+        errLikeToLogString(e),
     );
   }
   await yieldToEventLoop();
@@ -298,8 +299,8 @@ async function drainWaitingMessagesIncremental(
         'MeshCore syncNextMessage',
       );
     } catch (e: unknown) {
+      console.debug('[renderer/hooks/meshcore/meshcoreConnSideEffects] catch:', e);
       if (isMeshcoreSyncNextMessageTimeoutError(e)) {
-        // catch-no-log-ok syncNextMessage timeout means empty queue / end of silent drain
         break;
       }
       throw e;
@@ -350,7 +351,9 @@ async function drainWaitingMessagesSilent(
       'MeshCore getWaitingMessages',
     );
     if (!isMeshcoreSilentBulkAttemptCurrent(attemptId)) {
-      // catch-no-log-ok late bulk after abandon — ignore without disconnect
+      console.debug(
+        '[renderer/hooks/meshcore/meshcoreConnSideEffects] late bulk after abandon ignored',
+      );
       return;
     }
     if (!deps.meshcoreHookMountedRef.current) return;
@@ -570,7 +573,7 @@ export function attachMeshcoreConnSideEffects(
         .updateMeshcoreMessageStatus(ackKeyU32, newStatus)
         .catch((e: unknown) => {
           console.warn(
-            '[meshcoreConnSideEffects] updateMeshcoreMessageStatus (late 130) error ' +
+            'mcL0702 [meshcoreConnSideEffects] updateMeshcoreMessageStatus (late 130) error ' +
               errLikeToLogString(e),
           );
         });
@@ -588,7 +591,7 @@ export function attachMeshcoreConnSideEffects(
         );
     }
     console.warn(
-      `[meshcoreDmAck] ${isNack ? 'NACK' : 'ACK'} packetId=${ackKeyU32} dest=${pending.destNodeId ?? '?'} detail=event-130`,
+      `mcL0703 [meshcoreDmAck] ${isNack ? 'NACK' : 'ACK'} packetId=${ackKeyU32} dest=${pending.destNodeId ?? '?'} detail=event-130`,
     );
     if (isNack) {
       noteSerialDeliveryFailure({
@@ -609,7 +612,8 @@ export function attachMeshcoreConnSideEffects(
       .updateMeshcoreMessageStatus(ackKeyU32, newStatus)
       .catch((e: unknown) => {
         console.warn(
-          '[meshcoreConnSideEffects] updateMeshcoreMessageStatus error ' + errLikeToLogString(e),
+          'mcL0704 [meshcoreConnSideEffects] updateMeshcoreMessageStatus error ' +
+            errLikeToLogString(e),
         );
       });
   };
@@ -722,7 +726,6 @@ export function attachMeshcoreConnSideEffects(
         try {
           await processWaitingMessages({ showSyncBanner: false });
         } catch (e) {
-          // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
           const errMsg = errLikeToLogString(e);
           logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
           if (errMsg.includes('timed out')) {
@@ -736,7 +739,8 @@ export function attachMeshcoreConnSideEffects(
           try {
             await processWaitingMessages({ showSyncBanner: false });
           } catch (retryErr: unknown) {
-            // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
+            console.debug('[renderer/hooks/meshcore/meshcoreConnSideEffects] catch:', retryErr);
+
             logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', retryErr, false);
           }
         }
@@ -757,7 +761,7 @@ export function attachMeshcoreConnSideEffects(
     const service = repeaterCommandServiceRef.current;
     if (!service) {
       console.warn(
-        '[meshcoreConnSideEffects] CLI response received but no command service active (sender:',
+        'mcL0705 [meshcoreConnSideEffects] CLI response received but no command service active (sender:',
         senderId.toString(16).toUpperCase(),
         ')',
       );

@@ -38,7 +38,7 @@ export async function fetchRecentInboundLxmfDetailed(
   if (isReticulumProxyRateLimitBackoffActive('lxmfRecent')) {
     const remaining = reticulumProxyRateLimitBackoffRemainingMs('lxmfRecent');
     console.warn(
-      `[fetchRecentInboundLxmf] skipped — proxy rate-limit backoff remaining=${remaining}ms`,
+      `mcL1019 [fetchRecentInboundLxmf] skipped — proxy rate-limit backoff remaining=${remaining}ms`,
     );
     return { messages: [], ringLen: null, rateLimited: true };
   }
@@ -79,7 +79,7 @@ export async function fetchRecentInboundLxmfDetailed(
     };
   } catch (e) {
     const rateLimited = noteReticulumProxyErrorIfRateLimited(e, 'lxmfRecent');
-    console.warn('[fetchRecentInboundLxmf] ' + errLikeToLogString(e));
+    console.warn('mcL1020 [fetchRecentInboundLxmf] ' + errLikeToLogString(e));
     return { messages: [], ringLen: null, rateLimited };
   }
 }

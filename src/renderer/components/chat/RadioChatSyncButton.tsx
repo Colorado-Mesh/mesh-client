@@ -40,7 +40,9 @@ export function RadioChatSyncButton({
                 setResult('done');
               })
               .catch((error: unknown) => {
-                console.warn('[RadioChatSyncButton] sync failed ' + errLikeToLogString(error));
+                console.warn(
+                  'mcL0629 [RadioChatSyncButton] sync failed ' + errLikeToLogString(error),
+                );
                 if (feedback === 'toast') addToast(t('radioChatSync.failed'), 'error');
                 setResult('failed');
               })

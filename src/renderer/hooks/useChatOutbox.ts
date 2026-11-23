@@ -253,7 +253,7 @@ async function finalizeSuccessfulOutboxSend(
     await window.electronAPI.chat.outbox.remove(row.id);
     removeRow(row.id);
   } catch (removeErr: unknown) {
-    console.warn('[useChatOutbox] remove after send failed', row.id, removeErr);
+    console.warn('mcL0723 [useChatOutbox] remove after send failed', row.id, removeErr);
     const error = CHAT_OUTBOX_REMOVE_FAILED_KEY;
     const attemptCount = row.attemptCount + 1;
     try {
@@ -265,7 +265,7 @@ async function finalizeSuccessfulOutboxSend(
         attemptCount,
       );
     } catch (persistErr: unknown) {
-      console.warn('[useChatOutbox] block after remove failure failed', row.id, persistErr);
+      console.warn('mcL0724 [useChatOutbox] block after remove failure failed', row.id, persistErr);
     }
     updateRow(row.id, { status: 'blocked', error, attemptCount });
   }
@@ -297,7 +297,7 @@ async function recordOutboxSendFailure(
   } catch (persistErr: unknown) {
     // Failure point: status may remain 'sending' in SQLite; mount + drain reset
     // sending→queued so the row is not stuck forever.
-    console.warn('[useChatOutbox] persist failure status failed', row.id, persistErr);
+    console.warn('mcL0725 [useChatOutbox] persist failure status failed', row.id, persistErr);
   }
   updateRow(row.id, {
     status: newStatus,
@@ -305,7 +305,7 @@ async function recordOutboxSendFailure(
     attemptCount: nextAttemptCount,
     ...(nextRetryAt != null ? { nextRetryAt } : { nextRetryAt: null }),
   });
-  console.warn('[useChatOutbox] send failed for outbox row', row.id, errMsg);
+  console.warn('mcL0726 [useChatOutbox] send failed for outbox row', row.id, errMsg);
 }
 
 /**
@@ -321,10 +321,10 @@ async function quarantineLegacyMultipartOutboxRow(
   try {
     await window.electronAPI.chat.outbox.updateStatus(row.id, 'blocked', error, undefined);
   } catch (persistErr: unknown) {
-    console.warn('[useChatOutbox] quarantine legacy multipart failed', row.id, persistErr);
+    console.warn('mcL0727 [useChatOutbox] quarantine legacy multipart failed', row.id, persistErr);
   }
   updateRow(row.id, { status: 'blocked', error, nextRetryAt: null });
-  console.warn('[useChatOutbox] quarantined legacy multipart outbox row', row.id);
+  console.warn('mcL0728 [useChatOutbox] quarantined legacy multipart outbox row', row.id);
 }
 
 /**
@@ -360,7 +360,7 @@ async function enforceEmergencyOutboxSoftCap(
       }
     }
     if (victim == null) {
-      console.warn('[useChatOutbox] emergency soft cap exceeded; only MAYDAY rows remain');
+      console.warn('mcL0729 [useChatOutbox] emergency soft cap exceeded; only MAYDAY rows remain');
       return;
     }
     await window.electronAPI.chat.outbox.updateStatus(
@@ -374,9 +374,9 @@ async function enforceEmergencyOutboxSoftCap(
       error: EMERGENCY_CAP_BLOCKED_KEY,
       nextRetryAt: null,
     });
-    console.warn('[useChatOutbox] emergency soft cap blocked row', victim.id);
+    console.warn('mcL0730 [useChatOutbox] emergency soft cap blocked row', victim.id);
   } catch (err: unknown) {
-    console.warn('[useChatOutbox] emergency soft cap enforcement failed', newRow.id, err);
+    console.warn('mcL0731 [useChatOutbox] emergency soft cap enforcement failed', newRow.id, err);
   }
 }
 
@@ -437,7 +437,7 @@ async function sendOneOutboxRow(
       removeRow(row.id);
       return;
     }
-    // catch-no-log-ok recordOutboxSendFailure logs the send failure
+
     await recordOutboxSendFailure(row, err, updateRow);
   } finally {
     endOutboxRowSend(row.id);
@@ -653,7 +653,7 @@ export function useChatOutbox({
         );
       })
       .catch((err: unknown) => {
-        console.warn('[useChatOutbox] load failed', err);
+        console.warn('mcL0732 [useChatOutbox] load failed', err);
       });
   }, [protocol]);
 
@@ -667,7 +667,7 @@ export function useChatOutbox({
           scheduleRetryTimer(loaded);
         })
         .catch((err: unknown) => {
-          console.warn('[useChatOutbox] reload after external drain failed', err);
+          console.warn('mcL0733 [useChatOutbox] reload after external drain failed', err);
         });
     });
   }, [protocol, scheduleRetryTimer]);
@@ -697,7 +697,7 @@ export function useChatOutbox({
       });
       scheduleRetryTimer(result.rows);
     } catch (err: unknown) {
-      console.warn('[useChatOutbox] drainOnce failed', err);
+      console.warn('mcL0734 [useChatOutbox] drainOnce failed', err);
     } finally {
       drainingRef.current = false;
     }
@@ -761,7 +761,7 @@ export function useChatOutbox({
           return drainOnce();
         })
         .catch((err: unknown) => {
-          console.warn('[useChatOutbox] retry failed', err);
+          console.warn('mcL0735 [useChatOutbox] retry failed', err);
         });
     },
     [drainOnce, updateRow],
@@ -777,7 +777,7 @@ export function useChatOutbox({
           removeRow(id);
         })
         .catch((err: unknown) => {
-          console.warn('[useChatOutbox] cancel failed', err);
+          console.warn('mcL0736 [useChatOutbox] cancel failed', err);
         });
     },
     [removeRow],
@@ -818,7 +818,7 @@ export function useChatOutbox({
             await window.electronAPI.chat.outbox.remove(id);
           } catch (removeErr: unknown) {
             await window.electronAPI.chat.outbox.remove(added.id).catch((e: unknown) => {
-              console.warn('[useChatOutbox] rollback of edited scheduled row failed', e);
+              console.warn('mcL0737 [useChatOutbox] rollback of edited scheduled row failed', e);
             });
             throw removeErr;
           }
@@ -846,7 +846,7 @@ export function useChatOutbox({
               window.electronAPI.chat.outbox
                 .updateStatus(doneId, 'queued', undefined, row.nextRetryAt ?? undefined)
                 .catch((e: unknown) => {
-                  console.warn('[useChatOutbox] reschedule rollback failed', doneId, e);
+                  console.warn('mcL0738 [useChatOutbox] reschedule rollback failed', doneId, e);
                 }),
             ),
           );
@@ -859,7 +859,7 @@ export function useChatOutbox({
         scheduleRetryTimer(next);
         return true;
       } catch (err: unknown) {
-        console.warn('[useChatOutbox] editScheduled failed', id, err);
+        console.warn('mcL0739 [useChatOutbox] editScheduled failed', id, err);
         return false;
       }
     },

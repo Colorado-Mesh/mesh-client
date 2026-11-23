@@ -60,8 +60,9 @@ export function decodeModulePortText(data: Uint8Array): string | undefined {
     }
     if (printable / text.length < 0.8) return undefined;
     return text;
-  } catch {
-    // catch-no-log-ok non-fatal decode for display only
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtastic/meshtasticModuleEvents] catch:', e);
+
     return undefined;
   }
 }

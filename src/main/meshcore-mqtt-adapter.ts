@@ -192,7 +192,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.connectionWatchdogTimer = setInterval(() => {
       if (this.status !== 'connected' || !this.client || this.lastPacketReceivedAt === 0) return;
       if (Date.now() - this.lastPacketReceivedAt > timeoutMs) {
-        console.warn('[MeshCore MQTT] connection watchdog: no packets received, forcing reconnect');
+        console.warn(
+          'mcL0232 [MeshCore MQTT] connection watchdog: no packets received, forcing reconnect',
+        );
         this.client.end(true);
       }
     }, 15_000);
@@ -213,7 +215,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
 
   private rejectOversizedMqttPacket(): void {
     const message = mqttPacketTooLargeMessage();
-    console.error('[MeshCore MQTT]', message);
+    console.error('mcL0233 [MeshCore MQTT]', message);
     // Clear settings before ending the transport so neither close nor power-resume paths
     // reconnect automatically to a broker that violated the packet limit.
     this.disconnect();
@@ -345,7 +347,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       }
       this.clearConnectTimers();
       console.error(
-        '[MeshCore MQTT] client error',
+        'mcL0234 [MeshCore MQTT] client error',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       this.emit('error', err instanceof Error ? err.message : String(err));
@@ -360,7 +362,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       if (this.status !== 'connecting' || !this.client) return;
       this.connectAbortByWatchdog = true;
       const msg = `MeshCore MQTT: timed out before MQTT session (no CONNACK within ${MESHCORE_MQTT_CONNECT_ACK_MS / 1000}s). Check host, port, WebSocket path /mqtt, TLS, and network (firewall, VPN, DNS).`;
-      console.error('[MeshCore MQTT]', sanitizeLogMessage(msg));
+      console.error('mcL0235 [MeshCore MQTT]', sanitizeLogMessage(msg));
       this.emit('error', msg);
       const stale = this.client;
       this.client = null;
@@ -410,7 +412,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
                 return;
               }
               const detail = `Subscribe to ${subTopic} failed: ${err.message}`;
-              console.warn('[MeshCore MQTT] subscribe warning', sanitizeLogMessage(detail));
+              console.warn('mcL0236 [MeshCore MQTT] subscribe warning', sanitizeLogMessage(detail));
               this.emit('subscribeWarning', detail);
               return;
             }
@@ -426,8 +428,11 @@ export class MeshcoreMqttAdapter extends EventEmitter {
           const s = this.client?.stream as { ping?: () => void } | undefined;
           try {
             s?.ping?.();
-          } catch {
-            // catch-no-log-ok ws ping after teardown
+          } catch (e: unknown) {
+            console.debug(
+              '[main/meshcore-mqtt-adapter] catch:',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+            );
           }
         }, MESHCORE_MQTT_WSS_PING_MS);
       }
@@ -469,8 +474,12 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       let text: string;
       try {
         text = buf.toString('utf8');
-      } catch {
-        // catch-no-log-ok invalid UTF-8 buffer — silently skip non-text MQTT payload
+      } catch (e: unknown) {
+        console.debug(
+          '[main/meshcore-mqtt-adapter] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return;
       }
       const env = tryParseMeshcoreMqttChatEnvelope(text.trim());
@@ -552,7 +561,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
             });
         this.powerWakeReconnect = false;
         console.warn(
-          `[MeshCore MQTT] JWT broker: waiting ${delay}ms before token refresh (attempt ${this.retryCount}/${maxRetries})`,
+          `mcL0237 [MeshCore MQTT] JWT broker: waiting ${delay}ms before token refresh (attempt ${this.retryCount}/${maxRetries})`,
         );
         this.reconnectTimer = setTimeout(() => {
           this.reconnectTimer = null;
@@ -563,7 +572,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
           this.pendingReconnectTimer = setTimeout(() => {
             if (this.pendingReconnect && this.lastSettings) {
               console.warn(
-                '[MeshCore MQTT] Token refresh timed out, reconnecting with existing token',
+                'mcL0238 [MeshCore MQTT] Token refresh timed out, reconnecting with existing token',
               );
               this.pendingReconnect = false;
               this.pendingReconnectTimer = null;
@@ -580,7 +589,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         meshcoreNonJwtFirstReconnectImmediate: this.retryCount === 1,
       });
       console.warn(
-        `[MeshCore MQTT] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`,
+        `mcL0239 [MeshCore MQTT] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`,
       );
       this.reconnectTimer = setTimeout(() => {
         this.reconnectTimer = null;
@@ -591,7 +600,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     });
     sessionClient.on('offline', () => {
       if (this.client !== sessionClient) return;
-      console.warn('[MeshCore MQTT] client offline');
+      console.warn('mcL0240 [MeshCore MQTT] client offline');
       if (this.status === 'connected' || this.status === 'connecting') {
         this.setStatus('disconnected');
       }
@@ -706,7 +715,9 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.emit(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, settings.server ?? '');
       this.pendingReconnectTimer = setTimeout(() => {
         if (this.pendingReconnect && this.lastSettings) {
-          console.warn('[MeshCore MQTT] power resume token refresh timed out — reconnecting');
+          console.warn(
+            'mcL0241 [MeshCore MQTT] power resume token refresh timed out — reconnecting',
+          );
           this.pendingReconnect = false;
           this.pendingReconnectTimer = null;
           this._doConnect(this.lastSettings);

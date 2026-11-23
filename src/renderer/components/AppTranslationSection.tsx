@@ -160,8 +160,9 @@ export function AppTranslationSection() {
     try {
       await operation();
       await refreshTranslationStatus(true);
-    } catch {
-      // catch-no-log-ok display a safe failure without server content, credentials or message text
+    } catch (e: unknown) {
+      console.debug('[renderer/components/AppTranslationSection] catch:', e);
+
       if (alive.current) setNotice(t('chatTranslation.settingsError'));
     } finally {
       if (alive.current) setBusy(null);
@@ -185,8 +186,9 @@ export function AppTranslationSection() {
       if (!result.ok && result.reason !== 'cancelled' && alive.current)
         updateSet(setFailed, id, true);
       await refreshTranslationStatus(true);
-    } catch {
-      // catch-no-log-ok main process logs download failures; show a per-pack retry state here
+    } catch (e: unknown) {
+      console.debug('[renderer/components/AppTranslationSection] catch:', e);
+
       if (alive.current) updateSet(setFailed, id, true);
     } finally {
       if (alive.current) updateSet(setStarting, id, false);
@@ -264,8 +266,8 @@ export function AppTranslationSection() {
   let validUrl = false;
   try {
     validUrl = Boolean(validateLibreTranslationUrl(url));
-  } catch {
-    // catch-no-log-ok invalid URL disables online opt-in and test
+  } catch (e: unknown) {
+    console.debug('[renderer/components/AppTranslationSection] catch:', e);
   }
   return (
     <SettingsCollapsible title={t('chatTranslation.settingsTitle')} anchorId="app.translation">

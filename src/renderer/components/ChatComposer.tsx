@@ -794,7 +794,7 @@ export function ChatComposer({
           return;
         }
       } catch (err) {
-        console.error('[ChatComposer] Intercept send failed: ' + errLikeToLogString(err));
+        console.error('mcL0377 [ChatComposer] Intercept send failed: ' + errLikeToLogString(err));
         const fallbackKey = variant === 'room' ? 'roomsPanel.postFailed' : 'chatPanel.sendFailed';
         const message = translateChatSendError(t, err, {
           fallbackKey,
@@ -905,7 +905,7 @@ export function ChatComposer({
       onReplyClear?.();
       onSendSuccess?.();
     } catch (err) {
-      console.error('[ChatComposer] Send failed: ' + errLikeToLogString(err));
+      console.error('mcL0378 [ChatComposer] Send failed: ' + errLikeToLogString(err));
       const fallbackKey = variant === 'room' ? 'roomsPanel.postFailed' : 'chatPanel.sendFailed';
       const errMsg = translateChatSendError(t, err, { fallbackKey });
       if (allowOutbox && queueOutbox) {
@@ -1009,7 +1009,7 @@ export function ChatComposer({
           );
         }
       } catch (err) {
-        console.warn('[ChatComposer] schedule send failed ' + errLikeToLogString(err));
+        console.warn('mcL0379 [ChatComposer] schedule send failed ' + errLikeToLogString(err));
         return false;
       }
       clearSentDraft(draftSnapshot);
@@ -1207,7 +1207,7 @@ export function ChatComposer({
         setGifInput('');
         onSendSuccess?.();
       } catch (err) {
-        console.error('[ChatComposer] GIF send failed: ' + errLikeToLogString(err));
+        console.error('mcL0380 [ChatComposer] GIF send failed: ' + errLikeToLogString(err));
         setChatActionError({
           message: translateChatSendError(t, err),
           viewKey,
@@ -1305,13 +1305,15 @@ export function ChatComposer({
         // settle — do not hold the composer. Failure point: waypoint NAK/timeout;
         // fallback: text already sent, surface a warning toast only.
         void onSendLocationWaypoint(pos.lat, pos.lon).catch((wpErr: unknown) => {
-          console.warn('[ChatComposer] location waypoint send failed ' + errLikeToLogString(wpErr));
+          console.warn(
+            'mcL0381 [ChatComposer] location waypoint send failed ' + errLikeToLogString(wpErr),
+          );
           addToast(t('chatPanel.shareLocationWaypointFailed'), 'warning');
         });
       }
       onSendSuccess?.();
     } catch (err) {
-      console.error('[ChatComposer] Share location failed: ' + errLikeToLogString(err));
+      console.error('mcL0382 [ChatComposer] Share location failed: ' + errLikeToLogString(err));
       // Failure point: live send failed; fallback: enqueue text for later drain.
       try {
         if (allowOutbox && text && (await enqueueLocationText(text))) {
@@ -1320,7 +1322,7 @@ export function ChatComposer({
         }
       } catch (queueErr) {
         console.warn(
-          '[ChatComposer] location outbox enqueue failed ' + errLikeToLogString(queueErr),
+          'mcL0383 [ChatComposer] location outbox enqueue failed ' + errLikeToLogString(queueErr),
         );
       }
       setChatActionError({

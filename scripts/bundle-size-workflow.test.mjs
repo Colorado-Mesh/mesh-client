@@ -289,6 +289,18 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          // Mozilla translation CDN pins sibling — keep measured-index exclusion assertion happy.
+          const translationManifestPad = 'x'.repeat(12_000);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/translation/translationManifest.ts'),
+            [
+              'export const TRANSLATION_ENGINE = { id: "engine", license: "MPL-2.0", assets: [] };',
+              'export const TRANSLATION_MODEL_PACKS = [];',
+              'export const TRANSLATION_MANIFEST = [TRANSLATION_ENGINE];',
+              `export const TRANSLATION_MANIFEST_PAD = 'https://firefox-settings-attachments ${translationManifestPad}';`,
+              '',
+            ].join('\n'),
+          );
           const meshcomDbPad = 'x'.repeat(600);
           fs.writeFileSync(
             path.join(fixture, 'src/main/ipc/meshcom-db-handlers.ts'),

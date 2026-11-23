@@ -114,7 +114,8 @@ export async function fetchMessageRetention(): Promise<MessageRetentionSettings>
     return parseMessageRetention(raw);
   } catch (e) {
     console.warn(
-      '[messageRetention] fetchMessageRetention failed; using defaults ' + errLikeToLogString(e),
+      'mcL0976 [messageRetention] fetchMessageRetention failed; using defaults ' +
+        errLikeToLogString(e),
     );
     return { ...DEFAULT_MESSAGE_RETENTION };
   }

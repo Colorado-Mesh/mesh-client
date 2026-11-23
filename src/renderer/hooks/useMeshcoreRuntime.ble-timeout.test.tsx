@@ -61,10 +61,10 @@ describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
       ),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
+      'mcL1232 [useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutGatt","raw":"MeshCore BLE IPC open timed out after 25000ms","bleTimeoutStage":"ipc-open"}',
+      'mcL1233 [useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutGatt","raw":"MeshCore BLE IPC open timed out after 25000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
@@ -93,7 +93,7 @@ describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
     expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
     expect(window.electronAPI.disconnectGatt).toHaveBeenCalledWith('meshcore');
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"protocol-handshake"}',
+      'mcL1232 [useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"protocol-handshake"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringMatching(
@@ -201,7 +201,7 @@ describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
     ).rejects.toThrow('meshcore.errors.bleTimeoutHandshake');
 
     expect(warnSpy).toHaveBeenCalledWith(
-      '[IpcSidecarGattConnection:meshcore] peripheral disconnected',
+      'mcL0995 [IpcSidecarGattConnection:meshcore] peripheral disconnected',
     );
   });
 
@@ -228,10 +228,10 @@ describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
       ),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
+      'mcL1232 [useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutGatt","raw":"BLE connectAsync timed out after 30000ms","bleTimeoutStage":"ipc-open"}',
+      'mcL1233 [useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutGatt","raw":"BLE connectAsync timed out after 30000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
@@ -256,7 +256,7 @@ describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
       ),
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutGatt","raw":"connect_timeout: Timeout waiting for reply","bleTimeoutStage":"ipc-open"}',
+      'mcL1233 [useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutGatt","raw":"connect_timeout: Timeout waiting for reply","bleTimeoutStage":"ipc-open"}',
     );
   });
 
@@ -296,7 +296,7 @@ describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
     ).rejects.toThrow('{"code":"BLE_CUSTOM","detail":"adapter glitch"}');
 
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect error {"userMessage":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","raw":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","bleTimeoutStage":null}',
+      'mcL1233 [useMeshcoreRuntime] connect error {"userMessage":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","raw":"{\\"code\\":\\"BLE_CUSTOM\\",\\"detail\\":\\"adapter glitch\\"}","bleTimeoutStage":null}',
     );
   });
 

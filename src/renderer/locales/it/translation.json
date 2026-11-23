@@ -537,7 +537,9 @@
     "dangerZoneEnvironmentHistoryDesc": "Rimuove tutte le letture memorizzate di temperatura, umidità, pressione e qualità dell'aria per ogni protocollo e identità.",
     "clearAllRooms": "Svuota tutte le sale",
     "clearAllRoomsConfirm": "Questa operazione rimuove tutti i server delle room MeshCore non preferiti dalla radio connessa e dal database locale. Le room ricompaiono quando vengono nuovamente pubblicizzate. Questa operazione non può essere annullata.",
-    "meshcomWatchlistHeading": "Elenco di controllo dei nominativi MeshCom"
+    "meshcomWatchlistHeading": "Elenco di controllo dei nominativi MeshCom",
+    "verboseLogging": "Includi debug e informazioni nei registri",
+    "verboseLoggingDesc": "Disattivata per impostazione predefinita, in modo che le esportazioni rimangano di dimensioni ridotte. Attiva, riproduci il problema, quindi esporta per GitHub. Quando segnali un problema, cita tutti i codici mcL#### presenti nel registro."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -2703,6 +2705,14 @@
       "gps": {
         "label": "Ricerca della posizione IP non riuscita",
         "recommendation": "Fallimento del fallback della posizione basato su IP non riuscito. Controlla la raggiungibilità di Internet; il radio GPS e una posizione statica impostata manualmente sono separati da questa ricerca IP."
+      },
+      "caught-serious-error": {
+        "label": "Errori gravi rilevati",
+        "recommendation": "È stato rilevato un errore grave senza che si verificasse un arresto anomalo. Cita eventuali codici mcL####, abilita la registrazione dettagliata se necessario, riproduci il problema, quindi esporta per GitHub e segnala il bug."
+      },
+      "path-containment": {
+        "label": "Contenimento",
+        "recommendation": "Un percorso è uscito dalla sua root consentita (jail). Se si tratta di un evento imprevisto, esporta per GitHub e segnalalo; riporta tutti i codici mcL#### nel registro."
       }
     },
     "recommendationGroups": {
@@ -2735,7 +2745,8 @@
     "deviceSource": "Dispositivo ({{count}})",
     "narrowLogPanel": "Pannello di registro stretto",
     "widenLogPanel": "Allarga il pannello di registro",
-    "clearFailed": "Impossibile cancellare il registro"
+    "clearFailed": "Impossibile cancellare il registro",
+    "verboseLoggingOn": "Registrazione dettagliata attiva: vengono registrati i dati di debug e le informazioni."
   },
   "mapPanel": {
     "locationUnavailable": "Posizione non disponibile.",

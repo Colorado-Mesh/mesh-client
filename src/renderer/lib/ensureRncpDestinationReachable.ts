@@ -38,8 +38,9 @@ export async function ensureRncpDestinationReachable(
   let destProbe: Awaited<ReturnType<typeof probeReticulumPeer>>;
   try {
     destProbe = await probeReticulumPeer(destinationHash);
-  } catch {
-    // catch-no-log-ok probe failures classify as unreachable for the gate
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/ensureRncpDestinationReachable] catch:', e);
+
     return { status: 'peerUnreachable' };
   }
   if (destProbe.ok) {
@@ -54,8 +55,9 @@ export async function ensureRncpDestinationReachable(
   let lxmfProbe: Awaited<ReturnType<typeof probeReticulumPeer>>;
   try {
     lxmfProbe = await probeReticulumPeer(lxmf);
-  } catch {
-    // catch-no-log-ok probe failures classify as unreachable for the gate
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/ensureRncpDestinationReachable] catch:', e);
+
     return { status: 'peerUnreachable' };
   }
   if (lxmfProbe.ok) {

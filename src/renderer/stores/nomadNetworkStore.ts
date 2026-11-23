@@ -173,7 +173,7 @@ function logNomadFetchFailure(
   ];
   appendNomadDiagParts(parts, opts.diag ?? {});
   console.warn(
-    `[nomadNetworkStore] ${kind} fetch failed hash=${nomadHashPrefixForLog(opts.hash)}… ` +
+    `mcL1420 [nomadNetworkStore] ${kind} fetch failed hash=${nomadHashPrefixForLog(opts.hash)}… ` +
       parts.join(' '),
   );
 }
@@ -288,7 +288,7 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     // Nomad proxy timeout. Cached local egress is logging-only (never block on GET).
     const egress = cachedNomadEgressAt > 0 ? cachedNomadEgress : 'network';
     void resolveNomadEgress().catch((e: unknown) => {
-      console.warn('[nomadNetworkStore] resolveNomadEgress ' + errLikeToLogString(e));
+      console.warn('mcL1421 [nomadNetworkStore] resolveNomadEgress ' + errLikeToLogString(e));
     });
     const qs = new URLSearchParams({ path: opts.path });
     if (opts.requestData && Object.keys(opts.requestData).length > 0) {
@@ -322,7 +322,8 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     }
     return res;
   } catch (e) {
-    // catch-no-log-ok logged via logNomadFetchFailure below
+    console.debug('[renderer/stores/nomadNetworkStore] catch:', e);
+
     const error = errLikeToLogString(e);
     logNomadFetchFailure(kind, {
       hash: opts.hash,
@@ -393,13 +394,13 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       set({ nodes: map, lastRefreshAt: Date.now(), nomadApiAvailable: true });
       invalidateNomadEgressCache();
       void resolveNomadEgress().catch((err: unknown) => {
-        console.warn('[nomadNetworkStore] resolveNomadEgress ' + errLikeToLogString(err));
+        console.warn('mcL1422 [nomadNetworkStore] resolveNomadEgress ' + errLikeToLogString(err));
       });
     } catch (e) {
       if (isReticulumSidecar404Error(e)) {
         set({ nomadApiAvailable: false });
       } else if (!isReticulumSidecarExpectedProxyError(e)) {
-        console.warn('[nomadNetworkStore] refresh ' + errLikeToLogString(e));
+        console.warn('mcL1423 [nomadNetworkStore] refresh ' + errLikeToLogString(e));
       }
     }
   },
@@ -477,7 +478,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       // Failure point: sidecar rejected or unreachable. Fallback: restore the
       // previous row so the star never shows a choice that was not saved.
       if (!isReticulumSidecarExpectedProxyError(e)) {
-        console.warn('[nomadNetworkStore] favorite ' + errLikeToLogString(e));
+        console.warn('mcL1424 [nomadNetworkStore] favorite ' + errLikeToLogString(e));
       }
       set({ nodes: withNomadRowRestored(get().nodes, previous, key) });
       return false;
@@ -504,7 +505,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
     } catch (e) {
       // Failure point: sidecar rejected or unreachable. Fallback: restore the
       // previous flag so the UI never shows a choice that was not saved.
-      console.warn('[nomadNetworkStore] identify ' + errLikeToLogString(e));
+      console.warn('mcL1425 [nomadNetworkStore] identify ' + errLikeToLogString(e));
       set({ nodes: withNomadRowRestored(get().nodes, previous, key) });
       clearNomadCachesForHash(key);
       return false;
@@ -532,7 +533,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       const cleared = (body as { cleared?: unknown } | null)?.cleared;
       return typeof cleared === 'number' ? cleared : affected.length;
     } catch (e) {
-      console.warn('[nomadNetworkStore] clear identify ' + errLikeToLogString(e));
+      console.warn('mcL1426 [nomadNetworkStore] clear identify ' + errLikeToLogString(e));
       set({ nodes: withNomadIdentify(get().nodes, affected, true) });
       for (const key of affected) clearNomadCachesForHash(key);
       return null;

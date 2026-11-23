@@ -1140,7 +1140,7 @@ describe('navigation security (source contract)', () => {
   it('blocks non-http(s) schemes in parseHttpOrHttpsUrl', () => {
     expect(INDEX_SOURCE).toContain('function parseHttpOrHttpsUrl');
     const fnIdx = INDEX_SOURCE.indexOf('function parseHttpOrHttpsUrl');
-    const body = INDEX_SOURCE.slice(fnIdx, fnIdx + 300);
+    const body = INDEX_SOURCE.slice(fnIdx, fnIdx + 500);
     expect(body).toContain("protocol === 'http:'");
     expect(body).toContain("protocol === 'https:'");
     expect(body).toContain('return null');

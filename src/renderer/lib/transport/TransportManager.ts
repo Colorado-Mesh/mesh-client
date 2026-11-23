@@ -81,7 +81,7 @@ export class TransportManager {
         })
         .catch((err: unknown) => {
           console.warn(
-            `[TransportManager] MQTT publish failed ${err instanceof Error ? err.message : String(err)}`,
+            `mcL1170 [TransportManager] MQTT publish failed ${err instanceof Error ? err.message : String(err)}`,
           );
           onStatusUpdateRef.current({
             tempId,
@@ -125,7 +125,7 @@ export class TransportManager {
           else if (pe.error != null) fallbackError = errLikeToLogString(pe.error);
           else fallbackError = errLikeToLogString(err);
           const error = humanizeMeshtasticSdkQueueRejectionError(err) ?? fallbackError;
-          console.warn('[useMeshtasticRuntime] sendText failed ' + errLikeToLogString(err));
+          console.warn('mcL1171 [useMeshtasticRuntime] sendText failed ' + errLikeToLogString(err));
           onStatusUpdateRef.current({
             tempId,
             transport: 'device',

@@ -11,8 +11,9 @@ export function errLikeToLogString(e: unknown): string {
   if (typeof e === 'object' && e !== null) {
     try {
       return sanitizeLogMessage(JSON.stringify(e));
-    } catch {
-      // catch-no-log-ok circular / non-serializable thrown values
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/errLikeToLogString] catch:', e);
+
       return sanitizeLogMessage('[unserializable]');
     }
   }

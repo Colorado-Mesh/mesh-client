@@ -71,8 +71,9 @@ function getSharedAudioContext(): AudioContext | null {
       sharedAudioContext = new AudioContext();
     }
     return sharedAudioContext;
-  } catch {
-    // catch-no-log-ok: AudioContext unavailable in test/headless environments
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
+
     return null;
   }
 }
@@ -104,8 +105,9 @@ export function resetVoiceCallTonesForTests(): void {
 function isNotifMuted(): boolean {
   try {
     return localStorage.getItem(CHAT_NOTIF_MUTED_STORAGE_KEY) === '1';
-  } catch {
-    // catch-no-log-ok: localStorage may throw in private/restricted contexts
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
+
     return false;
   }
 }
@@ -129,16 +131,16 @@ function withRunningContext(run: (ctx: AudioContext) => void): void {
   const go = () => {
     try {
       run(ctx);
-    } catch {
-      // catch-no-log-ok: AudioContext unavailable in test/headless environments
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
     }
   };
   if (ctx.state === 'suspended') {
     void ctx
       .resume()
       .then(go)
-      .catch(() => {
-        // catch-no-log-ok: resume blocked without user gesture in some environments
+      .catch((e: unknown) => {
+        console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
       });
     return;
   }
@@ -149,21 +151,21 @@ function stopDialToneNodes(): void {
   for (const osc of dialOscillators) {
     try {
       osc.stop();
-    } catch {
-      // catch-no-log-ok already stopped
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
     }
     try {
       osc.disconnect();
-    } catch {
-      // catch-no-log-ok
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
     }
   }
   dialOscillators = [];
   if (dialGain) {
     try {
       dialGain.disconnect();
-    } catch {
-      // catch-no-log-ok
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
     }
     dialGain = null;
   }
@@ -188,21 +190,21 @@ function stopModemConnectingSoundscape(): void {
   for (const node of modemStoppables) {
     try {
       node.stop();
-    } catch {
-      // catch-no-log-ok already stopped
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
     }
     try {
       node.disconnect();
-    } catch {
-      // catch-no-log-ok
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
     }
   }
   modemStoppables = [];
   for (const node of modemDisconnectables) {
     try {
       node.disconnect();
-    } catch {
-      // catch-no-log-ok
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulumVoiceCallTones] catch:', e);
     }
   }
   modemDisconnectables = [];

@@ -168,7 +168,7 @@ describe('bundled AI worker lifecycle', () => {
     await expect(
       new AiWorkerHost().generate(job, new AbortController().signal, vi.fn()),
     ).rejects.toThrow(/exceeds the available context size/);
-    expect(warn).toHaveBeenCalledWith('[Catch up] wllama inference error');
+    expect(warn).toHaveBeenCalledWith('mcL0778 [Catch up] wllama inference error');
   });
 
   it('waits for an abort-triggered disposal before generation settles', async () => {

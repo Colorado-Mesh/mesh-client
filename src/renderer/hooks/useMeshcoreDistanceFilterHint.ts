@@ -23,8 +23,9 @@ export function useMeshcoreDistanceFilterHint(
     if (locationFilterEnabled) return;
     try {
       if (localStorage.getItem(HINT_STORAGE_KEY)) return;
-    } catch {
-      // catch-no-log-ok localStorage unavailable
+    } catch (e: unknown) {
+      console.debug('[renderer/hooks/useMeshcoreDistanceFilterHint] catch:', e);
+
       return;
     }
 
@@ -39,8 +40,8 @@ export function useMeshcoreDistanceFilterHint(
 
     try {
       localStorage.setItem(HINT_STORAGE_KEY, '1');
-    } catch {
-      // catch-no-log-ok localStorage unavailable
+    } catch (e: unknown) {
+      console.debug('[renderer/hooks/useMeshcoreDistanceFilterHint] catch:', e);
     }
     addToast(t('toasts.meshcoreDistanceFilterHint', { count: gpsCount }), 'info', 10_000);
   }, [protocol, nodes, myNodeNum, locationFilterEnabled, addToast, t]);

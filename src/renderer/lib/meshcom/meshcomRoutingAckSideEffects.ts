@@ -140,7 +140,7 @@ function persistMeshcomTerminalStatus(
     })
     .catch((e: unknown) => {
       console.warn(
-        '[meshcomRoutingAck] updateMeshcomMessageStatus failed ' + errLikeToLogString(e),
+        'mcL0878 [meshcomRoutingAck] updateMeshcomMessageStatus failed ' + errLikeToLogString(e),
       );
     });
 }

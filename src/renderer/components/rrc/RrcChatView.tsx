@@ -1048,7 +1048,7 @@ export function RrcChatView({
             title={t('rrc.copyMessage')}
             onClick={() => {
               void writeClipboardText(msg.body).catch((e: unknown) => {
-                console.warn('[RrcChatView] copy message failed ' + errLikeToLogString(e));
+                console.warn('mcL0681 [RrcChatView] copy message failed ' + errLikeToLogString(e));
               });
             }}
           >

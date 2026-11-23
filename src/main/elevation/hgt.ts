@@ -70,8 +70,12 @@ export async function hgtTileExists(cacheDir: string, tileName: string): Promise
   try {
     const st = await fs.stat(hgtPath(cacheDir, tileName));
     return st.isFile() && st.size >= HGT_TILE_BYTES;
-  } catch {
-    // catch-no-log-ok missing tile
+  } catch (e: unknown) {
+    console.debug(
+      '[main/elevation/hgt] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }
@@ -83,16 +87,23 @@ export async function listHgtTiles(
   let names: string[];
   try {
     names = (await fs.readdir(dir)).filter((n) => n.endsWith('.hgt'));
-  } catch {
-    // catch-no-log-ok empty cache
+  } catch (e: unknown) {
+    console.debug(
+      '[main/elevation/hgt] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return { count: 0, bytes: 0, names: [] };
   }
   let bytes = 0;
   for (const name of names) {
     try {
       bytes += (await fs.stat(joinUnderRoot(dir, name))).size;
-    } catch {
-      // catch-no-log-ok race
+    } catch (e: unknown) {
+      console.debug(
+        '[main/elevation/hgt] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
   return { count: names.length, bytes, names: names.map((n) => n.replace(/\.hgt$/, '')) };
@@ -130,15 +141,22 @@ export function createHgtElevationReader(cacheDir: string): HgtElevationReader {
           const fh = await fs.open(file, 'r');
           const st = await fh.stat();
           if (st.size < HGT_TILE_BYTES) {
-            await fh.close().catch(() => {
-              // catch-no-log-ok
+            await fh.close().catch((e: unknown) => {
+              console.debug(
+                '[main/elevation/hgt] catch:',
+                sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+              );
             });
             return null;
           }
           entry = { fh, size: st.size };
           handles.set(file, entry);
-        } catch {
-          // catch-no-log-ok miss
+        } catch (e: unknown) {
+          console.debug(
+            '[main/elevation/hgt] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+
           return null;
         }
       }
@@ -152,8 +170,11 @@ export function createHgtElevationReader(cacheDir: string): HgtElevationReader {
     },
     async close() {
       for (const { fh } of handles.values()) {
-        await fh.close().catch(() => {
-          // catch-no-log-ok
+        await fh.close().catch((e: unknown) => {
+          console.debug(
+            '[main/elevation/hgt] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         });
       }
       handles.clear();
@@ -245,15 +266,18 @@ export async function downloadHgtTile(
           redirect: 'manual',
         })) as unknown as Response;
       } finally {
-        void agent.close().catch(() => {
-          // catch-no-log-ok
+        void agent.close().catch((e: unknown) => {
+          console.debug(
+            '[main/elevation/hgt] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         });
       }
     }
 
     if (!response.ok || !response.body) {
       console.warn(
-        '[elevation] HGT download HTTP ' +
+        'mcL0027 [elevation] HGT download HTTP ' +
           String(response.status) +
           ' ' +
           sanitizeLogMessage(tileName),
@@ -267,8 +291,11 @@ export async function downloadHgtTile(
     await pipeline(createReadStream(tmpGz), createGunzip(), createWriteStream(tmpHgt));
     const st = await fs.stat(tmpHgt);
     if (st.size < HGT_TILE_BYTES || st.size > HGT_MAX_BYTES) {
-      await fs.unlink(tmpHgt).catch(() => {
-        // catch-no-log-ok
+      await fs.unlink(tmpHgt).catch((e: unknown) => {
+        console.debug(
+          '[main/elevation/hgt] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       });
       return false;
     }
@@ -276,18 +303,24 @@ export async function downloadHgtTile(
     return true;
   } catch (err) {
     console.warn(
-      '[elevation] HGT download failed ' +
+      'mcL0028 [elevation] HGT download failed ' +
         sanitizeLogMessage(tileName) +
         ' ' +
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     return false;
   } finally {
-    await fs.unlink(tmpGz).catch(() => {
-      // catch-no-log-ok
+    await fs.unlink(tmpGz).catch((e: unknown) => {
+      console.debug(
+        '[main/elevation/hgt] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
-    await fs.unlink(tmpHgt).catch(() => {
-      // catch-no-log-ok
+    await fs.unlink(tmpHgt).catch((e: unknown) => {
+      console.debug(
+        '[main/elevation/hgt] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
   }
 }

@@ -24,7 +24,7 @@ async function cacheOneInboundAttachment(
       mimeType: mimeType || 'application/octet-stream',
     };
   } catch (e) {
-    console.warn('[reticulumAttachmentCache] cache failed ' + errLikeToLogString(e));
+    console.warn('mcL1027 [reticulumAttachmentCache] cache failed ' + errLikeToLogString(e));
     return null;
   }
 }

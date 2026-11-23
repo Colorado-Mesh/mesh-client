@@ -17,8 +17,9 @@ export function getMeshtasticMessageLoadLimit(): number {
   let raw: string | null;
   try {
     raw = getAppSettingsRaw();
-  } catch {
-    // catch-no-log-ok localStorage unavailable in node tests / restricted environments
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtasticMessageLoadLimit] catch:', e);
+
     return DEFAULT_MESSAGE_LOAD_LIMIT;
   }
   const s = parseStoredJson<{

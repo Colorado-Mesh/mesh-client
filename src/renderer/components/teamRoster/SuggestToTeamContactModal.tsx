@@ -89,7 +89,7 @@ export function SuggestToTeamContactModal({
       pendingCreateUnitIdRef.current = null;
       onClose();
     } catch (err: unknown) {
-      console.warn('[SuggestToTeamContact] link failed ' + errLikeToLogString(err));
+      console.warn('mcL0687 [SuggestToTeamContact] link failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.linkFailed'), 'error');
     } finally {
       setBusy(false);
@@ -128,7 +128,7 @@ export function SuggestToTeamContactModal({
       pendingCreateUnitIdRef.current = null;
       onClose();
     } catch (err: unknown) {
-      console.warn('[SuggestToTeamContact] create failed ' + errLikeToLogString(err));
+      console.warn('mcL0688 [SuggestToTeamContact] create failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.linkFailed'), 'error');
     } finally {
       setBusy(false);

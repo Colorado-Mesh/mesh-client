@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { sanitizeLogMessage } from '../../sanitize-log-message';
 import { loadAiLocalModels } from '../loadAiLocalModels';
 import type { AiModelPackManager } from './modelPackManager';
 
@@ -34,8 +35,12 @@ export function createAiModelProtocol(deps: {
       // Explicit CORP so COEP-isolated renderers can fetch model bytes over mesh-ai:.
       headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
       return new Response(response.body, { status: response.status, headers });
-    } catch {
-      // catch-no-log-ok unreadable models are unavailable; never expose filesystem paths
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ai/local/protocol] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return new Response(null, { status: 404 });
     }
   };

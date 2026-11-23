@@ -236,6 +236,7 @@ jobs:
           pnpm run check:ipc-contract
           pnpm run check:console-log
           pnpm run check:silent-catches
+          pnpm run check:log-ids
           pnpm run check:semgrep
           pnpm run check:url-hostname-sanitization
           pnpm run check:xss-patterns

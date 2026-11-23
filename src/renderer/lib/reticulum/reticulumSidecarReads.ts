@@ -42,8 +42,9 @@ export async function isReticulumSidecarRunning(): Promise<boolean> {
   try {
     const status = await window.electronAPI.reticulum.getStatus();
     return status.running && status.port > 0;
-  } catch {
-    // catch-no-log-ok getStatus unavailable — treat as not running
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulum/reticulumSidecarReads] catch:', e);
+
     return false;
   }
 }
@@ -59,8 +60,9 @@ export async function isReticulumRnsLiveReady(): Promise<boolean> {
       rns_ready?: boolean;
     };
     return body.rns_ready === true;
-  } catch {
-    // catch-no-log-ok status probe — treat as not live yet
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulum/reticulumSidecarReads] catch:', e);
+
     return false;
   }
 }
@@ -351,7 +353,8 @@ export async function registerReticulumKnownIdentity(
     const error = typeof body.error === 'string' ? body.error : undefined;
     return ok ? { ok: true } : { ok: false, ...(error ? { error } : {}) };
   } catch (e) {
-    // catch-no-log-ok error returned to caller for toast/UI
+    console.debug('[renderer/lib/reticulum/reticulumSidecarReads] catch:', e);
+
     return { ok: false, error: errLikeToLogString(e) };
   }
 }
@@ -370,7 +373,8 @@ export async function requestReticulumPeerPath(
     )) as { ok?: boolean; error?: string };
     return { ok: Boolean(res.ok), error: res.error };
   } catch (e) {
-    // catch-no-log-ok error returned to caller for toast/UI
+    console.debug('[renderer/lib/reticulum/reticulumSidecarReads] catch:', e);
+
     return { ok: false, error: errLikeToLogString(e) };
   }
 }
@@ -399,7 +403,8 @@ export async function probeReticulumPeer(hash: string): Promise<ReticulumPeerPro
         error: res.error,
       };
     } catch (e) {
-      // catch-no-log-ok error returned to caller for toast/UI
+      console.debug('[renderer/lib/reticulum/reticulumSidecarReads] catch:', e);
+
       return { ok: false, error: errLikeToLogString(e) };
     }
   })();
@@ -432,7 +437,8 @@ export async function pingReticulumDestination(hash: string): Promise<ReticulumP
       error: pingRes.error ?? probeRes.error,
     };
   } catch (e) {
-    // catch-no-log-ok probe result carries error string for diagnostics UI
+    console.debug('[renderer/lib/reticulum/reticulumSidecarReads] catch:', e);
+
     return { ok: false, error: errLikeToLogString(e) };
   }
 }

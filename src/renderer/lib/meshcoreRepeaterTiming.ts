@@ -70,7 +70,7 @@ export function logMeshcoreRepeaterTimingSuccess(record: MeshcoreRepeaterTimingR
 
 export function logMeshcoreRepeaterTimingTimeout(record: MeshcoreRepeaterTimingRecord): void {
   markMeshcoreRepeaterTimingPhase(record, 'timeout');
-  console.warn(formatTimingLine(record, 'timeout'));
+  console.warn(`mcL0927 ${formatTimingLine(record, 'timeout')}`);
 }
 
 /** Test helper. */

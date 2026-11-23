@@ -10,6 +10,7 @@ import type {
 import { joinUnderRoot } from '../shared/pathUnderRoot';
 import { RETICULUM_CONFIG_MAX_READ_BYTES } from '../shared/reticulumProxyLimits';
 import { readUtf8FileBounded } from './reticulum-config-read';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 export const RNS_PRIVATE_KEY_LEN = 64;
 
@@ -76,8 +77,12 @@ export async function showReticulumIdentityImportDialog(): Promise<ReticulumIden
     } finally {
       fs.closeSync(fd);
     }
-  } catch {
-    // catch-no-log-ok: dialog file read failed; caller shows error state
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-identity-import] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return {
       path: filePath,
       contentBase64: null,
@@ -117,7 +122,11 @@ export async function showReticulumIdentityBackupImportDialog(): Promise<Reticul
     const contentText = readUtf8FileBounded(filePath, RETICULUM_CONFIG_MAX_READ_BYTES);
     return { path: filePath, contentText, error: null };
   } catch (err) {
-    // catch-no-log-ok: dialog file read failed; caller shows error state
+    console.debug(
+      '[main/reticulum-identity-import] catch:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('byte limit')) {
       return { path: filePath, contentText: null, error: 'too_large' };
@@ -156,8 +165,11 @@ function validateExportOpts(opts: unknown):
 function unlinkQuiet(filePath: string): void {
   try {
     fs.unlinkSync(filePath);
-  } catch {
-    // catch-no-log-ok: best-effort temp cleanup
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-identity-import] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 }
 
@@ -185,8 +197,11 @@ export function writeIdentityExportAtomic(destPath: string, data: Buffer): void 
     if (fd != null) {
       try {
         fs.closeSync(fd);
-      } catch {
-        // catch-no-log-ok: close after write failure
+      } catch (e: unknown) {
+        console.debug(
+          '[main/reticulum-identity-import] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }
     unlinkQuiet(tmpPath);
@@ -205,8 +220,12 @@ export async function saveReticulumIdentityExportDialog(
   let data: Buffer;
   try {
     data = Buffer.from(validated.contentBase64, 'base64');
-  } catch {
-    // catch-no-log-ok: invalid base64 returned to UI
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-identity-import] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return { path: null, error: 'invalid_opts' };
   }
   if (data.length === 0 || data.length > RETICULUM_IDENTITY_EXPORT_MAX_BYTES) {
@@ -222,8 +241,12 @@ export async function saveReticulumIdentityExportDialog(
   try {
     writeIdentityExportAtomic(result.filePath, data);
     return { path: result.filePath, error: null };
-  } catch {
-    // catch-no-log-ok: save failure returned to UI
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-identity-import] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return { path: null, error: 'write_failed' };
   }
 }

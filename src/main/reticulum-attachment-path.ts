@@ -1,6 +1,7 @@
 import { app } from 'electron';
 
 import { assertPathInsideRoot, isPathInsideRoot, joinUnderRoot } from '../shared/pathUnderRoot';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /** Canonical inbound attachment directory under Electron userData. */
 export function getReticulumAttachmentsDir(): string {
@@ -26,8 +27,12 @@ export function sanitizeReticulumAttachmentPathForDb(
   const trimmed = attachmentPath.trim().slice(0, 512);
   try {
     return assertReticulumAttachmentPathJailed(trimmed);
-  } catch {
-    // catch-no-log-ok invalid attachment paths are dropped from DB writes
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-attachment-path] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 }

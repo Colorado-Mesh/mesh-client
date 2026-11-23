@@ -63,8 +63,12 @@ type ConsentDecision = 'once' | 'always' | 'cancel';
 function getAppVersion(): string {
   try {
     return app.getVersion();
-  } catch {
-    // catch-no-log-ok app not ready during very early crash
+  } catch (e: unknown) {
+    console.debug(
+      '[main/crash-report-dialog] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return 'unknown';
   }
 }
@@ -124,8 +128,12 @@ export function hasStoredCrashReportConsent(): boolean {
       .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
       .get(CRASH_REPORT_CONSENT_SETTING_KEY) as { value: string } | undefined;
     return row?.value === CONSENT_GRANTED_VALUE;
-  } catch {
-    // catch-no-log-ok DB read during early startup / crash
+  } catch (e: unknown) {
+    console.debug(
+      '[main/crash-report-dialog] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }
@@ -136,8 +144,11 @@ function storeCrashReportConsent(): void {
     getDatabase()
       .prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)')
       .run(CRASH_REPORT_CONSENT_SETTING_KEY, CONSENT_GRANTED_VALUE);
-  } catch {
-    // catch-no-log-ok DB write during crash; consent simply falls back to per-crash
+  } catch (e: unknown) {
+    console.debug(
+      '[main/crash-report-dialog] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 }
 
@@ -274,8 +285,12 @@ function requestReportConsent(ctx: CrashContext): ConsentDecision {
     if (response === 0) return 'always';
     if (response === 1) return 'once';
     return 'cancel';
-  } catch {
-    // catch-no-log-ok dialog unavailable; treat as no consent
+  } catch (e: unknown) {
+    console.debug(
+      '[main/crash-report-dialog] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return 'cancel';
   }
 }
@@ -320,8 +335,12 @@ export function showCrashReportDialog(ctx: CrashContext): boolean {
       noLink: true,
     });
     userWantsToReport = response === 0;
-  } catch {
-    // catch-no-log-ok dialog unavailable during early startup or after app quit
+  } catch (e: unknown) {
+    console.debug(
+      '[main/crash-report-dialog] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 
@@ -341,8 +360,11 @@ export function showCrashReportDialog(ctx: CrashContext): boolean {
   }
 
   const url = buildCrashReportUrl(ctx);
-  void shell.openExternal(url).catch(() => {
-    // catch-no-log-ok openExternal failed; crash already logged by the caller
+  void shell.openExternal(url).catch((e: unknown) => {
+    console.debug(
+      '[main/crash-report-dialog] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   });
   return true;
 }

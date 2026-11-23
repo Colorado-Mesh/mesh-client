@@ -140,7 +140,9 @@ async function runPeriodicPrune(): Promise<void> {
       console.debug(`[environmentTelemetry] periodic prune removed ${changes} rows`);
     }
   } catch (err: unknown) {
-    console.warn('[environmentTelemetry] periodic prune failed: ' + errLikeToLogString(err));
+    console.warn(
+      'mcL1403 [environmentTelemetry] periodic prune failed: ' + errLikeToLogString(err),
+    );
   }
 }
 
@@ -189,7 +191,9 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
           noteSuccessfulInsert();
         })
         .catch((err: unknown) => {
-          console.warn('[environmentTelemetry] DB write failed: ' + errLikeToLogString(err));
+          console.warn(
+            'mcL1404 [environmentTelemetry] DB write failed: ' + errLikeToLogString(err),
+          );
         });
     }
     return true;
@@ -205,7 +209,7 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
     try {
       await clear();
     } catch (err: unknown) {
-      console.warn('[environmentTelemetry] clear DB failed: ' + errLikeToLogString(err));
+      console.warn('mcL1405 [environmentTelemetry] clear DB failed: ' + errLikeToLogString(err));
       throw err;
     }
     historyGeneration += 1;
@@ -219,7 +223,9 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
     try {
       await claim(protocol, identityId);
     } catch (err: unknown) {
-      console.warn('[environmentTelemetry] claimLegacyIdentity failed: ' + errLikeToLogString(err));
+      console.warn(
+        'mcL1406 [environmentTelemetry] claimLegacyIdentity failed: ' + errLikeToLogString(err),
+      );
       return;
     }
     set((state) => {
@@ -325,7 +331,7 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
       if (generation !== historyGeneration) return;
       set({ history: merged });
     } catch (err) {
-      console.warn('[environmentTelemetry] loadFromDb failed: ' + errLikeToLogString(err));
+      console.warn('mcL1407 [environmentTelemetry] loadFromDb failed: ' + errLikeToLogString(err));
     }
   },
 }));

@@ -172,8 +172,9 @@ export default function ReticulumPeerDetailModal({
         return buildLxmaContactUri(peerHash, pub);
       }
       return buildLxmContactUri(peerHash, label);
-    } catch {
-      // catch-no-log-ok Invalid destination hashes simply hide the optional contact QR.
+    } catch (e: unknown) {
+      console.debug('[renderer/components/ReticulumPeerDetailModal] catch:', e);
+
       return null;
     }
   }, [peer, peerHash]);
@@ -199,7 +200,8 @@ export default function ReticulumPeerDetailModal({
         );
       } catch (err) {
         console.warn(
-          '[ReticulumPeerDetailModal] load verified state failed: ' + errLikeToLogString(err),
+          'mcL0563 [ReticulumPeerDetailModal] load verified state failed: ' +
+            errLikeToLogString(err),
         );
       }
     })();
@@ -237,7 +239,8 @@ export default function ReticulumPeerDetailModal({
         }
       } catch (err) {
         console.warn(
-          '[ReticulumPeerDetailModal] load icon appearance failed: ' + errLikeToLogString(err),
+          'mcL0564 [ReticulumPeerDetailModal] load icon appearance failed: ' +
+            errLikeToLogString(err),
         );
       }
     })();
@@ -273,7 +276,7 @@ export default function ReticulumPeerDetailModal({
     if (!key) {
       setIconName(previousName);
       setIconColor(previousColor);
-      console.warn('[ReticulumPeerDetailModal] icon appearance: invalid destination hash');
+      console.warn('mcL0565 [ReticulumPeerDetailModal] icon appearance: invalid destination hash');
       addToast(t('reticulumProfileIcon.iconSaveFailed'), 'error');
       return;
     }
@@ -296,7 +299,7 @@ export default function ReticulumPeerDetailModal({
           icon_color: 'green',
         });
       }
-      console.warn('[ReticulumPeerDetailModal] icon appearance ' + errLikeToLogString(e));
+      console.warn('mcL0566 [ReticulumPeerDetailModal] icon appearance ' + errLikeToLogString(e));
       addToast(t('reticulumProfileIcon.iconSaveFailed'), 'error');
     }
   };
@@ -322,7 +325,7 @@ export default function ReticulumPeerDetailModal({
         await writeClipboardText(hash);
         addToast(t('peerDetailModal.hashCopied'), 'success');
       } catch (e) {
-        console.warn('[ReticulumPeerDetailModal] copy ' + errLikeToLogString(e));
+        console.warn('mcL0567 [ReticulumPeerDetailModal] copy ' + errLikeToLogString(e));
         addToast(t('peerDetailModal.hashCopyFailed'), 'error');
       }
     },
@@ -343,7 +346,7 @@ export default function ReticulumPeerDetailModal({
         });
       }
     } catch (e) {
-      console.warn('[ReticulumPeerDetailModal] path ' + errLikeToLogString(e));
+      console.warn('mcL0568 [ReticulumPeerDetailModal] path ' + errLikeToLogString(e));
       setPathStatus(
         formatReticulumPeerPathToast(t, { ok: false, error: errLikeToLogString(e) }).message,
       );
@@ -366,7 +369,7 @@ export default function ReticulumPeerDetailModal({
         await hydratePaths();
       }
     } catch (e) {
-      console.warn('[ReticulumPeerDetailModal] probe ' + errLikeToLogString(e));
+      console.warn('mcL0569 [ReticulumPeerDetailModal] probe ' + errLikeToLogString(e));
       setProbeStatus(
         formatReticulumPeerProbeToast(t, { ok: false, error: errLikeToLogString(e) }).message,
       );
@@ -379,7 +382,9 @@ export default function ReticulumPeerDetailModal({
     try {
       await setCustomDisplayName(peerHash, nameDraft);
     } catch (err) {
-      console.warn('[ReticulumPeerDetailModal] save name failed: ' + errLikeToLogString(err));
+      console.warn(
+        'mcL0570 [ReticulumPeerDetailModal] save name failed: ' + errLikeToLogString(err),
+      );
       addToast(t('peerDetailModal.renameFailed'), 'error');
     } finally {
       setEditingName(false);
@@ -429,7 +434,7 @@ export default function ReticulumPeerDetailModal({
     try {
       const key = canonicalizeReticulumDestinationHash(peerHash);
       if (!key) {
-        console.warn('[ReticulumPeerDetailModal] save contact invalid hash');
+        console.warn('mcL0571 [ReticulumPeerDetailModal] save contact invalid hash');
         return;
       }
       const label = resolveReticulumPeerLabel(peer, peer.display_name);
@@ -443,7 +448,7 @@ export default function ReticulumPeerDetailModal({
       registerReticulumDestinationHash(reticulumHashToNodeId(key), key);
       await refreshReticulumPeersFromSidecar();
     } catch (e) {
-      console.warn('[ReticulumPeerDetailModal] save contact ' + errLikeToLogString(e));
+      console.warn('mcL0572 [ReticulumPeerDetailModal] save contact ' + errLikeToLogString(e));
     } finally {
       setBusy(false);
     }
@@ -456,7 +461,7 @@ export default function ReticulumPeerDetailModal({
       setShowRemoveConfirm(false);
       onClose();
     } catch (e) {
-      console.warn('[ReticulumPeerDetailModal] remove contact ' + errLikeToLogString(e));
+      console.warn('mcL0573 [ReticulumPeerDetailModal] remove contact ' + errLikeToLogString(e));
     } finally {
       setBusy(false);
     }
@@ -632,7 +637,8 @@ export default function ReticulumPeerDetailModal({
                       setVerifiedIdentityHash(liveIdentityHash);
                     } catch (err) {
                       console.error(
-                        '[ReticulumPeerDetailModal] verify failed: ' + errLikeToLogString(err),
+                        'mcL0574 [ReticulumPeerDetailModal] verify failed: ' +
+                          errLikeToLogString(err),
                       );
                     } finally {
                       setBusy(false);
@@ -658,7 +664,7 @@ export default function ReticulumPeerDetailModal({
                       setVerifiedIdentityHash(null);
                     } catch (err) {
                       console.error(
-                        '[ReticulumPeerDetailModal] revoke verify failed: ' +
+                        'mcL0575 [ReticulumPeerDetailModal] revoke verify failed: ' +
                           errLikeToLogString(err),
                       );
                     } finally {
@@ -864,7 +870,8 @@ export default function ReticulumPeerDetailModal({
               })
               .catch((e: unknown) => {
                 console.warn(
-                  '[ReticulumPeerDetailModal] team link helper failed ' + errLikeToLogString(e),
+                  'mcL0576 [ReticulumPeerDetailModal] team link helper failed ' +
+                    errLikeToLogString(e),
                 );
                 addToast(t('teamRoster.linkFailed'), 'error');
               });

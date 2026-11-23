@@ -80,7 +80,9 @@ export default function MeshcoreTelemetryPushSection({
         thresholds: parseThresholds(thresholds),
       });
     } catch (e) {
-      console.warn('[MeshcoreTelemetryPushSection] subscribe failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0464 [MeshcoreTelemetryPushSection] subscribe failed ' + errLikeToLogString(e),
+      );
       if (e instanceof MeshcoreTelemetryPushError) {
         setError(
           e.code === 'noMetrics'

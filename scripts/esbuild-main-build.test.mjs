@@ -33,6 +33,7 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Windows notification SoundPlayer (#1487) ships as sibling
  * `notification-sound-play-wav.js`; index.js keeps Chromium audio-service flags plus a
  * thin sync loader (~+1 KiB).
+ * Mozilla translation CDN pins ship as sibling `translation-manifest.js` (not in index.js).
  * Coalesced `db:saveNodes` / shared nodes upsert SQL ships as sibling `node-upsert.js`
  * (not in index.js).
  * Transient MQTT errno codes `EADDRNOTAVAIL` / `EHOSTDOWN` (macOS interface address loss)
@@ -72,7 +73,7 @@ export function formatMainBundleOverBudgetMessage(size) {
     '   (existing pattern: ai-summary-prompt.js, identity-hydration.js, tray-unread-dot.js,',
     '   scheduled-broadcasts-interval-rebuild.js, team-roster-handlers.js,',
     '   environment-telemetry-handlers.js, notification-sound-play-wav.js, node-upsert.js,',
-    '   meshcom-db-handlers.js, udp-bridge.js) so it is NOT counted',
+    '   translation-manifest.js, meshcom-db-handlers.js, udp-bridge.js) so it is NOT counted',
     '   in the measured dist-electron/main/index.js budget.',
     '2. Prefer marking large deps as external in scripts/esbuild-main-externals.mjs when safe',
     '   (same pattern as undici/ws).',
@@ -294,6 +295,15 @@ describe('esbuild-main-build', () => {
       expect(nodeUpsertBytes.toString('utf8')).toContain(
         "nodes.source = 'mqtt' AND excluded.source = 'rf'",
       );
+      // Mozilla translation CDN pins live in the sibling chunk, not measured index.js.
+      const translationManifestBytes = fs.readFileSync(
+        path.join(tempDir, 'translation-manifest.js'),
+      );
+      expect(translationManifestBytes.length).toBeGreaterThan(10_000);
+      expect(translationManifestBytes.toString('utf8')).toContain(
+        'https://firefox-settings-attachments',
+      );
+      expect(indexSource).not.toContain('https://firefox-settings-attachments');
       expect(indexSource).not.toContain('qwen2.5-1.5b-instruct-q4_k_m.gguf');
       expect(indexSource).not.toContain('Missing Metal Toolchain');
       expect(indexSource).not.toContain('discoverXcodeDeveloperDir');

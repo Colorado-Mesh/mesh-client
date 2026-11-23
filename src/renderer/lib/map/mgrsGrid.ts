@@ -154,16 +154,18 @@ export function mgrsSquaresInBbox(
       let label: string;
       try {
         label = mgrsForward([wrapLon(rawLon), lat], p);
-      } catch {
-        // catch-no-log-ok: out-of-range samples (UPS/edge rounding) have no square to draw.
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/map/mgrsGrid] catch:', e);
+
         continue;
       }
       if (squares.has(label)) continue;
       let box: [number, number, number, number];
       try {
         box = mgrsInverse(label);
-      } catch {
-        // catch-no-log-ok: labels from forward() should invert; skip rather than fail the grid.
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/map/mgrsGrid] catch:', e);
+
         continue;
       }
       const [left, bottom, right, top] = box;

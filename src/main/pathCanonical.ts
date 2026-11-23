@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { joinUnderRoot, PathEscapesRootError } from '../shared/pathUnderRoot';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /**
  * Normalize a native picker / dialog absolute path when realpath is not yet possible.
@@ -21,8 +22,11 @@ export function canonicalizePath(candidate: string): string | null {
   const resolved = resolveAbsoluteFsPath(candidate);
   try {
     return fs.realpathSync.native(resolved);
-  } catch {
-    // catch-no-log-ok: missing path — walk ancestors
+  } catch (e: unknown) {
+    console.debug(
+      '[main/pathCanonical] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 
   const suffix: string[] = [];
@@ -36,7 +40,11 @@ export function canonicalizePath(candidate: string): string | null {
       // Ancestor + basename segments are from path.basename of an already-resolved path.
       return joinUnderRoot(realParent, ...suffix);
     } catch (err) {
-      // catch-no-log-ok: keep walking toward filesystem root (PathEscapesRootError is fatal)
+      console.debug(
+        '[main/pathCanonical] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       if (err instanceof PathEscapesRootError) throw err;
       current = parent;
     }

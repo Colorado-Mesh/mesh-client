@@ -38,7 +38,8 @@ export function createFirstRunWizardPersistStorage(): StateStorage {
         return raw;
       } catch (err) {
         console.warn(
-          '[FirstRunWizardStore] malformed persisted state — resetting ' + errLikeToLogString(err),
+          'mcL1408 [FirstRunWizardStore] malformed persisted state — resetting ' +
+            errLikeToLogString(err),
         );
         localStorage.removeItem(name);
         return null;
@@ -100,7 +101,8 @@ export const useFirstRunWizardStore = create<FirstRunWizardState>()(
       onRehydrateStorage: () => (_state, error) => {
         if (error) {
           console.warn(
-            '[FirstRunWizardStore] rehydrate failed — using defaults ' + errLikeToLogString(error),
+            'mcL1409 [FirstRunWizardStore] rehydrate failed — using defaults ' +
+              errLikeToLogString(error),
           );
         }
       },

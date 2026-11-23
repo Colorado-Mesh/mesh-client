@@ -721,7 +721,8 @@ export default function ModulePanel({
         if (!stillCurrent()) return;
         addToast(t('modulePanel.sectionSent', { name: sectionLabel }), 'success');
       } catch (err: unknown) {
-        // catch-no-log-ok commit failure surfaced in module panel toast
+        console.debug('[renderer/components/ModulePanel] catch:', err);
+
         if (!stillCurrent()) return;
         addToast(
           t('modulePanel.commitFailed', {
@@ -734,7 +735,7 @@ export default function ModulePanel({
       }
     } catch (err: unknown) {
       if (!stillCurrent()) return;
-      console.warn('[ModulePanel] apply failed ' + errLikeToLogString(err));
+      console.warn('mcL0467 [ModulePanel] apply failed ' + errLikeToLogString(err));
       addToast(
         t('modulePanel.failed', {
           message: isMeshtasticConfigApplyTimeout(err)
@@ -761,7 +762,7 @@ export default function ModulePanel({
       // Apply base must be the live slice — never last-known-only display merge.
       value = buildMeshtasticModuleApplyValue(moduleCase, liveConfigs[moduleCase], uiOverrides);
     } catch (err: unknown) {
-      console.warn('[ModulePanel] build apply value failed ' + errLikeToLogString(err));
+      console.warn('mcL0468 [ModulePanel] build apply value failed ' + errLikeToLogString(err));
       addToast(
         t('modulePanel.failed', {
           message: formatMeshtasticModuleApplyError(err, t),
@@ -1542,7 +1543,7 @@ export default function ModulePanel({
             addToast(t('modulePanel.cannedMessagesApplied'), 'success');
           } catch (err) {
             if (!stillCurrent()) return;
-            console.warn('[ModulePanel] canned messages failed ' + errLikeToLogString(err));
+            console.warn('mcL0469 [ModulePanel] canned messages failed ' + errLikeToLogString(err));
             addToast(
               t('modulePanel.failed', {
                 message: isMeshtasticConfigApplyTimeout(err)
@@ -2357,7 +2358,7 @@ export default function ModulePanel({
               addToast(t('modulePanel.rtttlSaved'), 'success');
             } catch (err) {
               if (!stillCurrent()) return;
-              console.warn('[ModulePanel] RTTTL apply failed ' + errLikeToLogString(err));
+              console.warn('mcL0470 [ModulePanel] RTTTL apply failed ' + errLikeToLogString(err));
               addToast(
                 t('modulePanel.failed', {
                   message: isMeshtasticConfigApplyTimeout(err)

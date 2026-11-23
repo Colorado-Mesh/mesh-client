@@ -24,7 +24,7 @@ export async function cacheReticulumVoiceMemoOgg(
     });
     return res.success && res.path ? res.path : null;
   } catch (e) {
-    console.warn('[reticulumAudioAttachmentCache] cache failed ' + errLikeToLogString(e));
+    console.warn('mcL1028 [reticulumAudioAttachmentCache] cache failed ' + errLikeToLogString(e));
     return null;
   }
 }

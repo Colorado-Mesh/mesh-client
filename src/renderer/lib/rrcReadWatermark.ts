@@ -42,14 +42,16 @@ export function loadPersistedRrcLastRead(): Partial<Record<string, number>> {
     if (entries.some(([key, at]) => clamped[key] !== at)) {
       try {
         rrcLastReadPersistence.write(JSON.stringify(clamped));
-      } catch {
-        // catch-no-log-ok keep the repaired boundary stable in memory if storage is read-only
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/rrcReadWatermark] catch:', e);
+
         failedRepair = { raw, value: clamped };
       }
     }
     return clamped;
-  } catch {
-    // catch-no-log-ok unavailable storage leaves messages unread
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcReadWatermark] catch:', e);
+
     return {};
   }
 }
@@ -57,8 +59,8 @@ export function savePersistedRrcLastRead(value: Partial<Record<string, number>>)
   try {
     rrcLastReadPersistence.write(JSON.stringify(value));
     window.dispatchEvent(new Event('mesh-client:rrcLastReadChanged'));
-  } catch {
-    // catch-no-log-ok read state is optional when storage is unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcReadWatermark] catch:', e);
   }
 }
 export function mergeRrcReadWatermark(hub: string, room: string, at: number): void {

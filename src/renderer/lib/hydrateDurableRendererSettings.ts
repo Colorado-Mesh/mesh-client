@@ -25,7 +25,7 @@ async function hydrateFromDatabase(): Promise<void> {
       break;
     } catch (error) {
       console.warn(
-        '[hydrateDurableRendererSettings] SQLite read failed',
+        'mcL0841 [hydrateDurableRendererSettings] SQLite read failed',
         errLikeToLogString(error),
       );
     }
@@ -46,7 +46,7 @@ async function hydrateFromDatabase(): Promise<void> {
   for (const result of results) {
     if (result.status === 'rejected') {
       console.warn(
-        '[hydrateDurableRendererSettings] hydration failed',
+        'mcL0842 [hydrateDurableRendererSettings] hydration failed',
         errLikeToLogString(result.reason),
       );
     }

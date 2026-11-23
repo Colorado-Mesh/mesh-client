@@ -34,8 +34,9 @@ export function signaturesEqual(a: SerialPortSignature | null, b: SerialPortSign
 export function loadLastSerialPortId(): string | null {
   try {
     return localStorage.getItem(LAST_SERIAL_PORT_KEY);
-  } catch {
-    // catch-no-log-ok localStorage read failure — no saved port id
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/serialPortSignature] catch:', e);
+
     return null;
   }
 }
@@ -45,8 +46,9 @@ export function loadLastSerialPortSignature(): SerialPortSignature | null {
     const raw = localStorage.getItem(LAST_SERIAL_PORT_SIGNATURE_KEY);
     if (!raw) return null;
     return JSON.parse(raw) as SerialPortSignature;
-  } catch {
-    // catch-no-log-ok localStorage JSON parse error — return null (no saved signature)
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/serialPortSignature] catch:', e);
+
     return null;
   }
 }
@@ -54,8 +56,8 @@ export function loadLastSerialPortSignature(): SerialPortSignature | null {
 export function saveLastSerialPortSignature(sig: SerialPortSignature): void {
   try {
     setRendererStorageItem(LAST_SERIAL_PORT_SIGNATURE_KEY, JSON.stringify(sig));
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode — non-critical reconnect hint
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/serialPortSignature] catch:', e);
   }
 }
 
@@ -90,8 +92,8 @@ export function persistSerialPortIdentity(port: SerialPort): void {
   if (portId) {
     try {
       setRendererStorageItem(LAST_SERIAL_PORT_KEY, portId);
-    } catch {
-      // catch-no-log-ok localStorage quota or private mode — non-critical reconnect hint
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/serialPortSignature] catch:', e);
     }
   }
 }

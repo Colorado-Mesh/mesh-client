@@ -78,7 +78,8 @@ export default function AdminPanel({
       }
       addToast(t('radioPanel.actionCompleted', { name: pendingAction.name }), 'success');
     } catch (err: unknown) {
-      // catch-no-log-ok toast handles user feedback
+      console.debug('[renderer/components/AdminPanel] catch:', err);
+
       const message = err instanceof Error ? err.message : pendingAction.name;
       addToast(t('radioPanel.actionFailed', { message }), 'error');
     } finally {

@@ -225,7 +225,7 @@ export function useReticulumSidecarApi({
       }
       if (!ready) {
         console.warn(
-          '[useReticulumSidecarApi] autostart skipped — Reticulum runtime session never registered',
+          'mcL1084 [useReticulumSidecarApi] autostart skipped — Reticulum runtime session never registered',
         );
         autostartAttemptedRef.current = false;
         startInFlightRef.current = false;
@@ -251,7 +251,7 @@ export function useReticulumSidecarApi({
             autostartAttemptedRef.current = true;
           } else {
             console.warn(
-              '[useReticulumSidecarApi] autostart resolved but sidecar not running — will retry',
+              'mcL1085 [useReticulumSidecarApi] autostart resolved but sidecar not running — will retry',
             );
             autostartAttemptedRef.current = false;
           }
@@ -261,7 +261,7 @@ export function useReticulumSidecarApi({
         }
       } catch (e: unknown) {
         const msg = errLikeToLogString(e);
-        console.warn('[useReticulumSidecarApi] autostart failed ' + msg);
+        console.warn('mcL1086 [useReticulumSidecarApi] autostart failed ' + msg);
         if (isReticulumManualStackStopSuppress()) {
           autostartAttemptedRef.current = true;
           return;

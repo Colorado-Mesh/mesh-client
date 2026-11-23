@@ -643,7 +643,7 @@ export default function LiveTrafficPanel({
         if (connected) setConnectedFeed(feed);
       })
       .catch((cause: unknown) => {
-        console.warn('[live-map] regional feed did not resume', cause);
+        console.warn('mcL0660 [live-map] regional feed did not resume', cause);
       });
   }, [regional, connectSource, queuedFeed]);
 

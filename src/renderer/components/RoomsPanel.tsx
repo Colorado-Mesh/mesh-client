@@ -195,8 +195,9 @@ const ROOMS_DETAILS_COLLAPSED_STORAGE_KEY = 'mesh-client:rooms:detailsCollapsed'
 function readDetailsPinned(): boolean {
   try {
     return localStorage.getItem(ROOMS_DETAILS_COLLAPSED_STORAGE_KEY) !== 'true';
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/components/RoomsPanel] catch:', e);
+
     return true;
   }
 }
@@ -692,7 +693,7 @@ export default function RoomsPanel({
       savePersistedRoomsLastRead(persistedRoomsLastRead);
       notifyPersistedRoomsLastReadChanged();
     } catch (e) {
-      console.warn('[RoomsPanel] persist rooms lastRead failed ' + errLikeToLogString(e));
+      console.warn('mcL0605 [RoomsPanel] persist rooms lastRead failed ' + errLikeToLogString(e));
     }
   }, [persistedRoomsLastRead]);
 
@@ -994,7 +995,7 @@ export default function RoomsPanel({
         }
         // Auto-login saves on its own; an unsaved Auto-sync edit keeps its Save button.
       } catch (e: unknown) {
-        console.warn('[RoomsPanel] save auto-login failed ' + errLikeToLogString(e));
+        console.warn('mcL0606 [RoomsPanel] save auto-login failed ' + errLikeToLogString(e));
         if (selectedRoomIdRef.current === nodeId) {
           setAutoLoginOnConnect(getMeshcoreRoomSyncConfig(nodeId).autoLoginOnConnect ?? false);
         }
@@ -1144,7 +1145,7 @@ export default function RoomsPanel({
     }
     void onLoginAllSaved(targets)
       .catch((e: unknown) => {
-        console.warn('[RoomsPanel] loginAllSaved failed ' + errLikeToLogString(e));
+        console.warn('mcL0607 [RoomsPanel] loginAllSaved failed ' + errLikeToLogString(e));
       })
       .finally(() => {
         setLocalLoginRoomIds(new Set());
@@ -1200,7 +1201,7 @@ export default function RoomsPanel({
       setSyncConfigDirty(false);
     } catch (e: unknown) {
       // Keep the edit and its Save button so it can be saved again.
-      console.warn('[RoomsPanel] save sync settings failed ' + errLikeToLogString(e));
+      console.warn('mcL0608 [RoomsPanel] save sync settings failed ' + errLikeToLogString(e));
       addToast(t('roomsPanel.syncSaveFailed'), 'error');
     }
   }, [
@@ -1363,7 +1364,7 @@ export default function RoomsPanel({
       setAclEntries(parsed);
       setAclFetchedAt(Date.now());
     } catch (e: unknown) {
-      console.warn('[RoomsPanel] fetch ACL failed ' + errLikeToLogString(e));
+      console.warn('mcL0609 [RoomsPanel] fetch ACL failed ' + errLikeToLogString(e));
       setAclError(e instanceof Error ? e.message : t('roomsPanel.membersAclFetchFailed'));
       setAclEntries([]);
     } finally {
@@ -1517,7 +1518,7 @@ export default function RoomsPanel({
         }
         refreshStoredRooms();
       } catch (e: unknown) {
-        console.warn('[RoomsPanel] remove from rooms failed ' + errLikeToLogString(e));
+        console.warn('mcL0610 [RoomsPanel] remove from rooms failed ' + errLikeToLogString(e));
         addToast(t('roomsPanel.removeFromRoomsFailed'), 'error');
       }
     })();
@@ -1612,8 +1613,8 @@ export default function RoomsPanel({
     setDetailsPinned(open);
     try {
       localStorage.setItem(ROOMS_DETAILS_COLLAPSED_STORAGE_KEY, String(!open));
-    } catch {
-      // catch-no-log-ok localStorage may be unavailable
+    } catch (e: unknown) {
+      console.debug('[renderer/components/RoomsPanel] catch:', e);
     }
   };
   const roomIsMuted = mutedViews.has(roomViewKey);
@@ -1643,7 +1644,7 @@ export default function RoomsPanel({
             }));
             await window.electronAPI.chat.export(msgs);
           } catch (e: unknown) {
-            console.warn('[RoomsPanel] export failed ' + errLikeToLogString(e));
+            console.warn('mcL0611 [RoomsPanel] export failed ' + errLikeToLogString(e));
           }
         })();
       },
@@ -2770,7 +2771,8 @@ export default function RoomsPanel({
                                   onClick={() => {
                                     void writeClipboardText(m.payload).catch((err: unknown) => {
                                       console.warn(
-                                        '[RoomsPanel] copy failed ' + errLikeToLogString(err),
+                                        'mcL0612 [RoomsPanel] copy failed ' +
+                                          errLikeToLogString(err),
                                       );
                                     });
                                   }}

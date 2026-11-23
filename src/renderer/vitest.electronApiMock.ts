@@ -717,6 +717,8 @@ export function createElectronAPIMock(): ElectronAPI {
       clear: vi.fn().mockResolvedValue(undefined),
       export: vi.fn().mockResolvedValue(null),
       onLine: vi.fn().mockReturnValue(() => {}),
+      isVerboseEnabled: vi.fn().mockResolvedValue(false),
+      onVerboseChanged: vi.fn().mockReturnValue(() => {}),
       logDeviceConnection: vi.fn().mockResolvedValue(undefined),
     },
     tak: {

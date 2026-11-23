@@ -309,10 +309,10 @@ describe('ReticulumSidecarManager', () => {
     );
     stdout.emit('end');
 
-    expect(warnSpy).toHaveBeenCalledWith('[ReticulumSidecar]', 'WARN actual warning');
-    expect(warnSpy).toHaveBeenCalledWith('[ReticulumSidecar]', 'ERROR');
+    expect(warnSpy).toHaveBeenCalledWith('mcL0280 [ReticulumSidecar]', 'WARN actual warning');
+    expect(warnSpy).toHaveBeenCalledWith('mcL0280 [ReticulumSidecar]', 'ERROR');
     expect(warnSpy).not.toHaveBeenCalledWith(
-      '[ReticulumSidecar]',
+      'mcL0280 [ReticulumSidecar]',
       'INFO packet route mentions ERROR',
     );
 
@@ -344,8 +344,8 @@ describe('ReticulumSidecarManager', () => {
       stderr.emit('data', Buffer.from(`${info}\n${warn}\n`));
 
       expect(infoSpy).toHaveBeenCalledWith('[ReticulumSidecar]', info);
-      expect(warnSpy).not.toHaveBeenCalledWith('[ReticulumSidecar]', info);
-      expect(warnSpy).toHaveBeenCalledWith('[ReticulumSidecar]', warn);
+      expect(warnSpy).not.toHaveBeenCalledWith('mcL0280 [ReticulumSidecar]', info);
+      expect(warnSpy).toHaveBeenCalledWith('mcL0280 [ReticulumSidecar]', warn);
     } finally {
       await manager.stop();
       warnSpy.mockRestore();
@@ -378,8 +378,8 @@ describe('ReticulumSidecarManager', () => {
       const rstWarns = warnSpy.mock.calls.filter(([, msg]) =>
         String(msg).includes('TCP read error'),
       );
-      expect(rstWarns).toEqual([['[ReticulumSidecar]', rst]]);
-      expect(warnSpy).not.toHaveBeenCalledWith('[ReticulumSidecar]', reconnect);
+      expect(rstWarns).toEqual([['mcL0280 [ReticulumSidecar]', rst]]);
+      expect(warnSpy).not.toHaveBeenCalledWith('mcL0280 [ReticulumSidecar]', reconnect);
       expect(debugSpy).toHaveBeenCalledWith('[ReticulumSidecar]', rst);
       expect(manager.getStatus().interfaceIssueAlert?.tcpResetByPeer).toEqual(['RMAP World']);
     } finally {
@@ -416,8 +416,8 @@ describe('ReticulumSidecarManager', () => {
       const rstWarns = warnSpy.mock.calls.filter(([, msg]) =>
         String(msg).includes('TCP read error'),
       );
-      expect(rstWarns).toEqual([['[ReticulumSidecar]', rst]]);
-      expect(warnSpy).not.toHaveBeenCalledWith('[ReticulumSidecar]', reconnect);
+      expect(rstWarns).toEqual([['mcL0280 [ReticulumSidecar]', rst]]);
+      expect(warnSpy).not.toHaveBeenCalledWith('mcL0280 [ReticulumSidecar]', reconnect);
       expect(debugSpy).toHaveBeenCalledWith('[ReticulumSidecar]', rst);
       expect(manager.getStatus().interfaceIssueAlert?.tcpResetByPeer).toEqual(['RMAP World']);
     } finally {
@@ -943,7 +943,7 @@ describe('ReticulumSidecarManager', () => {
     await expect(startPromise).rejects.toThrow(/exit 1.*GLIBC_2\.39/);
     expect(manager.getStatus().lastError).toMatch(/exit 1.*GLIBC_2\.39/);
     expect(warnSpy).toHaveBeenCalledWith(
-      '[ReticulumSidecar]',
+      'mcL0281 [ReticulumSidecar]',
       expect.stringMatching(/exited code=1.*GLIBC_2\.39/),
     );
 

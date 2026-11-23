@@ -2,7 +2,6 @@
  * KMZ → temporary directory extract with zip-bomb / path-traversal guards.
  * Always uses `fs.mkdtempSync` under `os.tmpdir()` — never predictable temp paths.
  */
-
 import fs, { promises as fsp } from 'fs';
 import JSZip from 'jszip';
 import os from 'os';
@@ -14,6 +13,8 @@ import {
   MAP_OVERLAY_MAX_BYTES,
 } from '@/shared/mapOverlays/types';
 import { joinUnderRoot, resolveUnderRoot } from '@/shared/pathUnderRoot';
+
+import { sanitizeLogMessage } from '../sanitize-log-message';
 
 export class KmzExtractError extends Error {
   readonly code: 'too_large' | 'unsafe_zip' | 'empty' | 'io';
@@ -48,8 +49,11 @@ async function findKmlFile(dir: string): Promise<string> {
   try {
     await fsp.access(preferred);
     return preferred;
-  } catch {
-    // catch-no-log-ok fall through to recursive search
+  } catch (e: unknown) {
+    console.debug(
+      '[main/map-overlays/kmzExtract] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 
   async function walk(current: string): Promise<string | null> {
@@ -162,8 +166,11 @@ export async function extractKmlTextFromKmz(kmzBytes: Buffer): Promise<string> {
     }
     return kmlText;
   } finally {
-    await fsp.rm(dir, { recursive: true, force: true }).catch(() => {
-      // catch-no-log-ok best-effort cleanup
+    await fsp.rm(dir, { recursive: true, force: true }).catch((e: unknown) => {
+      console.debug(
+        '[main/map-overlays/kmzExtract] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
   }
 }

@@ -66,7 +66,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
           hydrateUnavailable: false,
         });
       } catch (error) {
-        console.warn('[teamRoster] hydrate failed:', error);
+        console.warn('mcL1481 [teamRoster] hydrate failed:', error);
         set({
           hydrateError: true,
           hydrateUnavailable: isTeamRosterUnavailableError(error),
@@ -90,7 +90,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
         hydrateUnavailable: false,
       });
     } catch (error) {
-      console.warn('[teamRoster] refreshFromDb failed:', error);
+      console.warn('mcL1482 [teamRoster] refreshFromDb failed:', error);
       set({
         hydrateError: true,
         hydrateUnavailable: isTeamRosterUnavailableError(error),
@@ -112,7 +112,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
       }));
       return member;
     } catch (error) {
-      console.warn('[teamRoster] upsert failed:', error);
+      console.warn('mcL1483 [teamRoster] upsert failed:', error);
       throw error;
     }
   },
@@ -122,7 +122,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
       await window.electronAPI.db.deleteTeamMember(unitId);
       set((s) => ({ members: s.members.filter((m) => m.unitId !== unitId) }));
     } catch (error) {
-      console.warn('[teamRoster] delete failed:', error);
+      console.warn('mcL1484 [teamRoster] delete failed:', error);
       throw error;
     }
   },
@@ -133,7 +133,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
       set((s) => ({ members: replaceMember(s.members, member) }));
       return member;
     } catch (error) {
-      console.warn('[teamRoster] setLink failed:', error);
+      console.warn('mcL1485 [teamRoster] setLink failed:', error);
       throw error;
     }
   },
@@ -144,7 +144,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
       set((s) => ({ members: replaceMember(s.members, member) }));
       return member;
     } catch (error) {
-      console.warn('[teamRoster] setLinkRoster failed:', error);
+      console.warn('mcL1486 [teamRoster] setLinkRoster failed:', error);
       throw error;
     }
   },
@@ -155,7 +155,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
       set((s) => ({ members: replaceMember(s.members, member) }));
       return member;
     } catch (error) {
-      console.warn('[teamRoster] removeLink failed:', error);
+      console.warn('mcL1487 [teamRoster] removeLink failed:', error);
       throw error;
     }
   },
@@ -164,7 +164,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
     try {
       return await window.electronAPI.db.allocateTeamUnitId();
     } catch (error) {
-      console.warn('[teamRoster] allocateUnitId failed:', error);
+      console.warn('mcL1488 [teamRoster] allocateUnitId failed:', error);
       throw error;
     }
   },
@@ -174,7 +174,7 @@ export const useTeamRosterStore = create<TeamRosterState>((set, get) => ({
       await window.electronAPI.db.clearTeamMembers();
       set({ members: [] });
     } catch (error) {
-      console.warn('[teamRoster] clearAll failed:', error);
+      console.warn('mcL1489 [teamRoster] clearAll failed:', error);
       throw error;
     }
   },

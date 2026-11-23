@@ -131,8 +131,8 @@ export async function executePass(
         callbacks.onFinalDelta(delta);
       })
     : callbacks.waitForSilentRemoteDone(request.requestId);
-  void remoteDone.catch(() => {
-    /* catch-no-log-ok waiter may reject while acknowledgement is pending */
+  void remoteDone.catch((e: unknown) => {
+    console.debug('[renderer/lib/aiMultiPassSummary] catch:', e);
   });
   try {
     const result: AiActionResult = await raceAbort(
@@ -189,8 +189,8 @@ export async function executePass(
   } finally {
     callbacks.cancelRemoteWaiter(request.requestId);
     if (signal.aborted) {
-      void window.electronAPI.ai.cancel(request.requestId).catch(() => {
-        /* catch-no-log-ok cancelled pass never exposes provider details */
+      void window.electronAPI.ai.cancel(request.requestId).catch((e: unknown) => {
+        console.debug('[renderer/lib/aiMultiPassSummary] catch:', e);
       });
     }
   }
@@ -314,8 +314,8 @@ export async function runMultiPassSummary(input: {
     anyTruncated = anyTruncated || final.truncated;
     return { messageCount: input.messages.length, truncated: anyTruncated, digests: level };
   } catch (error) {
-    await host?.dispose().catch(() => {
-      /* catch-no-log-ok */
+    await host?.dispose().catch((e: unknown) => {
+      console.debug('[renderer/lib/aiMultiPassSummary] catch:', e);
     });
     if (error instanceof RepetitiveAiOutputError) throw error;
     throw error;

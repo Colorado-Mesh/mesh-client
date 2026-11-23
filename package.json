@@ -71,6 +71,7 @@
     "check:insecure-temp-files": "node scripts/check-insecure-temp-files.mjs",
     "check:ipc-contract": "node scripts/check-ipc-contract.mjs",
     "check:licenses": "node scripts/check-licenses.mjs",
+    "check:log-ids": "node scripts/check-log-ids.mjs --require-all",
     "check:log-injection": "node scripts/check-log-injection.mjs",
     "check:log-panel-filter": "node scripts/check-log-panel-filter.mjs",
     "check:log-service-sinks": "node scripts/check-log-service-sinks.mjs",

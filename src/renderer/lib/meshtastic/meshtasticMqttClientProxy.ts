@@ -97,7 +97,7 @@ export class MeshtasticMqttClientProxyBridge {
     for (const bytes of pending) {
       void this.deps.writeToRadio(bytes).catch((e: unknown) => {
         console.warn(
-          '[MeshtasticMqttClientProxyBridge] flush writeToRadio failed ' +
+          'mcL0950 [MeshtasticMqttClientProxyBridge] flush writeToRadio failed ' +
             (e instanceof Error ? e.message : String(e)),
         );
       });
@@ -128,7 +128,7 @@ export class MeshtasticMqttClientProxyBridge {
     }
     if (droppedCount > 0) {
       console.warn(
-        `[MeshtasticMqttClientProxyBridge] dropped ${droppedCount} pending proxy frame(s) (${droppedBytes} bytes)`,
+        `mcL0951 [MeshtasticMqttClientProxyBridge] dropped ${droppedCount} pending proxy frame(s) (${droppedBytes} bytes)`,
       );
     }
     this.pendingToDevice.push(bytes);
@@ -155,7 +155,7 @@ export class MeshtasticMqttClientProxyBridge {
       });
     } catch (e: unknown) {
       console.warn(
-        '[MeshtasticMqttClientProxyBridge] publishToBroker failed ' +
+        'mcL0952 [MeshtasticMqttClientProxyBridge] publishToBroker failed ' +
           (e instanceof Error ? e.message : String(e)),
       );
     }
@@ -178,7 +178,7 @@ export class MeshtasticMqttClientProxyBridge {
       await this.deps.writeToRadio(bytes);
     } catch (e: unknown) {
       console.warn(
-        '[MeshtasticMqttClientProxyBridge] writeToRadio failed ' +
+        'mcL0953 [MeshtasticMqttClientProxyBridge] writeToRadio failed ' +
           (e instanceof Error ? e.message : String(e)),
       );
     }

@@ -186,7 +186,7 @@ class PacketRouter {
     }
     if (ids.size <= MAX_PACKET_ROUTER_LISTENERS) return;
     this.removeListener(Math.min(...ids));
-    console.warn('[PacketRouter] evicted oldest listener after reaching session cap');
+    console.warn('mcL0825 [PacketRouter] evicted oldest listener after reaching session cap');
   }
 
   /** Live listener count. Exported for leak assertions in tests. */
@@ -253,7 +253,8 @@ class PacketRouter {
                       .updateMessagePacketId(tempNum, realNum, event.payload.from)
                       .catch((e: unknown) => {
                         console.warn(
-                          '[PacketRouter] updateMessagePacketId failed ' + errLikeToLogString(e),
+                          'mcL0826 [PacketRouter] updateMessagePacketId failed ' +
+                            errLikeToLogString(e),
                         );
                       });
                   }
@@ -474,7 +475,7 @@ class PacketRouter {
       try {
         listener(event, identityId);
       } catch (e) {
-        console.warn('[PacketRouter] listener error ' + errLikeToLogString(e));
+        console.warn('mcL0827 [PacketRouter] listener error ' + errLikeToLogString(e));
       }
     }
   }

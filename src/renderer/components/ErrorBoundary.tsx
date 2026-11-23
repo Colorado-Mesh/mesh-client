@@ -49,7 +49,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error(
-      '[ErrorBoundary] caught: ' +
+      'mcL0422 [ErrorBoundary] caught: ' +
         errLikeToLogString(error) +
         ' info=' +
         errLikeToLogString(errorInfo),

@@ -1281,7 +1281,7 @@ describe('App shell layout', () => {
     renderApp();
     await waitFor(() => {
       expect(warn.spy).toHaveBeenCalledWith(
-        '[App] settings search registry failed to load',
+        'mcL0335 [App] settings search registry failed to load',
         expect.any(Error),
       );
     });

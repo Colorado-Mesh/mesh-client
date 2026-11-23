@@ -79,5 +79,5 @@ export async function reconnectRfFromLastConnection(
 }
 
 export function logRfReconnectFailure(context: string, err: unknown): void {
-  console.warn(`${context} ` + errLikeToLogString(err));
+  console.warn(`mcL1100 ${context} ` + errLikeToLogString(err));
 }

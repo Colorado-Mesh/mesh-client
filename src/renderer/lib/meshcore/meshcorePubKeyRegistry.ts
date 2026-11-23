@@ -18,7 +18,7 @@ function storePubKey(nodeId: number, publicKey: Uint8Array): void {
   const existingNodeId = pubKeyPrefixByHex.get(prefixHex);
   if (existingNodeId != null && existingNodeId !== nodeId) {
     console.warn(
-      `[meshcorePubKeyRegistry] 6-byte pubkey prefix collision prefix=${prefixHex} ` +
+      `mcL0898 [meshcorePubKeyRegistry] 6-byte pubkey prefix collision prefix=${prefixHex} ` +
         `existing=0x${existingNodeId.toString(16)} new=0x${nodeId.toString(16)} — keeping first`,
     );
     return;

@@ -94,7 +94,7 @@ export default function GlobalScanQrControl({
           }
           addToast(t('qrIngest.unknownLink'), 'error');
         } catch (err: unknown) {
-          console.error('[GlobalScanQrControl] failed: ' + errLikeToLogString(err));
+          console.error('mcL0424 [GlobalScanQrControl] failed: ' + errLikeToLogString(err));
           addToast(t('qrIngest.unknownLink'), 'error');
         }
       }}

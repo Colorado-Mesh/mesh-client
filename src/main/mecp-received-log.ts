@@ -65,7 +65,7 @@ function rotateIfNeeded(filePath: string): void {
     fs.renameSync(filePath, backup);
   } catch (e) {
     console.warn(
-      '[mecp-received-log] rotate failed',
+      'mcL0228 [mecp-received-log] rotate failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
@@ -101,7 +101,7 @@ export function appendMecpReceivedLog(entry: MecpReceivedLogEntry): Promise<void
   // Keep the chain alive after failures so later appends still run.
   appendChain = write.catch((e: unknown) => {
     console.warn(
-      '[mecp-received-log] append failed',
+      'mcL0229 [mecp-received-log] append failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   });
@@ -117,15 +117,21 @@ export async function readMecpReceivedLogForExport(): Promise<string> {
     if (fs.existsSync(backup)) {
       parts.push(await fs.promises.readFile(backup, 'utf8'));
     }
-  } catch {
-    // catch-no-log-ok missing backup is fine
+  } catch (e: unknown) {
+    console.debug(
+      '[main/mecp-received-log] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   try {
     if (fs.existsSync(filePath)) {
       parts.push(await fs.promises.readFile(filePath, 'utf8'));
     }
-  } catch {
-    // catch-no-log-ok missing current is fine
+  } catch (e: unknown) {
+    console.debug(
+      '[main/mecp-received-log] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   return parts.join('');
 }

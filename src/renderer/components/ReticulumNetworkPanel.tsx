@@ -261,7 +261,7 @@ export function ReticulumNetworkPanel({
       setPathMediumPreferenceState(preference);
       addToast(t('networkPanel.reticulumStackSettings.pathMediumPreferenceSaved'), 'success');
     } catch (e) {
-      console.warn('[ReticulumNetworkPanel] path medium ' + errLikeToLogString(e));
+      console.warn('mcL0552 [ReticulumNetworkPanel] path medium ' + errLikeToLogString(e));
       addToast(t('networkPanel.reticulumStackSettings.pathMediumPreferenceSaveFailed'), 'error');
     } finally {
       setPathMediumBusy(false);
@@ -349,7 +349,8 @@ export function ReticulumNetworkPanel({
         setIdentityNotice(t('connectionPanel.reticulumIdentity.exportSaved'));
       }
     } catch (e) {
-      // catch-no-log-ok: export failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     } finally {
       setIdentityActionBusy(false);
@@ -393,7 +394,8 @@ export function ReticulumNetworkPanel({
         setIdentityNotice(t('connectionPanel.reticulumIdentity.exportSaved'));
       }
     } catch (e) {
-      // catch-no-log-ok: export failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     } finally {
       setIdentityActionBusy(false);
@@ -414,7 +416,8 @@ export function ReticulumNetworkPanel({
       await refreshIdentity();
       return true;
     } catch (e) {
-      // catch-no-log-ok: save failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
       return false;
     }
@@ -447,7 +450,8 @@ export function ReticulumNetworkPanel({
       setImportBackupJson('');
       await refreshIdentity();
     } catch (e) {
-      // catch-no-log-ok: export failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -476,7 +480,8 @@ export function ReticulumNetworkPanel({
       setMnemonic(null);
       await refreshIdentity();
     } catch (e) {
-      // catch-no-log-ok: export failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -488,8 +493,9 @@ export function ReticulumNetworkPanel({
     let parsedJson: unknown;
     try {
       parsedJson = JSON.parse(raw) as unknown;
-    } catch {
-      // catch-no-log-ok: invalid JSON shown via setIdentityError
+    } catch (e: unknown) {
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(t('connectionPanel.reticulumIdentity.failed'));
       return;
     }
@@ -526,7 +532,8 @@ export function ReticulumNetworkPanel({
       setImportBackupPin('');
       await refreshIdentity();
     } catch (e) {
-      // catch-no-log-ok: import failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     } finally {
       setIdentityActionBusy(false);
@@ -547,7 +554,8 @@ export function ReticulumNetworkPanel({
       }
       setImportBackupJson(result.contentText);
     } catch (e) {
-      // catch-no-log-ok: dialog failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -578,7 +586,8 @@ export function ReticulumNetworkPanel({
       setMnemonic(null);
       await refreshIdentity();
     } catch (e) {
-      // catch-no-log-ok: import failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -594,7 +603,8 @@ export function ReticulumNetworkPanel({
       }
       await handleImportPrivateKey(false, result.contentBase64);
     } catch (e) {
-      // catch-no-log-ok: file import failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -642,7 +652,8 @@ export function ReticulumNetworkPanel({
       setPendingImportMode('merge');
       setShowImportConfirm(true);
     } catch (e) {
-      // catch-no-log-ok: export failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -655,7 +666,8 @@ export function ReticulumNetworkPanel({
       setPendingImportMode('merge');
       setShowImportConfirm(true);
     } catch (e) {
-      // catch-no-log-ok: export failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -667,7 +679,8 @@ export function ReticulumNetworkPanel({
       const result = await window.electronAPI.reticulum.validateConfig();
       setConfigValidateResult(result);
     } catch (e) {
-      // catch-no-log-ok: validate failure shown in panel
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setConfigValidateResult({
         ok: false,
         issues: [],
@@ -758,7 +771,8 @@ export function ReticulumNetworkPanel({
         addToast(t('networkPanel.reticulumStackSettings.stampMtuRestartRequired'), 'info');
       }
     } catch (e) {
-      // catch-no-log-ok: stack settings save failure shown via setIdentityError
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       setIdentityError(errLikeToLogString(e));
     }
   };
@@ -1110,7 +1124,7 @@ export function ReticulumNetworkPanel({
                 showReticulumQrIngestToast(outcome, { t, addToast });
               })().catch((err: unknown) => {
                 console.error(
-                  '[ReticulumNetworkPanel] QR ingest failed: ' + errLikeToLogString(err),
+                  'mcL0553 [ReticulumNetworkPanel] QR ingest failed: ' + errLikeToLogString(err),
                 );
                 addToast(t('qrIngest.unknownLink'), 'error');
               });
@@ -1141,7 +1155,7 @@ export function ReticulumNetworkPanel({
                 void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch(
                   (err: unknown) => {
                     console.warn(
-                      '[ReticulumNetworkPanel] peer refresh after identity change failed: ' +
+                      'mcL0554 [ReticulumNetworkPanel] peer refresh after identity change failed: ' +
                         errLikeToLogString(err),
                     );
                   },
@@ -1578,7 +1592,7 @@ function IdentitySlotsSection({
     try {
       setSlots(await listReticulumIdentities());
     } catch (err) {
-      console.warn('[IdentitySlotsSection] list failed: ' + errLikeToLogString(err));
+      console.warn('mcL0555 [IdentitySlotsSection] list failed: ' + errLikeToLogString(err));
       onError(
         t('connectionPanel.reticulumIdentity.slotActionFailed', {
           error: errLikeToLogString(err),
@@ -1600,7 +1614,7 @@ function IdentitySlotsSection({
       await onChanged();
       await reload();
     } catch (err) {
-      console.warn('[IdentitySlotsSection] create failed: ' + errLikeToLogString(err));
+      console.warn('mcL0556 [IdentitySlotsSection] create failed: ' + errLikeToLogString(err));
       onError(
         t('connectionPanel.reticulumIdentity.slotActionFailed', {
           error: errLikeToLogString(err),
@@ -1622,7 +1636,7 @@ function IdentitySlotsSection({
       await onChanged();
       await reload();
     } catch (err) {
-      console.warn('[IdentitySlotsSection] switch failed: ' + errLikeToLogString(err));
+      console.warn('mcL0557 [IdentitySlotsSection] switch failed: ' + errLikeToLogString(err));
       onError(
         t('connectionPanel.reticulumIdentity.slotActionFailed', {
           error: errLikeToLogString(err),
@@ -1643,7 +1657,7 @@ function IdentitySlotsSection({
       setDeleteTarget(null);
       await reload();
     } catch (err) {
-      console.warn('[IdentitySlotsSection] delete failed: ' + errLikeToLogString(err));
+      console.warn('mcL0558 [IdentitySlotsSection] delete failed: ' + errLikeToLogString(err));
       onError(
         t('connectionPanel.reticulumIdentity.slotActionFailed', {
           error: errLikeToLogString(err),
@@ -1815,8 +1829,8 @@ function IdentityConfiguredView({
     if (lxmfHash && pub && /^[0-9a-f]{128}$/i.test(pub)) {
       try {
         return buildLxmaContactUri(lxmfHash, pub);
-      } catch {
-        // catch-no-log-ok fall through to mesh-client identity URI
+      } catch (e: unknown) {
+        console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
       }
     }
     const idHash = identity?.identity_hash?.trim();
@@ -1827,8 +1841,9 @@ function IdentityConfiguredView({
         lxmfHash: lxmfHash || null,
         name: identity?.display_name ?? null,
       });
-    } catch {
-      // catch-no-log-ok Invalid or incomplete identity hashes simply hide the optional QR.
+    } catch (e: unknown) {
+      console.debug('[renderer/components/ReticulumNetworkPanel] catch:', e);
+
       return null;
     }
   }, [identity, lxmfHash]);
@@ -1838,7 +1853,7 @@ function IdentityConfiguredView({
     try {
       await writeClipboardText(identityHash);
     } catch (e) {
-      console.warn('[ReticulumNetworkPanel] copy identity hash ' + errLikeToLogString(e));
+      console.warn('mcL0559 [ReticulumNetworkPanel] copy identity hash ' + errLikeToLogString(e));
     }
   }, [identityHash]);
 
@@ -1849,7 +1864,9 @@ function IdentityConfiguredView({
     try {
       await writeClipboardText(identityFingerprint);
     } catch (e) {
-      console.warn('[ReticulumNetworkPanel] copy identity fingerprint ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0560 [ReticulumNetworkPanel] copy identity fingerprint ' + errLikeToLogString(e),
+      );
     }
   }, [identityFingerprint]);
 
@@ -1858,7 +1875,7 @@ function IdentityConfiguredView({
     try {
       await writeClipboardText(lxmfHash);
     } catch (e) {
-      console.warn('[ReticulumNetworkPanel] copy LXMF hash ' + errLikeToLogString(e));
+      console.warn('mcL0561 [ReticulumNetworkPanel] copy LXMF hash ' + errLikeToLogString(e));
     }
   }, [lxmfHash]);
 

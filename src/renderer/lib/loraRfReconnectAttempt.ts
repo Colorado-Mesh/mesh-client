@@ -275,7 +275,8 @@ export async function runLoraRfReconnectAttempt<TParams>(
       `Reconnect attempt timed out after ${BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
     );
   } catch (err) {
-    // catch-no-log-ok protocol onAttemptError logs the failure (warn/debug)
+    console.debug('[renderer/lib/loraRfReconnectAttempt] catch:', err);
+
     attemptActive = false;
     if (!work.settled) work.budgetExpired = true;
     const action = await deps.onAttemptError(err, {

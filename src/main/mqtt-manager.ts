@@ -101,8 +101,12 @@ export function parsePsk(b64: string): Buffer | null {
   let raw: Buffer;
   try {
     raw = Buffer.from(b64, 'base64');
-  } catch {
-    // catch-no-log-ok malformed base64 input — caller skips key
+  } catch (e: unknown) {
+    console.debug(
+      '[main/mqtt-manager] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
   if (raw.length === 0) return null;
@@ -625,11 +629,14 @@ export class MQTTManager extends EventEmitter {
             err.message.toLowerCase().includes('connection reset');
           if (isCascade) {
             console.warn(
-              '[Meshtastic MQTT] Subscribe interrupted (will retry on reconnect):',
+              'mcL0243 [Meshtastic MQTT] Subscribe interrupted (will retry on reconnect):',
               sanitizeLogMessage(err.message),
             );
           } else {
-            console.error('[Meshtastic MQTT] Subscribe failed:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
+            console.error(
+              'mcL0244 [Meshtastic MQTT] Subscribe failed:',
+              sanitizeLogMessage(err.message),
+            ); // log-filter-ok Meshtastic MQTT logs → App log panel
             this.setError(`Subscribe failed: ${err.message}`);
           }
         } else {
@@ -642,7 +649,7 @@ export class MQTTManager extends EventEmitter {
       this.client.unsubscribe(previous, (err) => {
         if (err) {
           console.warn(
-            '[Meshtastic MQTT] Unsubscribe failed before resubscribe:',
+            'mcL0245 [Meshtastic MQTT] Unsubscribe failed before resubscribe:',
             sanitizeLogMessage(err.message),
           );
         }
@@ -773,17 +780,20 @@ export class MQTTManager extends EventEmitter {
           err.message === 'Keepalive timeout' || err.message === 'connack timeout';
         if (isMsgTransient) {
           console.warn(
-            '[Meshtastic MQTT] Connection timeout (will reconnect):',
+            'mcL0246 [Meshtastic MQTT] Connection timeout (will reconnect):',
             sanitizeLogMessage(err.message),
           );
         } else {
           console.warn(
-            '[Meshtastic MQTT] Network error (will reconnect):',
+            'mcL0247 [Meshtastic MQTT] Network error (will reconnect):',
             sanitizeLogMessage(err.message),
           ); // log-filter-ok Meshtastic MQTT logs → App log panel
         }
       } else {
-        console.error('[Meshtastic MQTT] Fatal connection error:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
+        console.error(
+          'mcL0248 [Meshtastic MQTT] Fatal connection error:',
+          sanitizeLogMessage(err.message),
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
         this.setError(err.message);
       }
     });
@@ -793,7 +803,7 @@ export class MQTTManager extends EventEmitter {
       if (!isCurrentClient()) return;
       if (this.status !== 'connecting' || !this.client) return;
       const msg = `Meshtastic MQTT: timed out before MQTT session (no CONNACK within ${MESHTASTIC_MQTT_CONNECT_ACK_MS / 1000}s). Check host, port, WebSocket path /mqtt, TLS, and network (firewall, VPN, DNS).`;
-      console.error('[Meshtastic MQTT]', sanitizeLogMessage(msg)); // log-filter-ok Meshtastic MQTT logs → App log panel
+      console.error('mcL0249 [Meshtastic MQTT]', sanitizeLogMessage(msg)); // log-filter-ok Meshtastic MQTT logs → App log panel
       this.emit('error', msg);
       this.preferFastMqttReconnect = true;
       if (this.client) {
@@ -823,8 +833,11 @@ export class MQTTManager extends EventEmitter {
           const s = this.client?.stream as { ping?: () => void } | undefined;
           try {
             s?.ping?.();
-          } catch {
-            // catch-no-log-ok ws ping after teardown
+          } catch (e: unknown) {
+            console.debug(
+              '[main/mqtt-manager] catch:',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+            );
           }
         }, MESHTASTIC_MQTT_WSS_PING_MS);
         this.startKeepaliveReschedule();
@@ -872,7 +885,7 @@ export class MQTTManager extends EventEmitter {
         meshtasticConnackFastReconnect: useFast,
       });
       console.warn(
-        `[Meshtastic MQTT] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`,
+        `mcL0250 [Meshtastic MQTT] Reconnecting in ${delay}ms (attempt ${this.retryCount}/${maxRetries})`,
       ); // log-filter-ok Meshtastic MQTT logs → App log panel
       this.setStatus('disconnected');
 
@@ -993,7 +1006,7 @@ export class MQTTManager extends EventEmitter {
         );
       } catch (e) {
         console.warn(
-          '[Meshtastic MQTT] JSON mirror failed:',
+          'mcL0251 [Meshtastic MQTT] JSON mirror failed:',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }
@@ -1020,8 +1033,12 @@ export class MQTTManager extends EventEmitter {
     let rawData;
     try {
       rawData = fromBinary(DataSchema, dataBytes);
-    } catch {
-      // catch-no-log-ok garbage ciphertext or corrupt Data — skip JSON mirror only
+    } catch (e: unknown) {
+      console.debug(
+        '[main/mqtt-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return;
     }
 
@@ -1055,8 +1072,12 @@ export class MQTTManager extends EventEmitter {
           } else {
             payloadVal = { text: textStr };
           }
-        } catch {
-          // catch-no-log-ok payload is plaintext, not JSON — use { text }
+        } catch (e: unknown) {
+          console.debug(
+            '[main/mqtt-manager] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+
           payloadVal = { text: textStr };
         }
         body.payload = payloadVal;
@@ -1105,7 +1126,7 @@ export class MQTTManager extends EventEmitter {
       this.client.publish(topicJson, JSON.stringify(body), { qos: 0 });
     } catch (e) {
       console.warn(
-        '[Meshtastic MQTT] JSON mirror encode failed:',
+        'mcL0252 [Meshtastic MQTT] JSON mirror encode failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
     }
@@ -1126,7 +1147,7 @@ export class MQTTManager extends EventEmitter {
     const explicitPsk = pskBase64 ? parsePsk(pskBase64) : undefined;
     if (pskBase64 && !explicitPsk) {
       console.warn(
-        '[Meshtastic MQTT] Invalid publish PSK; falling back to channel map or default key',
+        'mcL0253 [Meshtastic MQTT] Invalid publish PSK; falling back to channel map or default key',
       );
     }
 
@@ -1399,7 +1420,7 @@ export class MQTTManager extends EventEmitter {
 
   private rejectOversizedMqttPacket(): void {
     const message = mqttPacketTooLargeMessage();
-    console.error('[Meshtastic MQTT]', message); // log-filter-ok fixed local diagnostic, no broker data
+    console.error('mcL0254 [Meshtastic MQTT]', message); // log-filter-ok fixed local diagnostic, no broker data
     // Clear settings before ending the transport so neither close nor power-resume paths
     // reconnect automatically to a broker that violated the packet limit.
     this.disconnect();
@@ -1420,7 +1441,7 @@ export class MQTTManager extends EventEmitter {
     // partially preserved and a flood of unique IDs can't open a replay window.
     if (this.seenPacketIds.size > 50_000) {
       console.warn(
-        '[Meshtastic MQTT] seenPacketIds exceeded 50k entries after cleanup — evicting oldest half',
+        'mcL0255 [Meshtastic MQTT] seenPacketIds exceeded 50k entries after cleanup — evicting oldest half',
       ); // log-filter-ok Meshtastic MQTT logs → App log panel
       const sorted = [...this.seenPacketIds.entries()].sort((a, b) => a[1] - b[1]);
       const evictCount = sorted.length >> 1;
@@ -1513,8 +1534,12 @@ export class MQTTManager extends EventEmitter {
       try {
         const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
         this.handleJsonMessage(parsed, topic);
-      } catch {
-        // catch-no-log-ok non-JSON on topic; failure sampled via logSampledDebug (not parse error object)
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         this.logSampledDebug(
           'mqtt-json-parse-failed',
           `[Meshtastic MQTT] JSON parse failed, topic=${sanitizeLogMessage(topic)} bytes=${bytes.length}`,
@@ -1555,7 +1580,8 @@ export class MQTTManager extends EventEmitter {
             this.decodeAndHandleServiceEnvelope(currentBytes, topic);
             return;
           } catch (retryErr) {
-            // catch-no-log-ok trim-retry expects protobuf errors until trailing nulls removed; final error logged via logSampledDebug below
+            console.debug('[main/mqtt-manager] catch:', retryErr);
+
             decodeErr = retryErr;
             msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
             if (!isIllegalTagFieldZero(msg)) break;
@@ -1986,7 +2012,7 @@ export class MQTTManager extends EventEmitter {
         this.emit('nodeUpdate', nodeUpdate);
       } catch (e) {
         console.warn(
-          '[Meshtastic MQTT] NodeInfo parse failed for node',
+          'mcL0256 [Meshtastic MQTT] NodeInfo parse failed for node',
           nodeId,
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
@@ -2042,7 +2068,7 @@ export class MQTTManager extends EventEmitter {
         }
       } catch (e) {
         console.warn(
-          '[Meshtastic MQTT] Position parse failed for node',
+          'mcL0257 [Meshtastic MQTT] Position parse failed for node',
           nodeId,
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
@@ -2083,7 +2109,7 @@ export class MQTTManager extends EventEmitter {
         this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       } catch (e) {
         console.warn(
-          '[Meshtastic MQTT] TextMessage parse failed for node',
+          'mcL0258 [Meshtastic MQTT] TextMessage parse failed for node',
           nodeId,
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
@@ -2135,7 +2161,7 @@ export class MQTTManager extends EventEmitter {
         }
       } catch (e) {
         console.warn(
-          '[Meshtastic MQTT] Telemetry parse failed',
+          'mcL0259 [Meshtastic MQTT] Telemetry parse failed',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }
@@ -2155,7 +2181,7 @@ export class MQTTManager extends EventEmitter {
         });
       } catch (e) {
         console.warn(
-          '[Meshtastic MQTT] PaxCount parse failed',
+          'mcL0260 [Meshtastic MQTT] PaxCount parse failed',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }
@@ -2191,7 +2217,7 @@ export class MQTTManager extends EventEmitter {
         });
       } catch (e) {
         console.warn(
-          '[Meshtastic MQTT] MapReport parse failed',
+          'mcL0261 [Meshtastic MQTT] MapReport parse failed',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }
@@ -2206,8 +2232,12 @@ export class MQTTManager extends EventEmitter {
           );
         }
         this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
-      } catch {
-        // catch-no-log-ok routing is optional info, failures are non-fatal
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       }
     } else if (portnum === PortNum.TRACEROUTE_APP && payload) {
@@ -2225,7 +2255,7 @@ export class MQTTManager extends EventEmitter {
         this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       } catch (e) {
         console.warn(
-          '[Meshtastic MQTT] TRACEROUTE RouteDiscovery parse failed',
+          'mcL0262 [Meshtastic MQTT] TRACEROUTE RouteDiscovery parse failed',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
         this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
@@ -2270,8 +2300,12 @@ export class MQTTManager extends EventEmitter {
       nonce.writeUInt32LE(from >>> 0, 8); // firmware: fromNode at byte offset 8 (after 64-bit packetId)
       const decipher = createDecipheriv(cipherForKey(key), key, nonce);
       return Buffer.concat([decipher.update(Buffer.from(encrypted)), decipher.final()]);
-    } catch {
-      // catch-no-log-ok AES decrypt failed with this key — caller tries next key
+    } catch (e: unknown) {
+      console.debug(
+        '[main/mqtt-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return null;
     }
   }
@@ -2303,8 +2337,12 @@ export class MQTTManager extends EventEmitter {
       try {
         fromBinary(UserSchema, payload ?? new Uint8Array());
         return true;
-      } catch {
-        // catch-no-log-ok wrong PSK yields DataSchema shell with invalid User payload — try next key
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return false;
       }
     }
@@ -2313,8 +2351,12 @@ export class MQTTManager extends EventEmitter {
       try {
         fromBinary(PositionSchema, payload ?? new Uint8Array());
         return true;
-      } catch {
-        // catch-no-log-ok wrong PSK yields DataSchema shell with invalid Position payload — try next key
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return false;
       }
     }
@@ -2324,8 +2366,12 @@ export class MQTTManager extends EventEmitter {
       try {
         fromBinary(TelemetrySchema as Parameters<typeof fromBinary>[0], payload);
         return true;
-      } catch {
-        // catch-no-log-ok wrong PSK yields invalid Telemetry nested payload — try next key
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return false;
       }
     }
@@ -2335,8 +2381,12 @@ export class MQTTManager extends EventEmitter {
       try {
         fromBinary(PaxcountSchema as Parameters<typeof fromBinary>[0], payload);
         return true;
-      } catch {
-        // catch-no-log-ok wrong PSK yields invalid PaxCount nested payload — try next key
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return false;
       }
     }
@@ -2346,8 +2396,12 @@ export class MQTTManager extends EventEmitter {
       try {
         fromBinary(RouteDiscoverySchema, payload);
         return true;
-      } catch {
-        // catch-no-log-ok wrong PSK yields invalid RouteDiscovery nested payload — try next key
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return false;
       }
     }
@@ -2357,8 +2411,12 @@ export class MQTTManager extends EventEmitter {
       try {
         fromBinary(MapReportSchema as Parameters<typeof fromBinary>[0], payload);
         return true;
-      } catch {
-        // catch-no-log-ok wrong PSK yields invalid MapReport nested payload — try next key
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return false;
       }
     }
@@ -2368,8 +2426,12 @@ export class MQTTManager extends EventEmitter {
       try {
         fromBinary(RoutingSchema as Parameters<typeof fromBinary>[0], payload);
         return true;
-      } catch {
-        // catch-no-log-ok wrong PSK yields invalid Routing nested payload — try next key
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return false;
       }
     }
@@ -2405,11 +2467,14 @@ export class MQTTManager extends EventEmitter {
         if (this.acceptsDecryptedDataCandidate(data)) {
           return data;
         }
-      } catch {
-        // catch-no-log-ok wrong PSK produces garbage bytes that fail protobuf decode — try next key
+      } catch (e: unknown) {
+        console.debug(
+          '[main/mqtt-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }
-    // catch-no-log-ok expected on public MQTT when we lack the channel PSK — drop silently
+    console.debug('[main/mqtt-manager] no decrypt key matched packet');
     return null;
   }
 

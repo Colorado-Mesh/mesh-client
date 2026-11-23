@@ -97,8 +97,8 @@ export async function requestFlasherSerialPort(
   if (options?.preferSessionReuse) {
     try {
       return await pickGrantedFlasherPort(true);
-    } catch {
-      // catch-no-log-ok session reuse failed — fall through to picker
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/flasher/flasherSerial] catch:', e);
     }
   }
 
@@ -208,7 +208,7 @@ export async function safeCloseSerialPort(port: SerialPort | null | undefined): 
   if (!port) return;
   try {
     await closeSerialPortIfOpen(port);
-  } catch {
-    // catch-no-log-ok: port may already be closed after flash
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/flasher/flasherSerial] catch:', e);
   }
 }

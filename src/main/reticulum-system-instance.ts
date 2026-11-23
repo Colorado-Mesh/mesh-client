@@ -6,6 +6,7 @@ import path from 'path';
 import type { SystemReticulumInstance } from '../shared/reticulum-types';
 import { defaultReticulumConfigPaths } from './reticulum-config-paths';
 import { readUtf8FileBounded } from './reticulum-config-read';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 const DEFAULT_SHARED_INSTANCE_PORT = 37428;
 const DEFAULT_INSTANCE_NAME = 'default';
@@ -146,8 +147,11 @@ export async function detectSystemReticulum(
       parsed = parseSystemReticulumConfig(readUtf8FileBounded(candidate));
       configPath = candidate;
       break;
-    } catch {
-      // catch-no-log-ok: unreadable candidate; try the next system config path
+    } catch (e: unknown) {
+      console.debug(
+        '[main/reticulum-system-instance] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
   const sharedInstanceType = resolveSharedInstanceType(parsed.sharedInstanceType, platform);

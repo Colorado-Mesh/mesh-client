@@ -54,8 +54,9 @@ export async function resetMeshcoreRoomCompanionSyncSinceForCatchUp(
       'meshcoreRoomSyncSinceResetGetContacts',
     );
     contact = findRadioContact(contacts, nodeId);
-  } catch {
-    // catch-no-log-ok getContacts timeout/failure — caller treats 'failed' and continues login
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcoreRoomLoginPathSync] catch:', e);
+
     return 'failed';
   }
   if (!contact) return 'skipped';
@@ -69,7 +70,7 @@ export async function resetMeshcoreRoomCompanionSyncSinceForCatchUp(
     );
   } catch (e: unknown) {
     console.warn(
-      '[meshcoreRoomLoginPathSync] sync_since catch-up remove failed ' +
+      'mcL0928 [meshcoreRoomLoginPathSync] sync_since catch-up remove failed ' +
         (e instanceof Error ? e.message : String(e)),
     );
     return 'failed';
@@ -98,7 +99,7 @@ export async function resetMeshcoreRoomCompanionSyncSinceForCatchUp(
     return 'reset';
   } catch (e: unknown) {
     console.warn(
-      '[meshcoreRoomLoginPathSync] sync_since catch-up add failed, retrying restore ' +
+      'mcL0929 [meshcoreRoomLoginPathSync] sync_since catch-up add failed, retrying restore ' +
         (e instanceof Error ? e.message : String(e)),
     );
     try {
@@ -106,7 +107,7 @@ export async function resetMeshcoreRoomCompanionSyncSinceForCatchUp(
       return 'reset';
     } catch (e2: unknown) {
       console.warn(
-        '[meshcoreRoomLoginPathSync] sync_since catch-up restore failed; contact may be missing ' +
+        'mcL0930 [meshcoreRoomLoginPathSync] sync_since catch-up restore failed; contact may be missing ' +
           (e2 instanceof Error ? e2.message : String(e2)),
       );
       return 'failed';
@@ -294,7 +295,7 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
       return { synced: true, pathByteLen: path.length, reason: 'synced' };
     } catch (e: unknown) {
       const error = e instanceof Error ? e.message : String(e);
-      console.warn(`[meshcoreRoomLoginPathSync] fast path sync failed ${error}`);
+      console.warn(`mcL0931 [meshcoreRoomLoginPathSync] fast path sync failed ${error}`);
       tableFull = isMeshcoreTableFullError(e);
     }
   }
@@ -310,8 +311,8 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
     if (path.length === 0 && contact) {
       path = pathBytesFromRadioContact(contact);
     }
-  } catch {
-    // catch-no-log-ok getContacts timeout/failure — fall back to map/history path below
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcoreRoomLoginPathSync] catch:', e);
   }
 
   if (path.length <= 1 && loginHopsAway > 0) {
@@ -339,8 +340,9 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
         'meshcoreRoomLoginPathSyncGetContacts2',
       );
       contact = findRadioContact(contacts, nodeId) ?? buildContactFromNode(pubKey, node);
-    } catch {
-      // catch-no-log-ok second getContacts failed — synthetic contact from node map is enough to push path
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshcoreRoomLoginPathSync] catch:', e);
+
       contact = buildContactFromNode(pubKey, node);
     }
   }
@@ -364,7 +366,7 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
     };
   } catch (e: unknown) {
     console.warn(
-      `[meshcoreRoomLoginPathSync] path push failed ${e instanceof Error ? e.message : String(e)}`,
+      `mcL0932 [meshcoreRoomLoginPathSync] path push failed ${e instanceof Error ? e.message : String(e)}`,
     );
     const error = e instanceof Error ? e.message : String(e);
     return {

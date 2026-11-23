@@ -67,14 +67,15 @@ export async function clearMeshcoreRepeaters(
         } catch (e: unknown) {
           radioRemoveFailures += 1;
           console.warn(
-            '[meshcoreClearRepeaters] removeContact error ' + meshcoreRemoveContactErrorMessage(e),
+            'mcL0879 [meshcoreClearRepeaters] removeContact error ' +
+              meshcoreRemoveContactErrorMessage(e),
           );
         }
         removed.add(id);
       }
     } catch (e: unknown) {
       radioRemoveFailures += 1;
-      console.warn('[meshcoreClearRepeaters] getContacts error ' + errLikeToLogString(e));
+      console.warn('mcL0880 [meshcoreClearRepeaters] getContacts error ' + errLikeToLogString(e));
     }
   }
 
@@ -82,7 +83,7 @@ export async function clearMeshcoreRepeaters(
     await clearDbRepeaters();
   } catch (e: unknown) {
     console.warn(
-      '[meshcoreClearRepeaters] clearMeshcoreRepeaters DB error ' + errLikeToLogString(e),
+      'mcL0881 [meshcoreClearRepeaters] clearMeshcoreRepeaters DB error ' + errLikeToLogString(e),
     );
     throw e instanceof Error ? e : new Error(String(e));
   }

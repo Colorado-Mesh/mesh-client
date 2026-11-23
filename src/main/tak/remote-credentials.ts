@@ -7,6 +7,7 @@ import path from 'path';
 
 import { joinUnderRoot } from '../../shared/pathUnderRoot';
 import type { TAKRemoteCredentialSummary } from '../../shared/tak-types';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 
 /** PEM credentials for `tls.connect`. */
 export interface TakRemoteCredentials {
@@ -119,8 +120,11 @@ function parseFile(file: TakCredentialFile, password: string): ParsedCredentials
   if (text.includes('-----BEGIN ')) return parsePem(text, password);
   try {
     return { certs: [new X509Certificate(file.data)], keys: [] };
-  } catch {
-    // catch-no-log-ok not a DER certificate; PKCS#12 is the only other binary format accepted
+  } catch (e: unknown) {
+    console.debug(
+      '[main/tak/remote-credentials] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   try {
     return parsePkcs12(file.data, password);
@@ -233,8 +237,12 @@ export async function saveTakRemoteCredentials(creds: TakRemoteCredentials): Pro
 function keyMatchesCert(certPem: string, keyPem: string): boolean {
   try {
     return new X509Certificate(certPem).checkPrivateKey(createPrivateKey(keyPem));
-  } catch {
-    // catch-no-log-ok the caller logs the mismatch once and reports no client identity
+  } catch (e: unknown) {
+    console.debug(
+      '[main/tak/remote-credentials] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }
@@ -253,7 +261,7 @@ export async function loadTakRemoteCredentials(): Promise<TakRemoteCredentials> 
   const identityMatches = Boolean(cert && key && keyMatchesCert(cert, key));
   if (cert && key && !identityMatches) {
     console.warn(
-      '[TakRemote] Stored client certificate and key do not match; import the client certificate again',
+      'mcL0300 [TakRemote] Stored client certificate and key do not match; import the client certificate again',
     );
   }
   return {

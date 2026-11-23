@@ -241,8 +241,9 @@ export function useConversationSummary(input: ConversationSummaryInput) {
         selected.length,
         ceilingTruncated,
       );
-    } catch {
-      // catch-no-log-ok history errors expose only a fixed actionable summary error
+    } catch (e: unknown) {
+      console.debug('[renderer/hooks/useConversationSummary] catch:', e);
+
       if (isCurrent())
         useAiSummaryStore.setState((s) => ({
           summaries: {

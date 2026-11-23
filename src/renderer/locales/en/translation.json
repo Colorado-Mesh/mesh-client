@@ -220,9 +220,11 @@
     "dataManagementDesc": "Export your local database (messages & nodes) as a .db file, or import/merge another user's database into yours.",
     "supportSection": "Support / Bug reports",
     "supportSectionDesc": "One-click exports replace collecting the debug snapshot, log file, and database separately when reporting issues.",
+    "verboseLogging": "Include debug and info in logs",
+    "verboseLoggingDesc": "Off by default so exports stay small. Turn on, reproduce the problem, then Export for GitHub. Quote any mcL#### codes from the log when filing an issue.",
     "exportForGitHub": "Export support bundle for GitHub",
     "exportForGitHubButton": "Export for GitHub",
-    "exportForGitHubDesc": "Includes debug snapshot and log files in one zip. Safe to attach to public GitHub issues.",
+    "exportForGitHubDesc": "Includes debug snapshot and log files in one zip. Safe to attach to public GitHub issues. For hard-to-reproduce bugs, enable Include debug and info in logs first, reproduce, then export.",
     "exportForDeveloper": "Export support bundle for developer",
     "exportForDeveloperButton": "Export for Developer",
     "exportForDeveloperWarning": "Includes your full database and MECP emergency audit logs, which may contain saved passwords, message text, sender and channel identifiers, and location details. Share this bundle privately with maintainers only — never on public GitHub.",
@@ -2936,6 +2938,14 @@
         "label": "Internal App Errors",
         "recommendation": "An unexpected internal error occurred. Please report this bug with the log file."
       },
+      "caught-serious-error": {
+        "label": "Caught Serious Errors",
+        "recommendation": "A serious error was caught without crashing. Quote any mcL#### codes, enable verbose logging if needed, reproduce, then Export for GitHub and report the bug."
+      },
+      "path-containment": {
+        "label": "Path Containment",
+        "recommendation": "A path escaped its allowed root (jail). If this was unexpected, Export for GitHub and report it; quote any mcL#### codes in the log."
+      },
       "database-error": {
         "label": "Database Failures",
         "recommendation": "Database error. This may indicate a corrupt database file or permission issue."
@@ -3083,7 +3093,8 @@
     "export": "Export",
     "delete": "Delete",
     "close": "Close",
-    "writtenToFile": "All levels are still written to the log file; filters only affect this panel.",
+    "writtenToFile": "Warn and error are always written to the log file. Debug and info need Include debug and info in logs under App → Support. Filters only affect this panel.",
+    "verboseLoggingOn": "Verbose logging on — debug and info are being recorded.",
     "dragToResize": "Drag to resize log panel",
     "analyzeLog": "Analyze log",
     "exportLog": "Export log…",

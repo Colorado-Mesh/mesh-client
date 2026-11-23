@@ -267,8 +267,9 @@ function parseSfHistoryFetchState(raw: string | null): SfHistoryFetchState {
       }
     }
     return out;
-  } catch {
-    // catch-no-log-ok corrupt localStorage
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtasticBacklogUtils] catch:', e);
+
     return {};
   }
 }
@@ -347,8 +348,8 @@ export function recordSfHistoryFetch(
   if (typeof localStorage !== 'undefined') {
     try {
       localStorage.setItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // catch-no-log-ok quota or private mode
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshtasticBacklogUtils] catch:', e);
     }
   }
   return state;
@@ -364,8 +365,8 @@ export function clearSfHistoryFetch(serverNodeId: number): SfHistoryFetchState {
   if (typeof localStorage !== 'undefined') {
     try {
       localStorage.setItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // catch-no-log-ok quota or private mode
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshtasticBacklogUtils] catch:', e);
     }
   }
   return state;

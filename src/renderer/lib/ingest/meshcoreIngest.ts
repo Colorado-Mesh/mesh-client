@@ -374,7 +374,9 @@ function handleTextMessage(
       void window.electronAPI.db
         .saveMeshcoreMessage(messageToDbRow(stored, myNodeNum))
         .catch((e: unknown) => {
-          console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+          console.warn(
+            'mcL0850 [meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e),
+          );
         });
     }
     return;
@@ -503,7 +505,9 @@ function handleTextMessage(
     void window.electronAPI.db
       .saveMeshcoreMessage(messageToDbRow(stored, myNodeNum))
       .catch((e: unknown) => {
-        console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL0851 [meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e),
+        );
       });
   }
 }

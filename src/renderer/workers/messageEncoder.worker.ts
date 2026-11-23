@@ -78,7 +78,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
     const reply: WorkerEvent = { type: 'ENCODED', id: cmd.id, buffer };
     self.postMessage(reply, [buffer]);
   } catch (err) {
-    console.warn('[messageEncoder.worker] encode failed ' + errLikeToLogString(err));
+    console.warn('mcL1495 [messageEncoder.worker] encode failed ' + errLikeToLogString(err));
     const reply: WorkerEvent = { type: 'ERROR', id: cmd.id, error: String(err) };
     self.postMessage(reply);
   }

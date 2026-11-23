@@ -466,7 +466,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         )
       ) {
         const retryCode = res.error?.trim() || 'unknown';
-        console.warn(`[NomadNetwork] page fetch retry after ${retryCode}`);
+        console.warn(`mcL1427 [NomadNetwork] page fetch retry after ${retryCode}`);
         await new Promise<void>((resolve) => {
           window.setTimeout(resolve, NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
         });
@@ -497,7 +497,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       }
     } catch (e) {
       // Failure point: unexpected fetchNomadPage reject. Fallback: clear loading + raw error.
-      console.warn('[NomadNetwork] page fetch ' + errLikeToLogString(e));
+      console.warn('mcL1428 [NomadNetwork] page fetch ' + errLikeToLogString(e));
       if (get().loadGeneration !== generation) return;
       const liveNode = useNomadNetworkStore.getState().nodes.get(hash.toLowerCase());
       set({
@@ -582,7 +582,8 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         })
         .catch((err: unknown) => {
           console.warn(
-            '[nomadPageViewerStore] pageReadyToast i18n import failed ' + errLikeToLogString(err),
+            'mcL1429 [nomadPageViewerStore] pageReadyToast i18n import failed ' +
+              errLikeToLogString(err),
           );
         });
     }

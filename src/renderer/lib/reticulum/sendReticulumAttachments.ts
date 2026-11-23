@@ -127,7 +127,7 @@ export async function cancelReticulumAttachmentTransfer(id: string): Promise<voi
       useReticulumAttachmentSendStore.getState().patch(id, { cancelling: false });
     }
   } catch (e) {
-    console.warn('[sendReticulumAttachments] cancel failed:', errLikeToLogString(e));
+    console.warn('mcL1064 [sendReticulumAttachments] cancel failed:', errLikeToLogString(e));
     useReticulumAttachmentSendStore.getState().patch(id, { cancelling: false });
   }
 }
@@ -212,7 +212,7 @@ export async function sendReticulumAttachments(
       }
     }
   } catch (e) {
-    console.warn('[sendReticulumAttachments] local cache failed:', errLikeToLogString(e));
+    console.warn('mcL1065 [sendReticulumAttachments] local cache failed:', errLikeToLogString(e));
   }
   // Partial cache would send a subset over LXMF while the bubble showed fewer files.
   if (cached.length !== items.length) return fail('cache_failed');
@@ -339,7 +339,7 @@ export async function sendReticulumAttachments(
     return true;
   } catch (e) {
     const errMsg = errLikeToLogString(e);
-    console.warn('[sendReticulumAttachments] send failed:', errMsg);
+    console.warn('mcL1066 [sendReticulumAttachments] send failed:', errMsg);
     let reason: SendReticulumAttachmentsFailure;
     if (errMsg.includes('no_propagation_node')) reason = 'no_propagation_node';
     else if (errMsg.includes(RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION)) {

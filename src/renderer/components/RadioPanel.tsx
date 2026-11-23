@@ -415,7 +415,9 @@ function ContactCountBadge({
         );
         return;
       }
-      console.warn('[RadioPanel] offloadAllMeshcoreContacts error ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0510 [RadioPanel] offloadAllMeshcoreContacts error ' + errLikeToLogString(e),
+      );
       addToast(t('radioPanel.failedOffloadContacts'), 'error');
     }
   };
@@ -1602,7 +1604,8 @@ export default function RadioPanel({
         );
         return true;
       } catch (err: unknown) {
-        // catch-no-log-ok commit failure surfaced in panel status text
+        console.debug('[renderer/components/RadioPanel] catch:', err);
+
         if (!stillCurrent()) return false;
         showSectionStatus(
           configCase,
@@ -1616,7 +1619,7 @@ export default function RadioPanel({
       }
     } catch (err) {
       if (!stillCurrent()) return false;
-      console.warn('[RadioPanel] apply section failed ' + errLikeToLogString(err));
+      console.warn('mcL0511 [RadioPanel] apply section failed ' + errLikeToLogString(err));
       showSectionStatus(
         configCase,
         t('radioPanel.applyStatusFailed', {
@@ -1656,7 +1659,7 @@ export default function RadioPanel({
       await onSendAdvert();
       addToast(t('radioPanel.floodAdvertSent'), 'success');
     } catch (e) {
-      console.warn('[RadioPanel] sendAdvert failed:', e instanceof Error ? e.message : e);
+      console.warn('mcL0512 [RadioPanel] sendAdvert failed:', e instanceof Error ? e.message : e);
       addToast(
         t('radioPanel.advertFailed', { message: e instanceof Error ? e.message : String(e) }),
         'error',
@@ -1673,7 +1676,10 @@ export default function RadioPanel({
       await onSendZeroHopAdvert();
       addToast(t('radioPanel.zeroHopAdvertSent'), 'success');
     } catch (e) {
-      console.warn('[RadioPanel] sendZeroHopAdvert failed:', e instanceof Error ? e.message : e);
+      console.warn(
+        'mcL0513 [RadioPanel] sendZeroHopAdvert failed:',
+        e instanceof Error ? e.message : e,
+      );
       addToast(
         t('radioPanel.advertFailed', { message: e instanceof Error ? e.message : String(e) }),
         'error',
@@ -1690,7 +1696,7 @@ export default function RadioPanel({
       await onSyncClock();
       addToast(t('radioPanel.clockSynced'), 'success');
     } catch (e) {
-      console.warn('[RadioPanel] syncClock failed:', e instanceof Error ? e.message : e);
+      console.warn('mcL0514 [RadioPanel] syncClock failed:', e instanceof Error ? e.message : e);
       addToast(
         t('radioPanel.syncFailed', { message: e instanceof Error ? e.message : String(e) }),
         'error',
@@ -1760,7 +1766,7 @@ export default function RadioPanel({
               `[RadioPanel] extracted lora values: importedFreqHz=${importedFreqHz} importedBwKhz=${importedBwKhz} importedSf=${importedSf} importedCr=${importedCr} importedTxPower=${importedTxPower}`,
             );
           } else {
-            console.warn('[RadioPanel] no radio_settings in config');
+            console.warn('mcL0515 [RadioPanel] no radio_settings in config');
           }
 
           if (cfg.public_key || cfg.private_key) {
@@ -1781,8 +1787,8 @@ export default function RadioPanel({
                 }
                 window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
               }
-            } catch {
-              // catch-no-log-ok localStorage quota or private mode — non-critical identity cache
+            } catch (e: unknown) {
+              console.debug('[renderer/components/RadioPanel] catch:', e);
             }
           }
 
@@ -1797,7 +1803,7 @@ export default function RadioPanel({
               console.debug('[RadioPanel] onSetOwner succeeded');
               applied.push('name');
             } catch (e) {
-              console.error('[RadioPanel] onSetOwner threw: ' + errLikeToLogString(e));
+              console.error('mcL0516 [RadioPanel] onSetOwner threw: ' + errLikeToLogString(e));
               notSupported.push('name');
             }
           } else {
@@ -1837,7 +1843,9 @@ export default function RadioPanel({
               console.debug('[RadioPanel] onApplyLoraParams succeeded');
               applied.push('radio settings');
             } catch (e) {
-              console.error('[RadioPanel] onApplyLoraParams threw: ' + errLikeToLogString(e));
+              console.error(
+                'mcL0517 [RadioPanel] onApplyLoraParams threw: ' + errLikeToLogString(e),
+              );
               notSupported.push('radio settings');
             }
           }
@@ -1860,7 +1868,7 @@ export default function RadioPanel({
             addToast(t('radioPanel.configImportedNoChanges'), 'success');
           }
         } catch (err) {
-          console.error('[RadioPanel] config import error: ' + errLikeToLogString(err));
+          console.error('mcL0518 [RadioPanel] config import error: ' + errLikeToLogString(err));
           addToast(
             t('radioPanel.configParseFailed', {
               message: err instanceof Error ? err.message : t('common.unknown'),
@@ -1933,7 +1941,10 @@ export default function RadioPanel({
             await onSetOwner({ longName, shortName, isLicensed });
             showSectionStatus('user', t('radioPanel.applyUserSuccess'), 'success');
           } catch (err) {
-            console.warn('[RadioPanel] setOwner failed:', err instanceof Error ? err.message : err);
+            console.warn(
+              'mcL0519 [RadioPanel] setOwner failed:',
+              err instanceof Error ? err.message : err,
+            );
             showSectionStatus(
               'user',
               t('radioPanel.applyStatusFailed', {
@@ -2088,7 +2099,7 @@ export default function RadioPanel({
               }
             } catch (e) {
               const detail = errLikeToLogString(e);
-              console.warn('[RadioPanel] meshcom setctry failed ' + detail);
+              console.warn('mcL0520 [RadioPanel] meshcom setctry failed ' + detail);
               showSectionStatus(
                 'meshcomCountry',
                 t('meshcomDeviceCommands.sendFailed', { detail }),
@@ -2157,7 +2168,7 @@ export default function RadioPanel({
                 showSectionStatus('lora', t('radioPanel.applyLoraSuccess'), 'success');
               } catch (err) {
                 console.warn(
-                  '[RadioPanel] setLoRaConfig failed:',
+                  'mcL0521 [RadioPanel] setLoRaConfig failed:',
                   err instanceof Error ? err.message : err,
                 );
                 showSectionStatus(
@@ -2262,7 +2273,7 @@ export default function RadioPanel({
                 showSectionStatus('txPower', t('radioPanel.applyTxPowerSuccess'), 'success');
               } catch (err) {
                 console.warn(
-                  '[RadioPanel] setTxPower failed:',
+                  'mcL0522 [RadioPanel] setTxPower failed:',
                   err instanceof Error ? err.message : err,
                 );
                 showSectionStatus(
@@ -2323,7 +2334,8 @@ export default function RadioPanel({
                     'success',
                   );
                 } catch (err) {
-                  // catch-no-log-ok MeshcoreFloodScopeSection logs; inline status shown below
+                  console.debug('[renderer/components/RadioPanel] catch:', err);
+
                   showSectionStatus(
                     'floodScope',
                     t('radioPanel.applyStatusFailed', {
@@ -2670,7 +2682,8 @@ export default function RadioPanel({
                 addToast(t('radioPanel.contactManagementUpdated'), 'success');
               } catch (e) {
                 console.warn(
-                  '[RadioPanel] meshcore contact management apply failed ' + errLikeToLogString(e),
+                  'mcL0523 [RadioPanel] meshcore contact management apply failed ' +
+                    errLikeToLogString(e),
                 );
                 addToast(
                   e instanceof Error ? e.message : t('radioPanel.contactMgmtFailed'),
@@ -2739,7 +2752,8 @@ export default function RadioPanel({
                 showSectionStatus('device', t('radioPanel.clientMuteGpsSuppressed'), 'success');
               } catch (err) {
                 console.warn(
-                  '[RadioPanel] Client Mute GPS suppression failed ' + errLikeToLogString(err),
+                  'mcL0524 [RadioPanel] Client Mute GPS suppression failed ' +
+                    errLikeToLogString(err),
                 );
                 showSectionStatus(
                   'device',
@@ -3125,7 +3139,8 @@ export default function RadioPanel({
                     addToast(t('radioPanel.positionSent'), 'success');
                   } catch (err) {
                     console.warn(
-                      '[RadioPanel] send position to device failed ' + errLikeToLogString(err),
+                      'mcL0525 [RadioPanel] send position to device failed ' +
+                        errLikeToLogString(err),
                     );
                     addToast(
                       capabilities?.hasCompanionContactManagementConfig
@@ -3275,7 +3290,8 @@ export default function RadioPanel({
                 addToast(t('radioPanel.telemetryPrivacyUpdated'), 'success');
               } catch (e) {
                 console.warn(
-                  '[RadioPanel] meshcore telemetry privacy apply failed ' + errLikeToLogString(e),
+                  'mcL0526 [RadioPanel] meshcore telemetry privacy apply failed ' +
+                    errLikeToLogString(e),
                 );
                 addToast(
                   e instanceof Error ? e.message : t('radioPanel.telemetryPrivacyFailed'),
@@ -3872,7 +3888,7 @@ function ChannelUrlImportExport({
       await writeClipboardText(text);
       setStatus(t('radioPanel.channelUrl.copied'), 'success');
     } catch (e) {
-      console.warn('[RadioPanel] channel URL copy failed ' + errLikeToLogString(e));
+      console.warn('mcL0527 [RadioPanel] channel URL copy failed ' + errLikeToLogString(e));
       setStatus(t('radioPanel.channelUrl.copyFailed'), 'error');
     }
   };
@@ -3889,7 +3905,8 @@ function ChannelUrlImportExport({
         setParsed(parseConfigUrl(trimmed));
         setParseError(null);
       } catch (e) {
-        // catch-no-log-ok expected while user pastes invalid channel URLs; parseError shown in UI
+        console.debug('[renderer/components/RadioPanel] catch:', e);
+
         setParsed(null);
         setParseError(
           e instanceof MeshtasticUrlError
@@ -3955,7 +3972,7 @@ function ChannelUrlImportExport({
       setImportUrl('');
       setConfirmApply(null);
     } catch (e) {
-      console.warn('[RadioPanel] apply channel URL failed ' + errLikeToLogString(e));
+      console.warn('mcL0528 [RadioPanel] apply channel URL failed ' + errLikeToLogString(e));
       setStatus(
         t('radioPanel.channelUrl.applyFailed', {
           message: e instanceof Error ? e.message : t('common.unknown'),
@@ -4276,8 +4293,9 @@ function ChannelSection({
     let psk: Uint8Array;
     try {
       psk = base64ToPsk(editPskB64);
-    } catch {
-      // catch-no-log-ok base64ToPsk logs invalid input; user sees validation toast
+    } catch (e: unknown) {
+      console.debug('[renderer/components/RadioPanel] catch:', e);
+
       setValidationError(t('radioPanel.validationInvalidPsk'));
       return;
     }
@@ -4305,7 +4323,7 @@ function ChannelSection({
       await onCommit();
       setStatus(t('radioPanel.channelSavedStatus', { index: selectedIndex }), 'success');
     } catch (err) {
-      console.warn('[RadioPanel] save channel failed ' + errLikeToLogString(err));
+      console.warn('mcL0529 [RadioPanel] save channel failed ' + errLikeToLogString(err));
       setStatus(
         t('radioPanel.channelSaveFailed', {
           message: err instanceof Error ? err.message : t('common.unknown'),
@@ -4339,7 +4357,7 @@ function ChannelSection({
       await onCommit();
       setStatus(t('radioPanel.channelResetStatus', { index: selectedIndex }), 'success');
     } catch (err) {
-      console.warn('[RadioPanel] reset channel failed ' + errLikeToLogString(err));
+      console.warn('mcL0530 [RadioPanel] reset channel failed ' + errLikeToLogString(err));
       setStatus(
         t('radioPanel.channelSaveFailed', {
           message: err instanceof Error ? err.message : t('common.unknown'),
@@ -4913,7 +4931,7 @@ function MeshcoreChannelSection({
       setAddingNew(false);
     } catch (e) {
       const errorMsg = serializeErrorLike(e) || t('common.unknown');
-      console.warn(`[MeshcoreChannelSection] save failed ${errorMsg}`);
+      console.warn(`mcL0531 [MeshcoreChannelSection] save failed ${errorMsg}`);
       addToast(t('radioPanel.channelSaveFailed', { message: errorMsg }), 'error');
     } finally {
       setSaving(false);
@@ -4935,7 +4953,7 @@ function MeshcoreChannelSection({
       if (editingIdx === idx) setEditingIdx(null);
       if (shareQrIdx === idx) setShareQrIdx(null);
     } catch (e) {
-      console.warn('[MeshcoreChannelSection] delete failed ' + errLikeToLogString(e));
+      console.warn('mcL0532 [MeshcoreChannelSection] delete failed ' + errLikeToLogString(e));
     } finally {
       setSaving(false);
     }
@@ -4954,7 +4972,7 @@ function MeshcoreChannelSection({
       const hex = await meshcoreDeriveChannelKeyHexFromName(editName);
       setEditKeyHex(hex);
     } catch (e) {
-      console.warn('[MeshcoreChannelSection] derive key failed ' + errLikeToLogString(e));
+      console.warn('mcL0533 [MeshcoreChannelSection] derive key failed ' + errLikeToLogString(e));
     } finally {
       setDeriveKeyBusy(false);
     }
@@ -5191,7 +5209,7 @@ function MeshcoreChannelSection({
                         return true;
                       } catch (err) {
                         console.error(
-                          '[MeshcoreChannelSection] contact QR import failed: ' +
+                          'mcL0534 [MeshcoreChannelSection] contact QR import failed: ' +
                             errLikeToLogString(err),
                         );
                         return false;
@@ -5230,8 +5248,9 @@ function MeshcoreChannelSection({
                   secretHex: bytesToHex(ch.secret),
                   ...meshcoreScopeOverrideForQr(shareScopeOverride),
                 });
-              } catch {
-                // catch-no-log-ok invalid channel secret hides QR
+              } catch (e: unknown) {
+                console.debug('[renderer/components/RadioPanel] catch:', e);
+
                 shareQrUri = null;
               }
             }

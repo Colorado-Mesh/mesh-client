@@ -125,7 +125,8 @@ export async function fetchPathMediumPreference(): Promise<{
     const preference = parsePathMediumPreference(o.preference) ?? 'lowest';
     return { ok: o.ok !== false, preference };
   } catch (e) {
-    // catch-no-log-ok error returned to caller
+    console.debug('[renderer/lib/reticulum/reticulumPathMedium] catch:', e);
+
     return { ok: false, preference: 'lowest', error: errLikeToLogString(e) };
   }
 }
@@ -143,7 +144,8 @@ export async function setPathMediumPreference(
     )) as { ok?: boolean; error?: string };
     return { ok: Boolean(body.ok), error: body.error };
   } catch (e) {
-    // catch-no-log-ok error returned to caller
+    console.debug('[renderer/lib/reticulum/reticulumPathMedium] catch:', e);
+
     return { ok: false, error: errLikeToLogString(e) };
   }
 }
@@ -160,7 +162,8 @@ export async function fetchReticulumPeerPaths(hash: string): Promise<ReticulumPe
     const body = await window.electronAPI.reticulum.proxyGet(`/api/v1/peers/${clean}/paths`);
     return parsePeerPathsResponse(body);
   } catch (e) {
-    // catch-no-log-ok error returned to caller
+    console.debug('[renderer/lib/reticulum/reticulumPathMedium] catch:', e);
+
     return { ok: false, paths: [], error: errLikeToLogString(e) };
   }
 }
@@ -214,7 +217,8 @@ export async function setReticulumPeerMediumPin(
     })) as { ok?: boolean; error?: string };
     return { ok: Boolean(body.ok), error: body.error };
   } catch (e) {
-    // catch-no-log-ok error returned to caller
+    console.debug('[renderer/lib/reticulum/reticulumPathMedium] catch:', e);
+
     return { ok: false, error: errLikeToLogString(e) };
   }
 }

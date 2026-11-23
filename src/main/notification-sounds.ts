@@ -126,7 +126,7 @@ async function readSoundRecords(
     return records.map(parseSound);
   } catch {
     console.warn(
-      '[notificationSounds] Invalid saved recording; using the original tone until replaced',
+      'mcL0263 [notificationSounds] Invalid saved recording; using the original tone until replaced',
     );
     return [];
   }

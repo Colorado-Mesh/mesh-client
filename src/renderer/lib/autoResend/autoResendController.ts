@@ -113,7 +113,7 @@ function emitOutcome(info: TrackedOutbound, outcome: AutoResendOutcome['outcome'
     try {
       listener(event);
     } catch (err: unknown) {
-      console.warn('[autoResend] outcome listener failed ' + errLikeToLogString(err));
+      console.warn('mcL0782 [autoResend] outcome listener failed ' + errLikeToLogString(err));
     }
   }
 }
@@ -201,7 +201,7 @@ function removeSupersededBubble(protocol: MeshProtocol, identityId: IdentityId, 
   void window.electronAPI.db
     .deleteFailedOutboundMessage(protocol, packetId >>> 0)
     .catch((err: unknown) => {
-      console.warn('[autoResend] delete superseded failed row ' + errLikeToLogString(err));
+      console.warn('mcL0783 [autoResend] delete superseded failed row ' + errLikeToLogString(err));
     });
 }
 
@@ -237,7 +237,7 @@ function fireResend(key: string): void {
   try {
     newId = sendFn(entry.protocol, resendArgsFor(record));
   } catch (err: unknown) {
-    console.warn('[autoResend] resend failed to start ' + errLikeToLogString(err));
+    console.warn('mcL0784 [autoResend] resend failed to start ' + errLikeToLogString(err));
     emitOutcome(info, 'gave-up');
     return;
   } finally {

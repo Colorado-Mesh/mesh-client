@@ -40,7 +40,7 @@ export default function QrCodeImage({ value, size = 180, className, ariaLabel }:
         }
       })
       .catch((err: unknown) => {
-        console.warn('[QrCodeImage] encode failed', err);
+        console.warn('mcL0506 [QrCodeImage] encode failed', err);
         if (!cancelled) {
           setResult({ key: requestKey, dataUrl: null, error: true });
         }

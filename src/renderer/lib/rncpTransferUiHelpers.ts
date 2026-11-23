@@ -59,7 +59,7 @@ export async function rejectRncpOffer(
   try {
     await window.electronAPI.reticulum.rncp.reject({ transfer_id: transferId });
   } catch (e) {
-    console.warn(`[${opts.logTag}] reject ` + errLikeToLogString(e));
+    console.warn(`mcL1101 [${opts.logTag}] reject ` + errLikeToLogString(e));
   } finally {
     opts.removeOffer(transferId);
   }

@@ -19,8 +19,11 @@ export function findReticulumSidecarProjectDir(extraRoots: string[] = []): strin
   const searchRoots = new Set<string>(extraRoots);
   try {
     searchRoots.add(app.getAppPath());
-  } catch {
-    // catch-no-log-ok app path unavailable in unit tests without electron ready
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-sidecar-path] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   searchRoots.add(process.cwd());
   searchRoots.add(path.resolve(__dirname, '../..'));
@@ -46,8 +49,11 @@ export function resolveSidecarBinaryPath(extraRoots: string[] = []): string {
   try {
     const appBundled = joinUnderRoot(app.getAppPath(), 'resources', 'reticulum-sidecar', name);
     if (fs.existsSync(appBundled)) return appBundled;
-  } catch {
-    // catch-no-log-ok app path unavailable in unit tests without electron ready
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-sidecar-path] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 
   const projectDir = findReticulumSidecarProjectDir(extraRoots);
@@ -97,8 +103,12 @@ export function sidecarBinaryLacksRnsStack(binaryPath: string): boolean {
   try {
     const bytes = fs.readFileSync(binaryPath);
     return !bytes.includes(Buffer.from('rns_runtime'));
-  } catch {
-    // catch-no-log-ok binary missing or unreadable — treat as stub build
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-sidecar-path] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return true;
   }
 }
@@ -108,8 +118,12 @@ export function sidecarBinaryLacksRnsBle(binaryPath: string): boolean {
   try {
     const bytes = fs.readFileSync(binaryPath);
     return bytes.includes(Buffer.from('rns-ble feature not enabled in this build'));
-  } catch {
-    // catch-no-log-ok binary missing or unreadable — treat as no BLE support
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-sidecar-path] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return true;
   }
 }
@@ -205,8 +219,11 @@ function runCargoBuild(projectDir: string): Promise<void> {
         } else {
           proc.kill('SIGTERM');
         }
-      } catch {
-        // catch-no-log-ok best-effort kill after cargo timeout
+      } catch (e: unknown) {
+        console.debug(
+          '[main/reticulum-sidecar-path] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
       settle(() => {
         reject(

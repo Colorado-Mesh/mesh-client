@@ -97,7 +97,7 @@ export async function prepareReticulumFileAttachments(
       });
     }
   } catch (e) {
-    console.warn('[prepareReticulumAttachments] read failed:', e);
+    console.warn('mcL1024 [prepareReticulumAttachments] read failed:', e);
     return { ok: false, error: 'read_failed' };
   }
   return { ok: true, prepared: { kind: 'files', files: out } };
@@ -122,7 +122,7 @@ export async function prepareReticulumPhotoAttachment(file: File): Promise<Prepa
   try {
     raw = await readBlobBytes(file);
   } catch (e) {
-    console.warn('[prepareReticulumAttachments] photo read failed:', e);
+    console.warn('mcL1025 [prepareReticulumAttachments] photo read failed:', e);
     return { ok: false, error: 'read_failed' };
   }
   const sniffed = sniffReticulumImageWireFormat(raw);

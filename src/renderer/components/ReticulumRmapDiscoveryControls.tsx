@@ -196,7 +196,7 @@ export function ReticulumRmapDiscoveryControls({
       return true;
     } catch (e) {
       addToast(t('reticulumRmapDiscovery.applyFailed', { error: errLikeToLogString(e) }), 'error');
-      console.warn('[ReticulumRmapDiscoveryControls] disable ' + errLikeToLogString(e));
+      console.warn('mcL0600 [ReticulumRmapDiscoveryControls] disable ' + errLikeToLogString(e));
       return false;
     } finally {
       setBusy(false);
@@ -344,7 +344,7 @@ export function ReticulumRmapDiscoveryControls({
         return;
       }
       addToast(t('reticulumRmapDiscovery.applyFailed', { error: errLikeToLogString(e) }), 'error');
-      console.warn('[ReticulumRmapDiscoveryControls] apply ' + errLikeToLogString(e));
+      console.warn('mcL0601 [ReticulumRmapDiscoveryControls] apply ' + errLikeToLogString(e));
     } finally {
       setBusy(false);
     }

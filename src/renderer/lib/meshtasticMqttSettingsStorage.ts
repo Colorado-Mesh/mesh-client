@@ -60,7 +60,7 @@ function recoverMeshtasticChannelPsksFromLegacyMigration(): string[] | undefined
     })
     .catch((error: unknown) => {
       console.warn(
-        '[meshtasticMqttSettingsStorage] PSK recovery failed ' + errLikeToLogString(error),
+        'mcL0966 [meshtasticMqttSettingsStorage] PSK recovery failed ' + errLikeToLogString(error),
       );
     })
     .finally(() => {

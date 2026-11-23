@@ -86,7 +86,7 @@ export async function handleReticulumQrIngest(text: string): Promise<ReticulumQr
       toast: { key: 'qrIngest.unknownLink', variant: 'error' },
     };
   } catch (err) {
-    console.error('[handleReticulumQrIngest] failed: ' + errLikeToLogString(err));
+    console.error('mcL1021 [handleReticulumQrIngest] failed: ' + errLikeToLogString(err));
     return {
       handled: true,
       toast: { key: 'qrIngest.unknownLink', variant: 'error' },

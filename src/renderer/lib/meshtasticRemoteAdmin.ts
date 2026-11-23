@@ -421,8 +421,9 @@ export function parseIncomingRemoteAdminPacket(
         from,
         requestId: resolveAdminRequestId(meshPacket, (data.requestId ?? 0) >>> 0, resolveContext),
       };
-    } catch {
-      // catch-no-log-ok malformed ADMIN_APP payload on unrelated mesh traffic
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshtasticRemoteAdmin] catch:', e);
+
       return null;
     }
   }
@@ -449,8 +450,9 @@ export function parseIncomingRemoteAdminPacket(
           };
         }
       }
-    } catch {
-      // catch-no-log-ok malformed ROUTING_APP payload on unrelated mesh traffic
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshtasticRemoteAdmin] catch:', e);
+
       return null;
     }
   }
@@ -882,7 +884,8 @@ export class MeshtasticRemoteAdminClient {
         return id;
       } catch (e) {
         console.warn(
-          '[MeshtasticRemoteAdmin] writeToRadioWithoutQueue failed ' + errLikeToLogString(e),
+          'mcL0967 [MeshtasticRemoteAdmin] writeToRadioWithoutQueue failed ' +
+            errLikeToLogString(e),
         );
         throw e instanceof Error ? e : new Error(normalizeRemoteAdminError(e));
       }
@@ -945,6 +948,7 @@ export class MeshtasticRemoteAdminClient {
     try {
       await this.sendRawAdmin(destNodeNum, message, options, packetId);
     } catch (e) {
+      console.debug('[renderer/lib/meshtasticRemoteAdmin] catch:', e);
       const pending = this.pending.get(packetId);
       if (pending) {
         const err = e instanceof Error ? e : new Error(normalizeRemoteAdminError(e));
@@ -952,7 +956,6 @@ export class MeshtasticRemoteAdminClient {
           stage: 'sendRawAdmin',
         });
       }
-      // catch-no-log-ok write failure forwarded to responsePromise rejection for caller
     }
     return responsePromise;
   }
@@ -1010,7 +1013,7 @@ export class MeshtasticRemoteAdminClient {
     const responseCase = response.payloadVariant.case;
     if (responseCase !== 'getConfigResponse') {
       console.warn(
-        '[MeshtasticRemoteAdmin] unexpected getConfigResponse variant configType=' +
+        'mcL0968 [MeshtasticRemoteAdmin] unexpected getConfigResponse variant configType=' +
           String(configType) +
           ' case=' +
           responseCase,
@@ -1078,7 +1081,7 @@ export class MeshtasticRemoteAdminClient {
     const responseCase = response.payloadVariant.case;
     if (responseCase !== 'getChannelResponse') {
       console.warn(
-        '[MeshtasticRemoteAdmin] unexpected getChannelResponse variant index=' +
+        'mcL0969 [MeshtasticRemoteAdmin] unexpected getChannelResponse variant index=' +
           String(index) +
           ' case=' +
           responseCase,

@@ -53,8 +53,11 @@ export function probeTcpRttMs(host: string, port: number): Promise<number | null
       try {
         socket.removeAllListeners();
         socket.destroy();
-      } catch {
-        // catch-no-log-ok probe socket cleanup
+      } catch (e: unknown) {
+        console.debug(
+          '[main/host-link-rtt] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
       resolve(rtt);
     };

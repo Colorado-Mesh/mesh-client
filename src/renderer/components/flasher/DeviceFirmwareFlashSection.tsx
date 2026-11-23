@@ -184,7 +184,7 @@ export function DeviceFirmwareFlashSection({
         if (isDeviceFirmwareError(e)) {
           state = { status: 'error', code: e.code, detail: e.detail };
         } else {
-          console.warn('[DeviceFirmwareFlash] read failed ' + errLikeToLogString(e));
+          console.warn('mcL0632 [DeviceFirmwareFlash] read failed ' + errLikeToLogString(e));
           state = { status: 'error', code: 'READ_FAILED' };
         }
       }
@@ -246,7 +246,8 @@ export function DeviceFirmwareFlashSection({
       port = await requestFlasherSerialPort(requestSerialPort);
       await new Nrf52DfuFlasher(port).enterDfuMode();
     } catch (e) {
-      // catch-no-log-ok error humanized and surfaced via flasher status UI
+      console.debug('[renderer/components/flasher/DeviceFirmwareFlashSection] catch:', e);
+
       setStatus({ message: humanizeFlasherError(e), isError: true });
     } finally {
       await safeCloseSerialPort(port);
@@ -267,7 +268,7 @@ export function DeviceFirmwareFlashSection({
     setFlashing(true);
     setSyncing(plan.kind === 'esp32');
     let port: SerialPort | null = null;
-    console.warn('[DeviceFirmwareFlash] flash start', {
+    console.warn('mcL0633 [DeviceFirmwareFlash] flash start', {
       board: selectedBoard.id,
       kind: plan.kind,
       bytes: plan.payloadBytes,
@@ -291,14 +292,14 @@ export function DeviceFirmwareFlashSection({
         ),
         isError: false,
       });
-      console.warn('[DeviceFirmwareFlash] flash success', { board: selectedBoard.id });
+      console.warn('mcL0634 [DeviceFirmwareFlash] flash success', { board: selectedBoard.id });
     } catch (e) {
       const message = e instanceof Error ? e.message : '';
       if (message === 'ESP32_FLASH_CANCELLED' || message === 'NRF52_DFU_CANCELLED') {
         setStatus({ message: t('deviceFirmware.cancelled'), isError: true });
       } else {
-        console.error('[DeviceFirmwareFlash] flash failed', e);
-        // catch-no-log-ok error humanized and surfaced via status UI
+        console.error('mcL0635 [DeviceFirmwareFlash] flash failed', e);
+
         setStatus({
           message: isDeviceFirmwareError(e)
             ? t(ERROR_KEYS[e.code], { detail: e.detail ?? '' })

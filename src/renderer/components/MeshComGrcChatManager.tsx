@@ -79,7 +79,7 @@ export default function MeshComGrcChatManager({
         }
         closeDialog();
       } catch (e) {
-        console.warn('[MeshComGrcChatManager] open failed', e);
+        console.warn('mcL0446 [MeshComGrcChatManager] open failed', e);
         setFeedback(t('meshcom.grc.joinFailed'));
       } finally {
         setSaving(false);

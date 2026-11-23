@@ -1396,7 +1396,7 @@ export function runSchemaUpgrade(db: NodeSqliteDB): void {
   } catch (e) {
     if (isDatabaseSchemaTooNewError(e)) throw e;
     console.error(
-      '[db] runSchemaUpgrade failed',
+      'mcL0024 [db] runSchemaUpgrade failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     throw new Error(`runSchemaUpgrade failed: ${e instanceof Error ? e.message : String(e)}`);

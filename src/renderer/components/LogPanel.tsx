@@ -67,8 +67,8 @@ function readLevelFilters(): LevelFilters {
 function persistLevelFilters(f: LevelFilters): void {
   try {
     localStorage.setItem(LOG_LEVEL_FILTERS_KEY, JSON.stringify(f));
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode — non-critical preference
+  } catch (e: unknown) {
+    console.debug('[renderer/components/LogPanel] catch:', e);
   }
 }
 
@@ -125,8 +125,9 @@ function readPanelWidth(): number {
     const n = Math.floor(Number(localStorage.getItem(LOG_PANEL_WIDTH_KEY)));
     if (!Number.isFinite(n)) return PANEL_WIDTH_DEFAULT;
     return Math.min(PANEL_WIDTH_MAX, Math.max(PANEL_WIDTH_MIN, n));
-  } catch {
-    // catch-no-log-ok localStorage read error — return default width
+  } catch (e: unknown) {
+    console.debug('[renderer/components/LogPanel] catch:', e);
+
     return PANEL_WIDTH_DEFAULT;
   }
 }
@@ -134,8 +135,8 @@ function readPanelWidth(): number {
 function persistPanelWidth(w: number): void {
   try {
     localStorage.setItem(LOG_PANEL_WIDTH_KEY, String(w));
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode — non-critical preference
+  } catch (e: unknown) {
+    console.debug('[renderer/components/LogPanel] catch:', e);
   }
 }
 
@@ -159,6 +160,7 @@ export default function LogPanel({
   const [logSource, setLogSource] = useState<'app' | 'device'>('app');
   const [panelWidth, setPanelWidth] = useState(readPanelWidth);
   const [analyzeModalOpen, setAnalyzeModalOpen] = useState(false);
+  const [verboseLogging, setVerboseLogging] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
   const dragStartX = useRef(0);
@@ -171,7 +173,8 @@ export default function LogPanel({
   }, [protocol]);
 
   useEffect(() => {
-    let off: (() => void) | null = null;
+    let offLine: (() => void) | null = null;
+    let offVerbose: (() => void) | null = null;
     let cancelled = false;
     void (async () => {
       try {
@@ -183,18 +186,28 @@ export default function LogPanel({
       } catch (e) {
         console.debug('[LogPanel] getRecentLines IPC failed: ' + errLikeToLogString(e));
       }
+      try {
+        const enabled = await window.electronAPI.log.isVerboseEnabled();
+        if (!cancelled) setVerboseLogging(enabled);
+      } catch (e) {
+        console.debug('[LogPanel] isVerboseEnabled failed: ' + errLikeToLogString(e));
+      }
       if (cancelled) return;
-      off = window.electronAPI.log.onLine((entry) => {
+      offLine = window.electronAPI.log.onLine((entry) => {
         const e = entry;
         setEntries((prev) => {
           const next = prev.length >= MAX_LINES ? prev.slice(-MAX_LINES + 1) : prev;
           return [...next, e];
         });
       });
+      offVerbose = window.electronAPI.log.onVerboseChanged((enabled) => {
+        setVerboseLogging(enabled);
+      });
     })();
     return () => {
       cancelled = true;
-      off?.();
+      offLine?.();
+      offVerbose?.();
     };
   }, []);
 
@@ -226,7 +239,7 @@ export default function LogPanel({
         console.debug('[LogPanel] Log exported to', path);
       }
     } catch (e) {
-      console.error('[LogPanel] Log export failed ' + errLikeToLogString(e));
+      console.error('mcL0433 [LogPanel] Log export failed ' + errLikeToLogString(e));
     }
   }, []);
 
@@ -236,7 +249,7 @@ export default function LogPanel({
       await window.electronAPI.log.clear();
       setEntries([]);
     } catch (e) {
-      console.warn('[LogPanel] clear log failed ' + errLikeToLogString(e));
+      console.warn('mcL0434 [LogPanel] clear log failed ' + errLikeToLogString(e));
       setLogClearError(e instanceof Error ? e.message : t('logPanel.clearFailed'));
     }
   }, [t]);
@@ -383,6 +396,11 @@ export default function LogPanel({
             </div>
           </div>
           <p className="text-muted text-2xs leading-snug">{t('logPanel.writtenToFile')}</p>
+          {verboseLogging ? (
+            <p className="text-2xs leading-snug text-orange-300" role="status">
+              {t('logPanel.verboseLoggingOn')}
+            </p>
+          ) : null}
         </div>
         <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
           <span className="text-muted text-2xs">{t('logPanel.source')}</span>

@@ -211,10 +211,13 @@ import {
   getLogPath,
   getRecentLines,
   initLogFile,
+  isVerboseLoggingEnabled,
   logDeviceConnection,
   patchMainConsole,
   sanitizeLogMessage,
   setMainWindow,
+  setVerboseLoggingEnabled,
+  VERBOSE_LOGGING_SETTING_KEY,
 } from './log-service';
 import {
   appendMecpReceivedLog,
@@ -306,7 +309,7 @@ try {
   console.debug('[main] crashReporter started (uploadToServer: false)');
 } catch (e: unknown) {
   console.warn(
-    '[main] crashReporter.start failed:',
+    'mcL0039 [main] crashReporter.start failed:',
     sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
   );
 }
@@ -561,7 +564,7 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
       await gattSidecarProxy.disconnectAll();
     } catch (err) {
       console.error(
-        '[main] quitMainProcess GATT disconnectAll failed:',
+        'mcL0040 [main] quitMainProcess GATT disconnectAll failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
     }
@@ -580,14 +583,17 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
     app.exit(0);
   } catch (err) {
     console.error(
-      '[main] quitMainProcess failed:',
+      'mcL0041 [main] quitMainProcess failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     if (opts.relaunch) {
       try {
         app.relaunch();
-      } catch {
-        // catch-no-log-ok relaunch already best-effort in failure path before quit
+      } catch (e: unknown) {
+        console.debug(
+          '[main/index] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }
     app.quit();
@@ -743,18 +749,21 @@ const OSM_HTTP_REFERRER = 'https://meshtastic-client.app/';
 process.on('uncaughtException', (error) => {
   if (isHarmlessSocketOptionError(error)) {
     console.warn(
-      '[main] Ignoring best-effort socket QoS failure:',
+      'mcL0042 [main] Ignoring best-effort socket QoS failure:',
       sanitizeLogMessage(error.message),
     );
     return;
   }
   if (isHarmlessStdioBrokenPipeError(error)) {
     // Terminal echo lost its pipe (GUI/AppImage); disk log still works (#1492).
-    console.warn('[main] Ignoring broken stdout/stderr pipe:', sanitizeLogMessage(error.message));
+    console.warn(
+      'mcL0043 [main] Ignoring broken stdout/stderr pipe:',
+      sanitizeLogMessage(error.message),
+    );
     return;
   }
   console.error(
-    '[main] Uncaught exception:',
+    'mcL0044 [main] Uncaught exception:',
     sanitizeLogMessage(error?.stack ?? error?.message ?? String(error)),
   );
   void flushLogBeforeQuit();
@@ -766,20 +775,20 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   if (isHarmlessSocketOptionError(reason)) {
     console.warn(
-      '[main] Ignoring best-effort socket QoS failure:',
+      'mcL0045 [main] Ignoring best-effort socket QoS failure:',
       sanitizeLogMessage(reason instanceof Error ? reason.message : String(reason)),
     );
     return;
   }
   if (isHarmlessStdioBrokenPipeError(reason)) {
     console.warn(
-      '[main] Ignoring broken stdout/stderr pipe:',
+      'mcL0046 [main] Ignoring broken stdout/stderr pipe:',
       sanitizeLogMessage(reason instanceof Error ? reason.message : String(reason)),
     );
     return;
   }
   console.error(
-    '[main] Unhandled rejection:',
+    'mcL0047 [main] Unhandled rejection:',
     sanitizeLogMessage(reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)),
   );
   void flushLogBeforeQuit();
@@ -1292,7 +1301,7 @@ function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
     }
   } catch (e) {
     console.error(
-      '[main] tray icon load failed:',
+      'mcL0048 [main] tray icon load failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
@@ -1317,7 +1326,7 @@ function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
     return nativeImage.createFromBitmap(bitmap, { width: actualW, height: actualH });
   } catch (e) {
     console.error(
-      '[main] tray unread icon overlay failed:',
+      'mcL0049 [main] tray unread icon overlay failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     return base;
@@ -1365,7 +1374,7 @@ function setupTray(window: BrowserWindow) {
     tray.setContextMenu(trayContextMenu);
   } catch (e) {
     console.error(
-      '[main] tray setup failed:',
+      'mcL0050 [main] tray setup failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     tray = null;
@@ -1423,7 +1432,7 @@ function applyAboutPanelOptions(): void {
     }
   } catch (e: unknown) {
     console.warn(
-      '[main] setAboutPanelOptions failed:',
+      'mcL0051 [main] setAboutPanelOptions failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
@@ -1432,13 +1441,13 @@ function applyAboutPanelOptions(): void {
 function openHelpExternalLink(rawUrl: string): void {
   const target = parseHttpOrHttpsUrl(rawUrl);
   if (!target) {
-    console.warn('[main] help link: invalid url', sanitizeLogMessage(rawUrl.slice(0, 200)));
+    console.warn('mcL0052 [main] help link: invalid url', sanitizeLogMessage(rawUrl.slice(0, 200)));
     return;
   }
   console.debug(`[main] help link: openExternal url=${sanitizeLogMessage(target.toString())}`);
   void shell.openExternal(target.toString() /* parseHttpOrHttpsUrl */).catch((e: unknown) => {
     console.error(
-      '[main] help link: openExternal failed',
+      'mcL0053 [main] help link: openExternal failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   });
@@ -1544,7 +1553,7 @@ function showWindowsAboutFallbackWindow(): void {
 
     void win.loadURL(dataUrl).catch((e: unknown) => {
       console.error(
-        '[main] about: Windows HTML load failed',
+        'mcL0054 [main] about: Windows HTML load failed',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       if (!win.isDestroyed()) win.destroy();
@@ -1552,7 +1561,7 @@ function showWindowsAboutFallbackWindow(): void {
     });
   } catch (e: unknown) {
     console.error(
-      '[main] about: Windows HTML fallback failed',
+      'mcL0055 [main] about: Windows HTML fallback failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     try {
@@ -1560,8 +1569,11 @@ function showWindowsAboutFallbackWindow(): void {
         `About ${app.name}`,
         `${app.name}\nVersion ${app.getVersion()}\n\nCould not open the About window.`,
       );
-    } catch {
-      // catch-no-log-ok dialog unavailable; error already logged above
+    } catch (e: unknown) {
+      console.debug(
+        '[main/index] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
 }
@@ -1580,7 +1592,7 @@ function showAboutDialog(): void {
     app.showAboutPanel();
   } catch (e) {
     console.error(
-      '[main] about dialog failed',
+      'mcL0056 [main] about dialog failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
 
@@ -1588,7 +1600,7 @@ function showAboutDialog(): void {
       dialog.showErrorBox(`About ${appName}`, `${appName}\nVersion ${version}`);
     } catch (fallbackError) {
       console.error(
-        '[main] about dialog fallback failed',
+        'mcL0057 [main] about dialog fallback failed',
         sanitizeLogMessage(
           fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
         ),
@@ -1703,7 +1715,7 @@ function configureRendererSpellcheck(sess: Session): void {
 
     const available = sess.availableSpellCheckerLanguages;
     if (!Array.isArray(available) || available.length === 0) {
-      console.warn('[main] spellcheck: no dictionaries listed yet (retry after load)');
+      console.warn('mcL0058 [main] spellcheck: no dictionaries listed yet (retry after load)');
       return;
     }
     // Normalize codes for matching (both sides to hyphens) but pass original
@@ -1741,7 +1753,7 @@ function configureRendererSpellcheck(sess: Session): void {
     sess.setSpellCheckerLanguages(picked.slice(0, 3));
   } catch (e) {
     console.warn(
-      '[main] configureRendererSpellcheck',
+      'mcL0059 [main] configureRendererSpellcheck',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
@@ -1784,8 +1796,11 @@ function parseHttpOrHttpsUrl(raw: string): URL | null {
   try {
     const parsed = new URL(raw);
     if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed;
-  } catch {
-    // catch-no-log-ok — invalid URL strings should be ignored safely
+  } catch (e: unknown) {
+    console.debug(
+      '[main/index] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   return null;
 }
@@ -1800,7 +1815,7 @@ function openExternalHttpOrHttpsIfExternal(currentUrl: string, targetUrl: string
 
   shell.openExternal(target.toString()).catch((e: unknown) => {
     console.error(
-      '[main] external link open failed',
+      'mcL0060 [main] external link open failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   });
@@ -1965,7 +1980,7 @@ function createWindow() {
 
     // Warn if a previous callback is being replaced (renderer re-triggered before resolving)
     if (pendingSerialCallback) {
-      console.warn('[IPC] select-serial-port: replacing stale pendingSerialCallback');
+      console.warn('mcL0061 [IPC] select-serial-port: replacing stale pendingSerialCallback');
     }
 
     // Store callback so we can resolve it when the user picks a port
@@ -1977,7 +1992,9 @@ function createWindow() {
     // Auto-cancel if the picker is left open too long (flashing can take longer than 60s)
     pendingSerialSelectionTimer = setTimeout(() => {
       if (pendingSerialCallback === callback) {
-        console.warn('[IPC] Serial port selection callback stale after timeout — auto-cancelling');
+        console.warn(
+          'mcL0062 [IPC] Serial port selection callback stale after timeout — auto-cancelling',
+        );
         pendingSerialCallback('');
         pendingSerialCallback = null;
         clearLastSerialPortDiscovery();
@@ -2050,14 +2067,16 @@ function createWindow() {
       );
 
       if (!mainWindow || mainWindow.isDestroyed()) {
-        console.warn('[main] bluetooth-pairing: mainWindow unavailable — aborting pairing');
+        console.warn('mcL0063 [main] bluetooth-pairing: mainWindow unavailable — aborting pairing');
         callback({ confirmed: false });
         return;
       }
 
       const pairingTimeoutId = setTimeout(() => {
         if (pendingPairingCallback) {
-          console.warn('[main] bluetooth-pairing: PIN prompt timed out after 120s — aborting');
+          console.warn(
+            'mcL0064 [main] bluetooth-pairing: PIN prompt timed out after 120s — aborting',
+          );
           pendingPairingCallback({ pin: '', confirmed: false });
           pendingPairingCallback = null;
           pendingPairingRetryCount = 0;
@@ -2152,19 +2171,23 @@ function createWindow() {
 
   // ─── Renderer crash / load failure detection ──────────────────────
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
-    console.error(
-      '[main] Renderer process gone:',
-      sanitizeLogMessage(details.reason),
-      details.exitCode,
-    );
+    const detail = `reason=${details.reason} exit=${String(details.exitCode ?? 'n/a')}`;
+    console.error('mcL0065 [main] Renderer process gone:', sanitizeLogMessage(detail));
     try {
       dialog.showErrorBox(
         'Mesh-Client — Renderer Stopped',
         `The renderer process ended unexpectedly (${details.reason}, exit ${details.exitCode ?? 'n/a'}).\n\nRestart the application. If this keeps happening, export the log from the app (if still usable) or check the log file in your userData folder.`,
       );
-    } catch {
-      // catch-no-log-ok dialog unavailable; renderer-process-gone already logged
+    } catch (e: unknown) {
+      console.debug(
+        '[main/index] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
+    showCrashReportDialog({
+      source: 'render-process-gone',
+      error: new Error(`Renderer process gone: ${detail}`),
+    });
   });
 
   mainWindow.webContents.on('unresponsive', () => {
@@ -2176,7 +2199,7 @@ function createWindow() {
 
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDesc, validatedURL) => {
     console.error(
-      '[main] Failed to load:',
+      'mcL0066 [main] Failed to load:',
       errorCode,
       sanitizeLogMessage(errorDesc),
       sanitizeLogMessage(validatedURL),
@@ -2192,8 +2215,11 @@ function createWindow() {
         'Mesh-Client — Failed to Load',
         `Could not load the application UI (code ${errorCode}: ${errorDesc}).\n\n${hint}\n\nURL: ${validatedURL}`,
       );
-    } catch {
-      // catch-no-log-ok dialog unavailable; did-fail-load already logged above
+    } catch (e: unknown) {
+      console.debug(
+        '[main/index] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   });
 
@@ -2309,8 +2335,11 @@ function createWindow() {
         isolated =
           (await win.webContents.executeJavaScript('globalThis.crossOriginIsolated === true')) ===
           true;
-      } catch {
-        // catch-no-log-ok the startup line below reports unavailable isolation explicitly.
+      } catch (e: unknown) {
+        console.debug(
+          '[main/index] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
       console.debug(
         '[Startup] renderer load source:',
@@ -2327,7 +2356,7 @@ function createWindow() {
   rendererLoadPromise = loadRenderer();
   void rendererLoadPromise.catch((e: unknown) => {
     console.error(
-      '[main] Failed to load renderer:',
+      'mcL0067 [main] Failed to load renderer:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   });
@@ -2453,7 +2482,7 @@ function refreshUnreadAppBadge(): void {
     });
   } catch (e) {
     console.error(
-      '[main] app unread badge update failed:',
+      'mcL0068 [main] app unread badge update failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
@@ -2461,7 +2490,7 @@ function refreshUnreadAppBadge(): void {
 
 ipcMain.on('set-tray-unread', (event, count: unknown) => {
   if (!validateIpcSender(event)) {
-    console.warn('[IPC] set-tray-unread: unauthorized sender');
+    console.warn('mcL0069 [IPC] set-tray-unread: unauthorized sender');
     return;
   }
   try {
@@ -2484,7 +2513,7 @@ ipcMain.on('set-tray-unread', (event, count: unknown) => {
     tray?.setToolTip(hasUnread ? `Mesh-Client (${n} unread)` : 'Mesh-Client');
   } catch (e) {
     console.error(
-      '[main] tray unread update failed:',
+      'mcL0070 [main] tray unread update failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
@@ -2497,7 +2526,7 @@ function startPowerSaveBlocker(): void {
     console.debug('[main] powerSaveBlocker started, id =', powerSaveBlockerId);
   } catch (e) {
     console.error(
-      '[main] powerSaveBlocker start failed:',
+      'mcL0071 [main] powerSaveBlocker start failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     powerSaveBlockerId = null;
@@ -2513,7 +2542,7 @@ function stopPowerSaveBlocker(): void {
     }
   } catch (e) {
     console.error(
-      '[main] powerSaveBlocker stop failed:',
+      'mcL0072 [main] powerSaveBlocker stop failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   } finally {
@@ -2524,13 +2553,13 @@ function stopPowerSaveBlocker(): void {
 // ─── IPC: Serial port selected by user ──────────────────────────────
 ipcMain.on('serial-port-selected', (event, portId: unknown) => {
   if (!validateIpcSender(event)) {
-    console.warn('[IPC] serial-port-selected: unauthorized sender');
+    console.warn('mcL0073 [IPC] serial-port-selected: unauthorized sender');
     return;
   }
   if (!pendingSerialCallback) return;
   const id = typeof portId === 'string' ? portId : '';
   if (id !== '' && !lastSerialPortIds.has(id)) {
-    console.warn('[IPC] serial-port-selected: ignoring unknown portId');
+    console.warn('mcL0074 [IPC] serial-port-selected: ignoring unknown portId');
     return;
   }
   if (id === '') {
@@ -2555,7 +2584,7 @@ ipcMain.on('serial-port-selected', (event, portId: unknown) => {
 // ─── IPC: Cancel Serial selection ───────────────────────────────────
 ipcMain.on('serial-port-cancelled', (event) => {
   if (!validateIpcSender(event)) {
-    console.warn('[IPC] serial-port-cancelled: unauthorized sender');
+    console.warn('mcL0075 [IPC] serial-port-cancelled: unauthorized sender');
     return;
   }
   clearPendingSerialSelectionTimer();
@@ -2572,11 +2601,11 @@ registerLinuxBluetoothIpcHandlers();
 // ─── IPC: Provide Bluetooth PIN (Linux) ───────────────────────────────
 ipcMain.on('bluetooth-provide-pin', (event, pin: unknown) => {
   if (!validateIpcSender(event)) {
-    console.warn('[IPC] bluetooth-provide-pin: unauthorized sender');
+    console.warn('mcL0076 [IPC] bluetooth-provide-pin: unauthorized sender');
     return;
   }
   if (!pendingPairingCallback) {
-    console.warn('[IPC] bluetooth-provide-pin: no pending pairing callback');
+    console.warn('mcL0077 [IPC] bluetooth-provide-pin: no pending pairing callback');
     return;
   }
   const pinStr = typeof pin === 'string' ? pin : '';
@@ -2590,7 +2619,7 @@ ipcMain.on('bluetooth-provide-pin', (event, pin: unknown) => {
 // ─── IPC: Cancel Bluetooth pairing (Linux) ────────────────────────────
 ipcMain.on('bluetooth-cancel-pairing', (event) => {
   if (!validateIpcSender(event)) {
-    console.warn('[IPC] bluetooth-cancel-pairing: unauthorized sender');
+    console.warn('mcL0078 [IPC] bluetooth-cancel-pairing: unauthorized sender');
     return;
   }
   if (pendingPairingCallback) {
@@ -2606,7 +2635,7 @@ ipcMain.on('bluetooth-cancel-pairing', (event) => {
 // Called when starting a new BLE connection so the first pairing attempt uses the default PIN
 ipcMain.on('ble-reset-pairing-retry-count', (event, sessionKind?: unknown) => {
   if (!validateIpcSender(event)) {
-    console.warn('[IPC] ble-reset-pairing-retry-count: unauthorized sender');
+    console.warn('mcL0079 [IPC] ble-reset-pairing-retry-count: unauthorized sender');
     return;
   }
   pendingPairingRetryCount = 0;
@@ -2616,7 +2645,7 @@ ipcMain.on('ble-reset-pairing-retry-count', (event, sessionKind?: unknown) => {
 // ─── IPC: Connection status tracking (module-scope, not per-window) ─
 ipcMain.on('device-connected', (event, source: unknown, connectionType: unknown) => {
   if (!validateIpcSender(event)) {
-    console.warn('[IPC] device-connected: unauthorized sender');
+    console.warn('mcL0080 [IPC] device-connected: unauthorized sender');
     return;
   }
   const link = normalizePowerSaveLinkType(connectionType);
@@ -2632,7 +2661,7 @@ ipcMain.on('device-connected', (event, source: unknown, connectionType: unknown)
 });
 ipcMain.on('device-disconnected', (event, source: unknown) => {
   if (!validateIpcSender(event)) {
-    console.warn('[IPC] device-disconnected: unauthorized sender');
+    console.warn('mcL0081 [IPC] device-disconnected: unauthorized sender');
     return;
   }
   if (source === 'meshcore') {
@@ -2752,7 +2781,7 @@ ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
       };
     }
     console.error(
-      '[main] bleCoexistence:acquireScan failed:',
+      'mcL0082 [main] bleCoexistence:acquireScan failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -2804,7 +2833,7 @@ ipcMain.handle('gatt:stop-scan', async (event, sessionId: unknown) => {
     await gattSidecarProxy.stopScan(sessionId);
   } catch (err) {
     console.error(
-      `[main] gatt:stop-scan failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+      `mcL0083 [main] gatt:stop-scan failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
     );
     throw err;
   }
@@ -2853,7 +2882,7 @@ ipcMain.handle('gatt:disconnect', async (event, sessionId: unknown) => {
     await gattSidecarProxy.disconnect(sessionId);
   } catch (err) {
     console.error(
-      `[main] gatt:disconnect failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+      `mcL0084 [main] gatt:disconnect failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
     );
     throw err;
   }
@@ -2868,7 +2897,7 @@ ipcMain.handle('gatt:release-ble-central', async (event) => {
     await gattSidecarProxy.releaseBleCentral();
   } catch (err) {
     console.error(
-      `[main] gatt:release-ble-central failed: message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+      `mcL0085 [main] gatt:release-ble-central failed: message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
     );
     throw err;
   }
@@ -3020,7 +3049,7 @@ meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, (serve
   if (mainWindow) {
     mainWindow.webContents.send('mqtt:requestTokenRefresh', serverHost);
   } else {
-    console.warn('[main] proactive token refresh: mainWindow not ready');
+    console.warn('mcL0086 [main] proactive token refresh: mainWindow not ready');
   }
 });
 
@@ -3028,7 +3057,7 @@ meshcoreMqttAdapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, (serverHo
   if (mainWindow) {
     mainWindow.webContents.send('mqtt:requestTokenRefresh', serverHost);
   } else {
-    console.warn('[main] token refresh needed: mainWindow not ready');
+    console.warn('mcL0087 [main] token refresh needed: mainWindow not ready');
   }
 });
 
@@ -3062,7 +3091,7 @@ ipcMain.handle('mqtt:connect', (event, settings) => {
     }
   } catch (err) {
     console.error(
-      '[IPC] mqtt:connect failed:',
+      'mcL0088 [IPC] mqtt:connect failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3077,7 +3106,7 @@ ipcMain.handle('mqtt:disconnect', (event, protocol?: MeshProtocol) => {
     if (!protocol || protocol === 'meshcom') meshcomMqttAdapter.disconnect();
   } catch (err) {
     console.error(
-      '[IPC] mqtt:disconnect failed:',
+      'mcL0089 [IPC] mqtt:disconnect failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3092,7 +3121,7 @@ ipcMain.handle('mqtt:powerResume', (event) => {
     meshcomMqttAdapter.handlePowerResume();
   } catch (err) {
     console.error(
-      '[IPC] mqtt:powerResume failed:',
+      'mcL0090 [IPC] mqtt:powerResume failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3107,7 +3136,7 @@ ipcMain.handle('mqtt:powerSuspend', (event) => {
     meshcomMqttAdapter.handlePowerSuspend();
   } catch (err) {
     console.error(
-      '[IPC] mqtt:powerSuspend failed:',
+      'mcL0091 [IPC] mqtt:powerSuspend failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3126,7 +3155,7 @@ ipcMain.handle('mqtt:getClientId', (event, protocol?: MeshProtocol) => {
     return mqttManager.getClientId();
   } catch (err) {
     console.error(
-      '[IPC] mqtt:getClientId failed:',
+      'mcL0092 [IPC] mqtt:getClientId failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3141,7 +3170,7 @@ ipcMain.handle('mqtt:refreshMeshcoreToken', (event, serverHost: string) => {
     return meshcoreMqttAdapter.getTokenInfo(serverHost);
   } catch (err) {
     console.error(
-      '[IPC] mqtt:refreshMeshcoreToken failed:',
+      'mcL0093 [IPC] mqtt:refreshMeshcoreToken failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3165,7 +3194,7 @@ ipcMain.handle(
       meshcoreMqttAdapter.updateToken(token, expiresAt);
     } catch (err) {
       console.error(
-        '[IPC] mqtt:updateMeshcoreToken failed:',
+        'mcL0094 [IPC] mqtt:updateMeshcoreToken failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -3186,7 +3215,7 @@ ipcMain.handle('mqtt:updateChannelKeys', (event, args) => {
     });
   } catch (err) {
     console.error(
-      '[IPC] mqtt:updateChannelKeys failed:',
+      'mcL0095 [IPC] mqtt:updateChannelKeys failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3201,7 +3230,7 @@ ipcMain.handle('mqtt:updateTopicPrefix', (event, args) => {
     mqttManager.updateTopicPrefix(a.topicPrefix);
   } catch (err) {
     console.error(
-      '[IPC] mqtt:updateTopicPrefix failed:',
+      'mcL0096 [IPC] mqtt:updateTopicPrefix failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3236,7 +3265,7 @@ ipcMain.handle('mqtt:publish', (event, args) => {
     });
   } catch (err) {
     console.error(
-      '[IPC] mqtt:publish failed:',
+      'mcL0097 [IPC] mqtt:publish failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3262,7 +3291,7 @@ ipcMain.handle('mqtt:publishProxy', (event, args) => {
     });
   } catch (err) {
     console.error(
-      '[IPC] mqtt:publishProxy failed:',
+      'mcL0098 [IPC] mqtt:publishProxy failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3291,7 +3320,7 @@ ipcMain.handle('mqtt:publishMeshcore', (event, args) => {
     });
   } catch (err) {
     console.error(
-      '[IPC] mqtt:publishMeshcore failed:',
+      'mcL0099 [IPC] mqtt:publishMeshcore failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3328,7 +3357,7 @@ ipcMain.handle('mqtt:publishMeshcorePacketLog', (event, args) => {
     });
   } catch (err) {
     console.error(
-      '[IPC] mqtt:publishMeshcorePacketLog failed:',
+      'mcL0100 [IPC] mqtt:publishMeshcorePacketLog failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3341,7 +3370,7 @@ ipcMain.handle('mqtt:getCachedNodes', (event) => {
     return mqttManager.getCachedNodes();
   } catch (err) {
     console.error(
-      '[IPC] mqtt:getCachedNodes failed:',
+      'mcL0101 [IPC] mqtt:getCachedNodes failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3353,7 +3382,7 @@ ipcMain.handle('mqtt:getChannelNameToIndex', (event) => {
     return mqttManager.getChannelNameToIndex();
   } catch (err) {
     console.error(
-      '[IPC] mqtt:getChannelNameToIndex failed:',
+      'mcL0102 [IPC] mqtt:getChannelNameToIndex failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3397,7 +3426,7 @@ ipcMain.handle('mqtt:publishNodeInfo', (event, args) => {
       return null;
     }
     console.error(
-      '[IPC] mqtt:publishNodeInfo failed:',
+      'mcL0103 [IPC] mqtt:publishNodeInfo failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3441,7 +3470,7 @@ ipcMain.handle('mqtt:publishPosition', (event, args) => {
     );
   } catch (err) {
     console.error(
-      '[IPC] mqtt:publishPosition failed:',
+      'mcL0104 [IPC] mqtt:publishPosition failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3494,7 +3523,7 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
     );
   } catch (err) {
     console.error(
-      '[IPC] mqtt:publishWaypoint failed:',
+      'mcL0105 [IPC] mqtt:publishWaypoint failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3562,7 +3591,7 @@ ipcMain.handle('notify:message', (event, title: unknown, body: unknown) => {
     }
   } catch (e) {
     console.warn(
-      '[IPC] notify:message failed:',
+      'mcL0106 [IPC] notify:message failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
@@ -3654,7 +3683,7 @@ ipcMain.handle('app:getRendererLiveness', (event) => {
     rendererMemory = rendererProcessMemoryBytes(app.getAppMetrics(), event.sender.getOSProcessId());
   } catch (error) {
     console.warn(
-      '[IPC] Renderer process memory unavailable:',
+      'mcL0107 [IPC] Renderer process memory unavailable:',
       sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
     );
   }
@@ -3675,7 +3704,7 @@ ipcMain.handle('app:getLoginItem', (event) => {
     return { openAtLogin: settings.openAtLogin };
   } catch (e) {
     console.error(
-      '[IPC] app:getLoginItem failed:',
+      'mcL0108 [IPC] app:getLoginItem failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     throw e;
@@ -3690,7 +3719,7 @@ ipcMain.handle('app:setLoginItem', (event, openAtLogin: unknown) => {
     app.setLoginItemSettings({ openAtLogin });
   } catch (e) {
     console.error(
-      '[IPC] app:setLoginItem failed:',
+      'mcL0109 [IPC] app:setLoginItem failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     throw e;
@@ -3737,6 +3766,8 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticRemoteAdminKeyByNode',
   'scheduledBroadcastsEnabled',
   'meshcomCallsignWatchlist',
+  // Keep the string literal so index.contract.test allowlist scanning sees it.
+  'verboseLogging',
 ]);
 const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
 /** JSON array of up to 50 base callsigns (see MESHCOM_CALLSIGN_WATCHLIST_MAX). */
@@ -3806,7 +3837,7 @@ ipcMain.handle('appSettings:get', (event) => {
     return out;
   } catch (err) {
     console.error(
-      '[IPC] appSettings:get failed:',
+      'mcL0110 [IPC] appSettings:get failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3836,10 +3867,11 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
           .run(key, value);
     console.debug(`[IPC] appSettings:set: ${sanitizeLogMessage(key)} (${result.changes} rows)`);
     if (key === PREVENT_SLEEP_SETTING_KEY) syncPowerSaveBlocker();
+    if (key === VERBOSE_LOGGING_SETTING_KEY) setVerboseLoggingEnabled(value === '1');
     return { changes: Number(result.changes) };
   } catch (err) {
     console.error(
-      '[IPC] appSettings:set failed:',
+      'mcL0111 [IPC] appSettings:set failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3859,6 +3891,7 @@ ipcMain.handle('appSettings:remove', (event, key: unknown) => {
   }
   const result = getDatabase().prepareOnce('DELETE FROM app_settings WHERE key = ?').run(key);
   if (key === PREVENT_SLEEP_SETTING_KEY) syncPowerSaveBlocker();
+  if (key === VERBOSE_LOGGING_SETTING_KEY) setVerboseLoggingEnabled(false);
   return { changes: Number(result.changes) };
 });
 
@@ -3900,7 +3933,7 @@ ipcMain.handle('app:showEmojiPanel', (event) => {
       app.showEmojiPanel();
     } catch (e) {
       console.error(
-        '[IPC] app:showEmojiPanel failed:',
+        'mcL0112 [IPC] app:showEmojiPanel failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       throw e;
@@ -3924,7 +3957,7 @@ ipcMain.handle('clipboard:writeText', async (event, text: unknown) => {
     await clipboard.writeText(text);
   } catch (e) {
     console.warn(
-      '[IPC] clipboard:writeText failed:',
+      'mcL0113 [IPC] clipboard:writeText failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     throw e;
@@ -3948,7 +3981,7 @@ ipcMain.handle('media:ensureMicrophoneAccess', async (event) => {
     });
   } catch (e) {
     console.warn(
-      '[IPC] media:ensureMicrophoneAccess failed:',
+      'mcL0114 [IPC] media:ensureMicrophoneAccess failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     return { granted: false, status: 'denied' };
@@ -3972,7 +4005,7 @@ ipcMain.handle('media:ensureCameraAccess', async (event) => {
     });
   } catch (e) {
     console.warn(
-      '[IPC] media:ensureCameraAccess failed:',
+      'mcL0115 [IPC] media:ensureCameraAccess failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     return { granted: false, status: 'denied' };
@@ -4105,8 +4138,12 @@ ipcMain.handle('db:saveNodes', (event, nodes) => {
           }
         }
         params.push(toNodeUpsertParams(node));
-      } catch {
-        // catch-no-log-ok: drop-not-abort invalid rows in a burst dump
+      } catch (e: unknown) {
+        console.debug(
+          '[main/index] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         dropped++;
       }
     }
@@ -4873,7 +4910,7 @@ ipcMain.handle('session:clearData', async (event) => {
   } catch (err) {
     if (!resetStarted) resumeIpc?.();
     console.error(
-      '[IPC] session:clearData failed:',
+      'mcL0116 [IPC] session:clearData failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     dialog.showErrorBox(
@@ -4891,7 +4928,7 @@ ipcMain.handle('log:getPath', (event) => {
     return getLogPath();
   } catch (err) {
     console.error(
-      '[IPC] log:getPath failed:',
+      'mcL0117 [IPC] log:getPath failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -4904,11 +4941,16 @@ ipcMain.handle('log:getRecentLines', (event) => {
     return getRecentLines();
   } catch (err) {
     console.error(
-      '[IPC] log:getRecentLines failed:',
+      'mcL0118 [IPC] log:getRecentLines failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
   }
+});
+
+ipcMain.handle('log:isVerboseEnabled', (event) => {
+  assertIpcSender(event, 'log:isVerboseEnabled');
+  return isVerboseLoggingEnabled();
 });
 
 ipcMain.handle('log:clear', (event) => {
@@ -4919,7 +4961,7 @@ ipcMain.handle('log:clear', (event) => {
     clearLogFile();
   } catch (err) {
     console.error(
-      '[IPC] log:clear failed:',
+      'mcL0119 [IPC] log:clear failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -4956,7 +4998,7 @@ ipcMain.handle('log:export', async (event) => {
     return null;
   } catch (err) {
     console.error(
-      '[IPC] log:export failed:',
+      'mcL0120 [IPC] log:export failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -4993,7 +5035,7 @@ ipcMain.handle('support:exportBundle', async (event, mode: unknown, debugSnapsho
     return null;
   } catch (err) {
     console.error(
-      '[IPC] support:exportBundle failed:',
+      'mcL0121 [IPC] support:exportBundle failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5021,7 +5063,7 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
     return { success: true, path: result.filePath };
   } catch (err) {
     console.error(
-      '[IPC] chat:export failed:',
+      'mcL0122 [IPC] chat:export failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5059,7 +5101,7 @@ ipcMain.handle('mecp:exportReceivedLog', async (event) => {
     return { success: true as const, path: result.filePath };
   } catch (err) {
     console.error(
-      '[IPC] mecp:exportReceivedLog failed:',
+      'mcL0123 [IPC] mecp:exportReceivedLog failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5109,7 +5151,7 @@ ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
     return { success: true, path: result.filePath };
   } catch (err) {
     console.error(
-      '[IPC] gps:exportGpx failed:',
+      'mcL0124 [IPC] gps:exportGpx failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5153,7 +5195,7 @@ ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
     return { success: true, path: targetPath };
   } catch (err) {
     console.error(
-      '[IPC] chat:saveReticulumAttachment failed:',
+      'mcL0125 [IPC] chat:saveReticulumAttachment failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5170,7 +5212,7 @@ ipcMain.handle('chat:showItemInFolder', (event, filePath: unknown) => {
     return { ok: true };
   } catch (err) {
     console.error(
-      '[IPC] chat:showItemInFolder failed:',
+      'mcL0126 [IPC] chat:showItemInFolder failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5194,7 +5236,7 @@ ipcMain.handle('chat:readReticulumAttachmentAsDataUrl', async (event, opts: unkn
     return { dataUrl };
   } catch (err) {
     console.error(
-      '[IPC] chat:readReticulumAttachmentAsDataUrl failed:',
+      'mcL0127 [IPC] chat:readReticulumAttachmentAsDataUrl failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5215,7 +5257,7 @@ ipcMain.handle('chat:readReticulumAttachmentBytes', async (event, filePath: unkn
     return { dataBase64 };
   } catch (err) {
     console.error(
-      '[IPC] chat:readReticulumAttachmentBytes failed:',
+      'mcL0128 [IPC] chat:readReticulumAttachmentBytes failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5247,7 +5289,7 @@ ipcMain.handle('meshtastic:xmodemPickUpload', async (event) => {
     return { filename, data: new Uint8Array(data) };
   } catch (err) {
     console.error(
-      '[IPC] meshtastic:xmodemPickUpload failed:',
+      'mcL0129 [IPC] meshtastic:xmodemPickUpload failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5278,7 +5320,7 @@ ipcMain.handle('meshtastic:xmodemSaveDownload', async (event, filename: unknown,
     return { success: true, path: result.filePath };
   } catch (err) {
     console.error(
-      '[IPC] meshtastic:xmodemSaveDownload failed:',
+      'mcL0130 [IPC] meshtastic:xmodemSaveDownload failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -5560,7 +5602,7 @@ void (async () => {
   });
 })().catch((err: unknown) => {
   console.error(
-    '[main] identity hydration IPC register failed:',
+    'mcL0131 [main] identity hydration IPC register failed:',
     sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
   );
 });
@@ -5815,7 +5857,7 @@ ipcMain.handle('meshcore:openJsonFile', async (event) => {
     return raw;
   } catch (err) {
     console.error(
-      '[IPC] meshcore:openJsonFile failed:',
+      'mcL0132 [IPC] meshcore:openJsonFile failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -6291,7 +6333,7 @@ ipcMain.handle(
       }
     } catch (err) {
       console.error(
-        '[IPC] db:updateMeshcoreContactAdvert error:',
+        'mcL0133 [IPC] db:updateMeshcoreContactAdvert error:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -6314,7 +6356,7 @@ ipcMain.handle(
       return db.prepareOnce(sql).run(safeNonNegativeInt(nodeId));
     } catch (err) {
       console.error(
-        '[IPC] db:forgetMeshcoreContactAdvert error:',
+        'mcL0134 [IPC] db:forgetMeshcoreContactAdvert error:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -6336,7 +6378,7 @@ ipcMain.handle('db:updateMeshcoreContactType', (event, nodeId: number, contactTy
     );
   } catch (err) {
     console.error(
-      '[IPC] db:updateMeshcoreContactType error:',
+      'mcL0135 [IPC] db:updateMeshcoreContactType error:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -6386,7 +6428,7 @@ ipcMain.handle(
       );
     } catch (err) {
       console.error(
-        '[IPC] db:updateMeshcoreContactLastRf error:',
+        'mcL0136 [IPC] db:updateMeshcoreContactLastRf error:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -6680,8 +6722,11 @@ async function readBoundedArrayBuffer(response: Response, maxBytes: number): Pro
   } finally {
     try {
       await reader.cancel();
-    } catch {
-      // catch-no-log-ok: stream may already be closed/aborted by this point
+    } catch (e: unknown) {
+      console.debug(
+        '[main/index] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
   const merged = new Uint8Array(total);
@@ -6807,7 +6852,9 @@ ipcMain.handle('http:connect', async (event, host: unknown, tls: unknown) => {
         // misbehaving and a truncated protobuf frame would corrupt downstream
         // parsing. Transient network/timeout errors keep retrying as before.
         if (err instanceof ResponseSizeCapExceededError) {
-          console.error('[IPC] http:connect: fromradio response exceeded size cap, disconnecting');
+          console.error(
+            'mcL0137 [IPC] http:connect: fromradio response exceeded size cap, disconnecting',
+          );
           if (httpDevice) {
             clearInterval(httpDevice.intervalId);
             httpDevice = null;
@@ -6913,7 +6960,7 @@ app.on('second-instance', (_event, argv) => {
 
 app.on('child-process-gone', (_event, details) => {
   console.error(
-    '[main] child-process-gone:',
+    'mcL0138 [main] child-process-gone:',
     sanitizeLogMessage(
       `${details.type} ${details.reason ?? ''} exit=${String(details.exitCode ?? 'n/a')}`,
     ),
@@ -6925,12 +6972,13 @@ void app
   .then(async () => {
     try {
       initLogFile();
+      // Verbose gate from env is already applied in initLogFile; DB override loaded after initDatabase.
       console.debug(`[Startup] runtime ${formatRuntimeLogTag()}`);
       try {
         console.debug('[main] crashDumps path:', sanitizeLogMessage(app.getPath('crashDumps')));
       } catch (e: unknown) {
         console.warn(
-          '[main] crashDumps path unavailable:',
+          'mcL0139 [main] crashDumps path unavailable:',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }
@@ -6947,6 +6995,21 @@ void app
       if (coldStartUrl) pendingOpenUrl = coldStartUrl;
 
       initDatabase();
+      try {
+        const verboseRow = getDatabase()
+          .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+          .get(VERBOSE_LOGGING_SETTING_KEY) as { value: string } | undefined;
+        if (verboseRow?.value === '1' || process.env.MESH_CLIENT_VERBOSE_LOG === '1') {
+          setVerboseLoggingEnabled(true);
+        } else {
+          setVerboseLoggingEnabled(false);
+        }
+      } catch (e: unknown) {
+        console.warn(
+          'mcL0140 [main] verboseLogging setting load failed:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
       registerIncidentIpcHandlers();
       registerScheduledBroadcastIpcHandlers();
       // Production ships `team-roster-handlers.js` beside index.js (out of measured budget).
@@ -6965,7 +7028,7 @@ void app
         mod.registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
       } catch (err: unknown) {
         console.error(
-          '[main] team-roster IPC registration failed:',
+          'mcL0141 [main] team-roster IPC registration failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
         const fallbackMod = (
@@ -6999,7 +7062,7 @@ void app
         envTelMod.registerEnvironmentTelemetryIpcHandlers({ ipcMain, assertIpcSender });
       } catch (err: unknown) {
         console.error(
-          '[main] environment-telemetry IPC registration failed:',
+          'mcL0142 [main] environment-telemetry IPC registration failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
         const envTelFallbackMod = (
@@ -7032,7 +7095,7 @@ void app
         meshcomDbMod.registerMeshcomDbIpcHandlers({ ipcMain });
       } catch (err: unknown) {
         console.error(
-          '[main] meshcom-db IPC registration failed:',
+          'mcL0143 [main] meshcom-db IPC registration failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
         const meshcomDbFallbackMod = (
@@ -7104,7 +7167,7 @@ void app
                 .then((m) => m.start(saved))
                 .catch((e: unknown) => {
                   console.error(
-                    '[TAK] Auto-start failed:',
+                    'mcL0144 [TAK] Auto-start failed:',
                     sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
                   );
                 });
@@ -7112,7 +7175,7 @@ void app
           }
         } catch (e: unknown) {
           console.warn(
-            '[TAK] Settings restore failed:',
+            'mcL0145 [TAK] Settings restore failed:',
             sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
           );
         }
@@ -7127,14 +7190,14 @@ void app
               .then((m) => m.startRemote(remoteSettings))
               .catch((e: unknown) => {
                 console.error(
-                  '[TAK] Remote relay auto-connect failed:',
+                  'mcL0146 [TAK] Remote relay auto-connect failed:',
                   sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
                 );
               });
           }
         } catch (e: unknown) {
           console.warn(
-            '[TAK] Remote relay settings restore failed:',
+            'mcL0147 [TAK] Remote relay settings restore failed:',
             sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
           );
         }
@@ -7187,7 +7250,7 @@ void app
         return;
       }
       console.error(
-        '[main] Fatal startup error:',
+        'mcL0148 [main] Fatal startup error:',
         sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
       );
       const isNativeModuleError =
@@ -7208,7 +7271,7 @@ void app
           createWindow();
         } catch (error) {
           console.error(
-            '[main] Window creation error:',
+            'mcL0149 [main] Window creation error:',
             sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
           );
         }
@@ -7219,7 +7282,7 @@ void app
   })
   .catch((error: unknown) => {
     console.error(
-      '[main] app.whenReady failed:',
+      'mcL0150 [main] app.whenReady failed:',
       sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
     );
     showFatalStartupError(
@@ -7246,7 +7309,7 @@ app.on('before-quit', (event) => {
       await gattSidecarProxy.disconnectAll();
     } catch (err) {
       console.error(
-        '[main] GATT shutdown failed:',
+        'mcL0151 [main] GATT shutdown failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
     } finally {
@@ -7256,7 +7319,7 @@ app.on('before-quit', (event) => {
         await shutdownAppResources();
       } catch (err) {
         console.error(
-          '[main] shutdownAppResources failed before quit:',
+          'mcL0152 [main] shutdownAppResources failed before quit:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
       }

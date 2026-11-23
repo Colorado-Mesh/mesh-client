@@ -103,7 +103,9 @@ const initial = loadPersisted();
 
 function persistBasemapToDatabase(basemapId: MapBasemapId): void {
   void window.electronAPI.appSettings.set('mapBasemapId', basemapId).catch((e: unknown) => {
-    console.warn('[mapLayerStore] appSettings.set mapBasemapId failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL1417 [mapLayerStore] appSettings.set mapBasemapId failed ' + errLikeToLogString(e),
+    );
   });
 }
 
@@ -194,7 +196,7 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
       }
       persistBasemapToDatabase(get().basemapId);
     } catch (e) {
-      console.warn('[mapLayerStore] hydrateFromDatabase failed ' + errLikeToLogString(e));
+      console.warn('mcL1418 [mapLayerStore] hydrateFromDatabase failed ' + errLikeToLogString(e));
     }
   },
 }));

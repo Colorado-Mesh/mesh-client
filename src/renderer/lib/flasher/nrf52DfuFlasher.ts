@@ -109,8 +109,8 @@ export class Nrf52DfuFlasher {
     } finally {
       try {
         await zipReader.close();
-      } catch {
-        // catch-no-log-ok zip may already be closed after successful flash
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/flasher/nrf52DfuFlasher] catch:', e);
       }
     }
   }
@@ -285,7 +285,7 @@ export class Nrf52DfuFlasher {
         new Promise<never>((_, reject) => {
           stallInterval = setInterval(() => {
             if (Date.now() - lastProgressAt >= NRF52_DFU_STALL_TIMEOUT_MS) {
-              console.warn('[nrf52DfuFlasher] sendFirmware stalled — closing serial port');
+              console.warn('mcL0838 [nrf52DfuFlasher] sendFirmware stalled — closing serial port');
               void closeSerialPortIfOpen(this.serialPort);
               reject(new Error('NRF52_DFU_STALLED'));
             }

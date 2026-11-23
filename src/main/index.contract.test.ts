@@ -682,6 +682,7 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain("'reticulumLastSelfLxmfHash'");
     expect(INDEX_SOURCE).toContain("'use24HourTime'");
     expect(INDEX_SOURCE).toContain("'meshcomCallsignWatchlist'");
+    expect(INDEX_SOURCE).toContain('VERBOSE_LOGGING_SETTING_KEY');
     expect(INDEX_SOURCE).toContain('MESHCOM_CALLSIGN_WATCHLIST_MAX_VALUE_LENGTH');
     expect(INDEX_SOURCE).toContain('MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX');
     expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_SYNC_SETTING_PREFIX');
@@ -792,7 +793,7 @@ describe('External link routing (source contract)', () => {
 
   it('logs rejected external link opens instead of leaving unhandled rejections', () => {
     expect(INDEX_SOURCE).toContain('shell.openExternal(target.toString()).catch((e: unknown) => {');
-    expect(INDEX_SOURCE).toContain("'[main] external link open failed'");
+    expect(INDEX_SOURCE).toContain("'mcL0060 [main] external link open failed'");
     expect(INDEX_SOURCE).toContain(
       'sanitizeLogMessage(e instanceof Error ? e.message : String(e))',
     );
@@ -816,11 +817,11 @@ describe('About dialog crash guard (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /function applyAboutPanelOptions\(\): void \{[\s\S]*?if \(process\.platform === 'win32'\) \{\s*return;\s*\}/,
     );
-    expect(INDEX_SOURCE).toContain("'[main] about dialog failed'");
+    expect(INDEX_SOURCE).toContain("'mcL0056 [main] about dialog failed'");
     expect(INDEX_SOURCE).toContain(
       'dialog.showErrorBox(`About ${appName}`, `${appName}\\nVersion ${version}`);',
     );
-    expect(INDEX_SOURCE).toContain("'[main] about dialog fallback failed'");
+    expect(INDEX_SOURCE).toContain("'mcL0057 [main] about dialog fallback failed'");
     expect(INDEX_SOURCE).not.toContain('showMessageBox(`About ${appName}`');
   });
 
@@ -828,7 +829,7 @@ describe('About dialog crash guard (source contract)', () => {
     expect(INDEX_SOURCE).toContain('function openHelpExternalLink(');
     expect(INDEX_SOURCE).toContain('function buildHelpMenuExternalLinkItems(');
     expect(INDEX_SOURCE).toContain('[main] help link: openExternal url=');
-    expect(INDEX_SOURCE).toContain('[main] help link: openExternal failed');
+    expect(INDEX_SOURCE).toContain('mcL0053 [main] help link: openExternal failed');
     expect(INDEX_SOURCE).toContain(
       'void shell.openExternal(target.toString() /* parseHttpOrHttpsUrl */).catch((e: unknown) => {',
     );
@@ -1076,7 +1077,7 @@ describe('Native crash observability (source contract)', () => {
     );
     expect(INDEX_SOURCE).toContain('crashReporter.start({ uploadToServer: false })');
     expect(INDEX_SOURCE).toContain("'[main] crashDumps path:'");
-    expect(INDEX_SOURCE).toContain("'[main] child-process-gone:'");
+    expect(INDEX_SOURCE).toContain("'mcL0138 [main] child-process-gone:'");
   });
 
   it('registers mesh-tiles as a privileged scheme before ready and handles it', () => {
@@ -1138,21 +1139,21 @@ describe('Unread app badge wiring (source contract)', () => {
   it('reapplies the latest unread count on focus and before best-effort tray updates', () => {
     expect(INDEX_SOURCE).toMatch(/win\.on\('focus', \(\) => \{[^}]*refreshUnreadAppBadge\(\)/);
     expect(INDEX_SOURCE).toMatch(/lastTrayUnreadCount = n;\s*refreshUnreadAppBadge\(\);/);
-    expect(INDEX_SOURCE).toContain("'[main] app unread badge update failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0068 [main] app unread badge update failed:'");
   });
 });
 
 describe('Native Electron call guards (source contract)', () => {
   it('keeps tray, badge, and power-save native calls best-effort', () => {
-    expect(INDEX_SOURCE).toContain("'[main] tray icon load failed:'");
-    expect(INDEX_SOURCE).toContain("'[main] tray unread icon overlay failed:'");
-    expect(INDEX_SOURCE).toContain("'[main] tray setup failed:'");
-    expect(INDEX_SOURCE).toContain("'[main] tray unread update failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0048 [main] tray icon load failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0049 [main] tray unread icon overlay failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0050 [main] tray setup failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0070 [main] tray unread update failed:'");
     expect(INDEX_SOURCE).toContain('loadPaintTrayUnreadDot()(');
     expect(INDEX_SOURCE).toContain('function startPowerSaveBlocker(): void');
     expect(INDEX_SOURCE).toContain('function stopPowerSaveBlocker(): void');
-    expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker start failed:'");
-    expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker stop failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0071 [main] powerSaveBlocker start failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0072 [main] powerSaveBlocker stop failed:'");
     expect(INDEX_SOURCE).toContain('shouldHoldPowerSaveBlocker(');
     expect(INDEX_SOURCE).toContain('meshtasticConnectionType');
     expect(INDEX_SOURCE).toContain('meshcoreConnectionType');
@@ -1166,13 +1167,13 @@ describe('Native Electron call guards (source contract)', () => {
   });
 
   it('logs native IPC helper failures locally before fallback or rejection', () => {
-    expect(INDEX_SOURCE).toContain("'[IPC] notify:message failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0106 [IPC] notify:message failed:'");
     expect(INDEX_SOURCE).toContain('const secureSecretStore = new SecureSecretStore(getDatabase)');
     expect(INDEX_SOURCE).not.toContain("ipcMain.handle('storage:decrypt'");
-    expect(INDEX_SOURCE).toContain("'[IPC] app:getLoginItem failed:'");
-    expect(INDEX_SOURCE).toContain("'[IPC] app:setLoginItem failed:'");
-    expect(INDEX_SOURCE).toContain("'[IPC] app:showEmojiPanel failed:'");
-    expect(INDEX_SOURCE).toContain("'[IPC] meshcore:openJsonFile failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0108 [IPC] app:getLoginItem failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0109 [IPC] app:setLoginItem failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0112 [IPC] app:showEmojiPanel failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0132 [IPC] meshcore:openJsonFile failed:'");
   });
 
   it('guards fatal startup error dialog fallback', () => {

@@ -8,10 +8,17 @@
 # is wrong for this codebase, update this file and/or add a narrow nosemgrep
 # with a reason. See scripts/check-semgrep.mjs.
 #
-# Catch-block hygiene (log / rethrow / `// catch-no-log-ok <reason>`) for
+# Catch-block hygiene (log / rethrow / rare `// catch-no-log-ok <reason>`) for
 # src/main + src/renderer is enforced by `pnpm run check:silent-catches`.
-# Do not add a catch-body regex or “empty catch” AST rule here: comment-only
-# bodies with `catch-no-log-ok` are intentional and would false-positive.
+# Prefer `logCaughtDebug` / `console.debug` over suppressions. Do not add an
+# empty-catch Semgrep rule here (comment-only bodies would false-positive).
+#
+# Intentional `// nosemgrep` keeper families (do not delete blindly — dry-run
+# removing them re-fails `--config auto`):
+#   - path-join-resolve-traversal — containment helpers after segment validation
+#     (`pathUnderRoot`, `pathCanonical`, `scripts/lib/path-under-root.mjs`)
+#   - detect-non-literal-regexp — escaped / length-capped / fixed-fragment RegExp
+#   - detect-child-process — argv-only spawn with shell false + path validation
 #
 # Electron BrowserWindow prefs are also covered by check:electron-security on
 # index.ts; these rules scan all of src/ so pop-out / migration windows cannot

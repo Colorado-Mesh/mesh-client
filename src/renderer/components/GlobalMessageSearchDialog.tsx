@@ -30,8 +30,9 @@ function formatHitTime(ts: number): string {
   if (!ts) return '';
   try {
     return new Date(ts).toLocaleString();
-  } catch {
-    // catch-no-log-ok Invalid Date / locale edge; empty label is fine
+  } catch (e: unknown) {
+    console.debug('[renderer/components/GlobalMessageSearchDialog] catch:', e);
+
     return '';
   }
 }
@@ -142,7 +143,7 @@ export function GlobalMessageSearchDialog({
         setActiveIndex(0);
       } catch (err) {
         if (gen !== searchGen.current) return;
-        console.error('[GlobalMessageSearch] search failed', err);
+        console.error('mcL0423 [GlobalMessageSearch] search failed', err);
         setError(t('globalMessageSearch.failed'));
         setHits([]);
       } finally {

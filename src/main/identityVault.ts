@@ -4,6 +4,8 @@ import path from 'node:path';
 
 import { app } from 'electron';
 
+import { sanitizeLogMessage } from './sanitize-log-message';
+
 const VAULT_VERSION = 1;
 const MIN_PASSCODE_LENGTH = 8;
 const MAX_PASSCODE_LENGTH = 256;
@@ -187,8 +189,12 @@ function readEnvelopeFromDisk(): VaultEnvelope | null {
       return null;
     }
     return parsed;
-  } catch {
-    // catch-no-log-ok corrupt or missing vault envelope reads as not configured
+  } catch (e: unknown) {
+    console.debug(
+      '[main/identityVault] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 }
@@ -220,7 +226,11 @@ export async function setIdentityVaultPasscode(
     unlockedSecret = secret;
     return { ok: true };
   } catch (err) {
-    // catch-no-log-ok failure returned to IPC caller as { ok: false, error }
+    console.debug(
+      '[main/identityVault] catch:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+
     return {
       ok: false,
       error: err instanceof Error ? err.message : String(err),
@@ -239,8 +249,12 @@ export async function unlockIdentityVault(passcode: string): Promise<IdentityVau
       unlockAttemptCount = 0;
       return { ok: true };
     } catch (err) {
+      console.debug(
+        '[main/identityVault] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
       unlockedSecret = null;
-      // catch-no-log-ok wrong passcode returned to IPC caller as { ok: false, error }
+
       return {
         ok: false,
         error: err instanceof Error ? err.message : String(err),

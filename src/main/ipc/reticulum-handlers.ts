@@ -170,25 +170,25 @@ function validateRncpListenerDirs(opts: {
 }): string | null {
   const { enabled, allowFetch, saveDir, fetchJail } = opts;
   if (enabled && saveDir == null) {
-    console.warn('[ReticulumIPC] setRncpListener rejected: save_dir required when enabled');
+    console.warn('mcL0171 [ReticulumIPC] setRncpListener rejected: save_dir required when enabled');
     return 'save_dir_required';
   }
   if (allowFetch && fetchJail == null) {
     console.warn(
-      '[ReticulumIPC] setRncpListener rejected: fetch_jail required when allow_fetch is true',
+      'mcL0172 [ReticulumIPC] setRncpListener rejected: fetch_jail required when allow_fetch is true',
     );
     return 'fetch_jail_required';
   }
   if (saveDir != null && !isAllowedRncpSaveDirectoryPath(saveDir)) {
     console.warn(
-      '[ReticulumIPC] setRncpListener rejected save_dir not from picker:',
+      'mcL0173 [ReticulumIPC] setRncpListener rejected save_dir not from picker:',
       sanitizeLogMessage(saveDir),
     );
     return 'save_dir_not_from_picker';
   }
   if (fetchJail != null && !isAllowedRncpSaveDirectoryPath(fetchJail)) {
     console.warn(
-      '[ReticulumIPC] setRncpListener rejected fetch_jail not from picker:',
+      'mcL0174 [ReticulumIPC] setRncpListener rejected fetch_jail not from picker:',
       sanitizeLogMessage(fetchJail),
     );
     return 'fetch_jail_not_from_picker';
@@ -208,7 +208,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await m.start(parseReticulumStartOptions(opts));
     } catch (err) {
       console.error(
-        '[ReticulumIPC] start failed:',
+        'mcL0175 [ReticulumIPC] start failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -222,7 +222,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       await getManager()?.stop();
     } catch (err) {
       console.error(
-        '[ReticulumIPC] stop failed:',
+        'mcL0176 [ReticulumIPC] stop failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -268,7 +268,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const body = await m.proxyGet(pathArg);
       return body;
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('proxyGet', err, pathArg);
     }
   });
@@ -282,7 +286,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const result = await m.proxyPost(pathArg, body);
       return result;
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('proxyPost', err, pathArg);
     }
   });
@@ -313,7 +321,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyPost(VOICE_AUDIO_API_PATH, parsed, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('voiceSendAudio', err, VOICE_AUDIO_API_PATH);
     }
   });
@@ -325,7 +337,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyPost(VOICE_MEMO_START_API_PATH, body, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('voiceMemoStart', err, VOICE_MEMO_START_API_PATH);
     }
   });
@@ -341,7 +357,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyPost(VOICE_MEMO_AUDIO_API_PATH, parsed, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('voiceMemoSendAudio', err, VOICE_MEMO_AUDIO_API_PATH);
     }
   });
@@ -367,7 +387,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       }
       return result;
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('voiceMemoStop', err, VOICE_MEMO_STOP_API_PATH);
     }
   });
@@ -382,7 +406,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyPost(VOICE_MEMO_CANCEL_API_PATH, parsed, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('voiceMemoCancel', err, VOICE_MEMO_CANCEL_API_PATH);
     }
   });
@@ -391,7 +419,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     assertIpcSender(event, 'reticulum:factoryReset');
     try {
       const m = ensureManager();
-      console.warn('[ReticulumIPC] factoryReset invoked');
+      console.warn('mcL0177 [ReticulumIPC] factoryReset invoked');
       return await m.factoryReset();
     } catch (err) {
       logReticulumProxyFailure('factoryReset', err, '/api/v1/system/factory-reset');
@@ -407,7 +435,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyPut(pathArg, body);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('proxyPut', err, pathArg);
     }
   });
@@ -420,7 +452,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const m = ensureManager();
       return await m.proxyDelete(pathArg);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('proxyDelete', err, pathArg);
     }
   });
@@ -432,7 +468,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       return await ensureManager().proxyGet('/api/v1/games/status', DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('gamesStatus', err, '/api/v1/games/status');
     }
   });
@@ -443,7 +483,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       return await ensureManager().proxyGet('/api/v1/games/apps', DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('gamesApps', err, '/api/v1/games/apps');
     }
   });
@@ -458,7 +502,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       return await ensureManager().proxyGet(q, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('gamesSessions', err, q);
     }
   });
@@ -474,7 +522,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       return await ensureManager().proxyGet(path, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('gamesSessionDetail', err, path);
     }
   });
@@ -489,7 +541,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       return await ensureManager().proxyPost('/api/v1/games/action', parsed, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('gamesAction', err, '/api/v1/games/action');
     }
   });
@@ -505,7 +561,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       return await ensureManager().proxyPost(path, {}, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('gamesResend', err, path);
     }
   });
@@ -521,7 +581,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       return await ensureManager().proxyPost(path, {}, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('gamesMarkRead', err, path);
     }
   });
@@ -537,7 +601,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       return await ensureManager().proxyDelete(path, DEDICATED_PROXY);
     } catch (err) {
-      // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
+      console.debug(
+        '[main/ipc/reticulum-handlers] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       return settleReticulumProxyFailure('gamesDeleteSession', err, path);
     }
   });
@@ -558,7 +626,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await showReticulumConfigImportDialog();
     } catch (err) {
       console.error(
-        '[ReticulumIPC] showConfigImportDialog failed:',
+        'mcL0178 [ReticulumIPC] showConfigImportDialog failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -571,7 +639,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await showReticulumIdentityImportDialog();
     } catch (err) {
       console.error(
-        '[ReticulumIPC] showIdentityImportDialog failed:',
+        'mcL0179 [ReticulumIPC] showIdentityImportDialog failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -584,7 +652,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await showReticulumIdentityBackupImportDialog();
     } catch (err) {
       console.error(
-        '[ReticulumIPC] showIdentityBackupImportDialog failed:',
+        'mcL0180 [ReticulumIPC] showIdentityBackupImportDialog failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -599,7 +667,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
         return await saveReticulumIdentityExportDialog(opts);
       } catch (err) {
         console.error(
-          '[ReticulumIPC] saveIdentityExportDialog failed:',
+          'mcL0181 [ReticulumIPC] saveIdentityExportDialog failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
         throw err;
@@ -619,7 +687,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
         return await saveBlocklistToFile(hashes.filter((h): h is string => typeof h === 'string'));
       } catch (err) {
         console.error(
-          '[ReticulumIPC] saveBlocklistDialog failed:',
+          'mcL0182 [ReticulumIPC] saveBlocklistDialog failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
         throw err;
@@ -636,7 +704,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
         return await readBlocklistFromFile();
       } catch (err) {
         console.error(
-          '[ReticulumIPC] openBlocklistDialog failed:',
+          'mcL0183 [ReticulumIPC] openBlocklistDialog failed:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
         throw err;
@@ -650,7 +718,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await showNomadContentSourceDialog();
     } catch (err) {
       console.error(
-        '[ReticulumIPC] showNomadContentSourceDialog failed:',
+        'mcL0184 [ReticulumIPC] showNomadContentSourceDialog failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -673,7 +741,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     if (!isAllowedNomadContentSourcePath(pathVal)) {
       console.warn(
-        '[ReticulumIPC] setNomadContentSource rejected path not from folder picker:',
+        'mcL0185 [ReticulumIPC] setNomadContentSource rejected path not from folder picker:',
         sanitizeLogMessage(pathVal),
       );
       return { ok: false, error: 'content_source_not_from_picker' };
@@ -697,7 +765,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await validateReticulumUserConfig();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error('[ReticulumIPC] validateConfig failed:', sanitizeLogMessage(message));
+      console.error('mcL0186 [ReticulumIPC] validateConfig failed:', sanitizeLogMessage(message));
       return { ok: false, issues: [], error: sanitizeLogMessage(message) };
     }
   });
@@ -710,7 +778,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await showRncpOpenFileDialog();
     } catch (err) {
       console.error(
-        '[ReticulumIPC] showRncpOpenFileDialog failed:',
+        'mcL0187 [ReticulumIPC] showRncpOpenFileDialog failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -723,7 +791,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return await showRncpSaveDirectoryDialog();
     } catch (err) {
       console.error(
-        '[ReticulumIPC] showRncpSaveDirectoryDialog failed:',
+        'mcL0188 [ReticulumIPC] showRncpSaveDirectoryDialog failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -737,7 +805,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     if (!isAllowedRncpRevealPath(pathArg)) {
       console.warn(
-        '[ReticulumIPC] revealInFolder rejected path not from picker:',
+        'mcL0189 [ReticulumIPC] revealInFolder rejected path not from picker:',
         sanitizeLogMessage(pathArg),
       );
       return { ok: false, error: 'path_not_from_picker' };
@@ -767,7 +835,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     if (!isAllowedRncpSendFilePath(filePath)) {
       console.warn(
-        '[ReticulumIPC] rncpSend rejected path not from picker:',
+        'mcL0190 [ReticulumIPC] rncpSend rejected path not from picker:',
         sanitizeLogMessage(filePath),
       );
       return { ok: false, error: 'path_not_from_picker' };
@@ -811,7 +879,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     if (savePath != null && !isAllowedRncpSaveDirectoryPath(savePath)) {
       console.warn(
-        '[ReticulumIPC] rncpFetch rejected save_path not from picker:',
+        'mcL0191 [ReticulumIPC] rncpFetch rejected save_path not from picker:',
         sanitizeLogMessage(savePath),
       );
       return { ok: false, error: 'save_path_not_from_picker' };

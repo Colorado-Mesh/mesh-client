@@ -12,7 +12,8 @@ async function wasDatabaseCreatedThisLaunch(ask: () => Promise<unknown>): Promis
     try {
       return await ask();
     } catch (err) {
-      // catch-no-log-ok transient IPC — outer catch logs after retries exhaust
+      console.debug('[renderer/hooks/useFirstRunWizardLauncher] catch:', err);
+
       lastErr = err;
     }
   }
@@ -44,7 +45,9 @@ export function useFirstRunWizardLauncher(): void {
       void wasDatabaseCreatedThisLaunch(ask)
         .then(decide)
         .catch((err: unknown) => {
-          console.warn('[FirstRunWizard] fresh-install check failed ' + errLikeToLogString(err));
+          console.warn(
+            'mcL0745 [FirstRunWizard] fresh-install check failed ' + errLikeToLogString(err),
+          );
           if (cancelled) return;
           if (useFirstRunWizardStore.getState().status !== 'unseen') return;
           // IPC failed after retry — fail open so onboarding is not permanently skipped.

@@ -99,7 +99,7 @@ describe('spellcheckSetup', () => {
     });
     expect(tryConfigureRendererSpellcheck(sess as never)).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
-      '[main] spellcheck: configure failed',
+      'mcL0293 [main] spellcheck: configure failed',
       expect.stringContaining('session closed'),
     );
   });

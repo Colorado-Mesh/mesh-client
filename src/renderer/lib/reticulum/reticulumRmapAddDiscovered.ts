@@ -91,7 +91,8 @@ export async function addRmapDiscoveredAsInterface(
     invalidateReticulumInterfacesCache();
     return { ok: true };
   } catch (e) {
-    // catch-no-log-ok error returned to caller for toast/UI
+    console.debug('[renderer/lib/reticulum/reticulumRmapAddDiscovered] catch:', e);
+
     return { ok: false, reason: 'api_error', error: errLikeToLogString(e) };
   }
 }

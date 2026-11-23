@@ -368,7 +368,8 @@ export function bindNomadMicronPartials(
         : binding.ancestry;
       bindScope(binding.element, binding.depth + 1, ancestry);
     } catch (error) {
-      // catch-no-log-ok Controller aborts are expected during refresh and page teardown.
+      console.debug('[renderer/lib/nomad/micronParser] catch:', error);
+
       if (!controller.signal.aborted && !bindingDisposed(binding) && !controllerStopped()) {
         setError(binding, error);
       }
@@ -615,7 +616,7 @@ export async function bindNomadMicronMedia(
       if (!signal?.aborted) notice?.setAttribute('hidden', 'true');
     } catch (e) {
       if (signal?.aborted) return;
-      console.warn('[bindNomadMicronMedia] fetch failed', e);
+      console.warn('mcL0987 [bindNomadMicronMedia] fetch failed', e);
       setNotice(
         notice,
         alt

@@ -95,10 +95,13 @@ export class CustomMapSourceStore {
     try {
       raw = await fs.readFile(this.filePath(), 'utf8');
     } catch (e: unknown) {
+      console.debug(
+        '[main/offline-maps/custom-sources] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
       const code =
         e && typeof e === 'object' && 'code' in e ? (e as { code?: unknown }).code : undefined;
       if (code === 'ENOENT') {
-        // catch-no-log-ok missing file → empty list (first run)
         this.records = [];
         return;
       }
@@ -113,17 +116,15 @@ export class CustomMapSourceStore {
       for (const candidate of parsed.sources) {
         const rec = this.revalidate(candidate);
         if (rec) out.push(rec);
-        else console.warn('[offline-maps] dropped invalid custom source record');
+        else console.warn('mcL0267 [offline-maps] dropped invalid custom source record');
       }
       this.records = out.slice(0, CUSTOM_MAP_SOURCES_MAX);
     } catch (e: unknown) {
       console.warn(
-        '[offline-maps] custom-sources.json unreadable; starting empty:',
+        'mcL0268 [offline-maps] custom-sources.json unreadable; starting empty:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
-      await fs.rename(this.filePath(), `${this.filePath()}.corrupt-${Date.now()}`).catch(() => {
-        // catch-no-log-ok best-effort quarantine
-      });
+      await fs.rename(this.filePath(), `${this.filePath()}.corrupt-${Date.now()}`).catch(() => {});
       this.records = [];
     }
   }
@@ -173,9 +174,11 @@ export class CustomMapSourceStore {
       await fs.writeFile(tmp, JSON.stringify(body, null, 2), 'utf8');
       await fs.rename(tmp, this.filePath());
     } catch (e: unknown) {
-      await fs.unlink(tmp).catch(() => {
-        // catch-no-log-ok cleanup
-      });
+      console.debug(
+        '[main/offline-maps/custom-sources] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      await fs.unlink(tmp).catch(() => {});
       throw e;
     }
   }

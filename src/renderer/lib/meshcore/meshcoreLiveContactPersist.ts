@@ -168,7 +168,8 @@ export function persistMeshcoreNodeInfoAfterAdvert(
         })
         .catch((e: unknown) => {
           console.warn(
-            '[meshcoreLiveContactPersist] saveMeshcoreContact (new) ' + errLikeToLogString(e),
+            'mcL0892 [meshcoreLiveContactPersist] saveMeshcoreContact (new) ' +
+              errLikeToLogString(e),
           );
         });
     }
@@ -191,7 +192,8 @@ export function persistMeshcoreNodeInfoAfterAdvert(
           .updateMeshcoreContactType(nodeId, mergedType)
           .catch((e: unknown) => {
             console.warn(
-              '[meshcoreLiveContactPersist] updateMeshcoreContactType ' + errLikeToLogString(e),
+              'mcL0893 [meshcoreLiveContactPersist] updateMeshcoreContactType ' +
+                errLikeToLogString(e),
             );
           });
       }
@@ -202,7 +204,7 @@ export function persistMeshcoreNodeInfoAfterAdvert(
     .updateMeshcoreContactAdvert(nodeId, lastAdvert, latDeg, lonDeg, persistAdvName)
     .catch((e: unknown) => {
       console.warn(
-        '[meshcoreLiveContactPersist] updateMeshcoreContactAdvert ' + errLikeToLogString(e),
+        'mcL0894 [meshcoreLiveContactPersist] updateMeshcoreContactAdvert ' + errLikeToLogString(e),
       );
     });
 }
@@ -230,7 +232,8 @@ export function persistMeshcorePathUpdatedNewContact(
     })
     .catch((e: unknown) => {
       console.warn(
-        '[meshcoreLiveContactPersist] saveMeshcoreContact (path 129) ' + errLikeToLogString(e),
+        'mcL0895 [meshcoreLiveContactPersist] saveMeshcoreContact (path 129) ' +
+          errLikeToLogString(e),
       );
     });
 }

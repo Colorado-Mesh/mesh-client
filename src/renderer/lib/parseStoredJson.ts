@@ -8,13 +8,13 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 export function parseStoredJson<T>(raw: string | null, context: string): T | null {
   if (raw == null || raw === '') return null;
   if (typeof raw !== 'string') {
-    console.warn(`[parseStoredJson] ${context} failed expected string, got ${typeof raw}`);
+    console.warn(`mcL0988 [parseStoredJson] ${context} failed expected string, got ${typeof raw}`);
     return null;
   }
   try {
     return JSON.parse(raw) as T;
   } catch (e) {
-    console.warn(`[parseStoredJson] ${context} failed` + ' ' + errLikeToLogString(e));
+    console.warn(`mcL0989 [parseStoredJson] ${context} failed` + ' ' + errLikeToLogString(e));
     return null;
   }
 }

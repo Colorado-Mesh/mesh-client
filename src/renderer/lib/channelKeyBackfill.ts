@@ -25,7 +25,9 @@ export async function backfillChannelKeysForLiveRadio(
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- IPC returns undefined when the DB is unavailable.
     return result?.changes ?? 0;
   } catch (e) {
-    console.warn(`[channelKeyBackfill] ${protocol} backfill failed ` + errLikeToLogString(e));
+    console.warn(
+      `mcL0789 [channelKeyBackfill] ${protocol} backfill failed ` + errLikeToLogString(e),
+    );
     return 0;
   }
 }

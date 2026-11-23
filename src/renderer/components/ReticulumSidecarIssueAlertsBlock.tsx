@@ -146,7 +146,7 @@ export function ReticulumSidecarIssueAlertsBlock({
                 onClick={() => {
                   void Promise.resolve(onStopStack()).catch((e: unknown) => {
                     console.warn(
-                      '[ReticulumSidecarIssueAlertsBlock] stop stack failed ' +
+                      'mcL0603 [ReticulumSidecarIssueAlertsBlock] stop stack failed ' +
                         (e instanceof Error ? e.message : String(e)),
                     );
                   });

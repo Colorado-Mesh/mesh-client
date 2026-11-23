@@ -93,7 +93,7 @@ export async function releaseConflictingSerialSessions(
     if (!portConflictsWithClaim(held, port)) continue;
     if (!target.releaseHold) {
       console.warn(
-        `[serialPortClaim] ${protocol} holds serial but has no releaseHold — cannot yield for ${claimingProtocol}`,
+        `mcL1138 [serialPortClaim] ${protocol} holds serial but has no releaseHold — cannot yield for ${claimingProtocol}`,
       );
       continue;
     }
@@ -106,7 +106,7 @@ export async function releaseConflictingSerialSessions(
       await target.releaseHold();
     } catch (e) {
       console.warn(
-        `[serialPortClaim] ${protocol} releaseHold failed for ${claimingProtocol}: ${errLikeToLogString(e)}`,
+        `mcL1139 [serialPortClaim] ${protocol} releaseHold failed for ${claimingProtocol}: ${errLikeToLogString(e)}`,
       );
     }
   }

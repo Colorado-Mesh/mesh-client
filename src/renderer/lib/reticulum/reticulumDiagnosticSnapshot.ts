@@ -128,7 +128,8 @@ async function proxyGetSafe(path: ReticulumDiagnosticProxyRoute): Promise<{
     const data = await window.electronAPI.reticulum.proxyGet(path);
     return { data };
   } catch (e) {
-    // catch-no-log-ok per-route proxy errors recorded in fetchErrors
+    console.debug('[renderer/lib/reticulum/reticulumDiagnosticSnapshot] catch:', e);
+
     return { error: errLikeToLogString(e) };
   }
 }
@@ -187,7 +188,8 @@ export async function fetchReticulumDiagnosticSnapshot(): Promise<ReticulumDiagn
   try {
     sidecar = await window.electronAPI.reticulum.getStatus();
   } catch (e) {
-    // catch-no-log-ok getStatus failure surfaced in fetchErrors.getStatus
+    console.debug('[renderer/lib/reticulum/reticulumDiagnosticSnapshot] catch:', e);
+
     fetchErrors.getStatus = errLikeToLogString(e);
     sidecar = { running: false, port: 0, pid: null };
   }

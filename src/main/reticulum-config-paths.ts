@@ -5,6 +5,7 @@ import os from 'os';
 import { joinUnderRoot } from '../shared/pathUnderRoot';
 import { canonicalizePath, isSameCanonicalPath, resolveAbsoluteFsPath } from './pathCanonical';
 import { readUtf8FileBounded } from './reticulum-config-read';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /** Platform-default rnsd config file paths (first existing wins). */
 export function defaultReticulumConfigPaths(): string[] {
@@ -29,8 +30,11 @@ export function readFirstExistingConfig(): { path: string | null; content: strin
       if (fs.existsSync(candidate)) {
         return { path: candidate, content: readUtf8FileBounded(candidate) };
       }
-    } catch {
-      // catch-no-log-ok: try next default path
+    } catch (e: unknown) {
+      console.debug(
+        '[main/reticulum-config-paths] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
   return { path: null, content: null };
@@ -50,8 +54,12 @@ export async function showReticulumConfigImportDialog(): Promise<{
   const filePath = result.filePaths[0];
   try {
     return { path: filePath, content: readUtf8FileBounded(filePath) };
-  } catch {
-    // catch-no-log-ok: dialog file read failed; caller shows empty content
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-config-paths] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return { path: filePath, content: null };
   }
 }

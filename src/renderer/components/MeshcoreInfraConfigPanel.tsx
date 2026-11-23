@@ -259,7 +259,8 @@ function ConfigSection({
       const next = await readMeshcoreRepeaterRegions(send, isCurrent);
       if (isCurrent()) setRegions(next);
     } catch (error) {
-      // catch-no-log-ok read errors are shown beside the list; default scope remains usable
+      console.debug('[renderer/components/MeshcoreInfraConfigPanel] catch:', error);
+
       if (isCurrent())
         setRegionsError(
           translateMeshcoreUserMessage(t, error instanceof Error ? error.message : ''),
@@ -279,7 +280,8 @@ function ConfigSection({
           setEdited(next.values);
           settingsRead = true;
         } catch (error) {
-          // catch-no-log-ok failure is shown inline, without logging firmware values or credentials
+          console.debug('[renderer/components/MeshcoreInfraConfigPanel] catch:', error);
+
           if (isCurrent())
             setStatus({
               kind: 'error',
@@ -511,7 +513,8 @@ function RoomPermissions({
         setStatus({ kind: 'success', message: t(successKey ?? 'infraConfig.aclUpdated') });
         succeeded = true;
       } catch (error) {
-        // catch-no-log-ok ACL errors are shown inline; form contents remain available for retry
+        console.debug('[renderer/components/MeshcoreInfraConfigPanel] catch:', error);
+
         if (isCurrent())
           setStatus({
             kind: 'error',

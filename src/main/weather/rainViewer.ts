@@ -1,6 +1,7 @@
 import { RAINVIEWER_MANIFEST_URL } from '@/shared/weather/radarProviders';
 import { WEATHER_JSON_MAX_BYTES } from '@/shared/weather/validation';
 
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import {
   fetchBounded,
   WEATHER_JSON_TIMEOUT_MS,
@@ -35,8 +36,12 @@ export async function fetchRainViewerManifest(
   let parsed: unknown;
   try {
     parsed = JSON.parse(result.body.toString('utf8'));
-  } catch {
-    // catch-no-log-ok invalid JSON → treat as provider miss
+  } catch (e: unknown) {
+    console.debug(
+      '[main/weather/rainViewer] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
   return parseRainViewerManifest(parsed);

@@ -129,8 +129,8 @@ function LinkPreview({
       .then((result: LinkPreviewData | null) => {
         if (!cancelled) setPreview(result);
       })
-      .catch(() => {
-        // catch-no-log-ok: silent failure per design — no preview shown on error
+      .catch((e: unknown) => {
+        console.debug('[renderer/components/ChatPayloadText] catch:', e);
       });
     return () => {
       cancelled = true;
@@ -159,8 +159,8 @@ function LinkPreview({
   let hostname = '';
   try {
     hostname = new URL(url).hostname;
-  } catch {
-    // catch-no-log-ok: url already validated upstream
+  } catch (e: unknown) {
+    console.debug('[renderer/components/ChatPayloadText] catch:', e);
   }
 
   return (
@@ -193,8 +193,9 @@ function HttpsLinkPreview({
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:') return null;
-  } catch {
-    // catch-no-log-ok invalid URL segments do not receive previews
+  } catch (e: unknown) {
+    console.debug('[renderer/components/ChatPayloadText] catch:', e);
+
     return null;
   }
 

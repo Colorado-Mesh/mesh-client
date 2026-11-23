@@ -54,8 +54,9 @@ export function parseNomadNodeSortPreference(raw: string | null): NomadNodeSortP
       return { ...DEFAULT_NOMAD_NODE_SORT };
     }
     return { key, dir };
-  } catch {
-    // catch-no-log-ok invalid localStorage JSON falls back to defaults
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/nomad/nomadNodeSort] catch:', e);
+
     return { ...DEFAULT_NOMAD_NODE_SORT };
   }
 }
@@ -63,8 +64,9 @@ export function parseNomadNodeSortPreference(raw: string | null): NomadNodeSortP
 export function readNomadNodeSortPreference(): NomadNodeSortPreference {
   try {
     return parseNomadNodeSortPreference(localStorage.getItem(NOMAD_NODE_SORT_STORAGE_KEY));
-  } catch {
-    // catch-no-log-ok localStorage may throw in private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/nomad/nomadNodeSort] catch:', e);
+
     return { ...DEFAULT_NOMAD_NODE_SORT };
   }
 }
@@ -72,8 +74,8 @@ export function readNomadNodeSortPreference(): NomadNodeSortPreference {
 export function writeNomadNodeSortPreference(pref: NomadNodeSortPreference): void {
   try {
     localStorage.setItem(NOMAD_NODE_SORT_STORAGE_KEY, JSON.stringify(pref));
-  } catch {
-    // catch-no-log-ok localStorage may throw in private mode / quota
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/nomad/nomadNodeSort] catch:', e);
   }
 }
 

@@ -97,8 +97,9 @@ export function useReticulumTcpInterfaceRecovery({
         let statusRows: readonly ReticulumTcpRecoveryRow[] = snapshotRows;
         try {
           statusRows = await fetchReticulumInterfaces({ bypassCache: true });
-        } catch {
-          // catch-no-log-ok use snapshot rows when the live fetch fails
+        } catch (e: unknown) {
+          console.debug('[renderer/hooks/useReticulumTcpInterfaceRecovery] catch:', e);
+
           statusRows = snapshotRows;
         }
         if (cancelled) return;
@@ -143,14 +144,14 @@ export function useReticulumTcpInterfaceRecovery({
         streakByIdRef.current.clear();
 
         console.warn(
-          `[Reticulum] TCP hub "${sanitizeLogMessage(worst.iface.name)}" reachable but sidecar link is down — restarting stack`,
+          `mcL0769 [Reticulum] TCP hub "${sanitizeLogMessage(worst.iface.name)}" reachable but sidecar link is down — restarting stack`,
         );
 
         try {
           await onRecoverRef.current();
         } catch (err: unknown) {
           console.warn(
-            '[Reticulum] TCP interface auto-recovery restart failed:',
+            'mcL0770 [Reticulum] TCP interface auto-recovery restart failed:',
             err instanceof Error ? err.message : String(err),
           );
         } finally {

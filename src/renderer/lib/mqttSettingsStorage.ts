@@ -21,8 +21,8 @@ export function readMqttSettingsFromStorage(
       if (secureRaw) {
         try {
           secureSettings = JSON.parse(secureRaw) as Partial<MQTTSettings>;
-        } catch {
-          // catch-no-log-ok corrupt session secret is treated as absent
+        } catch (e: unknown) {
+          console.debug('[renderer/lib/mqttSettingsStorage] catch:', e);
         }
       }
     }
@@ -39,8 +39,9 @@ export function readMqttSettingsFromStorage(
       ...merged,
       maxRetries: clampMqttMaxRetries(merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS),
     };
-  } catch {
-    // catch-no-log-ok corrupt localStorage JSON — fall back to defaults
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/mqttSettingsStorage] catch:', e);
+
     return { ...defaults };
   }
 }

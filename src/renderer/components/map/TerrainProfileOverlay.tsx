@@ -59,7 +59,7 @@ export function TerrainProfileOverlay(): React.JSX.Element | null {
           );
         }
       } catch (err: unknown) {
-        console.warn('[TerrainProfile] ' + errLikeToLogString(err));
+        console.warn('mcL0662 [TerrainProfile] ' + errLikeToLogString(err));
         if (requestId !== requestIdRef.current) return;
         setLoading(false);
         setResult(null);

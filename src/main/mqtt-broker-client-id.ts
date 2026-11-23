@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import type { MQTTSettings } from '../renderer/lib/types';
 import type { MeshProtocol } from '../shared/meshProtocol';
 import { getDatabase } from './database';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 export const MESHTASTIC_MQTT_CLIENT_ID_SETTING_KEY = 'meshtasticMqttClientId';
 export const MESHCORE_MQTT_CLIENT_ID_SETTING_KEY = 'meshcoreMqttClientId';
@@ -21,8 +22,12 @@ function readAppSetting(key: string): string | null {
       .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
       .get(key) as { value: string } | undefined;
     return typeof row?.value === 'string' && row.value.length > 0 ? row.value : null;
-  } catch {
-    // catch-no-log-ok DB read during early startup
+  } catch (e: unknown) {
+    console.debug(
+      '[main/mqtt-broker-client-id] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 }

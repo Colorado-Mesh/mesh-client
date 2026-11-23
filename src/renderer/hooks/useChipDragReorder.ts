@@ -175,7 +175,7 @@ export function useChipDragReorder({ scope = '', canMove, onMove }: Options) {
             refocus.current = { id: moved, root };
           }
         } catch (error) {
-          console.warn('[useChipDragReorder] move failed ' + errLikeToLogString(error));
+          console.warn('mcL0740 [useChipDragReorder] move failed ' + errLikeToLogString(error));
         }
       },
       onDragEnd: finish,

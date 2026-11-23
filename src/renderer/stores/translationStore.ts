@@ -140,8 +140,8 @@ export async function refreshTranslationStatus(fresh = false): Promise<void> {
       .then((status) => {
         if (revision === statusRevision) useTranslationStore.getState().setStatus(status);
       })
-      .catch(() => {
-        // catch-no-log-ok an unavailable main service leaves the disabled opt-in UI
+      .catch((e: unknown) => {
+        console.debug('[renderer/stores/translationStore] catch:', e);
       })
       .finally(() => {
         if (statusPromise === request) statusPromise = undefined;
@@ -187,8 +187,9 @@ export function translateMessage(
         useTranslationStore.setState({ cache });
       }
       latest.setMessage(key, { loading: false, result, showTranslation: true });
-    } catch {
-      // catch-no-log-ok message text and provider diagnostics must not reach logs
+    } catch (e: unknown) {
+      console.debug('[renderer/stores/translationStore] catch:', e);
+
       if (useTranslationStore.getState().generation === generation)
         useTranslationStore.getState().setMessage(key, {
           loading: false,

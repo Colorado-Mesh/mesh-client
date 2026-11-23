@@ -157,8 +157,9 @@ export function parseMeshcomExtUdp(raw: string | Uint8Array): MeshcomExtUdpInbou
   let parsed: unknown;
   try {
     parsed = JSON.parse(trimmed) as unknown;
-  } catch {
-    // catch-no-log-ok invalid EXTUDP datagram
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcom/meshcomExtUdpCodec] catch:', e);
+
     return null;
   }
   if (!isRecord(parsed)) return null;

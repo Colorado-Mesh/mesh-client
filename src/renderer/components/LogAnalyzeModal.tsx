@@ -107,7 +107,7 @@ export default function LogAnalyzeModal({
       await writeClipboardText(buildLogAnalysisReport(result, protocol, t));
       setCopyStatus('copied');
     } catch (error) {
-      console.warn('[LogAnalyzeModal] copy report failed ' + errLikeToLogString(error));
+      console.warn('mcL0432 [LogAnalyzeModal] copy report failed ' + errLikeToLogString(error));
       setCopyStatus('failed');
     }
   };

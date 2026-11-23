@@ -134,7 +134,7 @@ export function useEmergencyOutboxDrain({
         scheduleTimer();
         if (result.attempted > 0) notifyChatOutboxRowsChanged(protocol);
       } catch (err: unknown) {
-        console.warn('[useEmergencyOutboxDrain] drain failed', protocol, err);
+        console.warn('mcL0744 [useEmergencyOutboxDrain] drain failed', protocol, err);
       }
     },
     [reticulumReceiptTimeoutMs, scheduleTimer],

@@ -299,7 +299,7 @@ export function logMeshcoreWaitingMessagesDrainError(
     console.debug(`[useMeshcoreRuntime] ${context} ${errMsg}`);
     return;
   }
-  console.warn(`[useMeshcoreRuntime] ${context} ${errMsg}`);
+  console.warn(`mcL0945 [useMeshcoreRuntime] ${context} ${errMsg}`);
 }
 
 export interface ScheduleMeshcoreWaitingMessagesDrainOptions {

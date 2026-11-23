@@ -132,8 +132,11 @@ export class AiModelPackManager {
           } finally {
             await handle.close();
           }
-        } catch {
-          // catch-no-log-ok missing/corrupt advisory metadata falls back to hashing
+        } catch (e: unknown) {
+          console.debug(
+            '[main/ai/local/modelPackManager] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         }
       }
       const key = `${id}:${signature}`;
@@ -148,7 +151,11 @@ export class AiModelPackManager {
         if (this.verifying.get(key) === pending) this.verifying.delete(key);
       }
     } catch (error) {
-      // catch-no-log-ok absent/unreadable packs are reported as not installed, never loaded
+      console.debug(
+        '[main/ai/local/modelPackManager] catch:',
+        sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+      );
+
       if (!(error instanceof Error)) throw error;
       return false;
     }
@@ -179,12 +186,18 @@ export class AiModelPackManager {
           path.join(temporary, 'record'),
           path.join(this.deps.directory(), pack.id, '.verified.json'),
         );
-      } catch {
-        // catch-no-log-ok advisory cache failure does not invalidate a verified model
+      } catch (e: unknown) {
+        console.debug(
+          '[main/ai/local/modelPackManager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       } finally {
         if (temporary)
-          await fs.rm(temporary, { recursive: true, force: true }).catch(() => {
-            // catch-no-log-ok advisory cache cleanup cannot affect model integrity
+          await fs.rm(temporary, { recursive: true, force: true }).catch((e: unknown) => {
+            console.debug(
+              '[main/ai/local/modelPackManager] catch:',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+            );
           });
       }
     }
@@ -272,8 +285,11 @@ export class AiModelPackManager {
     job.promise = this.tail
       .then(() => this.runInstall(pack, job))
       .finally(() => this.jobs.delete(id));
-    this.tail = job.promise.catch(() => {
-      // catch-no-log-ok install caller receives cleanup failure
+    this.tail = job.promise.catch((e: unknown) => {
+      console.debug(
+        '[main/ai/local/modelPackManager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
     this.jobs.set(id, job);
     this.emit(job);
@@ -303,8 +319,11 @@ export class AiModelPackManager {
       await fs.rm(path.join(this.deps.directory(), id), { recursive: true, force: true });
       this.verified.delete(id);
     });
-    this.tail = operation.catch(() => {
-      // catch-no-log-ok caller receives destructive operation failure
+    this.tail = operation.catch((e: unknown) => {
+      console.debug(
+        '[main/ai/local/modelPackManager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
     await operation;
   }
@@ -315,8 +334,11 @@ export class AiModelPackManager {
       await fs.rm(this.deps.directory(), { recursive: true, force: true });
       this.verified.clear();
     });
-    this.tail = operation.catch(() => {
-      // catch-no-log-ok caller receives destructive operation failure
+    this.tail = operation.catch((e: unknown) => {
+      console.debug(
+        '[main/ai/local/modelPackManager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
     await operation;
   }
@@ -326,8 +348,12 @@ export class AiModelPackManager {
     let entries: string[];
     try {
       entries = await fs.readdir(this.deps.directory());
-    } catch {
-      // catch-no-log-ok missing models root means nothing to clean up
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ai/local/modelPackManager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return [];
     }
     const orphans: AiModelInfo[] = [];
@@ -349,8 +375,11 @@ export class AiModelPackManager {
           installed: true,
           orphan: true,
         });
-      } catch {
-        // catch-no-log-ok skip unreadable entries while listing orphans
+      } catch (e: unknown) {
+        console.debug(
+          '[main/ai/local/modelPackManager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }
     orphans.sort((a, b) => a.id.localeCompare(b.id));
@@ -413,7 +442,7 @@ export class AiModelPackManager {
       this.emit(job);
       if (!cancelled)
         console.warn(
-          '[ai] Download failed:',
+          'mcL0003 [ai] Download failed:',
           sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
         );
       return { ok: false, reason: cancelled ? 'cancelled' : 'downloadFailed' };
@@ -447,8 +476,11 @@ export class AiModelPackManager {
           ? new Response(asset.content)
           : await this.deps.fetch(resolveAssetUrl(pack, asset), { signal, redirect: 'follow' });
       if (!response.ok || !response.body) {
-        await response.body?.cancel().catch(() => {
-          // catch-no-log-ok failed download cleanup must not hide the HTTP failure
+        await response.body?.cancel().catch((e: unknown) => {
+          console.debug(
+            '[main/ai/local/modelPackManager] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         });
         throw new Error(`AI download HTTP ${response.status} (${asset.file})`);
       }

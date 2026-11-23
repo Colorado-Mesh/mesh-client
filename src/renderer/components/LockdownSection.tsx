@@ -43,7 +43,7 @@ export default function LockdownSection({ isConnected, onSendLockdownAuth }: Pro
       await onSendLockdownAuth(auth);
       setPassphrase('');
     } catch (e) {
-      console.warn('[lockdown] auth request failed', e);
+      console.warn('mcL0431 [lockdown] auth request failed', e);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);

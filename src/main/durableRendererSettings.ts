@@ -12,6 +12,7 @@ import {
   mergeRendererPreferenceEnvelopes,
 } from '../shared/rendererPreferences';
 import type { NodeSqliteDB } from './db-compat';
+import { sanitizeLogMessage } from './sanitize-log-message';
 import { withFullSqliteSync } from './sqliteDurability';
 
 function parseLastRead(raw: string | undefined): Record<string, unknown> | null {
@@ -21,8 +22,12 @@ function parseLastRead(raw: string | undefined): Record<string, unknown> | null 
     return value !== null && typeof value === 'object' && !Array.isArray(value)
       ? (value as Record<string, unknown>)
       : null;
-  } catch {
-    // catch-no-log-ok malformed legacy data stays in the untouched origin export for recovery
+  } catch (e: unknown) {
+    console.debug(
+      '[main/durableRendererSettings] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 }

@@ -1206,7 +1206,10 @@ describe('LiveTrafficPanel moving between windows', () => {
           onViewChange={onViewChange}
         />,
       );
-      expect(warn.spy).toHaveBeenCalledWith('[live-map] regional feed did not resume', failure);
+      expect(warn.spy).toHaveBeenCalledWith(
+        'mcL0660 [live-map] regional feed did not resume',
+        failure,
+      );
       expect(onViewChange).toHaveBeenLastCalledWith(expect.objectContaining({ feed: null }));
     } finally {
       warn.restore();

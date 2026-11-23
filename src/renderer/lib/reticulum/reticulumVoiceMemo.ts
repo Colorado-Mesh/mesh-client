@@ -44,12 +44,15 @@ let activeSession: MemoRecordingSession | null = null;
 function abortRecording(session: MemoRecordingSession, error: string): void {
   if (session.sendFailed) return;
   session.sendFailed = true;
-  console.warn('[reticulumVoiceMemo] aborting recording:', error);
+  console.warn('mcL1052 [reticulumVoiceMemo] aborting recording:', error);
   teardownSession(session, false);
   void window.electronAPI.reticulum.voiceMemo
     .cancel({ session_id: session.sessionId })
     .catch((e: unknown) => {
-      console.warn('[reticulumVoiceMemo] cancel after abort failed:', errLikeToLogString(e));
+      console.warn(
+        'mcL1053 [reticulumVoiceMemo] cancel after abort failed:',
+        errLikeToLogString(e),
+      );
     });
   useReticulumVoiceMemoStore.getState().setError(error);
 }
@@ -70,7 +73,7 @@ function enqueueSendAudio(session: MemoRecordingSession, samplesB64: string): vo
       }
     })
     .catch((e: unknown) => {
-      console.warn('[reticulumVoiceMemo] sendAudio failed:', errLikeToLogString(e));
+      console.warn('mcL1054 [reticulumVoiceMemo] sendAudio failed:', errLikeToLogString(e));
       abortRecording(session, 'send_audio_failed');
     });
 }
@@ -125,13 +128,13 @@ function teardownSession(
   }
   try {
     session.pcm.disconnect();
-  } catch {
-    // catch-no-log-ok: capture graph may already be disconnected
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulum/reticulumVoiceMemo] catch:', e);
   }
   try {
     void session.audioCtx.close();
-  } catch {
-    // catch-no-log-ok: AudioContext may already be closed
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulum/reticulumVoiceMemo] catch:', e);
   }
   for (const track of session.stream.getTracks()) {
     track.stop();
@@ -148,13 +151,13 @@ function teardownSession(
 export async function startReticulumVoiceMemo(): Promise<boolean> {
   const store = useReticulumVoiceMemoStore.getState();
   if (store.phase !== 'idle' && store.phase !== 'error') {
-    console.warn('[reticulumVoiceMemo] start ignored — phase:', store.phase);
+    console.warn('mcL1055 [reticulumVoiceMemo] start ignored — phase:', store.phase);
     return false;
   }
 
   const voiceStore = useReticulumVoiceStore.getState();
   if (isReticulumVoiceSessionBusy(voiceStore.activeCall)) {
-    console.warn('[reticulumVoiceMemo] cannot record during active LXST voice call');
+    console.warn('mcL1056 [reticulumVoiceMemo] cannot record during active LXST voice call');
     store.setError('call_busy');
     return false;
   }
@@ -168,7 +171,7 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
       return false;
     }
   } catch (e) {
-    console.warn('[reticulumVoiceMemo] mic permission IPC failed:', errLikeToLogString(e));
+    console.warn('mcL1057 [reticulumVoiceMemo] mic permission IPC failed:', errLikeToLogString(e));
     useReticulumVoiceMemoStore.getState().setError('mic_denied');
     return false;
   }
@@ -185,7 +188,7 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
       video: false,
     });
   } catch (e) {
-    console.warn('[reticulumVoiceMemo] mic access denied:', errLikeToLogString(e));
+    console.warn('mcL1058 [reticulumVoiceMemo] mic access denied:', errLikeToLogString(e));
     useReticulumVoiceMemoStore.getState().setError('mic_denied');
     return false;
   }
@@ -202,7 +205,7 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
     }
     sessionId = res.session_id;
   } catch (e) {
-    console.warn('[reticulumVoiceMemo] sidecar start failed:', errLikeToLogString(e));
+    console.warn('mcL1059 [reticulumVoiceMemo] sidecar start failed:', errLikeToLogString(e));
     useReticulumVoiceMemoStore.getState().setError('sidecar_unavailable');
     for (const track of stream.getTracks()) {
       track.stop();
@@ -245,7 +248,7 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
       { scriptProcessorBufferSize: PROCESSOR_BUFFER_SIZE },
     );
   } catch (e) {
-    console.warn('[reticulumVoiceMemo] audio graph setup failed:', errLikeToLogString(e));
+    console.warn('mcL1060 [reticulumVoiceMemo] audio graph setup failed:', errLikeToLogString(e));
     for (const track of stream.getTracks()) {
       track.stop();
     }
@@ -253,7 +256,7 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
       .cancel({ session_id: sessionId })
       .catch((cancelErr: unknown) => {
         console.warn(
-          '[reticulumVoiceMemo] cancel after audio setup failed:',
+          'mcL1061 [reticulumVoiceMemo] cancel after audio setup failed:',
           errLikeToLogString(cancelErr),
         );
       });
@@ -315,7 +318,7 @@ export async function stopReticulumVoiceMemo(): Promise<void> {
       sizeBytes: res.size_bytes ?? 0,
     });
   } catch (e) {
-    console.warn('[reticulumVoiceMemo] stop failed:', errLikeToLogString(e));
+    console.warn('mcL1062 [reticulumVoiceMemo] stop failed:', errLikeToLogString(e));
     useReticulumVoiceMemoStore.getState().setError('stop_failed');
   }
 }
@@ -328,7 +331,7 @@ export function cancelReticulumVoiceMemo(): Promise<void> {
     void window.electronAPI.reticulum.voiceMemo
       .cancel({ session_id: session.sessionId })
       .catch((e: unknown) => {
-        console.warn('[reticulumVoiceMemo] cancel failed:', errLikeToLogString(e));
+        console.warn('mcL1063 [reticulumVoiceMemo] cancel failed:', errLikeToLogString(e));
       });
   }
   useReticulumVoiceMemoStore.getState().reset();

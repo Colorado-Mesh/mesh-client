@@ -76,13 +76,13 @@ function discardCaptureResources(
 ): void {
   try {
     pcm?.disconnect();
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
   }
   try {
     source?.disconnect();
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
   }
   if (stream) {
     for (const t of stream.getTracks()) {
@@ -90,8 +90,8 @@ function discardCaptureResources(
     }
   }
   if (ctx) {
-    void ctx.close().catch(() => {
-      // catch-no-log-ok close during stale-start cleanup
+    void ctx.close().catch((e: unknown) => {
+      console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
     });
   }
 }
@@ -100,8 +100,8 @@ async function ensureMicAccess(): Promise<boolean> {
   try {
     const result = await window.electronAPI.media.ensureMicrophoneAccess();
     if (!result.granted) return false;
-  } catch {
-    // catch-no-log-ok continue to getUserMedia; Chromium may still prompt
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
   }
   return true;
 }
@@ -110,8 +110,8 @@ async function resumeAudioContext(ctx: AudioContext): Promise<void> {
   if (ctx.state === 'suspended') {
     try {
       await ctx.resume();
-    } catch {
-      // catch-no-log-ok resume may still fail without gesture in tests/headless
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
     }
   }
 }
@@ -126,16 +126,16 @@ export function warmReticulumVoiceAudioContexts(): void {
       primedCaptureCtx = new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
     }
     void resumeAudioContext(primedCaptureCtx);
-  } catch {
-    // catch-no-log-ok AudioContext unavailable in test/headless
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
   }
   try {
     if (!primedPlaybackCtx || primedPlaybackCtx.state === 'closed') {
       primedPlaybackCtx = new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
     }
     void resumeAudioContext(primedPlaybackCtx);
-  } catch {
-    // catch-no-log-ok AudioContext unavailable in test/headless
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
   }
 }
 
@@ -153,14 +153,14 @@ function takePrimedPlaybackCtx(): AudioContext | null {
 
 function discardPrimedAudioContexts(): void {
   if (primedCaptureCtx) {
-    void primedCaptureCtx.close().catch(() => {
-      // catch-no-log-ok
+    void primedCaptureCtx.close().catch((e: unknown) => {
+      console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
     });
     primedCaptureCtx = null;
   }
   if (primedPlaybackCtx) {
-    void primedPlaybackCtx.close().catch(() => {
-      // catch-no-log-ok
+    void primedPlaybackCtx.close().catch((e: unknown) => {
+      console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
     });
     primedPlaybackCtx = null;
   }
@@ -187,8 +187,8 @@ function stopPlayback(): void {
   }
   playbackCursor = 0;
   if (playbackCtx) {
-    void playbackCtx.close().catch(() => {
-      // catch-no-log-ok close during teardown
+    void playbackCtx.close().catch((e: unknown) => {
+      console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
     });
     playbackCtx = null;
   }
@@ -230,7 +230,7 @@ function scheduleOutgoingSafetyHangup(generation: number): void {
       return;
     }
     // Fire even when activeCall was cleared without terminal feedback (e.g. silent snapshot).
-    console.warn('[reticulumVoice] safety hangup — outgoing never established');
+    console.warn('mcL1087 [reticulumVoice] safety hangup — outgoing never established');
     void reticulumVoiceHangup({ terminalReason: 'safety_timeout' });
   }, RETICULUM_VOICE_OUTGOING_SAFETY_HANGUP_MS);
 }
@@ -249,8 +249,8 @@ async function startCaptureAndTx(): Promise<void> {
   const generation = captureGeneration;
   if (!(await ensureMicAccess())) {
     if (primed) {
-      void primed.close().catch(() => {
-        // catch-no-log-ok
+      void primed.close().catch((e: unknown) => {
+        console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
       });
     }
     if (generation !== captureGeneration) return;
@@ -259,8 +259,8 @@ async function startCaptureAndTx(): Promise<void> {
   }
   if (generation !== captureGeneration) {
     if (primed) {
-      void primed.close().catch(() => {
-        // catch-no-log-ok
+      void primed.close().catch((e: unknown) => {
+        console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
       });
     }
     return;
@@ -371,16 +371,16 @@ async function startPlayback(expectedCallGeneration: number): Promise<boolean> {
   }
   playbackCursor = 0;
   if (playbackCtx) {
-    void playbackCtx.close().catch(() => {
-      // catch-no-log-ok close during teardown
+    void playbackCtx.close().catch((e: unknown) => {
+      console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
     });
     playbackCtx = null;
   }
   playbackCtx = primed ?? new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });
   await resumeAudioContext(playbackCtx);
   if (useReticulumVoiceStore.getState().callGeneration !== expectedCallGeneration) {
-    void playbackCtx.close().catch(() => {
-      // catch-no-log-ok stale generation after resume
+    void playbackCtx.close().catch((e: unknown) => {
+      console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
     });
     playbackCtx = null;
     return false;
@@ -442,7 +442,7 @@ export async function startReticulumVoiceMediaForActiveCall(): Promise<void> {
       // Keep mediaStartedForCallGeneration claimed so overlay does not thrash getUserMedia
       // unless the call generation already moved on.
       if (useReticulumVoiceStore.getState().callGeneration === generation) {
-        console.warn('[reticulumVoice] mic capture failed', e);
+        console.warn('mcL1088 [reticulumVoice] mic capture failed', e);
         pushAppToast(i18n.t('reticulumVoice.errors.micFailed'), 'error');
       } else {
         stopReticulumVoiceMedia();
@@ -466,7 +466,7 @@ function peerIdentityForLxmfDest(lxmfPeerHash: string): string | null {
 }
 
 function toastCallFailed(detail?: unknown): void {
-  console.warn('[reticulumVoice] call IPC failed', detail);
+  console.warn('mcL1089 [reticulumVoice] call IPC failed', detail);
   pushAppToast(i18n.t('reticulumVoice.errors.callFailed'), 'error');
 }
 
@@ -486,8 +486,8 @@ function abortOutgoingCallAttempt(message?: string): void {
     useReticulumVoiceStore.getState().applyError(humanizeVoiceIpcError(reason));
   }
   // Clear sticky lxst line if dial IPC failed while discovery may still be held.
-  void window.electronAPI.reticulum.voice.hangup().catch(() => {
-    // catch-no-log-ok best-effort clear
+  void window.electronAPI.reticulum.voice.hangup().catch((e: unknown) => {
+    console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
   });
 }
 
@@ -555,7 +555,7 @@ export async function reticulumVoiceCallPeer(
   try {
     statusRaw = await api.getStatus();
   } catch (e) {
-    console.warn('[reticulumVoice] getStatus IPC failed', e);
+    console.warn('mcL1090 [reticulumVoice] getStatus IPC failed', e);
     toastCallFailed(e);
     return;
   }
@@ -579,7 +579,7 @@ export async function reticulumVoiceCallPeer(
     destinationHash: dest,
   });
   if ('errorKey' in resolved) {
-    console.warn('[reticulumVoice] dial aborted — no identity or destination hash');
+    console.warn('mcL1091 [reticulumVoice] dial aborted — no identity or destination hash');
     pushAppToast(i18n.t(resolved.errorKey), 'error');
     return;
   }
@@ -598,11 +598,11 @@ export async function reticulumVoiceCallPeer(
     const resp = await api.call({ identity_hash: resolved.dialHash });
     if (!resp.ok) {
       const msg = resp.error || i18n.t('reticulumVoice.errors.callFailed');
-      console.warn(`[reticulumVoice] call failed reason=${msg}`);
+      console.warn(`mcL1092 [reticulumVoice] call failed reason=${msg}`);
       abortOutgoingCallAttempt(msg);
     }
   } catch (e) {
-    console.warn('[reticulumVoice] call IPC failed', e);
+    console.warn('mcL1093 [reticulumVoice] call IPC failed', e);
     abortOutgoingCallAttempt(i18n.t('reticulumVoice.errors.callFailed'));
   }
 }
@@ -615,7 +615,7 @@ export async function reticulumVoiceAnswer(): Promise<void> {
     const resp = await window.electronAPI.reticulum.voice.answer();
     if (!resp.ok) {
       console.warn(
-        '[reticulumVoice] answer failed',
+        'mcL1094 [reticulumVoice] answer failed',
         typeof resp.error === 'string' ? resp.error : JSON.stringify(resp),
       );
       pushAppToast(humanizeVoiceIpcError(resp.error), 'error');
@@ -623,7 +623,7 @@ export async function reticulumVoiceAnswer(): Promise<void> {
     }
     console.info('[reticulumVoice] answer ok');
   } catch (e) {
-    console.warn('[reticulumVoice] answer IPC failed', e);
+    console.warn('mcL1095 [reticulumVoice] answer IPC failed', e);
     pushAppToast(i18n.t('reticulumVoice.errors.callFailed'), 'error');
     return;
   }
@@ -640,7 +640,7 @@ export async function reticulumVoiceReject(): Promise<void> {
       return;
     }
   } catch (e) {
-    console.warn('[reticulumVoice] reject IPC failed', e);
+    console.warn('mcL1096 [reticulumVoice] reject IPC failed', e);
     pushAppToast(i18n.t('reticulumVoice.errors.callFailed'), 'error');
     return;
   }
@@ -663,7 +663,7 @@ export async function reticulumVoiceHangup(opts?: {
       return;
     }
   } catch (e) {
-    console.warn('[reticulumVoice] hangup IPC failed', e);
+    console.warn('mcL1097 [reticulumVoice] hangup IPC failed', e);
     pushAppToast(i18n.t('reticulumVoice.errors.callFailed'), 'error');
     return;
   }
@@ -679,7 +679,7 @@ export async function reticulumVoiceSetMuted(muted: boolean): Promise<void> {
       return;
     }
   } catch (e) {
-    console.warn('[reticulumVoice] mute IPC failed', e);
+    console.warn('mcL1098 [reticulumVoice] mute IPC failed', e);
     pushAppToast(i18n.t('reticulumVoice.errors.muteFailed'), 'error');
     return;
   }
@@ -731,7 +731,7 @@ export function handleReticulumVoiceTerminal(opts: {
   }
   if (opts.errorMessage) {
     console.warn(
-      `[reticulumVoice] voice.error message=${JSON.stringify(opts.errorMessage)} linkId=${opts.linkId ?? ''}`,
+      `mcL1099 [reticulumVoice] voice.error message=${JSON.stringify(opts.errorMessage)} linkId=${opts.linkId ?? ''}`,
     );
   } else {
     console.info(
@@ -743,8 +743,8 @@ export function handleReticulumVoiceTerminal(opts: {
 
   if (opts.errorMessage) {
     // Best-effort hangup so lxst active_call / outgoing_discovery cannot stick busy.
-    void window.electronAPI.reticulum.voice.hangup().catch(() => {
-      // catch-no-log-ok best-effort clear after voice.error
+    void window.electronAPI.reticulum.voice.hangup().catch((e: unknown) => {
+      console.debug('[renderer/lib/reticulumVoiceSession] catch:', e);
     });
     useReticulumVoiceStore.getState().applyError(humanizeVoiceIpcError(opts.errorMessage), {
       callGeneration: useReticulumVoiceStore.getState().callGeneration,

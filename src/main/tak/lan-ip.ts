@@ -115,6 +115,6 @@ export function getLanIp(): string {
   const candidates = listNonInternalIpv4();
   const selected = candidates.find(isPreferredPhysicalLan) ?? candidates[0];
   if (selected) return selected.address;
-  console.warn('[TAK] No LAN IPv4 found, falling back to 127.0.0.1');
+  console.warn('mcL0295 [TAK] No LAN IPv4 found, falling back to 127.0.0.1');
   return '127.0.0.1';
 }

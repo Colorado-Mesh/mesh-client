@@ -42,8 +42,9 @@ function parseSyncConfig(raw: unknown): MeshcoreRoomSyncConfig | undefined {
     if (!raw.trim()) return undefined;
     try {
       o = JSON.parse(raw) as Record<string, unknown>;
-    } catch {
-      // catch-no-log-ok corrupt sync config JSON is ignored on read
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshcoreRoomSyncStorage] catch:', e);
+
       return undefined;
     }
   } else if (typeof raw === 'object' && !Array.isArray(raw)) {
@@ -115,7 +116,9 @@ export async function setMeshcoreRoomSyncConfig(
       // Undefined drops the key on JSON.stringify, restoring "never persisted".
       mergeAppSetting(settingKey, prevRaw, 'meshcoreRoomSyncStorage set rollback');
     }
-    console.warn('[meshcoreRoomSyncStorage] persist sync config failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0936 [meshcoreRoomSyncStorage] persist sync config failed ' + errLikeToLogString(e),
+    );
     throw e instanceof Error ? e : new Error(String(e));
   }
   return next;
@@ -131,7 +134,9 @@ export async function touchMeshcoreRoomLastSyncAt(nodeId: number, atMs: number):
   try {
     await window.electronAPI.appSettings.set(settingKey, payload);
   } catch (e: unknown) {
-    console.warn('[meshcoreRoomSyncStorage] touch lastSyncAt failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0937 [meshcoreRoomSyncStorage] touch lastSyncAt failed ' + errLikeToLogString(e),
+    );
   }
 }
 
@@ -158,7 +163,9 @@ export async function setMeshcoreRoomLastPostAt(nodeId: number, atMs: number): P
   try {
     await window.electronAPI.appSettings.set(settingKey, String(atMs));
   } catch (e: unknown) {
-    console.warn('[meshcoreRoomSyncStorage] persist lastPostAt failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0938 [meshcoreRoomSyncStorage] persist lastPostAt failed ' + errLikeToLogString(e),
+    );
   }
 }
 
@@ -169,7 +176,9 @@ export async function clearMeshcoreRoomLastPostAt(nodeId: number): Promise<void>
   try {
     await window.electronAPI.appSettings.remove(settingKey);
   } catch (e: unknown) {
-    console.warn('[meshcoreRoomSyncStorage] clear lastPostAt failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0939 [meshcoreRoomSyncStorage] clear lastPostAt failed ' + errLikeToLogString(e),
+    );
   }
 }
 

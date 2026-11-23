@@ -43,13 +43,13 @@ function logHealthTransition(
   }
   if (health === 'stale_port') {
     console.warn(
-      `[useReticulumRuntime] local interface stale port ${formatInterfaceFields(iface)}`,
+      `mcL1037 [useReticulumRuntime] local interface stale port ${formatInterfaceFields(iface)}`,
     );
     return;
   }
   const transport = reticulumLocalOfflineDisplayKind(iface);
   console.warn(
-    `[useReticulumRuntime] local interface offline ${formatInterfaceFields(iface)} transport=${transport}`,
+    `mcL1038 [useReticulumRuntime] local interface offline ${formatInterfaceFields(iface)} transport=${transport}`,
   );
 }
 
@@ -117,7 +117,7 @@ export function logReticulumInterfaceStateEvent(payload: unknown): void {
       ? (payload as { action: string }).action
       : '';
   if (action === 'ble_peer_failed') {
-    console.warn(`[useReticulumRuntime] interface.state ${detail}`);
+    console.warn(`mcL1039 [useReticulumRuntime] interface.state ${detail}`);
     return;
   }
   console.debug(`[useReticulumRuntime] interface.state ${detail}`);

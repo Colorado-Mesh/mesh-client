@@ -146,7 +146,10 @@ export function runMeshcoreCompanionCli(
 ): Promise<MeshcoreCompanionCliResult> {
   const prev = queues.get(conn) ?? Promise.resolve();
   const next = prev
-    .catch(() => undefined) // catch-no-log-ok previous command already rejected to its caller
+    .catch((e: unknown) => {
+      console.debug('[renderer/lib/meshcore/meshcoreCompanionCli] catch:', e);
+      return undefined;
+    })
     .then(() => runOnce(conn, command, opts));
   queues.set(conn, next);
   return next;

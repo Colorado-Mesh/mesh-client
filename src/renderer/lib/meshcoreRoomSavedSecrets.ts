@@ -127,7 +127,7 @@ export async function applyMeshcoreRoomLoginFailure(
       await disableMeshcoreRoomLoginAfterAuthFailure(nodeId);
     } catch (persistErr: unknown) {
       console.warn(
-        `[${logContext}] disable room sync after auth failure failed ` +
+        `mcL0933 [${logContext}] disable room sync after auth failure failed ` +
           errLikeToLogString(persistErr),
       );
     }

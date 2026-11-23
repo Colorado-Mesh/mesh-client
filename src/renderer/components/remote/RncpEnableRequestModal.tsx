@@ -53,8 +53,8 @@ export async function resolveIdentityHashForLxmfPeer(peerDestHash: string): Prom
   // Path/probe can surface announce identity for peers we have only chatted with.
   try {
     await probeReticulumPeer(dest);
-  } catch {
-    // catch-no-log-ok probe is best-effort before allow-list upsert
+  } catch (e: unknown) {
+    console.debug('[renderer/components/remote/RncpEnableRequestModal] catch:', e);
   }
   rows = await store.loadForDestination(dest);
   return fromRows(rows);

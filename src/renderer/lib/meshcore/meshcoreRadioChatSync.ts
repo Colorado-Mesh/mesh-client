@@ -88,7 +88,8 @@ export async function readRadioChannels(
           const parsed = parse(value);
           if (parsed !== undefined) finish(parsed);
         } catch (error) {
-          // catch-no-log-ok forwarded to the UI through the rejected snapshot promise
+          console.debug('[renderer/lib/meshcore/meshcoreRadioChatSync] catch:', error);
+
           finish(undefined, error);
         }
       };
@@ -102,7 +103,8 @@ export async function readRadioChannels(
         try {
           assertCurrent();
         } catch (error) {
-          // catch-no-log-ok forwarded to the UI through the rejected snapshot promise
+          console.debug('[renderer/lib/meshcore/meshcoreRadioChatSync] catch:', error);
+
           finish(undefined, error);
         }
       }, MS_PER_SECOND / 20);
@@ -192,7 +194,8 @@ export function waitForRadioChatSetup(
           resolve();
         }
       } catch (error) {
-        // catch-no-log-ok rejected to the sync UI, with the timer released
+        console.debug('[renderer/lib/meshcore/meshcoreRadioChatSync] catch:', error);
+
         clearInterval(timer);
         reject(error instanceof Error ? error : new Error(errLikeToLogString(error)));
       }

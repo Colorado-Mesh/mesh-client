@@ -27,7 +27,7 @@ export async function acquireReticulumBleScan(): Promise<boolean> {
     }
     return true;
   } catch (err) {
-    console.warn('[Reticulum] bleCoexistence acquireScan failed:', err);
+    console.warn('mcL1029 [Reticulum] bleCoexistence acquireScan failed:', err);
     return false;
   }
 }
@@ -36,7 +36,7 @@ export async function releaseReticulumBleScan(): Promise<void> {
   try {
     await window.electronAPI.bleCoexistence.releaseScan('reticulum');
   } catch (err) {
-    console.warn('[Reticulum] bleCoexistence releaseScan failed:', err);
+    console.warn('mcL1030 [Reticulum] bleCoexistence releaseScan failed:', err);
   }
 }
 
@@ -51,7 +51,7 @@ export async function prepareReticulumBleRnodeConnect(): Promise<boolean> {
     }
     return true;
   } catch (err) {
-    console.warn('[Reticulum] prepareReticulumBleRnodeConnect failed:', err);
+    console.warn('mcL1031 [Reticulum] prepareReticulumBleRnodeConnect failed:', err);
     return false;
   }
 }
@@ -78,7 +78,7 @@ export async function registerReticulumBleMac(mac: string): Promise<boolean> {
     await window.electronAPI.bleCoexistence.register(mac, 'reticulum');
     return true;
   } catch (err) {
-    console.warn('[Reticulum] bleCoexistence register failed:', err);
+    console.warn('mcL1032 [Reticulum] bleCoexistence register failed:', err);
     return false;
   }
 }
@@ -87,7 +87,7 @@ export async function unregisterReticulumBleMac(mac: string): Promise<void> {
   try {
     await window.electronAPI.bleCoexistence.unregister(mac, 'reticulum');
   } catch (err) {
-    console.warn('[Reticulum] bleCoexistence unregister failed:', err);
+    console.warn('mcL1033 [Reticulum] bleCoexistence unregister failed:', err);
   }
 }
 

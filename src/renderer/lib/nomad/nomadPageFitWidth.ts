@@ -12,8 +12,9 @@ export const NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY = 'mesh-client:nomadPageFitWidth';
 export function readNomadPageFitWidth(): boolean {
   try {
     return localStorage.getItem(NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY) !== 'false';
-  } catch {
-    // catch-no-log-ok localStorage may throw in private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/nomad/nomadPageFitWidth] catch:', e);
+
     return true;
   }
 }
@@ -21,7 +22,7 @@ export function readNomadPageFitWidth(): boolean {
 export function writeNomadPageFitWidth(fitWidth: boolean): void {
   try {
     localStorage.setItem(NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY, String(fitWidth));
-  } catch {
-    // catch-no-log-ok localStorage may throw in private mode / quota
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/nomad/nomadPageFitWidth] catch:', e);
   }
 }

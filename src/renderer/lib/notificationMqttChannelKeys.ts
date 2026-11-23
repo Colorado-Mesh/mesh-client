@@ -47,8 +47,8 @@ export function notificationMqttChannelKeys(
           entry.kind === 'bare' ? 'LongFast' : entry.name,
           psk,
         );
-    } catch {
-      // catch-no-log-ok malformed settings have no stable channel identity; the bell save fails visibly
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/notificationMqttChannelKeys] catch:', e);
     }
   }
   // Existing MQTT publish defaults to the standard public LongFast channel.

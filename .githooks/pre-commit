@@ -251,6 +251,7 @@ fi
 if [ "$manifest_only" -eq 0 ]; then
   pnpm run check:console-log || fail 'pnpm run check:console-log'
   pnpm run check:silent-catches || fail 'pnpm run check:silent-catches'
+  pnpm run check:log-ids || fail 'pnpm run check:log-ids'
   # Semgrep: auto + .semgrep.yml. Findings may be wrong — research before dismissing;
   # if truly wrong, update .semgrep.yml (see scripts/check-semgrep.mjs).
   pnpm run check:semgrep || fail 'pnpm run check:semgrep'
@@ -264,7 +265,7 @@ if [ "$manifest_only" -eq 0 ]; then
     pnpm run check:i18n:branch || fail 'pnpm run check:i18n:branch'
   fi
 else
-  skip_manifest_only 'check:console-log, check:silent-catches, check:semgrep, check:url-hostname-sanitization, check:xss-patterns, check:protocol-string-gates, check:log-panel-filter, check:i18n:branch'
+  skip_manifest_only 'check:console-log, check:silent-catches, check:log-ids, check:semgrep, check:url-hostname-sanitization, check:xss-patterns, check:protocol-string-gates, check:log-panel-filter, check:i18n:branch'
 fi
 pnpm run check:licenses || fail 'pnpm run check:licenses'
 

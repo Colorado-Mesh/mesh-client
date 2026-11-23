@@ -1,6 +1,7 @@
 import { validateLibreTranslationUrl } from '../../shared/libreTranslationUrl';
 import { MS_PER_SECOND } from '../../shared/timeConstants';
 import type { LibreTranslationConfig, TranslationDetection } from '../../shared/translation-types';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 
 interface StoredLibreConfig {
   enabled: boolean;
@@ -49,14 +50,21 @@ export class LibreTranslateClient {
         try {
           if (stored.url) validateLibreTranslationUrl(stored.url);
           else if (stored.enabled) throw new Error('LibreTranslate URL required');
-        } catch {
-          // catch-no-log-ok preserve dormant configuration while blocking unsafe requests
+        } catch (e: unknown) {
+          console.debug(
+            '[main/translation/libreTranslateClient] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+
           return { ...stored, enabled: false, needsSecureUrl: true };
         }
         return stored;
       }
-    } catch {
-      // catch-no-log-ok malformed legacy settings are unavailable without destructive writes
+    } catch (e: unknown) {
+      console.debug(
+        '[main/translation/libreTranslateClient] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
     return { enabled: false, url: '' };
   }

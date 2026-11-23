@@ -99,7 +99,7 @@ async function requestOpenMeteo(
       headers: { 'User-Agent': 'mesh-client (weather forecast map layer)' },
     });
     if (!res.ok) {
-      console.warn(`[geo] Open-Meteo geocode HTTP ${res.status}`);
+      console.warn(`mcL0032 [geo] Open-Meteo geocode HTTP ${res.status}`);
       return null;
     }
     const body = (await res.json()) as { results?: unknown };
@@ -108,7 +108,7 @@ async function requestOpenMeteo(
     return pickBestCandidate(candidates, near);
   } catch (err) {
     console.warn(
-      '[geo] Open-Meteo geocode failed:',
+      'mcL0033 [geo] Open-Meteo geocode failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     return null;

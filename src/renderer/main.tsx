@@ -84,7 +84,7 @@ async function finishRendererStorage(): Promise<void> {
     .then((m) => m.bootScheduledBroadcastScheduler())
     .catch((e: unknown) => {
       console.warn(
-        '[main] scheduled broadcast scheduler boot failed:',
+        'mcL1175 [main] scheduled broadcast scheduler boot failed:',
         e instanceof Error ? e.message : String(e),
       );
     });
@@ -98,7 +98,10 @@ if (import.meta.env.DEV) {
       ),
     )
     .catch((e: unknown) => {
-      console.warn('[main] axe-core load failed:', e instanceof Error ? e.message : String(e));
+      console.warn(
+        'mcL1176 [main] axe-core load failed:',
+        e instanceof Error ? e.message : String(e),
+      );
     });
 }
 
@@ -129,7 +132,7 @@ void (async () => {
   );
 })().catch((e: unknown) => {
   console.error(
-    '[main] renderer boot failed:',
+    'mcL1177 [main] renderer boot failed:',
     e instanceof Error ? (e.stack ?? e.message) : String(e),
   );
 });

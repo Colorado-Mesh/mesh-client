@@ -97,7 +97,7 @@ export function useMeshcomDeviceCommands(
         return result;
       } catch (e) {
         console.warn(
-          '[useMeshcomDeviceCommands] ' +
+          'mcL0699 [useMeshcomDeviceCommands] ' +
             sanitizeLogMessage(formatMeshcomDeviceCommandForLog(command)) +
             ' failed: ' +
             sanitizeLogMessage(errLikeToLogString(e)),
@@ -156,7 +156,9 @@ export function useMeshcomDeviceCommands(
       );
       return snap;
     } catch (e) {
-      console.warn('[useMeshcomDeviceCommands] settings refresh failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0700 [useMeshcomDeviceCommands] settings refresh failed ' + errLikeToLogString(e),
+      );
       return null;
     }
   }, [onSettings, resolveIdentityId]);

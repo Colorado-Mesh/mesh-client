@@ -144,7 +144,7 @@ export default function DiagnosticsPingPanel() {
           className="border-ink-600 text-ink-300 rounded border px-3 py-1.5 text-sm disabled:opacity-40"
           onClick={() => {
             void runOnce().catch((e: unknown) => {
-              console.warn('[DiagnosticsPingPanel] single ping ' + errLikeToLogString(e));
+              console.warn('mcL0421 [DiagnosticsPingPanel] single ping ' + errLikeToLogString(e));
             });
           }}
         >

@@ -61,8 +61,8 @@ export class TransportSidecarGatt implements Types.Transport {
     if (this._fromDeviceController) {
       try {
         this._fromDeviceController.close();
-      } catch {
-        // catch-no-log-ok ReadableStreamDefaultController already closed if stream was cancelled
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/transportSidecarGatt] catch:', e);
       }
       this._fromDeviceController = null;
     }

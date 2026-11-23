@@ -297,7 +297,7 @@ export class WeatherForecastIngestor {
     now: number,
   ): Promise<void> {
     const placed = this.placeForecast(snapshot, msg, parsed).catch((err: unknown) => {
-      console.warn('[weatherForecastIngest] place failed ' + errLikeToLogString(err));
+      console.warn('mcL1172 [weatherForecastIngest] place failed ' + errLikeToLogString(err));
       return null;
     });
     const flushed =

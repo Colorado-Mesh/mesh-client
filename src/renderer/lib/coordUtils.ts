@@ -60,8 +60,8 @@ export function formatCoordPair(lat: number, lon: number, format: CoordinateForm
   if (format === 'mgrs') {
     try {
       return mgrsForward([lon, lat]); // mgrs API takes [lon, lat]
-    } catch {
-      // catch-no-log-ok polar coords and UPS zone not representable in MGRS; fall back to decimal
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/coordUtils] catch:', e);
     }
   }
   return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
@@ -78,8 +78,8 @@ export function formatCoordColumns(
   if (format === 'mgrs') {
     try {
       return { latCell: mgrsForward([lon, lat]), lonCell: '-' };
-    } catch {
-      // catch-no-log-ok polar coords and UPS zone not representable in MGRS; fall back to decimal
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/coordUtils] catch:', e);
     }
   }
   return { latCell: lat.toFixed(4), lonCell: lon.toFixed(4) };

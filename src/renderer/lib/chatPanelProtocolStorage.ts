@@ -867,8 +867,9 @@ function lowerMarksAhead<K extends string | number>(
 export function convertSavedReadMarksOnce(nowMs = Date.now()): boolean {
   try {
     if (localStorage.getItem(READ_MARKS_BY_ARRIVAL_KEY) === '1') return false;
-  } catch {
-    // catch-no-log-ok storage unavailable: try again at the next start
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/chatPanelProtocolStorage] catch:', e);
+
     return false;
   }
   // Never write over a namespace that was not read from the database: an unreadable one keeps its

@@ -4,6 +4,7 @@ import { safeStorage } from 'electron';
 
 import { parseRendererStorageDeletionState } from '../shared/rendererStorageIntent';
 import type { NodeSqliteDB } from './db-compat';
+import { sanitizeLogMessage } from './sanitize-log-message';
 import { withFullSqliteSync } from './sqliteDurability';
 
 const MAX_SECRET_BYTES = 64 * 1024;
@@ -130,8 +131,12 @@ async function strongStorageAvailable(): Promise<boolean> {
   try {
     if (!(await safeStorage.isAsyncEncryptionAvailable())) return false;
     return safeStorage.getSelectedStorageBackend?.() !== 'basic_text';
-  } catch {
-    // catch-no-log-ok storage backend probing is intentionally fail-closed
+  } catch (e: unknown) {
+    console.debug(
+      '[main/secure-secret-store] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }
@@ -245,13 +250,20 @@ export class SecureSecretStore {
       if (shouldReEncrypt && this.mutations.get(key) === mutation) {
         try {
           await this.set(key, result, false, false);
-        } catch {
-          // catch-no-log-ok re-encrypt is best-effort after key rotation
+        } catch (e: unknown) {
+          console.debug(
+            '[main/secure-secret-store] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         }
       }
       return result;
-    } catch {
-      // catch-no-log-ok corrupt ciphertext is treated as an unavailable secret
+    } catch (e: unknown) {
+      console.debug(
+        '[main/secure-secret-store] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return null;
     }
   }

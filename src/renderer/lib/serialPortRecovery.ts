@@ -51,7 +51,7 @@ export async function forgetGrantedSerialPortBestEffort(port: SerialPort | null)
     console.debug('[serialPortRecovery] forgot serial port permission');
   } catch (e) {
     console.warn(
-      `[serialPortRecovery] forget failed ${e instanceof Error ? e.message : String(e)}`,
+      `mcL1140 [serialPortRecovery] forget failed ${e instanceof Error ? e.message : String(e)}`,
     );
   }
 }
@@ -72,8 +72,8 @@ export function clearPersistedSerialPortIdentity(): void {
   try {
     removeRendererStorageItem(LAST_SERIAL_PORT_KEY);
     removeRendererStorageItem(LAST_SERIAL_PORT_SIGNATURE_KEY);
-  } catch {
-    // catch-no-log-ok localStorage unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/serialPortRecovery] catch:', e);
   }
 }
 

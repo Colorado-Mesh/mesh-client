@@ -110,8 +110,9 @@ export function captureSerialIdentityForRediscovery(port: SerialPort | null | un
       signature: getPortSignature(port),
       portId: (port as SerialPort & { portId?: string }).portId ?? null,
     };
-  } catch {
-    // catch-no-log-ok port may already be invalid during teardown
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/serialPortAutoRediscovery] catch:', e);
+
     return { signature: null, portId: null };
   }
 }

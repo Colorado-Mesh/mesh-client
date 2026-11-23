@@ -23,7 +23,9 @@ export async function restartReticulumStack(opts: {
     return { ok: true, restarted: true };
   } catch (e) {
     const message = errLikeToLogString(e);
-    console.error(`[${opts.logTag ?? 'restartReticulumStack'}] restart stack failed ${message}`);
+    console.error(
+      `mcL1026 [${opts.logTag ?? 'restartReticulumStack'}] restart stack failed ${message}`,
+    );
     return { ok: false, message };
   }
 }

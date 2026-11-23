@@ -105,7 +105,7 @@ export function ChatRfHopLabel({
         view = describeRoute(msg);
       } catch (e) {
         // The tooltip still explains the hop count; the route line falls back to "not available".
-        console.warn('[ChatRfHopLabel] route lookup failed ' + errLikeToLogString(e));
+        console.warn('mcL0397 [ChatRfHopLabel] route lookup failed ' + errLikeToLogString(e));
       }
     }
     const text = formatChatMessageRouteTooltip(t, {

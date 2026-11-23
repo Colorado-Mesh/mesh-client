@@ -104,7 +104,7 @@ export function migrateMeshtasticNodeNumInDb(
     })();
   } catch (err) {
     console.warn(
-      '[db] migrateMeshtasticNodeNum rolled back',
+      'mcL0242 [db] migrateMeshtasticNodeNum rolled back',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

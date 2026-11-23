@@ -40,7 +40,7 @@ export function startNetworkDiscovery(
           await traceRouteFn(nodeId);
         } catch (e) {
           console.warn(
-            '[networkDiscovery] traceroute failed for node',
+            'mcL0984 [networkDiscovery] traceroute failed for node',
             nodeId,
             sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
           );
@@ -58,7 +58,7 @@ export function startNetworkDiscovery(
           await runSweep();
         } catch (e) {
           console.warn(
-            '[networkDiscovery] sweep failed',
+            'mcL0985 [networkDiscovery] sweep failed',
             sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
           );
         }
@@ -74,7 +74,7 @@ export function startNetworkDiscovery(
     })
     .catch((e: unknown) => {
       console.warn(
-        '[networkDiscovery] initial sweep failed',
+        'mcL0986 [networkDiscovery] initial sweep failed',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       if (!stopped) scheduleNext();

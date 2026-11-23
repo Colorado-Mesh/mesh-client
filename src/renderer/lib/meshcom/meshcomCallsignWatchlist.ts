@@ -68,8 +68,9 @@ function syncWatchlistFromStorage(): void {
     );
     cacheWatchlist(normalizeWatchlist(settings?.[MESHCOM_CALLSIGN_WATCHLIST_KEY]));
     watchlistStorageSynced = true;
-  } catch {
-    // catch-no-log-ok blocked storage must not break ingest; leave unsynced so later reads retry
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcom/meshcomCallsignWatchlist] catch:', e);
+
     cacheWatchlist([]);
   }
 }
@@ -115,8 +116,8 @@ export function saveMeshcomCallsignWatchlist(callsigns: readonly string[]): Prom
     watchlistStorageSynced = true;
     if (!sameWatchlist(prev, cachedWatchlist)) notify();
   });
-  writes = save.catch(() => {
-    // catch-no-log-ok caller surfaces errors; keep next write usable
+  writes = save.catch((e: unknown) => {
+    console.debug('[renderer/lib/meshcom/meshcomCallsignWatchlist] catch:', e);
   });
   return save;
 }
@@ -161,8 +162,8 @@ export function maybeAlertMeshcomWatchlistCallsign(callsign: string): boolean {
   let muted = false;
   try {
     muted = localStorage.getItem(CHAT_NOTIF_MUTED_STORAGE_KEY) === '1';
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable in tests / restricted contexts
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcom/meshcomCallsignWatchlist] catch:', e);
   }
   if (!muted) {
     playMessageNotification('dm');

@@ -10,6 +10,8 @@ import {
   RENDERER_SCHEME,
 } from '@/shared/rendererOrigin';
 
+import { sanitizeLogMessage } from './sanitize-log-message';
+
 export interface RendererOriginProtocolDeps {
   distRoot: string;
   fetchImpl?: typeof net.fetch;
@@ -112,8 +114,12 @@ export function createRendererOriginProtocolHandler(
         statusText: response.statusText,
         headers,
       });
-    } catch {
-      // catch-no-log-ok invalid URLs and missing/unreadable assets are unavailable; keep paths private.
+    } catch (e: unknown) {
+      console.debug(
+        '[main/rendererOriginProtocol] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return unavailableResponse();
     }
   };

@@ -537,7 +537,9 @@
     "dangerZoneEnvironmentHistoryDesc": "删除每个方案和身份的所有已存储温度、湿度、压力和空气质量读数。",
     "clearAllRooms": "清空所有房间",
     "clearAllRoomsConfirm": "这将从已连接的收音机和本地数据库中移除所有未收藏的MeshCore房间服务器。房间在再次发布时会重新出现。此操作无法撤消。",
-    "meshcomWatchlistHeading": "MeshCom呼号观察名单"
+    "meshcomWatchlistHeading": "MeshCom呼号观察名单",
+    "verboseLogging": "在日志中包含调试信息和一般信息",
+    "verboseLoggingDesc": "默认情况下处于关闭状态，因此导出文件保持较小。开启，重现问题，然后导出为GitHub。提交问题时，请引用日志中的任何 mcL#### 代码。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -2703,6 +2705,14 @@
       "gps": {
         "label": "IP位置查找失败",
         "recommendation": "基于IP的位置回退失败。检查互联网可达性；无线电GPS和手动设置的静态位置与此IP查找分开。"
+      },
+      "caught-serious-error": {
+        "label": "发现严重错误",
+        "recommendation": "捕获到严重错误，但未导致崩溃。引用任何 mcL#### 代码，如有需要，请启用详细日志记录，重现问题，然后导出用于 GitHub 并报告该漏洞。"
+      },
+      "path-containment": {
+        "label": "路径遏制",
+        "recommendation": "路径已超出其允许的根目录（沙盒）。如果这是意外情况，请导出GitHub并报告；请在日志中引用所有 mcL#### 代码。"
       }
     },
     "recommendationGroups": {
@@ -2735,7 +2745,8 @@
     "deviceSource": "器械（ {{count}} ）",
     "narrowLogPanel": "窄木板",
     "widenLogPanel": "加宽原木面板",
-    "clearFailed": "无法清除日志"
+    "clearFailed": "无法清除日志",
+    "verboseLoggingOn": "详细日志记录已开启 — 正在记录调试信息和常规信息。"
   },
   "mapPanel": {
     "locationUnavailable": "無法取得位置。",

@@ -33,7 +33,7 @@ function notifyStarredChanged(protocol: MeshProtocol): void {
     try {
       listener(protocol);
     } catch (e) {
-      console.warn('[starredMessageStore] listener failed ' + errLikeToLogString(e));
+      console.warn('mcL1141 [starredMessageStore] listener failed ' + errLikeToLogString(e));
     }
   }
 }

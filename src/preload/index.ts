@@ -2178,6 +2178,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('log:line', handler);
       return () => ipcRenderer.off('log:line', handler);
     },
+    isVerboseEnabled: (): Promise<boolean> => ipcRenderer.invoke('log:isVerboseEnabled'),
+    onVerboseChanged: (cb: (enabled: boolean) => void) => {
+      const handler = (_: unknown, payload: { enabled?: boolean }) => {
+        cb(payload?.enabled === true);
+      };
+      ipcRenderer.on('log:verboseChanged', handler);
+      return () => ipcRenderer.off('log:verboseChanged', handler);
+    },
     logDeviceConnection: (detail: string) => ipcRenderer.invoke('log:device-connection', detail),
   },
 } satisfies ElectronAPI);

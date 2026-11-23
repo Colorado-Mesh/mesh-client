@@ -19,8 +19,8 @@ export function loadPersistedReticulumSelfLxmfHash(): string | null {
     const direct = localStorage.getItem(RETICULUM_LAST_SELF_LXMF_HASH_LS_KEY);
     const fromLs = readPersistedHashCandidate(direct);
     if (fromLs) return fromLs;
-  } catch {
-    // catch-no-log-ok localStorage unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumLastSelfLxmfHash] catch:', e);
   }
   const settings = parseStoredJson<Record<string, unknown>>(
     getAppSettingsRaw(),
@@ -41,11 +41,11 @@ export function persistReticulumSelfLxmfHash(lxmfHash: string): void {
   if (!canonical) return;
   try {
     localStorage.setItem(RETICULUM_LAST_SELF_LXMF_HASH_LS_KEY, canonical);
-  } catch {
-    // catch-no-log-ok localStorage unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumLastSelfLxmfHash] catch:', e);
   }
   mergeAppSetting(SETTING_KEY, canonical, 'reticulumLastSelfLxmfHash persist');
-  void window.electronAPI.appSettings.set(SETTING_KEY, canonical).catch(() => {
-    // catch-no-log-ok best-effort mirror to SQLite; localStorage already updated
+  void window.electronAPI.appSettings.set(SETTING_KEY, canonical).catch((e: unknown) => {
+    console.debug('[renderer/lib/reticulumLastSelfLxmfHash] catch:', e);
   });
 }

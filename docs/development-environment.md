@@ -443,6 +443,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `check:audit-ignores`                 | Warn when an ignored audit GHSA has a patch (needs network)               |
 | `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                      |
 | `check:console-log`                   | Fail on bare `console.log` in production paths                            |
+| `check:log-ids`                       | Require unique registered `mcL####` on production `console.warn`/`error`  |
 | `check:db-migrations`                 | Verify SQLite migrations are valid                                        |
 | `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                    |
 | `check:environment`                   | Verify local dev prerequisites (run after clone)                          |
@@ -716,7 +717,7 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 5. When `src/renderer/locales/en/translation.json` is staged: `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
 6. ESLint on **staged** JS/TS with `--cache` (skip when none staged)
 7. `pnpm run typecheck` (full tree); path-gated `typecheck:strict-shared` when `src/shared/` or `tsconfig.strict.json` staged
-8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:semgrep` (auto + `.semgrep.yml`; findings may be wrong — research before dismissing, then update `.semgrep.yml` / narrow `nosemgrep` if truly incorrect), `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`; `check:i18n` when English locale staged else `check:i18n:branch`
+8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:log-ids`, `check:semgrep` (auto + `.semgrep.yml`; findings may be wrong — research before dismissing, then update `.semgrep.yml` / narrow `nosemgrep` if truly incorrect), `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`; `check:i18n` when English locale staged else `check:i18n:branch`
 9. Path-gated: `check:flatpak`, `check:db-migrations`, `check:main-bundle` (when `src/main/` or esbuild main-build scripts staged), `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged)
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)

@@ -95,7 +95,7 @@ export function MeshBeaconHeardList({
         addToast(t('modulePanel.beacon.radioApplied'), 'success');
       }
     } catch (err: unknown) {
-      console.warn('[MeshBeaconHeardList] join failed ' + errLikeToLogString(err));
+      console.warn('mcL0440 [MeshBeaconHeardList] join failed ' + errLikeToLogString(err));
       addToast(
         t('modulePanel.beacon.joinFailed', { message: formatMeshtasticModuleApplyError(err, t) }),
         'error',

@@ -59,7 +59,7 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
       const save = window.electronAPI?.db?.savePositionHistory;
       if (typeof save === 'function') {
         save(nodeId, lat, lon, now, source).catch((err: unknown) => {
-          console.warn('[positionHistory] DB write failed: ' + errLikeToLogString(err));
+          console.warn('mcL1437 [positionHistory] DB write failed: ' + errLikeToLogString(err));
         });
       }
     }
@@ -87,13 +87,15 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
     const clear = window.electronAPI?.db?.clearPositionHistory;
     if (typeof clear !== 'function') {
       console.warn(
-        '[positionHistory] clearPositionHistory IPC bridge error: ' +
+        'mcL1438 [positionHistory] clearPositionHistory IPC bridge error: ' +
           errLikeToLogString(new Error('electronAPI.db.clearPositionHistory unavailable')),
       );
       return;
     }
     clear().catch((err: unknown) => {
-      console.warn('[positionHistory] clearPositionHistory DB failed: ' + errLikeToLogString(err));
+      console.warn(
+        'mcL1439 [positionHistory] clearPositionHistory DB failed: ' + errLikeToLogString(err),
+      );
     });
   },
 
@@ -140,7 +142,9 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
       }
       set({ history: newHistory });
     } catch (err) {
-      console.warn('[positionHistory] loadHistoryFromDb failed: ' + errLikeToLogString(err));
+      console.warn(
+        'mcL1440 [positionHistory] loadHistoryFromDb failed: ' + errLikeToLogString(err),
+      );
     }
   },
 }));

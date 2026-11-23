@@ -41,7 +41,7 @@ export function attachMeshcoreSerialTransportLossWatch(
     if (notified) return;
     notified = true;
     console.warn(
-      `[meshcoreSerialTransportLoss] serial link lost (${source})` +
+      `mcL0905 [meshcoreSerialTransportLoss] serial link lost (${source})` +
         (err ? `: ${errLikeToLogString(err)}` : ''),
     );
     noteSerialTransportLoss({ connectionType: 'serial' });
@@ -80,8 +80,8 @@ export function attachMeshcoreSerialTransportLossWatch(
             value: inner,
           });
         }
-      } catch {
-        // catch-no-log-ok restore writable after teardown
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/meshcore/meshcoreSerialTransportLoss] catch:', e);
       }
     });
   }

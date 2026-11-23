@@ -96,8 +96,9 @@ export function clearMeshcoreFirmwareContactsFullLatch(): void {
 export function readMeshcoreAutoOffloadWhenFull(): boolean {
   try {
     return localStorage.getItem(MESHCORE_AUTO_OFFLOAD_WHEN_FULL_KEY) === 'true';
-  } catch {
-    // catch-no-log-ok localStorage unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcore/meshcoreContactCapacityPush] catch:', e);
+
     return false;
   }
 }
@@ -105,8 +106,8 @@ export function readMeshcoreAutoOffloadWhenFull(): boolean {
 export function writeMeshcoreAutoOffloadWhenFull(value: boolean): void {
   try {
     localStorage.setItem(MESHCORE_AUTO_OFFLOAD_WHEN_FULL_KEY, String(value));
-  } catch {
-    // catch-no-log-ok localStorage
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcore/meshcoreContactCapacityPush] catch:', e);
   }
 }
 
@@ -153,7 +154,8 @@ export async function applyMeshcoreContactDeletedFromRadio(opts: {
     return { markedOffRadio: result.changes > 0 };
   } catch (e) {
     console.warn(
-      '[meshcoreContactCapacityPush] markMeshcoreContactOffRadio failed ' + errLikeToLogString(e),
+      'mcL0885 [meshcoreContactCapacityPush] markMeshcoreContactOffRadio failed ' +
+        errLikeToLogString(e),
     );
     return { markedOffRadio: false };
   }
@@ -178,7 +180,9 @@ export function endMeshcoreOffload(): void {
 async function runContactsFullOffload(): Promise<void> {
   const runner = contactsFullOffloadRunner;
   if (!runner) {
-    console.warn('[meshcoreContactCapacityPush] contacts-full offload requested but no runner');
+    console.warn(
+      'mcL0886 [meshcoreContactCapacityPush] contacts-full offload requested but no runner',
+    );
     return;
   }
   if (!tryBeginMeshcoreOffload()) return;
@@ -231,7 +235,7 @@ export function requestMeshcoreAutoOffload(
   if (autoOffload) {
     if (!contactsFullOffloadRunner) {
       console.warn(
-        `[meshcoreContactCapacityPush] auto-offload requested but no runner reason=${reason}`,
+        `mcL0887 [meshcoreContactCapacityPush] auto-offload requested but no runner reason=${reason}`,
       );
       return;
     }
@@ -239,7 +243,9 @@ export function requestMeshcoreAutoOffload(
     console.debug(`[meshcoreContactCapacityPush] auto-offload starting reason=${reason}`);
     pushAppToast(i18n.t('radioPanel.contactsFullAutoOffloadStarted'), 'warning', 6000);
     void runContactsFullOffload().catch((e: unknown) => {
-      console.warn('[meshcoreContactCapacityPush] auto-offload failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0888 [meshcoreContactCapacityPush] auto-offload failed ' + errLikeToLogString(e),
+      );
       pushAppToast(i18n.t('radioPanel.failedOffloadContacts'), 'error');
     });
     return;
@@ -254,7 +260,9 @@ export function requestMeshcoreAutoOffload(
     label: i18n.t('radioPanel.contactsFullAlarmAction'),
     onClick: () => {
       void runContactsFullOffload().catch((e: unknown) => {
-        console.warn('[meshcoreContactCapacityPush] offload CTA failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL0889 [meshcoreContactCapacityPush] offload CTA failed ' + errLikeToLogString(e),
+        );
         pushAppToast(i18n.t('radioPanel.failedOffloadContacts'), 'error');
       });
     },

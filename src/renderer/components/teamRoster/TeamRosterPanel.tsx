@@ -166,7 +166,7 @@ export default function TeamRosterPanel({
         }
       }
     } catch (err: unknown) {
-      console.warn('[TeamRoster] device select failed ' + errLikeToLogString(err));
+      console.warn('mcL0695 [TeamRoster] device select failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
       await refreshTeamRosterStoreFromDb();
       throw err;
@@ -185,7 +185,7 @@ export default function TeamRosterPanel({
         onRoster: false,
       });
     } catch (err: unknown) {
-      console.warn('[TeamRoster] remove device failed ' + errLikeToLogString(err));
+      console.warn('mcL0696 [TeamRoster] remove device failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
     } finally {
       setBusyUnitId(null);
@@ -207,7 +207,7 @@ export default function TeamRosterPanel({
         return next;
       });
     } catch (err: unknown) {
-      console.warn('[TeamRoster] remove failed ' + errLikeToLogString(err));
+      console.warn('mcL0697 [TeamRoster] remove failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
     } finally {
       setBusyUnitId(null);

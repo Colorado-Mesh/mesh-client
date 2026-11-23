@@ -319,7 +319,7 @@ export async function executeMecpRebroadcast(
       await sendFn(target, candidate.payload);
     } catch (e) {
       console.warn(
-        '[mecp-rebroadcast] send failed',
+        'mcL0866 [mecp-rebroadcast] send failed',
         target.protocol,
         describeMecpTargetChannel(target),
         e instanceof Error ? e.message : e,
@@ -330,7 +330,7 @@ export async function executeMecpRebroadcast(
       await sendFn(target, notice);
     } catch (e) {
       console.warn(
-        '[mecp-rebroadcast] notice send failed',
+        'mcL0867 [mecp-rebroadcast] notice send failed',
         target.protocol,
         describeMecpTargetChannel(target),
         e instanceof Error ? e.message : e,

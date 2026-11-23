@@ -46,7 +46,7 @@ function readOrder(key: string): string[] {
     const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
     return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : [];
   } catch (error) {
-    console.warn('[useChatOrder] read failed ' + errLikeToLogString(error));
+    console.warn('mcL0720 [useChatOrder] read failed ' + errLikeToLogString(error));
     return [];
   }
 }
@@ -84,7 +84,9 @@ export function useChatOrder(scope: string | null, items: readonly OrderedChat[]
         // eslint-disable-next-line react-hooks/set-state-in-effect -- clear pending after durable flush (#1538)
         setPendingWhileUnresolved(null);
       } catch (error) {
-        console.warn('[useChatOrder] flush pending order failed ' + errLikeToLogString(error));
+        console.warn(
+          'mcL0721 [useChatOrder] flush pending order failed ' + errLikeToLogString(error),
+        );
       }
     }
   }, [key, items, pendingWhileUnresolved, persist, stored.key]);
@@ -117,7 +119,7 @@ export function useChatOrder(scope: string | null, items: readonly OrderedChat[]
         setStored({ key, ids });
         setPendingWhileUnresolved(null);
       } catch (error) {
-        console.warn('[useChatOrder] persist order failed ' + errLikeToLogString(error));
+        console.warn('mcL0722 [useChatOrder] persist order failed ' + errLikeToLogString(error));
       }
     },
     [items, key, persist],

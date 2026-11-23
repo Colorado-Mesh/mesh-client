@@ -2,6 +2,7 @@ import { app, dialog } from 'electron';
 
 import type { DatabaseSchemaTooNewError } from './db-schema-sync';
 import { getLogPath } from './log-service';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /** Env: set to `1`/`true` to auto-accept schema upgrade (E2E / automation). */
 export const MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE_ENV = 'MESH_CLIENT_ACCEPT_SCHEMA_UPGRADE';
@@ -47,8 +48,12 @@ export function confirmDatabaseSchemaUpgrade(fromVersion: number, toVersion: num
       noLink: true,
     });
     return result === 1;
-  } catch {
-    // catch-no-log-ok dialog unavailable; refuse upgrade so the DB is not silently mutated
+  } catch (e: unknown) {
+    console.debug(
+      '[main/fatal-startup-dialog] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }
@@ -57,7 +62,10 @@ export function confirmDatabaseSchemaUpgrade(fromVersion: number, toVersion: num
 export function showFatalStartupError(title: string, message: string): void {
   try {
     dialog.showErrorBox(title, message);
-  } catch {
-    // catch-no-log-ok dialog unavailable during fatal startup handling; error already logged above
+  } catch (e: unknown) {
+    console.debug(
+      '[main/fatal-startup-dialog] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 }

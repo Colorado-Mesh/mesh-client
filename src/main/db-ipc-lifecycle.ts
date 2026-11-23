@@ -19,7 +19,7 @@ export function finishDbIpcHandler(channel: string, err: unknown): void {
     console.debug('[IPC]', channel, ': skipped (database closed)');
     return;
   }
-  console.error('[IPC]', channel, 'failed:', sanitizeLogMessage(message));
+  console.error('mcL0023 [IPC]', channel, 'failed:', sanitizeLogMessage(message));
   throw err;
 }
 

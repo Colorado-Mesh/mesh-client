@@ -244,6 +244,17 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // Mozilla translation CDN pins — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/translation/translationManifest.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'translation-manifest.js'),
+    minify,
+    logLevel: 'info',
+  });
   // MeshCom SQLite IPC — keep out of measured main `index.js`.
   await esbuild.build({
     absWorkingDir,

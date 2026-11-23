@@ -61,8 +61,8 @@ export function getStoredEnabledMeshProtocol(): MeshProtocol {
   if (resolved !== stored) {
     try {
       localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, resolved);
-    } catch {
-      // catch-no-log-ok localStorage quota or private mode; in-memory state still resolves
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/enabledProtocols] catch:', e);
     }
   }
   return resolved;

@@ -46,7 +46,7 @@ export function TeamContactEditorDialog({ member, onClose }: TeamContactEditorDi
         const id = await allocateUnitId();
         if (!cancelled) setUnitId(String(id));
       } catch (err: unknown) {
-        console.warn('[TeamContactEditor] allocate failed ' + errLikeToLogString(err));
+        console.warn('mcL0689 [TeamContactEditor] allocate failed ' + errLikeToLogString(err));
         if (!cancelled) addToast(t('teamRoster.allocateFailed'), 'error');
       }
     })();
@@ -85,7 +85,7 @@ export function TeamContactEditorDialog({ member, onClose }: TeamContactEditorDi
       if (isCreate) suppressRestoreFocus();
       onClose(isCreate ? parsedUnit : null);
     } catch (err: unknown) {
-      console.warn('[TeamContactEditor] save failed ' + errLikeToLogString(err));
+      console.warn('mcL0690 [TeamContactEditor] save failed ' + errLikeToLogString(err));
       addToast(t('teamRoster.saveFailed'), 'error');
     } finally {
       setBusy(false);

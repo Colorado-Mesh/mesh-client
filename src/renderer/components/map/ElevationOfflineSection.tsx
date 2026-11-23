@@ -38,7 +38,7 @@ export function ElevationOfflineSection(): React.JSX.Element {
         setStats({ hgtTiles: s.hgtTiles, hgtBytes: s.hgtBytes });
       })
       .catch((err: unknown) => {
-        console.warn('[ElevationOffline] stats ' + errLikeToLogString(err));
+        console.warn('mcL0654 [ElevationOffline] stats ' + errLikeToLogString(err));
       });
   }, []);
 
@@ -107,7 +107,7 @@ export function ElevationOfflineSection(): React.JSX.Element {
         bounds: req,
       });
     } catch (err: unknown) {
-      console.warn('[ElevationOffline] estimate ' + errLikeToLogString(err));
+      console.warn('mcL0655 [ElevationOffline] estimate ' + errLikeToLogString(err));
       setStatusLine(t('mapPanel.terrainProfile.hgtEstimateFailed'));
     } finally {
       setEstimating(false);
@@ -133,7 +133,7 @@ export function ElevationOfflineSection(): React.JSX.Element {
       }
       // Success / progress-done messaging comes from onHgtProgress when done=true.
     } catch (err: unknown) {
-      console.warn('[ElevationOffline] download ' + errLikeToLogString(err));
+      console.warn('mcL0656 [ElevationOffline] download ' + errLikeToLogString(err));
       setProgress(null);
       setStatusLine(t('mapPanel.terrainProfile.hgtDownloadFailed'));
     }

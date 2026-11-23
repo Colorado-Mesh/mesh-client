@@ -64,7 +64,8 @@ export async function exportAndPersistMeshcoreMqttIdentity(
       }
       lastErr = new Error('exportPrivateKey returned invalid private key material');
     } catch (e) {
-      // catch-no-log-ok retry loop — final failure logged once after all attempts
+      console.debug('[renderer/lib/meshcoreMqttIdentityExport] catch:', e);
+
       lastErr = e;
       if (attempt < maxAttempts - 1) {
         await new Promise<void>((r) =>
@@ -75,7 +76,7 @@ export async function exportAndPersistMeshcoreMqttIdentity(
   }
 
   console.warn(
-    '[meshcoreMqttIdentityExport] exportPrivateKey for MQTT identity cache failed ' +
+    'mcL0909 [meshcoreMqttIdentityExport] exportPrivateKey for MQTT identity cache failed ' +
       errLikeToLogString(lastErr),
   );
   return false;

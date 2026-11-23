@@ -47,8 +47,9 @@ export function validateChannelPskEntries(lines: string[]): ChannelPskValidation
           ? isValidNamedChannelPskLength(raw.length)
           : isValidBareChannelPskLength(raw.length);
       if (!valid) return 'invalidLength';
-    } catch {
-      // catch-no-log-ok invalid base64 on blur — user-facing warning only
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshtasticChannelPskInput] catch:', e);
+
       return 'invalidBase64';
     }
   }
@@ -63,8 +64,9 @@ export function parseManualChannelPublishEntry(line: string): ManualChannelPubli
     const psk = decodePskBase64(split.b64);
     if (psk.length !== 16 && psk.length !== 32) return null;
     return { name: split.name, index: split.index, psk };
-  } catch {
-    // catch-no-log-ok invalid base64 on a named publish line — skip entry
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtasticChannelPskInput] catch:', e);
+
     return null;
   }
 }

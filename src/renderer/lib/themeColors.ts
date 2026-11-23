@@ -270,7 +270,7 @@ export function applyThemeColors(
     const hex = resolveThemeHex(merged[key], key);
     if (!hex) {
       console.warn(
-        `[themeColors] applyThemeColors skipped — invalid or non-strict hex key=${sanitizeLogMessage(key)} raw=${sanitizeLogMessage(merged[key])}`,
+        `mcL1169 [themeColors] applyThemeColors skipped — invalid or non-strict hex key=${sanitizeLogMessage(key)} raw=${sanitizeLogMessage(merged[key])}`,
       );
       return null;
     }

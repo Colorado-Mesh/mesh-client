@@ -197,7 +197,8 @@ export function RNodeFlasherSection({
         await rnode.close();
         return true;
       } catch (e) {
-        // catch-no-log-ok error humanized and surfaced via flasher status UI
+        console.debug('[renderer/components/flasher/RNodeFlasherSection] catch:', e);
+
         const statusText = humanizeFlasherError(e);
         showStatus(statusText, true);
         await safeCloseSerialPort(port);
@@ -227,7 +228,8 @@ export function RNodeFlasherSection({
       await flasher.enterDfuMode();
       showStatus(t('flasher.dfuModeDone'));
     } catch (e) {
-      // catch-no-log-ok error humanized and surfaced via flasher status UI
+      console.debug('[renderer/components/flasher/RNodeFlasherSection] catch:', e);
+
       showStatus(humanizeFlasherError(e), true);
     } finally {
       await safeCloseSerialPort(port);
@@ -259,7 +261,7 @@ export function RNodeFlasherSection({
     setEsp32Syncing(selectedProduct.platform === ROM.PLATFORM_ESP32);
     let port: SerialPort | null = null;
 
-    console.warn('[RNodeFlasher] flash start', {
+    console.warn('mcL0636 [RNodeFlasher] flash start', {
       product: selectedProduct.catalogKey,
       model: selectedModel?.id,
       platform: selectedProduct.platform,
@@ -296,11 +298,11 @@ export function RNodeFlasherSection({
       markFlasherFlashCompleted();
       setFlashSucceeded(true);
       showStatus(t('flasher.flashSuccess'));
-      console.warn('[RNodeFlasher] flash success', { product: selectedProduct.catalogKey });
+      console.warn('mcL0637 [RNodeFlasher] flash success', { product: selectedProduct.catalogKey });
     } catch (e) {
       setFlashSucceeded(false);
-      console.error('[RNodeFlasher] flash failed', e);
-      // catch-no-log-ok error humanized and surfaced via flasher status UI
+      console.error('mcL0638 [RNodeFlasher] flash failed', e);
+
       showStatus(humanizeFlasherError(e), true);
     } finally {
       await safeCloseSerialPort(port);
@@ -336,7 +338,7 @@ export function RNodeFlasherSection({
     setBackupProgress(0);
     setBackupSyncing(true);
     let port: SerialPort | null = null;
-    console.warn('[RNodeFlasher] backup start', { product: selectedProduct.catalogKey });
+    console.warn('mcL0639 [RNodeFlasher] backup start', { product: selectedProduct.catalogKey });
 
     try {
       port = await requestFlasherSerialPort(requestSerialPort, {
@@ -361,7 +363,7 @@ export function RNodeFlasherSection({
       );
       if (result.saved && result.path) {
         showStatus(t('flasher.backupSaved', { path: result.path }));
-        console.warn('[RNodeFlasher] backup saved', { bytes: data.byteLength });
+        console.warn('mcL0640 [RNodeFlasher] backup saved', { bytes: data.byteLength });
       } else {
         showStatus(t('flasher.backupSaveCancelled'));
       }
@@ -371,7 +373,7 @@ export function RNodeFlasherSection({
         console.debug('[RNodeFlasher] backup cancelled');
         showStatus(t('flasher.backupCancelled'));
       } else {
-        console.error('[RNodeFlasher] backup failed', e);
+        console.error('mcL0641 [RNodeFlasher] backup failed', e);
         showStatus(humanizeFlasherError(e), true);
       }
     } finally {
@@ -399,7 +401,7 @@ export function RNodeFlasherSection({
     clearStatus();
     setProvisioning(true);
     showStatus(t('flasher.provisioning'));
-    console.warn('[RNodeFlasher] provision start', {
+    console.warn('mcL0642 [RNodeFlasher] provision start', {
       product: selectedProduct.catalogKey,
       model: selectedModel.id,
     });
@@ -413,7 +415,7 @@ export function RNodeFlasherSection({
           markFlasherProvisionCompleted();
           setProvisionSucceeded(true);
           showStatus(t('flasher.provisionAlreadyDone'));
-          console.warn('[RNodeFlasher] provision already done', {
+          console.warn('mcL0643 [RNodeFlasher] provision already done', {
             product: selectedProduct.catalogKey,
           });
           return;
@@ -423,12 +425,12 @@ export function RNodeFlasherSection({
         markFlasherProvisionCompleted();
         setProvisionSucceeded(true);
         showStatus(t('flasher.provisionSuccess'));
-        console.warn('[RNodeFlasher] provision success', {
+        console.warn('mcL0644 [RNodeFlasher] provision success', {
           product: selectedProduct.catalogKey,
         });
       });
       if (!ok) {
-        console.error('[RNodeFlasher] provision failed');
+        console.error('mcL0645 [RNodeFlasher] provision failed');
       }
     } finally {
       setProvisioning(false);
@@ -444,14 +446,14 @@ export function RNodeFlasherSection({
     clearStatus();
     setSettingHash(true);
     showStatus(t('flasher.settingFirmwareHash'));
-    console.warn('[RNodeFlasher] firmware hash start');
+    console.warn('mcL0646 [RNodeFlasher] firmware hash start');
     try {
       const ok = await runWithRNode(async (rnode) => {
         const rom = await rnode.getRomAsObject();
         const details = rom.parse();
         if (!details?.is_provisioned) {
           showStatus(t('flasher.firmwareHashNotProvisioned'), true);
-          console.error('[RNodeFlasher] firmware hash aborted — not provisioned');
+          console.error('mcL0647 [RNodeFlasher] firmware hash aborted — not provisioned');
           return;
         }
         await setFirmwareHashFromDevice(rnode);
@@ -459,10 +461,10 @@ export function RNodeFlasherSection({
         await rnode.reset();
         setHashSetSucceeded(true);
         showStatus(t('flasher.firmwareHashSuccess'));
-        console.warn('[RNodeFlasher] firmware hash success');
+        console.warn('mcL0648 [RNodeFlasher] firmware hash success');
       });
       if (!ok) {
-        console.error('[RNodeFlasher] firmware hash failed');
+        console.error('mcL0649 [RNodeFlasher] firmware hash failed');
       }
     } finally {
       setSettingHash(false);

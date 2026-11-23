@@ -537,7 +537,9 @@
     "dangerZoneEnvironmentHistoryDesc": "Supprime toutes les mesures enregistrées de température, humidité, pression et qualité de l'air pour chaque protocole et identité.",
     "clearAllRooms": "Effacer toutes les salles",
     "clearAllRoomsConfirm": "Cette action supprime tous les serveurs de salles MeshCore non favoris de la radio connectée et de la base de données locale. Les salles réapparaissent lorsqu’elles se signalent à nouveau. Cette action est irréversible.",
-    "meshcomWatchlistHeading": "Liste de surveillance des indicatifs d’appel MeshCom"
+    "meshcomWatchlistHeading": "Liste de surveillance des indicatifs d’appel MeshCom",
+    "verboseLogging": "Inclure le débogage et les informations dans les journaux",
+    "verboseLoggingDesc": "Désactivé par défaut afin que les exportations restent de petite taille. Activez, reproduisez le problème, puis exportez pour GitHub. Indiquez tous les codes mcL#### du journal lorsque vous signalez un problème."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -2703,6 +2705,14 @@
       "gps": {
         "label": "Échec de la recherche de l'emplacement IP",
         "recommendation": "Le repli de l'emplacement basé sur IP a échoué. Vérifiez l'accessibilité d'Internet ; le GPS radio et un emplacement statique défini manuellement sont distincts de cette recherche IP."
+      },
+      "caught-serious-error": {
+        "label": "Erreurs graves détectées",
+        "recommendation": "Une erreur grave a été détectée sans provoquer de plantage. Indiquez tous les codes mcL####, activez la journalisation détaillée si nécessaire, reproduisez le problème, puis exportez pour GitHub et signalez le bug."
+      },
+      "path-containment": {
+        "label": "Confinement",
+        "recommendation": "Un chemin s’est échappé de sa racine autorisée (jail). Si cela était inattendu, exportez pour GitHub et signalez-le ; indiquez tous les codes mcL#### dans le journal."
       }
     },
     "recommendationGroups": {
@@ -2735,7 +2745,8 @@
     "deviceSource": "Appareil ({{count}})",
     "narrowLogPanel": "Panneau de journal étroit",
     "widenLogPanel": "Élargir le panneau de journal",
-    "clearFailed": "Impossible d'effacer le journal"
+    "clearFailed": "Impossible d'effacer le journal",
+    "verboseLoggingOn": "Journalisation détaillée activée : les informations de débogage et d’information sont enregistrées."
   },
   "mapPanel": {
     "locationUnavailable": "Localisation indisponible.",

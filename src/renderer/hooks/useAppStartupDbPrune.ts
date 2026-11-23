@@ -34,12 +34,16 @@ export function useAppStartupDbPrune(onAfterPrune: () => void): void {
         return useEnvironmentTelemetryStore.getState().loadFromDb();
       })
       .catch((e: unknown) => {
-        console.warn('[useAppStartupDbPrune] startup prune failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL0716 [useAppStartupDbPrune] startup prune failed ' + errLikeToLogString(e),
+        );
       });
     const intervalId = setInterval(() => {
       // floating-ok: runSessionDbPrune swallows per-op IPC errors; catch covers unexpected throws.
       void runSessionDbPrune(incidentPruneOptions()).catch((e: unknown) => {
-        console.warn('[useAppStartupDbPrune] session prune failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL0717 [useAppStartupDbPrune] session prune failed ' + errLikeToLogString(e),
+        );
       });
     }, SESSION_DB_PRUNE_INTERVAL_MS);
     return () => {

@@ -69,8 +69,8 @@ export function shouldSkipConfetti(): boolean {
   if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     try {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
-    } catch {
-      // catch-no-log-ok matchMedia can throw in restricted/test environments
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/confettiBurst] catch:', e);
     }
   }
   return false;
@@ -96,8 +96,9 @@ function resolveColors(custom: string[] | undefined): string[] {
       '#d4a72c',
       '#ffffff',
     ];
-  } catch {
-    // catch-no-log-ok getComputedStyle unavailable; use fallback palette
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/confettiBurst] catch:', e);
+
     return fallback;
   }
 }

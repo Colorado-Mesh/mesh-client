@@ -607,7 +607,9 @@ export default function ConnectionPanel({
         persistedMqttProfilesRef.current = next;
       })
       .catch((e: unknown) => {
-        console.warn('[ConnectionPanel] MQTT profile persistence failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL0398 [ConnectionPanel] MQTT profile persistence failed ' + errLikeToLogString(e),
+        );
         if (mqttProfileSaveRequestRef.current === requestId) {
           const persisted = persistedMqttProfilesRef.current;
           mqttProfilesRef.current = persisted;
@@ -625,7 +627,8 @@ export default function ConnectionPanel({
       })
       .catch((e: unknown) => {
         console.warn(
-          '[ConnectionPanel] MeshCom MQTT profile persistence failed ' + errLikeToLogString(e),
+          'mcL0399 [ConnectionPanel] MeshCom MQTT profile persistence failed ' +
+            errLikeToLogString(e),
         );
         if (meshcomMqttProfileSaveRequestRef.current === requestId) {
           const persisted = persistedMeshcomMqttProfilesRef.current;
@@ -655,7 +658,9 @@ export default function ConnectionPanel({
     if (mqttStatus === 'connected' && effect === 'topicPrefix') {
       const topicPrefix = normalizeLiveTopicPrefix(next.topicPrefix);
       if (topicPrefix == null) {
-        console.warn('[ConnectionPanel] MQTT profile topic prefix rejected for live session');
+        console.warn(
+          'mcL0400 [ConnectionPanel] MQTT profile topic prefix rejected for live session',
+        );
         return;
       }
       // Settings follow the live subscription only once main accepts the new prefix.
@@ -673,7 +678,9 @@ export default function ConnectionPanel({
           setMqttSettings((prev) => ({ ...applyMqttProfile(prev, profile), topicPrefix }));
         })
         .catch((e: unknown) => {
-          console.warn('[ConnectionPanel] mqtt.updateTopicPrefix failed ' + errLikeToLogString(e));
+          console.warn(
+            'mcL0401 [ConnectionPanel] mqtt.updateTopicPrefix failed ' + errLikeToLogString(e),
+          );
         });
       return;
     }
@@ -1443,7 +1450,7 @@ export default function ConnectionPanel({
         await onConnect('ble', undefined, deviceId);
       } catch (err) {
         console.warn(
-          '[ConnectionPanel] BLE connect after selection failed ' + errLikeToLogString(err),
+          'mcL0402 [ConnectionPanel] BLE connect after selection failed ' + errLikeToLogString(err),
         );
         clearMeshcoreBleSelectionOnMissingServices(err);
         const bleErrMsg = humanizeBleError(err, t);
@@ -1562,7 +1569,9 @@ export default function ConnectionPanel({
         await connectSelectedBleDevice(deviceId);
       } catch (err) {
         if (pendingPairBleDeviceRef.current !== pendingDevice) return;
-        console.warn('[ConnectionPanel] Windows in-app pairing failed: ' + errLikeToLogString(err));
+        console.warn(
+          'mcL0403 [ConnectionPanel] Windows in-app pairing failed: ' + errLikeToLogString(err),
+        );
         setError(windowsPairingFailureMessage(err, t));
         setManualPairingFallback(false);
         setShowPinPrompt(true);
@@ -1603,8 +1612,8 @@ export default function ConnectionPanel({
         await window.electronAPI.bluetoothPair(pendingDevice.deviceId, normalizedPin);
         try {
           await window.electronAPI.bluetoothGetInfo(pendingDevice.deviceId);
-        } catch {
-          // catch-no-log-ok -- diagnostics only
+        } catch (e: unknown) {
+          console.debug('[renderer/components/ConnectionPanel] catch:', e);
         }
         if (pendingPairBleDeviceRef.current !== pendingDevice) return;
         pendingPairBleDeviceRef.current = null;
@@ -1615,7 +1624,9 @@ export default function ConnectionPanel({
       } catch (err) {
         if (pendingPairBleDeviceRef.current !== pendingDevice) return;
         const msg = err instanceof Error ? err.message : String(err);
-        console.warn('[ConnectionPanel] BLE pre-connect pair failed: ' + errLikeToLogString(err));
+        console.warn(
+          'mcL0404 [ConnectionPanel] BLE pre-connect pair failed: ' + errLikeToLogString(err),
+        );
         setError(t('connectionPanel.error.pairingFailed', { msg }));
         setConnectionStage('connectionPanel.stageEnterPin');
         setConnecting(false);
@@ -1634,21 +1645,23 @@ export default function ConnectionPanel({
         await window.electronAPI.bluetoothUnpair(manualMac);
         try {
           await window.electronAPI.bluetoothUntrust(manualMac);
-        } catch {
-          // catch-no-log-ok -- untrust is best-effort, ignore all failures
+        } catch (e: unknown) {
+          console.debug('[renderer/components/ConnectionPanel] catch:', e);
         }
         try {
           await window.electronAPI.bluetoothStartScan();
           scanStarted = true;
         } catch (e) {
-          console.warn('[ConnectionPanel] bluetoothStartScan warning: ' + errLikeToLogString(e));
+          console.warn(
+            'mcL0405 [ConnectionPanel] bluetoothStartScan warning: ' + errLikeToLogString(e),
+          );
         }
         setConnectionStage('connectionPanel.stagePairingPin');
         await window.electronAPI.bluetoothPair(manualMac, normalizedPin);
         try {
           await window.electronAPI.bluetoothGetInfo(manualMac);
-        } catch {
-          // catch-no-log-ok -- diagnostics only
+        } catch (e: unknown) {
+          console.debug('[renderer/components/ConnectionPanel] catch:', e);
         }
         setPinInputValue('');
         setManualPairingFallback(false);
@@ -1659,7 +1672,7 @@ export default function ConnectionPanel({
         return;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.warn('[ConnectionPanel] manual pair failed: ' + errLikeToLogString(err));
+        console.warn('mcL0406 [ConnectionPanel] manual pair failed: ' + errLikeToLogString(err));
         setError(t('connectionPanel.error.pinPairingFailed', { msg }));
         setShowRePairButton(true);
         setConnecting(false);
@@ -1669,8 +1682,8 @@ export default function ConnectionPanel({
         if (scanStarted) {
           try {
             await window.electronAPI.bluetoothStopScan();
-          } catch {
-            // catch-no-log-ok -- stop scan is best-effort
+          } catch (e: unknown) {
+            console.debug('[renderer/components/ConnectionPanel] catch:', e);
           }
         }
       }
@@ -1765,7 +1778,9 @@ export default function ConnectionPanel({
         await startGattScanningWithRetry(protocol);
       } catch (err) {
         manualBleScanActiveRef.current = false;
-        console.warn('[ConnectionPanel] startGattScanning failed: ' + errLikeToLogString(err));
+        console.warn(
+          'mcL0407 [ConnectionPanel] startGattScanning failed: ' + errLikeToLogString(err),
+        );
         const bleErrMsg = humanizeBleError(err, t);
         if (bleErrMsg) setError(bleErrMsg);
         setConnecting(false);
@@ -1786,7 +1801,7 @@ export default function ConnectionPanel({
         await onConnect('serial');
       }
     } catch (err) {
-      console.warn('[ConnectionPanel] handleConnect failed ' + errLikeToLogString(err));
+      console.warn('mcL0408 [ConnectionPanel] handleConnect failed ' + errLikeToLogString(err));
       let errorMsg: string;
       if (connectionType === 'serial') {
         errorMsg = humanizeSerialError(err, t, {
@@ -2067,7 +2082,8 @@ export default function ConnectionPanel({
           setConnecting(false);
           setConnectionStage('');
         } catch (err: unknown) {
-          // catch-no-log-ok reconnect errors surfaced via setError/humanizeBleError
+          console.debug('[renderer/components/ConnectionPanel] catch:', err);
+
           isAutoConnectingRef.current = false;
           setIsAutoConnecting(false);
           clearMeshcoreBleSelectionOnMissingServices(err);
@@ -2105,7 +2121,7 @@ export default function ConnectionPanel({
       setShowSerialPicker(false);
       setConnectionStage('connectionPanel.stagePleaseWait');
       onConnect('http', addr).catch((err: unknown) => {
-        // catch-no-log-ok reconnect errors surfaced via setError/humanizeHttpError
+        console.debug('[renderer/components/ConnectionPanel] catch:', err);
         // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
         const httpErr = humanizeHttpError(addr, err, t);
         if (httpErr) setError(httpErr);
@@ -2134,7 +2150,7 @@ export default function ConnectionPanel({
         setShowSerialPicker(false);
         setConnectionStage('connectionPanel.stagePleaseWait');
         onConnect('http', kissAddr).catch((err: unknown) => {
-          // catch-no-log-ok reconnect errors surfaced via setError/humanizeHttpError
+          console.debug('[renderer/components/ConnectionPanel] catch:', err);
           const httpErr = humanizeHttpError(kissAddr, err, t);
           if (httpErr) setError(httpErr);
           setConnecting(false);
@@ -2152,7 +2168,7 @@ export default function ConnectionPanel({
       setShowSerialPicker(false);
       setConnectionStage('connectionPanel.stagePleaseWait');
       onConnect('tcp', addr).catch((err: unknown) => {
-        // catch-no-log-ok reconnect errors surfaced via setError/humanizeHttpError
+        console.debug('[renderer/components/ConnectionPanel] catch:', err);
         // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
         const tcpErr = humanizeHttpError(addr, err, t);
         if (tcpErr) setError(tcpErr);
@@ -2507,7 +2523,7 @@ export default function ConnectionPanel({
       protocol === 'meshcore' ? 'meshcore' : protocol === 'meshcom' ? 'meshcom' : 'meshtastic';
     window.electronAPI.mqtt.disconnect(mqttProtocol).catch((err: unknown) => {
       console.warn(
-        `[ConnectionPanel] mqtt.disconnect (${reason}) failed: ` + errLikeToLogString(err),
+        `mcL0409 [ConnectionPanel] mqtt.disconnect (${reason}) failed: ` + errLikeToLogString(err),
       );
     });
   };
@@ -3315,7 +3331,7 @@ export default function ConnectionPanel({
                       const msg = e instanceof Error ? e.message : String(e);
                       setMqttError(t('connectionPanel.authTokenFailed', { message: msg }));
                       console.warn(
-                        '[ConnectionPanel] LetsMesh auth token generation failed ' +
+                        'mcL0410 [ConnectionPanel] LetsMesh auth token generation failed ' +
                           errLikeToLogString(e),
                       );
                       return;
@@ -3334,7 +3350,9 @@ export default function ConnectionPanel({
                 window.electronAPI.mqtt.connect(settings).catch((err: unknown) => {
                   const msg = err instanceof Error ? err.message : String(err);
                   setMqttError(msg);
-                  console.warn('[ConnectionPanel] mqtt.connect failed: ' + errLikeToLogString(err));
+                  console.warn(
+                    'mcL0411 [ConnectionPanel] mqtt.connect failed: ' + errLikeToLogString(err),
+                  );
                 });
               }}
               disabled={
@@ -3377,7 +3395,7 @@ export default function ConnectionPanel({
               if (meshcoreMqttSettingsRef.current.autoLaunch) {
                 void tryAutoLaunchMqtt('meshcore').catch((err: unknown) => {
                   console.warn(
-                    '[ConnectionPanel] MQTT auto-launch after Colorado stay failed: ' +
+                    'mcL0412 [ConnectionPanel] MQTT auto-launch after Colorado stay failed: ' +
                       errLikeToLogString(err),
                   );
                 });
@@ -3402,7 +3420,7 @@ export default function ConnectionPanel({
                     await window.electronAPI.mqtt.disconnect('meshcore');
                   } catch (err: unknown) {
                     console.warn(
-                      '[ConnectionPanel] mqtt.disconnect after Colorado switch failed: ' +
+                      'mcL0413 [ConnectionPanel] mqtt.disconnect after Colorado switch failed: ' +
                         errLikeToLogString(err),
                     );
                   }
@@ -3412,7 +3430,7 @@ export default function ConnectionPanel({
                     await tryAutoLaunchMqtt('meshcore');
                   } catch (err: unknown) {
                     console.warn(
-                      '[ConnectionPanel] MQTT auto-launch after Colorado switch failed: ' +
+                      'mcL0414 [ConnectionPanel] MQTT auto-launch after Colorado switch failed: ' +
                         errLikeToLogString(err),
                     );
                   }
@@ -3556,7 +3574,9 @@ export default function ConnectionPanel({
     const mqttActive = mqttStatus === 'connected' || mqttStatus === 'connecting';
     const disconnectRadio = () => {
       onDisconnect().catch((err: unknown) => {
-        console.warn('[ConnectionPanel] radio disconnect failed: ' + errLikeToLogString(err));
+        console.warn(
+          'mcL0415 [ConnectionPanel] radio disconnect failed: ' + errLikeToLogString(err),
+        );
       });
     };
     const radioDisconnectEntries: MenuEntry[] = [
@@ -3672,7 +3692,7 @@ export default function ConnectionPanel({
                     onChange={(next) => {
                       onToggleManualContacts(next).catch((err: unknown) => {
                         console.warn(
-                          '[ConnectionPanel] manual contact approval toggle failed: ' +
+                          'mcL0416 [ConnectionPanel] manual contact approval toggle failed: ' +
                             errLikeToLogString(err),
                         );
                       });

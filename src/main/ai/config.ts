@@ -1,4 +1,5 @@
 import type { AiEndpointConfig, AiEngine, AiWireFormat } from '../../shared/ai-types';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { classifyEndpoint } from './urlPolicy';
 
 export interface StoredAiConfig {
@@ -60,8 +61,12 @@ export class AiConfig {
         localModelId: typeof c.localModelId === 'string' ? c.localModelId : null,
         ...(typeof c.encryptedKey === 'string' ? { encryptedKey: c.encryptedKey } : {}),
       };
-    } catch {
-      // catch-no-log-ok corrupt settings stay dormant
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ai/config] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return { ...EMPTY_AI_CONFIG };
     }
   }

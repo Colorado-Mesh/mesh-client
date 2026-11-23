@@ -153,7 +153,7 @@ vi.mock('fs', async (importOriginal) => {
 });
 
 describe('getRecentLines', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.mocked(fs.writeFileSync).mockClear();
     vi.mocked(fs.existsSync).mockClear();
     vi.mocked(fs.unlinkSync).mockClear();
@@ -161,6 +161,21 @@ describe('getRecentLines', () => {
     vi.mocked(fs.promises.stat).mockClear();
     vi.mocked(fs.promises.rename).mockClear();
     vi.mocked(fs.promises.copyFile).mockClear();
+    const { setVerboseLoggingEnabled } = await import('./log-service');
+    setVerboseLoggingEnabled(true);
+  });
+
+  it('drops debug/info/log when verbose logging is off', async () => {
+    const { appendLine, getRecentLines, setVerboseLoggingEnabled } = await import('./log-service');
+    setVerboseLoggingEnabled(false);
+    const before = getRecentLines().length;
+    appendLine('debug', 'test', 'hidden debug');
+    appendLine('info', 'test', 'hidden info');
+    appendLine('log', 'test', 'hidden log');
+    expect(getRecentLines().length).toBe(before);
+    appendLine('warn', 'test', 'visible warn');
+    expect(getRecentLines().at(-1)?.message).toContain('visible warn');
+    setVerboseLoggingEnabled(true);
   });
 
   it('returns a copy of buffered entries (not the live array)', async () => {
@@ -376,7 +391,8 @@ describe('initLogFile previous-session preserve', () => {
 
 describe('stripConsoleStyles (via appendLine + getRecentLines)', () => {
   it('stores messages without %c markers or CSS strings in recentEntries', async () => {
-    const { appendLine, getRecentLines } = await import('./log-service');
+    const { appendLine, getRecentLines, setVerboseLoggingEnabled } = await import('./log-service');
+    setVerboseLoggingEnabled(true);
 
     // Simulate a tslog-style styled message coming through appendLine
     appendLine('log', 'renderer:app.tsx:42', 'Hello %c World color: red; font-weight: bold');

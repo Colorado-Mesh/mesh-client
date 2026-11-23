@@ -64,8 +64,8 @@ export async function resolveMeshcoreDmDestinationPubKeyAsync(
       registerMeshcorePubKey(nodeId, radioKey);
       return radioKey;
     }
-  } catch {
-    // catch-no-log-ok optional radio fallback; sync/DB already missed
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcore/meshcoreDmSend] catch:', e);
   }
   return undefined;
 }
@@ -82,8 +82,8 @@ async function runExclusivePerConnection<T>(conn: object, work: () => Promise<T>
     release = resolve;
   });
   const queued = prevTracked
-    .catch(() => {
-      // catch-no-log-ok prior send failure must not block the queue
+    .catch((e: unknown) => {
+      console.debug('[renderer/lib/meshcore/meshcoreDmSend] catch:', e);
     })
     .then(() => gate);
   sendErrCodeQueues.set(conn, queued);
@@ -151,8 +151,8 @@ export async function meshcoreSendTextMessageWithErrCode(
     } finally {
       try {
         conn.off(RESPONSE_CODE_ERR, onErr as (...args: unknown[]) => void);
-      } catch {
-        // catch-no-log-ok listener may already have been removed by once()
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/meshcore/meshcoreDmSend] catch:', e);
       }
     }
   });

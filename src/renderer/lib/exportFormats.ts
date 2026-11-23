@@ -63,8 +63,9 @@ function csvCellText(value: unknown): string {
   if (safe === undefined) return '';
   try {
     return JSON.stringify(safe);
-  } catch {
-    // catch-no-log-ok unserializable cell exported as empty
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/exportFormats] catch:', e);
+
     return '';
   }
 }

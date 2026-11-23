@@ -345,6 +345,24 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     severity: 'error',
   },
   {
+    id: 'caught-serious-error',
+    patterns: [/\[main\] Caught serious error\b/i],
+    severity: 'error',
+    requireWarnOrError: true,
+    recommendationGroup: 'internal-error',
+  },
+  {
+    id: 'path-containment',
+    patterns: [
+      /PATH_ESCAPES_ROOT/i,
+      /path escapes root/i,
+      /\[pathUnderRoot\]/i,
+      /PathEscapesRootError/i,
+    ],
+    severity: 'warning',
+    requireWarnOrError: true,
+  },
+  {
     id: 'database-error',
     patterns: [
       /\[db\] Database init failed/i,

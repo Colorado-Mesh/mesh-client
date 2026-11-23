@@ -207,7 +207,8 @@ async function fetchConfigTypes(
         loraConfigFetchFailed = true;
         loraConfigFetchError = normalizeRemoteAdminError(e);
         console.warn(
-          '[fetchMeshtasticRemoteConfigSnapshot] LoRa config fetch failed ' + errLikeToLogString(e),
+          'mcL0972 [fetchMeshtasticRemoteConfigSnapshot] LoRa config fetch failed ' +
+            errLikeToLogString(e),
         );
         configResults.push({ type, value: null });
       }
@@ -220,7 +221,7 @@ async function fetchConfigTypes(
         configResults.push({ type, value });
       } catch (e) {
         console.warn(
-          '[fetchMeshtasticRemoteConfigSnapshot] config fetch failed type=' +
+          'mcL0973 [fetchMeshtasticRemoteConfigSnapshot] config fetch failed type=' +
             String(type) +
             ' ' +
             errLikeToLogString(e),
@@ -301,8 +302,8 @@ async function fetchRemoteChannels(
         try {
           value = await fetchRemoteChannelIndex(client, destNodeNum, index);
           parsed = parseChannelEntry(value, index);
-        } catch {
-          // catch-no-log-ok retry failed; outer loop treats empty response as end-of-channel-list
+        } catch (e: unknown) {
+          console.debug('[renderer/lib/meshtasticRemoteAdminSnapshot] catch:', e);
         }
       }
       channelResults.push({ index, value });
@@ -312,7 +313,7 @@ async function fetchRemoteChannels(
     } catch (e) {
       failedChannelIndices.push(index);
       console.warn(
-        '[fetchMeshtasticRemoteConfigSnapshot] channel fetch failed index=' +
+        'mcL0974 [fetchMeshtasticRemoteConfigSnapshot] channel fetch failed index=' +
           String(index) +
           ' ' +
           errLikeToLogString(e),
@@ -390,7 +391,8 @@ export async function fetchMeshtasticRemoteConfigSnapshotEssential(
   } catch (e) {
     failedChannelIndices.push(0);
     console.warn(
-      '[fetchMeshtasticRemoteConfigSnapshot] channel fetch failed index=0 ' + errLikeToLogString(e),
+      'mcL0975 [fetchMeshtasticRemoteConfigSnapshot] channel fetch failed index=0 ' +
+        errLikeToLogString(e),
     );
     primaryChannelResults.push({ index: 0, value: null });
   }
@@ -489,8 +491,8 @@ export async function fetchMeshtasticRemoteConfigModules(
         moduleConfigs[modKey] = modVal;
         options?.onPartial?.({ moduleConfigs: { ...moduleConfigs } });
       }
-    } catch {
-      // catch-no-log-ok optional module config may be unsupported on target firmware
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshtasticRemoteAdminSnapshot] catch:', e);
     }
   }
   return { moduleConfigs };

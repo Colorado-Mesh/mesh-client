@@ -48,8 +48,12 @@ export function redactMnemonicFromStackJson(raw: string): string {
       }
     }
     return JSON.stringify(parsed, null, 2);
-  } catch {
-    // catch-no-log-ok invalid stack JSON — fail closed; never return raw mnemonic-bearing text
+  } catch (e: unknown) {
+    console.debug(
+      '[main/support-bundle] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return JSON.stringify({ error: 'stack_json_redaction_failed' });
   }
 }
@@ -68,7 +72,6 @@ export function readReticulumDeveloperArtifacts(): ReticulumDeveloperArtifacts {
     try {
       artifacts.config = Buffer.from(readUtf8FileBounded(configPath), 'utf8');
     } catch (e) {
-      // catch-no-log-ok skip oversized or unreadable rnsd config — debug for triage
       const detail = e instanceof Error ? e.message : String(e);
       console.debug(`[support-bundle] skip rnsd config: ${sanitizeLogMessage(detail)}`);
     }
@@ -80,7 +83,6 @@ export function readReticulumDeveloperArtifacts(): ReticulumDeveloperArtifacts {
       const redacted = redactMnemonicFromStackJson(readUtf8FileBounded(stackPath));
       artifacts.stackJson = Buffer.from(redacted, 'utf8');
     } catch (e) {
-      // catch-no-log-ok skip oversized or unreadable stack state — debug for triage
       const detail = e instanceof Error ? e.message : String(e);
       console.debug(`[support-bundle] skip stack state: ${sanitizeLogMessage(detail)}`);
     }
@@ -257,8 +259,12 @@ export function extractLxmfOutboundLogSlice(...logChunks: Buffer[]): Buffer {
 async function readFileOrEmpty(filePath: string): Promise<Buffer> {
   try {
     return await fs.promises.readFile(filePath);
-  } catch {
-    // catch-no-log-ok missing log file returns empty buffer for bundle export
+  } catch (e: unknown) {
+    console.debug(
+      '[main/support-bundle] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return Buffer.alloc(0);
   }
 }
@@ -279,8 +285,12 @@ async function readFileTailOrEmpty(filePath: string, maxBytes: number): Promise<
     } finally {
       await fh.close();
     }
-  } catch {
-    // catch-no-log-ok missing/unreadable backup returns empty buffer for bundle export
+  } catch (e: unknown) {
+    console.debug(
+      '[main/support-bundle] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return Buffer.alloc(0);
   }
 }
@@ -296,8 +306,11 @@ async function atomicWriteFile(destPath: string, data: Buffer): Promise<void> {
   } catch (err) {
     try {
       await fs.promises.rm(tmpPath, { force: true });
-    } catch {
-      // catch-no-log-ok best-effort cleanup after failed rename
+    } catch (e: unknown) {
+      console.debug(
+        '[main/support-bundle] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
     throw err;
   }

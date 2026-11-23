@@ -129,7 +129,7 @@ export function ReticulumDmPathActions({
       }
       onReprobe();
     } catch (e) {
-      console.warn('[ReticulumDmPathActions] path ' + errLikeToLogString(e));
+      console.warn('mcL0550 [ReticulumDmPathActions] path ' + errLikeToLogString(e));
     } finally {
       setBusy(false);
     }
@@ -154,7 +154,7 @@ export function ReticulumDmPathActions({
       }
       onProbeSettled(probedHash, result.ok, result.hops ?? null);
     } catch (e) {
-      console.warn('[ReticulumDmPathActions] probe ' + errLikeToLogString(e));
+      console.warn('mcL0551 [ReticulumDmPathActions] probe ' + errLikeToLogString(e));
       onProbeSettled(probedHash, false, null);
     } finally {
       setBusy(false);

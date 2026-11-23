@@ -537,7 +537,9 @@
     "dangerZoneEnvironmentHistoryDesc": "Remove todas as leituras armazenadas de temperatura, umidade, pressão e qualidade do ar para cada protocolo e identidade.",
     "clearAllRooms": "Limpar todas as salas",
     "clearAllRoomsConfirm": "Isso remove todos os servidores de salas MeshCore que não estão nos favoritos do rádio conectado e do banco de dados local. As salas reaparecem quando são anunciadas novamente. Esta ação não pode ser desfeita.",
-    "meshcomWatchlistHeading": "Lista de observação de indicativos de chamada do MeshCom"
+    "meshcomWatchlistHeading": "Lista de observação de indicativos de chamada do MeshCom",
+    "verboseLogging": "Incluir depuração e informações nos registros",
+    "verboseLoggingDesc": "Desativado por padrão para que as exportações permaneçam pequenas. Ative, reproduza o problema e, em seguida, exporte para GitHub. Cite todos os códigos mcL#### do registro ao relatar um problema."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -2703,6 +2705,14 @@
       "gps": {
         "label": "Falha na pesquisa de localização de IP",
         "recommendation": "O fallback de localização baseado em IP falhou. Verifique a acessibilidade da Internet; o GPS de rádio e uma localização estática definida manualmente são separados desta pesquisa de IP."
+      },
+      "caught-serious-error": {
+        "label": "Erros graves detectados",
+        "recommendation": "Um erro grave foi detectado sem causar falha. Mencione quaisquer códigos mcL####, ative o registro detalhado, se necessário, reproduza o problema, depois exporte para GitHub e relate o bug."
+      },
+      "path-containment": {
+        "label": "Contenção de caminho",
+        "recommendation": "Um caminho saiu da sua raiz permitida (jail). Se isso não era esperado, exporte para GitHub e relate o problema; mencione quaisquer códigos mcL#### no registro."
       }
     },
     "recommendationGroups": {
@@ -2735,7 +2745,8 @@
     "deviceSource": "Dispositivo ({{count}})",
     "narrowLogPanel": "Painel de registro estreito",
     "widenLogPanel": "Ampliar painel de registro",
-    "clearFailed": "Não foi possível limpar o registro"
+    "clearFailed": "Não foi possível limpar o registro",
+    "verboseLoggingOn": "Registro detalhado ativado — as informações de depuração e outras informações estão sendo registradas."
   },
   "mapPanel": {
     "locationUnavailable": "Localização não disponível.",

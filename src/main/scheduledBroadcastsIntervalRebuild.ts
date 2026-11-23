@@ -3,6 +3,7 @@
  * so scheduled_broadcasts DDL stays out of the measured main `index.js` budget.
  */
 import type { NodeSqliteDB } from './db-compat';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 const TABLE_COLS =
   'slot INTEGER PRIMARY KEY CHECK (slot BETWEEN 1 AND 12),' +
@@ -44,8 +45,11 @@ export function withScheduledBroadcastsSavepoint(db: NodeSqliteDB, fn: () => voi
     try {
       db.execScript(`ROLLBACK TO SAVEPOINT ${REBUILD_SAVEPOINT}`);
       db.execScript(`RELEASE SAVEPOINT ${REBUILD_SAVEPOINT}`);
-    } catch {
-      // catch-no-log-ok RELEASE after ROLLBACK — secondary failure, outer catch rethrows
+    } catch (e: unknown) {
+      console.debug(
+        '[main/scheduledBroadcastsIntervalRebuild] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
     throw err;
   }

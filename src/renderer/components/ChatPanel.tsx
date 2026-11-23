@@ -1329,7 +1329,7 @@ function ChatPanel({
       await onClearChannelMessages(target.index, target.nodeNum, target.channelKey ?? undefined);
       setChannelToClear(null);
     } catch (e) {
-      console.warn('[ChatPanel] clear channel messages failed ' + errLikeToLogString(e));
+      console.warn('mcL0386 [ChatPanel] clear channel messages failed ' + errLikeToLogString(e));
       setChannelToClear(null);
       addToast(
         t('chatPanel.clearChannelMessagesFailed', {
@@ -1380,7 +1380,7 @@ function ChatPanel({
         if (next) selectChannel(next.index);
       }
     } catch (e) {
-      console.warn('[ChatPanel] remove channel failed ' + errLikeToLogString(e));
+      console.warn('mcL0387 [ChatPanel] remove channel failed ' + errLikeToLogString(e));
       setChannelToRemove(null);
       addToast(
         t('chatPanel.removeChannelFailed', { name: target.name, message: errLikeToLogString(e) }),
@@ -1579,7 +1579,7 @@ function ChatPanel({
     try {
       localStorage.setItem(openDmTabsStorageKey(protocol), JSON.stringify(openDmTabs));
     } catch (e) {
-      console.warn('[ChatPanel] persist openDmTabs failed ' + errLikeToLogString(e));
+      console.warn('mcL0388 [ChatPanel] persist openDmTabs failed ' + errLikeToLogString(e));
     }
   }, [openDmTabs, protocol]);
 
@@ -1646,7 +1646,7 @@ function ChatPanel({
         localStorage.setItem(draftsStorageKey(protocol), JSON.stringify(next));
       }
     } catch (e) {
-      console.warn('[ChatPanel] remap drafts failed ' + errLikeToLogString(e));
+      console.warn('mcL0389 [ChatPanel] remap drafts failed ' + errLikeToLogString(e));
     }
   }, [
     protocol,
@@ -1672,7 +1672,7 @@ function ChatPanel({
     try {
       localStorage.setItem(dismissedDmTabsStorageKey(protocol), JSON.stringify(dismissedDmTabs));
     } catch (e) {
-      console.warn('[ChatPanel] persist dismissedDmTabs failed ' + errLikeToLogString(e));
+      console.warn('mcL0390 [ChatPanel] persist dismissedDmTabs failed ' + errLikeToLogString(e));
     }
   }, [dismissedDmTabs, protocol]);
 
@@ -1703,7 +1703,7 @@ function ChatPanel({
       savePersistedLastRead(protocol, persistedLastRead);
       notifyPersistedLastReadChanged(protocol);
     } catch (e) {
-      console.warn('[ChatPanel] persist lastRead failed ' + errLikeToLogString(e));
+      console.warn('mcL0391 [ChatPanel] persist lastRead failed ' + errLikeToLogString(e));
     }
   }, [persistedLastRead, protocol]);
 
@@ -2374,7 +2374,7 @@ function ChatPanel({
         if (capabilities.composerMaxChunks === 1) recordMeshcoreSend();
       }
     } catch (err) {
-      console.warn('[ChatPanel] Signal report failed: ' + errLikeToLogString(err));
+      console.warn('mcL0392 [ChatPanel] Signal report failed: ' + errLikeToLogString(err));
       if (isActiveRef.current) {
         setChatActionError({ message: translateChatSendError(t, err), viewKey });
       }
@@ -2984,7 +2984,7 @@ function ChatPanel({
       console.debug('[ChatPanel] handleReact', glyph, packetId, sendChannel);
       await onReact(glyph, packetId, sendChannel);
     } catch (err) {
-      console.error('[ChatPanel] React failed: ' + errLikeToLogString(err));
+      console.error('mcL0393 [ChatPanel] React failed: ' + errLikeToLogString(err));
       // Do not restore a banner if Chat was left while the reaction was in flight.
       if (!isActiveRef.current) return;
       setChatActionError({
@@ -3023,11 +3023,10 @@ function ChatPanel({
       openDmTo(nodeId);
     } catch (e) {
       if (e instanceof ReticulumChatMissingLxmfError) {
-        // catch-no-log-ok expected missing-lxmf; surface via field error
         setDmAddressError(t('chatPanel.reticulumChatNeedsLxmfDelivery'));
         return;
       }
-      console.warn('[ChatPanel] open DM by address failed ' + errLikeToLogString(e));
+      console.warn('mcL0394 [ChatPanel] open DM by address failed ' + errLikeToLogString(e));
       setDmAddressError(t('chatPanel.dmAddressInvalid'));
     }
   }, [dmAddressInput, openDmTo, t]);
@@ -3958,7 +3957,7 @@ function ChatPanel({
                       setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
                     }
                   } catch (e: unknown) {
-                    console.warn('[ChatPanel] export failed ' + errLikeToLogString(e));
+                    console.warn('mcL0395 [ChatPanel] export failed ' + errLikeToLogString(e));
                     setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
                   }
                 })();
@@ -5322,7 +5321,10 @@ function ChatPanel({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 void writeClipboardText(msg.payload).catch((err: unknown) => {
-                                  console.warn('Failed to copy message:', errLikeToLogString(err));
+                                  console.warn(
+                                    'mcL0396 Failed to copy message:',
+                                    errLikeToLogString(err),
+                                  );
                                 });
                               }}
                               {...{ [PARENT_HOVER_ATTR]: '' }}

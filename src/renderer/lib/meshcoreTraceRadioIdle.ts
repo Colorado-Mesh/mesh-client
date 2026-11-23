@@ -47,7 +47,7 @@ export async function awaitMeshcoreRepeaterAdminRfIdle(
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.toLowerCase().includes('timeout waiting for trace')) {
       console.warn(
-        `[meshcoreTraceRadioIdle] admin RF idle timed out after ${maxWaitMs}ms; proceeding with send`,
+        `mcL0941 [meshcoreTraceRadioIdle] admin RF idle timed out after ${maxWaitMs}ms; proceeding with send`,
       );
       return;
     }
@@ -70,7 +70,7 @@ export async function awaitMeshcoreRepeaterPingSettleForNode(
     if (Date.now() - start > maxWaitMs) {
       const waitedMs = Date.now() - start;
       console.warn(
-        `[meshcoreTraceRadioIdle] ping settle soft timeout node=${normalizedId} waitedMs=${waitedMs}; proceeding`,
+        `mcL0942 [meshcoreTraceRadioIdle] ping settle soft timeout node=${normalizedId} waitedMs=${waitedMs}; proceeding`,
       );
       return { waitedMs, proceededBusy: true };
     }
