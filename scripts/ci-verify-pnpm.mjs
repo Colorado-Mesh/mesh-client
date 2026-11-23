@@ -4,22 +4,185 @@
  *
  * Failure point: broken Windows PowerShell shims can exit 0 with empty stdout,
  * so packaging jobs appear green while never installing or building.
+ *
+ * Windows spawn note: Node 20.12+/22 reject `.cmd`/`.bat` with `shell: false`
+ * (`spawnSync pnpm.cmd EINVAL`, CVE-2024-27980). Always prefer `pnpm.exe`.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** pnpm spawn target that works with shell:false on Windows (.cmd shim). */
+/**
+ * pnpm spawn target that works with shell:false.
+ * On Windows this is the native exe — never `pnpm.cmd` (Node EINVAL).
+ */
 export function pnpmExecutable() {
-  return process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+  return process.platform === 'win32' ? 'pnpm.exe' : 'pnpm';
 }
 
-/** corepack spawn target that works with shell:false on Windows (.cmd shim). */
+/**
+ * corepack spawn target that works with shell:false.
+ * On Windows prefer the native exe when present; `.cmd` needs shell:true.
+ */
 export function corepackExecutable() {
-  return process.platform === 'win32' ? 'corepack.cmd' : 'corepack';
+  return process.platform === 'win32' ? 'corepack.exe' : 'corepack';
+}
+
+/**
+ * Resolve a native pnpm.exe target from an action-setup / self-update .cmd shim.
+ *
+ * @param {string} cmdPath
+ * @param {{
+ *   existsSync?: (p: string) => boolean
+ *   readFileSync?: (p: string, enc: BufferEncoding) => string
+ * }} [opts]
+ * @returns {string | null}
+ */
+export function resolvePnpmExeFromCmdShim(cmdPath, opts = {}) {
+  const existsSync = opts.existsSync ?? fs.existsSync;
+  const readFileSync = opts.readFileSync ?? fs.readFileSync;
+  if (!existsSync(cmdPath)) return null;
+  let text;
+  try {
+    text = readFileSync(cmdPath, 'utf8');
+  } catch (err) {
+    // catch-no-log-ok shim unreadable
+    void err;
+    return null;
+  }
+  // Typical self-update shim:
+  //   @"%~dp0\..\global\v11\<hash>\node_modules\@pnpm\exe\pnpm" %*
+  // or a quoted absolute path to pnpm.exe.
+  const patterns = [
+    /@?"(%~dp0[^"\r\n]*?pnpm(?:\.exe)?)"/i,
+    /@?"([A-Za-z]:\\[^"\r\n]*?pnpm\.exe)"/i,
+    /@([A-Za-z]:\\[^\r\n]*?pnpm\.exe)/i,
+  ];
+  for (const pattern of patterns) {
+    const m = text.match(pattern);
+    if (!m?.[1]) continue;
+    let target = m[1].replace(/%~dp0/gi, path.join(path.dirname(cmdPath), path.sep));
+    // Cmd shims always use Windows separators; normalize for the host platform (unit tests on darwin/linux).
+    target = path.normalize(target.replace(/\\/g, path.sep));
+    const withExe = target.toLowerCase().endsWith('.exe') ? target : `${target}.exe`;
+    if (existsSync(withExe)) return withExe;
+    if (existsSync(target)) return target;
+  }
+  return null;
+}
+
+/**
+ * Absolute pnpm.exe candidates under PNPM_HOME (and common self-update layouts).
+ *
+ * @param {string} pnpmHome
+ * @param {{
+ *   existsSync?: (p: string) => boolean
+ *   readdirSync?: (p: string, opts: { withFileTypes: true }) => import('node:fs').Dirent[]
+ * }} [opts]
+ * @returns {string[]}
+ */
+export function windowsPnpmExeCandidatesUnderHome(pnpmHome, opts = {}) {
+  const existsSync = opts.existsSync ?? fs.existsSync;
+  const readdirSync = opts.readdirSync ?? fs.readdirSync;
+  /** @type {string[]} */
+  const found = [];
+  const seen = new Set();
+  /** @param {string} p */
+  const push = (p) => {
+    if (seen.has(p) || !existsSync(p)) return;
+    seen.add(p);
+    found.push(p);
+  };
+
+  // Prefer PNPM_HOME / self-update layouts first. Bootstrap sibling is often stale
+  // after action-setup self-update — keep it last (same order as prefer-windows).
+  push(path.join(pnpmHome, 'pnpm.exe'));
+  push(path.join(pnpmHome, 'bin', 'pnpm.exe'));
+
+  for (const cmdName of ['pnpm.cmd', 'pnpm.CMD']) {
+    for (const dir of [pnpmHome, path.join(pnpmHome, 'bin')]) {
+      const fromCmd = resolvePnpmExeFromCmdShim(path.join(dir, cmdName), {
+        existsSync,
+      });
+      if (fromCmd) push(fromCmd);
+    }
+  }
+
+  const globalV11 = path.join(pnpmHome, 'global', 'v11');
+  if (existsSync(globalV11)) {
+    let entries;
+    try {
+      entries = readdirSync(globalV11, { withFileTypes: true });
+    } catch (err) {
+      // catch-no-log-ok directory vanished between existsSync and readdir (CI race)
+      void err;
+      entries = [];
+    }
+    for (const ent of entries) {
+      if (!ent.isDirectory()) continue;
+      const nm = path.join(globalV11, ent.name, 'node_modules');
+      push(path.join(nm, 'pnpm', 'pnpm.exe'));
+      push(path.join(nm, '@pnpm', 'exe', 'pnpm.exe'));
+      push(path.join(nm, '@pnpm', 'exe.win32-x64', 'pnpm.exe'));
+      push(path.join(nm, '@pnpm', 'win32-x64', 'pnpm.exe'));
+    }
+  }
+
+  // Bootstrap-only fallback when no self-update exe exists.
+  push(path.resolve(pnpmHome, '..', 'pnpm', 'pnpm.exe'));
+
+  return found;
+}
+
+/**
+ * Probe `pnpm --version` for a native exe (shell:false). Outside the repo so a
+ * stale bootstrap does not attempt packageManager install into the store.
+ *
+ * @param {string} exe
+ * @param {typeof spawnSync} [spawnSyncFn]
+ * @returns {string | null}
+ */
+export function probeWindowsPnpmExeVersion(exe, spawnSyncFn = spawnSync) {
+  const result = spawnSyncFn(exe, ['--version'], {
+    encoding: 'utf8',
+    shell: false,
+    // Outside the repo so a stale bootstrap does not attempt packageManager install.
+    cwd: os.tmpdir(),
+  });
+  if (result.error || result.status !== 0) return null;
+  return parsePnpmVersionOutput(String(result.stdout ?? ''));
+}
+
+/**
+ * Prefer a version-valid self-update exe over a stale bootstrap sibling:
+ * exact packageManager pin → same major → first other working probe.
+ * Bootstrap stays last in the candidate list for bootstrap-only fallback.
+ *
+ * @param {string[]} exes
+ * @param {string | null} pinned
+ * @param {typeof spawnSync} [spawnSyncFn]
+ * @returns {string | null}
+ */
+export function selectWindowsPnpmSpawnCommand(exes, pinned, spawnSyncFn = spawnSync) {
+  /** @type {string | null} */
+  let sameMajor = null;
+  /** @type {string | null} */
+  let fallback = null;
+  const pinnedMajor = pinned ? pinned.split('.', 1)[0] : null;
+  for (const exe of exes) {
+    const version = probeWindowsPnpmExeVersion(exe, spawnSyncFn);
+    if (!version) continue;
+    if (pinned && version === pinned) return exe;
+    if (pinnedMajor && version.split('.', 1)[0] === pinnedMajor && !sameMajor) {
+      sameMajor = exe;
+    }
+    if (!fallback) fallback = exe;
+  }
+  return sameMajor ?? fallback;
 }
 
 /**
@@ -50,9 +213,51 @@ export function readPinnedPnpmVersion(packageJsonPath = path.join(ROOT, 'package
 }
 
 /**
+ * Pick a Windows pnpm spawn command that works with shell:false.
+ * When PNPM_HOME is set, probe candidates and prefer the packageManager pin
+ * (same selection policy as ci-prefer-windows-pnpm-exe).
+ *
+ * @param {{
+ *   platform?: NodeJS.Platform
+ *   pnpmHome?: string
+ *   pinned?: string | null
+ *   packageJsonPath?: string
+ *   existsSync?: (p: string) => boolean
+ *   readdirSync?: (p: string, opts: { withFileTypes: true }) => import('node:fs').Dirent[]
+ *   spawnSyncFn?: typeof spawnSync
+ * }} [opts]
+ * @returns {string}
+ */
+export function resolvePnpmSpawnCommand(opts = {}) {
+  const platform = opts.platform ?? process.platform;
+  if (platform !== 'win32') return 'pnpm';
+
+  const pnpmHome = opts.pnpmHome ?? process.env.PNPM_HOME;
+  if (pnpmHome && String(pnpmHome).trim()) {
+    const underHome = windowsPnpmExeCandidatesUnderHome(pnpmHome, {
+      existsSync: opts.existsSync,
+      readdirSync: opts.readdirSync,
+    });
+    const pinned =
+      opts.pinned !== undefined ? opts.pinned : readPinnedPnpmVersion(opts.packageJsonPath);
+    const selected = selectWindowsPnpmSpawnCommand(
+      underHome,
+      pinned,
+      opts.spawnSyncFn ?? spawnSync,
+    );
+    if (selected) return selected;
+  }
+  return 'pnpm.exe';
+}
+
+/**
  * @param {{
  *   spawnSyncFn?: typeof spawnSync
  *   packageJsonPath?: string
+ *   platform?: NodeJS.Platform
+ *   pnpmHome?: string
+ *   existsSync?: (p: string) => boolean
+ *   readdirSync?: (p: string, opts: { withFileTypes: true }) => import('node:fs').Dirent[]
  *   log?: (msg: string) => void
  * }} [opts]
  * @returns {string} resolved pnpm version
@@ -61,7 +266,16 @@ export function verifyPnpmVersion(opts = {}) {
   const spawnSyncFn = opts.spawnSyncFn ?? spawnSync;
   const log = opts.log ?? ((msg) => console.debug(msg));
   const pinned = readPinnedPnpmVersion(opts.packageJsonPath);
-  const result = spawnSyncFn(pnpmExecutable(), ['--version'], {
+  const command = resolvePnpmSpawnCommand({
+    platform: opts.platform,
+    pnpmHome: opts.pnpmHome,
+    pinned,
+    packageJsonPath: opts.packageJsonPath,
+    existsSync: opts.existsSync,
+    readdirSync: opts.readdirSync,
+    spawnSyncFn,
+  });
+  const result = spawnSyncFn(command, ['--version'], {
     encoding: 'utf8',
     shell: false,
   });

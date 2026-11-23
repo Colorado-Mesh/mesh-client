@@ -25,7 +25,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parsePnpmVersionOutput, readPinnedPnpmVersion } from './ci-verify-pnpm.mjs';
+import {
+  parsePnpmVersionOutput,
+  readPinnedPnpmVersion,
+  resolvePnpmExeFromCmdShim,
+} from './ci-verify-pnpm.mjs';
+
+export { resolvePnpmExeFromCmdShim };
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -40,49 +46,6 @@ export function windowsPnpmExeCandidates(pnpmHome) {
     // Bootstrap sibling is often stale after action-setup self-update — keep last.
     path.resolve(pnpmHome, '..', 'pnpm', 'pnpm.exe'),
   ];
-}
-
-/**
- * Resolve a native pnpm.exe target from an action-setup / self-update .cmd shim.
- *
- * @param {string} cmdPath
- * @param {{
- *   existsSync?: (p: string) => boolean
- *   readFileSync?: (p: string, enc: BufferEncoding) => string
- * }} [opts]
- * @returns {string | null}
- */
-export function resolvePnpmExeFromCmdShim(cmdPath, opts = {}) {
-  const existsSync = opts.existsSync ?? fs.existsSync;
-  const readFileSync = opts.readFileSync ?? fs.readFileSync;
-  if (!existsSync(cmdPath)) return null;
-  let text;
-  try {
-    text = readFileSync(cmdPath, 'utf8');
-  } catch (err) {
-    // catch-no-log-ok shim unreadable
-    void err;
-    return null;
-  }
-  // Typical self-update shim:
-  //   @"%~dp0\..\global\v11\<hash>\node_modules\@pnpm\exe\pnpm" %*
-  // or a quoted absolute path to pnpm.exe.
-  const patterns = [
-    /@?"(%~dp0[^"\r\n]*?pnpm(?:\.exe)?)"/i,
-    /@?"([A-Za-z]:\\[^"\r\n]*?pnpm\.exe)"/i,
-    /@([A-Za-z]:\\[^\r\n]*?pnpm\.exe)/i,
-  ];
-  for (const pattern of patterns) {
-    const m = text.match(pattern);
-    if (!m?.[1]) continue;
-    let target = m[1].replace(/%~dp0/gi, path.join(path.dirname(cmdPath), path.sep));
-    // Cmd shims always use Windows separators; normalize for the host platform (unit tests on darwin/linux).
-    target = path.normalize(target.replace(/\\/g, path.sep));
-    const withExe = target.toLowerCase().endsWith('.exe') ? target : `${target}.exe`;
-    if (existsSync(withExe)) return withExe;
-    if (existsSync(target)) return target;
-  }
-  return null;
 }
 
 /**
