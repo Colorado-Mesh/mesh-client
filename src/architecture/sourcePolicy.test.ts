@@ -153,6 +153,7 @@ describe('SOURCE_POLICY_RULES (repo)', () => {
         'axe-tests-hydrate-theme-colors',
         'meshcore-cli-received-single-writer',
         'e2e-no-bare-app-close',
+        'main-executeJavaScript-browser-safe',
       ]),
     );
   });
@@ -213,6 +214,50 @@ describe('SOURCE_POLICY_RULES (repo)', () => {
         expect(isFlagged(source)).toBe(true);
       },
     );
+  });
+
+  describe('main-executeJavaScript-browser-safe', () => {
+    const rule = SOURCE_POLICY_RULES.find((r) => r.id === 'main-executeJavaScript-browser-safe');
+    const isFlagged = (source: string) => {
+      if (!rule?.forbid || !rule.when) {
+        throw new Error('main-executeJavaScript-browser-safe rule missing');
+      }
+      return rule.when.test(source) && rule.forbid.test(source);
+    };
+
+    it('accepts browser-safe catch inside the template and main-side sanitize after', () => {
+      expect(
+        isFlagged(`
+await contents.executeJavaScript(\`(() => {
+  try { localStorage.clear(); } catch (e) {
+    // no sanitizeLogMessage / TS types
+    console.debug(e instanceof Error ? e.message : String(e));
+  }
+})()\`);
+try {
+  await work();
+} catch (e: unknown) {
+  console.debug(sanitizeLogMessage(String(e)));
+}
+`),
+      ).toBe(false);
+    });
+
+    it('rejects sanitizeLogMessage() inside the template', () => {
+      expect(
+        isFlagged(
+          'await contents.executeJavaScript(`try {} catch (e) { sanitizeLogMessage(String(e)); }`)',
+        ),
+      ).toBe(true);
+    });
+
+    it('rejects TypeScript catch (e: unknown) inside the template', () => {
+      expect(
+        isFlagged(
+          'await contents.executeJavaScript(`try {} catch (e: unknown) { console.debug(e); }`)',
+        ),
+      ).toBe(true);
+    });
   });
 
   /** Repo-wide gate: every `SOURCE_POLICY_RULES` include under src/ stays clean. */

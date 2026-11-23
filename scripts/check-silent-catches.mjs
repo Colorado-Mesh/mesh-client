@@ -13,6 +13,8 @@
  * Prefer `logCaughtDebug` / `logCaughtWarn` / `reportCaughtSeriousError` from
  * caughtErrorPolicy (main or renderer) over suppressions. Semgrep does not own
  * catch hygiene — do not add empty-catch rules to .semgrep.yml.
+ * Raw `console.debug(..., e)` in main will fail `check:log-injection`; use
+ * `logCaughtDebug`.
  *
  * Note: catch blocks that only rethrow (throw e / throw new Error(...)) are
  * also allowed without logging — the caller is responsible for logging there.
