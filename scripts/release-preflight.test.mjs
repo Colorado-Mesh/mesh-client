@@ -101,7 +101,7 @@ describe('Release preflight (e2e.yaml job)', () => {
 
   it('installs yamllint from an exact wheel-only hash lock', () => {
     const lock = readFileSync('scripts/requirements-yamllint.txt', 'utf8');
-    for (const requirement of ['yamllint==1.37.1', 'pathspec==0.12.1', 'PyYAML==6.0.3']) {
+    for (const requirement of ['yamllint==1.37.1', 'pathspec==0.12.1', 'PyYAML==6.0.4']) {
       expect(lock).toContain(requirement);
     }
     expect(toolchain).toContain('--require-hashes --only-binary=:all:');
