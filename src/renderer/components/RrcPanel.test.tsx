@@ -1005,22 +1005,27 @@ describe('RrcPanel', () => {
       store.roomJoined('general', undefined, hubA);
       store.setFocusedHub(hubA);
       store.setActiveRoom('general', hubA);
-      vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockReset();
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({ ok: true });
 
       render(<RrcPanel isActive />);
+      // Pending is set synchronously before send; assert it in the same waitFor so a
+      // follow-up expect cannot race a clear under CI load after the send is visible.
       await waitFor(() => {
         expect(whoSendCalls()).toHaveLength(1);
         expect(whoSendCalls()[0]?.[0]).toMatchObject({
           hub_dest_hash: hubA,
           body: '/who general',
         });
+        expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
       });
-      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
 
       // Focus another active hub before the watchdog fires — must not skip hub A.
-      store.applyStatus('active', hubB, 'Hub B');
-      store.roomJoined('lobby', undefined, hubB);
-      store.setFocusedHub(hubB);
+      act(() => {
+        store.applyStatus('active', hubB, 'Hub B');
+        store.roomJoined('lobby', undefined, hubB);
+        store.setFocusedHub(hubB);
+      });
       expect(useRrcSessionStore.getState().hubDestHash).toBe(hubB);
 
       await act(async () => {

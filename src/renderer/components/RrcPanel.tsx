@@ -490,6 +490,10 @@ export default function RrcPanel({
             next.clearWhoReplyPending(room, hubDestHash);
             if (force) next.releaseWhoTranscriptForce(room, hubDestHash);
           } else {
+            // Re-arm pending in case a concurrent session transition cleared it
+            // between the sync mark and this successful send (watchdog needs it).
+            const next = useRrcSessionStore.getState();
+            next.markWhoReplyPending(room, hubDestHash);
             scheduleWhoReplyWatchdog(room);
           }
         } catch (e: unknown) {
