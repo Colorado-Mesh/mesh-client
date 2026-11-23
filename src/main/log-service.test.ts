@@ -436,6 +436,10 @@ describe('patchMainConsole format strings', () => {
       console.debug('[caughtErrorPolicy] soft catch: %s %s', 'tag', 'boom', 'extra');
       console.warn('[test] 100%% full %s');
       console.warn('[test] %s left %s', 'one');
+      // util.format prints NaN for a Symbol under %d; Number(symbol) would throw.
+      expect(() => {
+        console.warn('[test] peer %d', Symbol('peer'));
+      }).not.toThrow();
 
       const messages = getRecentLines().map((l) => l.message);
       expect(messages).toContainEqual(
@@ -450,6 +454,7 @@ describe('patchMainConsole format strings', () => {
       expect(messages).toContainEqual(expect.stringContaining('[test] 100%% full %s'));
       // Placeholders with no argument left stay literal; supplied ones are filled.
       expect(messages).toContainEqual(expect.stringContaining('[test] one left %s'));
+      expect(messages).toContainEqual(expect.stringContaining('[test] peer NaN'));
       expect(messages.some((m) => m.includes('%s rate-limited'))).toBe(false);
     } finally {
       console.log = saved.log;

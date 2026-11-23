@@ -391,7 +391,10 @@ const CONSOLE_FORMAT_TOKEN_RE = /%[sdifjoOc%]/g;
 function formatConsoleToken(token: string, value: unknown): string {
   switch (token) {
     case '%d':
-      return typeof value === 'bigint' ? `${value}n` : String(Number(value));
+      if (typeof value === 'bigint') return `${value}n`;
+      // Number(symbol) throws; util.format prints NaN.
+      if (typeof value === 'symbol') return 'NaN';
+      return String(Number(value));
     case '%i':
       return typeof value === 'bigint' ? `${value}n` : String(parseInt(String(value), 10));
     case '%f':
