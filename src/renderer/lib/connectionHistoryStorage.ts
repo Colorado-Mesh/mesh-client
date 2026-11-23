@@ -5,12 +5,18 @@ import { MESHCOM_EXTUDP_PORT, MESHCOM_KISS_TCP_PORT } from '@/shared/meshcomCons
 
 import {
   clearLastConnection,
+  isMeshcomMeshtasticOnlyTcpLastConnection,
   type LastConnection,
   loadLastConnection,
   saveLastConnection,
 } from './lastConnectionStorage';
 import { parseStoredJson } from './parseStoredJson';
 import type { ConnectionType, MeshProtocol } from './types';
+
+export interface UpsertConnectionHistoryOptions {
+  /** Update this saved row in place (e.g. BLE MAC-only → discovered UUID). */
+  replaceEntryId?: string;
+}
 
 /** LoRa protocols that show Device → Connection radio history (not Reticulum Interfaces). */
 export type ConnectionHistoryProtocol = 'meshtastic' | 'meshcore' | 'meshcom';
@@ -81,6 +87,42 @@ export function connectionHistoryIdentityKey(
   const normalizedHost = host.trim().toLowerCase();
   if (!normalizedHost) return null;
   return `${conn.type}:${normalizedHost}:${port}`;
+}
+
+/** Identity keys that should collapse into one history row (MeshCom KISS tcp↔http). */
+function connectionHistoryAliasKeys(conn: LastConnection, protocol: MeshProtocol): Set<string> {
+  const keys = new Set<string>();
+  const primary = connectionHistoryIdentityKey(conn, protocol);
+  if (primary) keys.add(primary);
+  if (
+    protocol === 'meshcom' &&
+    (conn.type === 'http' || conn.type === 'tcp') &&
+    !isMeshcomMeshtasticOnlyTcpLastConnection(conn)
+  ) {
+    const addr = (conn.httpAddress ?? '').trim();
+    if (addr) {
+      const { host, port } = parseConnectHostPort(addr, MESHCOM_KISS_TCP_PORT);
+      const normalizedHost = host.trim().toLowerCase();
+      if (normalizedHost) {
+        keys.add(`http:${normalizedHost}:${port}`);
+        keys.add(`tcp:${normalizedHost}:${port}`);
+      }
+    }
+  }
+  return keys;
+}
+
+function bleHistoryEntriesConflict(a: LastConnection, b: LastConnection): boolean {
+  if (a.type !== 'ble' || b.type !== 'ble') return false;
+  const aId = (a.bleDeviceId ?? '').trim().toLowerCase();
+  const bId = (b.bleDeviceId ?? '').trim().toLowerCase();
+  const aMac = (a.bleMac ?? '').trim().toLowerCase();
+  const bMac = (b.bleMac ?? '').trim().toLowerCase();
+  if (aId && bId && aId === bId) return true;
+  if (aMac && bMac && aMac === bMac) return true;
+  if (aId && bMac && aId === bMac) return true;
+  if (bId && aMac && bId === aMac) return true;
+  return false;
 }
 
 function isConnectionType(v: unknown): v is ConnectionType {
@@ -170,47 +212,75 @@ function seedFromLastConnection(protocol: ConnectionHistoryProtocol): SavedConne
 }
 
 /**
- * Load history for a LoRa protocol. Seeds from lastConnection only when the history
- * key has never been written (not when the user cleared the list to []).
+ * Load history for a LoRa protocol. Seeds from lastConnection when the history key
+ * has never been written, or when the stored list is empty but an MRU still exists
+ * (upgrade / filtered-invalid rows). Deleting the last saved device clears the MRU,
+ * so a deliberate empty list stays empty.
  * On storage read failure, returns [] without seeding or overwriting.
  */
 export function loadConnectionHistory(protocol: MeshProtocol): SavedConnection[] {
   if (!isConnectionHistoryProtocol(protocol)) return [];
   const existing = readRawHistory(protocol);
   if (existing.status === 'error') return [];
-  if (existing.status === 'ok') return existing.entries;
-  return seedFromLastConnection(protocol);
+  if (existing.status === 'missing') return seedFromLastConnection(protocol);
+  if (existing.entries.length > 0) return existing.entries;
+  const last = loadLastConnection(protocol);
+  if (last && isValidLastConnectionForHistory(last)) {
+    return seedFromLastConnection(protocol);
+  }
+  return [];
 }
 
 /**
  * Upsert by transport identity, move to front, trim to max, and sync lastConnection MRU.
- * No-ops when the record has no stable identity or history cannot be read.
+ * @returns the next list, or `null` when history cannot be read / MRU sync fails
+ *   (caller should keep the prior visible list).
  */
 export function upsertConnectionHistory(
   protocol: MeshProtocol,
   connection: LastConnection,
   nowMs: number = Date.now(),
   id: string = crypto.randomUUID(),
-): SavedConnection[] {
+  options?: UpsertConnectionHistoryOptions,
+): SavedConnection[] | null {
   if (!isConnectionHistoryProtocol(protocol)) return [];
   const identity = connectionHistoryIdentityKey(connection, protocol);
   if (!identity) return loadConnectionHistory(protocol);
 
   const read = readRawHistory(protocol);
-  if (read.status === 'error') return [];
+  if (read.status === 'error') return null;
   const prev = read.status === 'missing' ? seedFromLastConnection(protocol) : read.entries;
 
   const fields = pickLastConnectionFields(connection);
-  const existing = prev.find((entry) => connectionHistoryIdentityKey(entry, protocol) === identity);
+  const replaceEntryId = options?.replaceEntryId;
+  const aliasKeys = connectionHistoryAliasKeys(connection, protocol);
+  const existing =
+    (replaceEntryId ? prev.find((entry) => entry.id === replaceEntryId) : undefined) ??
+    prev.find((entry) => connectionHistoryIdentityKey(entry, protocol) === identity) ??
+    prev.find((entry) => {
+      const entryKey = connectionHistoryIdentityKey(entry, protocol);
+      return entryKey != null && aliasKeys.has(entryKey);
+    });
   const nextEntry: SavedConnection = {
     ...fields,
     id: existing?.id ?? id,
     lastUsedAt: nowMs,
   };
-  const rest = prev.filter((entry) => connectionHistoryIdentityKey(entry, protocol) !== identity);
+  const rest = prev.filter((entry) => {
+    if (replaceEntryId && entry.id === replaceEntryId) return false;
+    if (entry.id === nextEntry.id) return false;
+    const entryKey = connectionHistoryIdentityKey(entry, protocol);
+    if (entryKey && aliasKeys.has(entryKey)) return false;
+    if (bleHistoryEntriesConflict(entry, connection)) return false;
+    return true;
+  });
   const next = [nextEntry, ...rest].slice(0, CONNECTION_HISTORY_MAX);
   if (!persistHistory(protocol, next)) return prev;
-  saveLastConnection(protocol, fields);
+  if (!saveLastConnection(protocol, fields)) {
+    // Roll back history so callers do not treat a partial write as success.
+    persistHistory(protocol, prev);
+    return null;
+  }
   return next;
 }
 
@@ -239,9 +309,13 @@ export function deleteConnectionHistory(
   if (removedKey && mruKey && removedKey === mruKey) {
     const promoted = next.at(0);
     if (!promoted) {
-      clearLastConnection(protocol);
-    } else {
-      saveLastConnection(protocol, pickLastConnectionFields(promoted));
+      if (!clearLastConnection(protocol)) {
+        persistHistory(protocol, prev);
+        return null;
+      }
+    } else if (!saveLastConnection(protocol, pickLastConnectionFields(promoted))) {
+      persistHistory(protocol, prev);
+      return null;
     }
   }
   return next;

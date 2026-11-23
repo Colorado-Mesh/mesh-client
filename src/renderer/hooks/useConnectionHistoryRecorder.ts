@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import {
   isConnectionHistoryProtocol,
+  isValidLastConnectionForHistory,
   upsertConnectionHistory,
 } from '../lib/connectionHistoryStorage';
 import {
@@ -19,7 +20,8 @@ function buildHistoryConnection(
   protocol: MeshProtocol,
   connectionType: ConnectionType,
 ): LastConnection | null {
-  const last = loadLastConnection(protocol);
+  const rawLast = loadLastConnection(protocol);
+  const last = rawLast && isValidLastConnectionForHistory(rawLast) ? rawLast : null;
   if (last?.type === connectionType) {
     return last;
   }
@@ -39,14 +41,15 @@ function buildHistoryConnection(
     if (!serialPortId) return null;
     return { type: 'serial', serialPortId };
   }
-  const httpAddress = resolveLastHttpAddress(protocol) ?? last?.httpAddress;
-  if (!httpAddress) return null;
+  // Prefer dedicated resolver; never read httpAddress from an invalid lastConnection.
+  const httpAddress = resolveLastHttpAddress(protocol);
+  if (!httpAddress || typeof httpAddress !== 'string') return null;
   return { type: connectionType, httpAddress };
 }
 
 /**
  * Protocol-independent history writer: whenever any LoRa identity reaches `configured`,
- * upsert the remembered endpoint even if ConnectionPanel is showing a different protocol.
+ * upsert the remembered endpoint even if ConnectionPanel shows a different protocol.
  */
 export function useConnectionHistoryRecorder(): void {
   const prevStatusByIdRef = useRef<Record<IdentityId, ConnectionStatus>>({});
@@ -55,8 +58,10 @@ export function useConnectionHistoryRecorder(): void {
     const sync = () => {
       const identities = useIdentityStore.getState().identities;
       const connections = useConnectionStore.getState().connections;
+      const seen = new Set<IdentityId>();
       for (const [rawId, rec] of Object.entries(connections)) {
         const identityId = rawId;
+        seen.add(identityId);
         const protocolType = identities[identityId]?.protocol.type;
         if (
           protocolType !== 'meshtastic' &&
@@ -74,6 +79,11 @@ export function useConnectionHistoryRecorder(): void {
         if (!conn) continue;
         upsertConnectionHistory(protocolType, conn);
       }
+      const retained: Record<IdentityId, ConnectionStatus> = {};
+      for (const [id, status] of Object.entries(prevStatusByIdRef.current)) {
+        if (seen.has(id)) retained[id] = status;
+      }
+      prevStatusByIdRef.current = retained;
     };
     sync();
     return useConnectionStore.subscribe(sync);

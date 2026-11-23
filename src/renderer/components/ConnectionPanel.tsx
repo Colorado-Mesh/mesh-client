@@ -98,6 +98,7 @@ import type { FirmwareCheckResult } from '../lib/firmwareCheck';
 import {
   BLE_SELECTION_CLEARED_EVENT,
   type BleSelectionClearedDetail,
+  clearLastConnection,
   resolveMeshcomKissReconnectAddress,
 } from '../lib/lastConnectionStorage';
 import {
@@ -1144,6 +1145,8 @@ export default function ConnectionPanel({
    */
   const pendingPairBleDeviceRef = useRef<{ deviceId: string } | null>(null);
   const windowsReconnectAttemptRef = useRef<object | null>(null);
+  /** Saved-devices row id chosen for reconnect — configure updates that row instead of duplicating. */
+  const pendingHistoryRowIdRef = useRef<string | null>(null);
   const manualBleScanActiveRef = useRef(false);
   const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
   lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
@@ -1187,6 +1190,27 @@ export default function ConnectionPanel({
         }
       }
 
+      // MRU may still match the failed endpoint when no history row shared its identity key
+      // (e.g. MAC-only MRU vs UUID history). Promote/clear like deleteConnectionHistory.
+      const mru = loadLastConnection('meshcore');
+      const mruKey = mru ? connectionHistoryIdentityKey(mru, 'meshcore') : null;
+      if (mruKey === failedKey) {
+        const promoted = next.at(0);
+        if (!promoted) {
+          clearLastConnection('meshcore');
+        } else {
+          saveLastConnection('meshcore', {
+            type: promoted.type,
+            httpAddress: promoted.httpAddress,
+            bleDeviceId: promoted.bleDeviceId,
+            bleDeviceName: promoted.bleDeviceName,
+            bleMac: promoted.bleMac,
+            bleRssi: promoted.bleRssi,
+            serialPortId: promoted.serialPortId,
+          });
+        }
+      }
+
       // Panel may have switched protocols while this MeshCore attempt was in flight.
       if (displayedProtocolRef.current !== 'meshcore') return;
       setConnectionHistory(next);
@@ -1209,6 +1233,7 @@ export default function ConnectionPanel({
     setLastConnection(loaded);
     setConnectionHistory(loadConnectionHistory(protocol));
     setPendingBleReconnect(null);
+    pendingHistoryRowIdRef.current = null;
     if (protocol === 'meshcore') {
       if (loaded?.type === 'http' && loaded.httpAddress) {
         const { host, port } = parseTcpAddress(loaded.httpAddress);
@@ -1390,7 +1415,24 @@ export default function ConnectionPanel({
         saveLastConnection(protocol, conn);
         setLastConnection(conn);
         // Auto-save into multi-device history (all transports); MRU stays in lastConnection.
-        setConnectionHistory(upsertConnectionHistory(protocol, conn));
+        const replaceEntryId = pendingHistoryRowIdRef.current ?? undefined;
+        pendingHistoryRowIdRef.current = null;
+        const nextHistory = upsertConnectionHistory(
+          protocol,
+          conn,
+          Date.now(),
+          crypto.randomUUID(),
+          {
+            replaceEntryId,
+          },
+        );
+        if (nextHistory) {
+          setConnectionHistory(nextHistory);
+        } else {
+          console.warn(
+            'mcL1498 [ConnectionPanel] connection history upsert failed after configure',
+          );
+        }
       }
     } else if (state.status === 'disconnected') {
       const prevStatus = prevStoreStatusRef.current;
@@ -1432,12 +1474,24 @@ export default function ConnectionPanel({
     hostLinkMeter.rssi,
   ]);
 
+  // Recorder upserts localStorage without updating this panel's React state (e.g. mount
+  // while already configured). Refresh Saved devices whenever we are configured or idle.
+  useEffect(() => {
+    if (protocol !== 'meshtastic' && protocol !== 'meshcore' && protocol !== 'meshcom') return;
+    if (state.status !== 'configured' && state.status !== 'disconnected') return;
+    setConnectionHistory(loadConnectionHistory(protocol));
+    if (state.status === 'disconnected') {
+      setLastConnection(loadLastConnection(protocol));
+    }
+  }, [protocol, state.status, setLastConnection, setConnectionHistory]);
+
   // Persist live / scan BLE RSSI onto lastConnection so reconnect can seed the host meter.
   // Pending reconnect RSSI stays in UI state only — do not promote to MRU before configure.
   useEffect(() => {
     if (state.connectionType !== 'ble' && !(connecting && connectionType === 'ble')) return;
     if (pendingBleReconnect?.type === 'ble') {
-      const pendingId = resolveSavedBleConnectId(pendingBleReconnect);
+      const pendingTarget = pendingBleReconnect;
+      const pendingId = resolveSavedBleConnectId(pendingTarget);
       if (!pendingId) return;
       const scanned = bleDevices.find((d) => d.deviceId === pendingId)?.rssi;
       const next =
@@ -1446,8 +1500,11 @@ export default function ConnectionPanel({
           : hostLinkMeter.rssi != null && Number.isFinite(hostLinkMeter.rssi)
             ? hostLinkMeter.rssi
             : null;
-      if (next == null || pendingBleReconnect.bleRssi === next) return;
-      setPendingBleReconnect({ ...pendingBleReconnect, bleRssi: next });
+      if (next == null || pendingTarget.bleRssi === next) return;
+      setPendingBleReconnect((current) => {
+        if (current !== pendingTarget || current?.type !== 'ble') return current;
+        return { ...current, bleRssi: next };
+      });
       return;
     }
     const id = lastConnection?.bleDeviceId ?? loadLastBleDevice(protocol);
@@ -1670,6 +1727,7 @@ export default function ConnectionPanel({
         setConnectionStage('connectionPanel.stagePairingWindows');
         await pairWindowsBle(deviceId, pin);
         if (pendingPairBleDeviceRef.current !== pendingDevice) return;
+        saveLastBleDevice(protocol, deviceId);
         pendingPairBleDeviceRef.current = null;
         setShowPinPrompt(false);
         setPinInputValue('');
@@ -1688,7 +1746,7 @@ export default function ConnectionPanel({
         setConnecting(false);
       }
     },
-    [connectSelectedBleDevice, t],
+    [connectSelectedBleDevice, protocol, t],
   );
 
   // Handle PIN submission for pairing
@@ -2133,6 +2191,10 @@ export default function ConnectionPanel({
       setShowPinPrompt(false);
       setPinInputValue('');
       setManualPairingFallback(false);
+      pendingHistoryRowIdRef.current =
+        'id' in target && typeof (target as SavedConnection).id === 'string'
+          ? (target as SavedConnection).id
+          : null;
       // BLE reconnect stays pending until configure — do not overwrite persisted MRU early.
       if (target.type === 'ble') {
         setPendingBleReconnect(target);
@@ -2306,9 +2368,7 @@ export default function ConnectionPanel({
             }
             return;
           }
-          const normalized: LastConnection = { type: 'http', httpAddress: kissAddr };
-          saveLastConnection(protocol, normalized);
-          setLastConnection(normalized);
+          // Do not promote MRU until configure succeeds — only drive the connect attempt.
           setHttpAddress(kissAddr);
           setConnectionType('http');
           setConnecting(true);
@@ -2323,6 +2383,7 @@ export default function ConnectionPanel({
             if (httpErr) setError(httpErr);
             setConnecting(false);
             setConnectionStage('');
+            pendingHistoryRowIdRef.current = null;
           });
           return;
         }
@@ -2382,12 +2443,26 @@ export default function ConnectionPanel({
 
   const handleDeleteSavedConnection = useCallback(
     (id: string) => {
+      const removed = connectionHistory.find((entry) => entry.id === id);
       const next = deleteConnectionHistory(protocol, id);
       if (!next) return;
       setConnectionHistory(next);
       setLastConnection(loadLastConnection(protocol));
+      if (removed?.type === 'ble') {
+        const storedBleId = loadLastBleDevice(protocol);
+        if (storedBleId) {
+          const removedKey = connectionHistoryIdentityKey(removed, protocol);
+          const storedKey = connectionHistoryIdentityKey(
+            { type: 'ble', bleDeviceId: storedBleId },
+            protocol,
+          );
+          if (removedKey && storedKey && removedKey === storedKey) {
+            clearLastBleDevice(protocol);
+          }
+        }
+      }
     },
-    [protocol, setLastConnection, setConnectionHistory],
+    [protocol, connectionHistory, setLastConnection, setConnectionHistory],
   );
 
   /** Tear down radio and reset connect UI so Saved devices / transport picker reappear. */
@@ -3777,6 +3852,82 @@ export default function ConnectionPanel({
     );
   }
 
+  // Saved devices: show whenever we have history, including while connected (manage /
+  // switch endpoints). Hide only during an in-progress local connect on the
+  // disconnected view so Reconnect is not duplicated under the spinner.
+  const showSavedDevices =
+    connectionHistory.length > 0 && (isConnected || (!connecting && !isAutoConnecting));
+  const savedDevicesSection = showSavedDevices ? (
+    <div
+      data-setting-anchor="connection.savedDevices"
+      className="bg-deep-black border-ink-800 space-y-3 rounded-xl border px-4.5 py-4"
+    >
+      <p className="text-muted text-xs">{t('connectionPanel.savedDevicesLabel')}</p>
+      <ul className="space-y-2">
+        {connectionHistory.map((entry) => {
+          const primary =
+            savedConnectionPrimaryLabel(entry) ??
+            (entry.type === 'ble'
+              ? t('connectionPanel.bluetoothDevice')
+              : entry.type === 'serial'
+                ? t('connectionPanel.serialDevice')
+                : t('connectionPanel.wifiDevice'));
+          const bleIdentity = entry.type === 'ble' ? resolveLastBleIdentity(entry, protocol) : null;
+          const actionName = savedDeviceActionName(primary, bleIdentity);
+          const canReconnectBle = entry.type !== 'ble' || resolveSavedBleConnectId(entry) != null;
+          return (
+            <li
+              key={entry.id}
+              className="border-ink-800 bg-ink-900 rounded-control flex flex-wrap items-center gap-3 border px-3 py-2.5"
+            >
+              <span className="bg-sidebar-active-bg text-ink-300 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]">
+                <ConnectionIcon type={entry.type} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-ink-200 truncate text-sm font-semibold">{primary}</p>
+                {bleIdentity ? (
+                  <p className="text-muted font-mono text-xs">{bleIdentity.display}</p>
+                ) : (
+                  <p className="text-muted text-xs">
+                    {connectionPanelConnectionTypeLabel(t, entry.type, protocol)}
+                  </p>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {canReconnectBle ? (
+                  <Button
+                    data-setting-anchor="connection.savedDevices.connect"
+                    variant="primary"
+                    size="sm"
+                    aria-label={t('connectionPanel.savedDevicesConnectAria', {
+                      name: actionName,
+                    })}
+                    onClick={() => {
+                      reconnectFromSaved(entry);
+                    }}
+                  >
+                    {t('connectionPanel.reconnect')}
+                  </Button>
+                ) : null}
+                <Button
+                  data-setting-anchor="connection.savedDevices.delete"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('connectionPanel.savedDevicesDeleteAria', { name: actionName })}
+                  onClick={() => {
+                    handleDeleteSavedConnection(entry.id);
+                  }}
+                >
+                  {t('common.delete')}
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  ) : null;
+
   // ─── Connected View ────────────────────────────────────────────
   if (isConnected) {
     const mqttActive = mqttStatus === 'connected' || mqttStatus === 'connecting';
@@ -3796,6 +3947,7 @@ export default function ConnectionPanel({
         {statusTiles}
         {renderAutoReconnectBanner()}
         {protocol === 'meshcom' ? <MeshComConnectionHints /> : null}
+        {savedDevicesSection}
 
         {/* Radio and MQTT side by side on wide windows (Option B), stacked below xl. */}
         <div className="grid items-start gap-4 xl:grid-cols-2">
@@ -3914,9 +4066,6 @@ export default function ConnectionPanel({
   }
 
   // ─── Disconnected View ─────────────────────────────────────────
-  // This branch only renders when !isConnected; hide the list while a local connect
-  // attempt is active so Reconnect/Connect are not duplicated under the spinner.
-  const showSavedDevices = connectionHistory.length > 0 && !connecting && !isAutoConnecting;
   const connectionTypeOptions: SegmentedOption<ConnectionType>[] = (
     protocol === 'meshtastic'
       ? (['ble', 'serial', 'http', 'tcp'] as const)
@@ -3933,80 +4082,7 @@ export default function ConnectionPanel({
       {statusTiles}
       {renderAutoReconnectBanner()}
       {protocol === 'meshcom' ? <MeshComConnectionHints /> : null}
-
-      {/* Saved devices — multi-endpoint history with connect / delete */}
-      {showSavedDevices && (
-        <div
-          data-setting-anchor="connection.savedDevices"
-          className="bg-deep-black border-ink-800 space-y-3 rounded-xl border px-4.5 py-4"
-        >
-          <p className="text-muted text-xs">{t('connectionPanel.savedDevicesLabel')}</p>
-          <ul className="space-y-2">
-            {connectionHistory.map((entry) => {
-              const primary =
-                savedConnectionPrimaryLabel(entry) ??
-                (entry.type === 'ble'
-                  ? t('connectionPanel.bluetoothDevice')
-                  : entry.type === 'serial'
-                    ? t('connectionPanel.serialDevice')
-                    : t('connectionPanel.wifiDevice'));
-              const bleIdentity =
-                entry.type === 'ble' ? resolveLastBleIdentity(entry, protocol) : null;
-              const actionName = savedDeviceActionName(primary, bleIdentity);
-              const canReconnectBle =
-                entry.type !== 'ble' || resolveSavedBleConnectId(entry) != null;
-              return (
-                <li
-                  key={entry.id}
-                  className="border-ink-800 bg-ink-900 rounded-control flex flex-wrap items-center gap-3 border px-3 py-2.5"
-                >
-                  <span className="bg-sidebar-active-bg text-ink-300 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]">
-                    <ConnectionIcon type={entry.type} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-ink-200 truncate text-sm font-semibold">{primary}</p>
-                    {bleIdentity ? (
-                      <p className="text-muted font-mono text-xs">{bleIdentity.display}</p>
-                    ) : (
-                      <p className="text-muted text-xs">
-                        {connectionPanelConnectionTypeLabel(t, entry.type, protocol)}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {canReconnectBle ? (
-                      <Button
-                        data-setting-anchor="connection.savedDevices.connect"
-                        variant="primary"
-                        size="sm"
-                        aria-label={t('connectionPanel.savedDevicesConnectAria', {
-                          name: actionName,
-                        })}
-                        onClick={() => {
-                          reconnectFromSaved(entry);
-                        }}
-                      >
-                        {t('connectionPanel.reconnect')}
-                      </Button>
-                    ) : null}
-                    <Button
-                      data-setting-anchor="connection.savedDevices.delete"
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t('connectionPanel.savedDevicesDeleteAria', { name: actionName })}
-                      onClick={() => {
-                        handleDeleteSavedConnection(entry.id);
-                      }}
-                    >
-                      {t('common.delete')}
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+      {savedDevicesSection}
 
       {/* Radio and MQTT side by side on wide windows (Option B), stacked below xl. */}
       <div className="grid items-start gap-4 xl:grid-cols-2">

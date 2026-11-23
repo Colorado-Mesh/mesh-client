@@ -49,6 +49,25 @@ describe('connectionHistoryStorage', () => {
     expect(history[0]?.id).toBeTruthy();
   });
 
+  it('backfills from lastConnection when the history key is an empty array', () => {
+    localStorage.setItem(connectionHistoryStorageKey('meshcore'), '[]');
+    saveLastConnection('meshcore', {
+      type: 'http',
+      httpAddress: '192.168.1.50:5000',
+    });
+    const history = loadConnectionHistory('meshcore');
+    expect(history).toHaveLength(1);
+    expect(history[0]?.httpAddress).toBe('192.168.1.50:5000');
+    expect(JSON.parse(localStorage.getItem(connectionHistoryStorageKey('meshcore'))!)).toHaveLength(
+      1,
+    );
+  });
+
+  it('keeps an intentional empty history when there is no MRU', () => {
+    localStorage.setItem(connectionHistoryStorageKey('meshtastic'), '[]');
+    expect(loadConnectionHistory('meshtastic')).toEqual([]);
+  });
+
   it('upserts distinct TCP hosts without wiping earlier entries', () => {
     upsertConnectionHistory(
       'meshtastic',
@@ -82,9 +101,10 @@ describe('connectionHistoryStorage', () => {
       2000,
       'id-b',
     );
+    expect(next).not.toBeNull();
     expect(next).toHaveLength(1);
-    expect(next[0]?.id).toBe('id-a');
-    expect(next[0]?.lastUsedAt).toBe(2000);
+    expect(next![0]?.id).toBe('id-a');
+    expect(next![0]?.lastUsedAt).toBe(2000);
   });
 
   it('keeps meshtastic tcp and meshcom kiss http distinct by type', () => {
@@ -206,8 +226,80 @@ describe('connectionHistoryStorage', () => {
     expect(loadConnectionHistory('meshtastic')).toEqual([]);
     expect(
       upsertConnectionHistory('meshtastic', { type: 'tcp', httpAddress: '10.0.0.9:4403' }),
-    ).toEqual([]);
+    ).toBeNull();
     expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('replaces MeshCom legacy tcp row when upserting the same KISS http endpoint', () => {
+    upsertConnectionHistory(
+      'meshcom',
+      { type: 'tcp', httpAddress: '192.168.1.9:8001' },
+      1000,
+      'legacy-tcp',
+    );
+    const next = upsertConnectionHistory(
+      'meshcom',
+      { type: 'http', httpAddress: '192.168.1.9:8001' },
+      2000,
+      'http-new',
+    );
+    expect(next).toHaveLength(1);
+    expect(next?.[0]?.type).toBe('http');
+    expect(next?.[0]?.id).toBe('legacy-tcp');
+    expect(next?.[0]?.httpAddress).toBe('192.168.1.9:8001');
+  });
+
+  it('updates a BLE history row in place when replaceEntryId is set', () => {
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'ble', bleMac: 'aa:bb:cc:dd:ee:ff', bleDeviceName: 'Node' },
+      1000,
+      'mac-row',
+    );
+    const next = upsertConnectionHistory(
+      'meshtastic',
+      {
+        type: 'ble',
+        bleDeviceId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        bleMac: 'aa:bb:cc:dd:ee:ff',
+        bleDeviceName: 'Node',
+      },
+      2000,
+      'uuid-row',
+      { replaceEntryId: 'mac-row' },
+    );
+    expect(next).toHaveLength(1);
+    expect(next?.[0]?.id).toBe('mac-row');
+    expect(next?.[0]?.bleDeviceId).toBe('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+  });
+
+  it('rolls back history when MRU save fails after a successful history persist', () => {
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.1:4403' },
+      1000,
+      'id-1',
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key: string, value: string) => {
+      if (key.includes('lastConnection')) {
+        throw new Error('mru fail');
+      }
+      originalSetItem(key, value);
+    });
+    expect(
+      upsertConnectionHistory(
+        'meshtastic',
+        { type: 'tcp', httpAddress: '10.0.0.9:4403' },
+        2000,
+        'id-9',
+      ),
+    ).toBeNull();
+    expect(loadConnectionHistory('meshtastic')).toHaveLength(1);
+    expect(loadConnectionHistory('meshtastic')[0]?.httpAddress).toBe('10.0.0.1:4403');
+    expect(loadLastConnection('meshtastic')?.httpAddress).toBe('10.0.0.1:4403');
     warn.mockRestore();
   });
 
@@ -238,8 +330,9 @@ describe('connectionHistoryStorage', () => {
       2,
       'ser-2',
     );
+    expect(next).not.toBeNull();
     expect(next).toHaveLength(1);
-    expect(next[0]?.id).toBe('ser-1');
+    expect(next![0]?.id).toBe('ser-1');
   });
 
   it('returns null from delete when history read throws without wiping storage', () => {

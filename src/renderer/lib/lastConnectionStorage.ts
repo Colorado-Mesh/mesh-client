@@ -41,19 +41,25 @@ export function loadLastConnection(protocol: MeshProtocol): LastConnection | nul
   );
 }
 
-export function saveLastConnection(protocol: MeshProtocol, connection: LastConnection): void {
+/** @returns false when the write threw. */
+export function saveLastConnection(protocol: MeshProtocol, connection: LastConnection): boolean {
   try {
     setRendererStorageItem(lastConnectionKey(protocol), JSON.stringify(connection));
+    return true;
   } catch (error) {
     console.warn('mcL0857 [lastConnectionStorage] saveLastConnection failed', error);
+    return false;
   }
 }
 
-export function clearLastConnection(protocol: MeshProtocol): void {
+/** @returns false when the removal threw. */
+export function clearLastConnection(protocol: MeshProtocol): boolean {
   try {
     removeRendererStorageItem(lastConnectionKey(protocol));
+    return true;
   } catch (e: unknown) {
     console.debug('[renderer/lib/lastConnectionStorage] catch:', e);
+    return false;
   }
 }
 
@@ -116,7 +122,8 @@ export function resolveLastBlePeripheralId(protocol: MeshProtocol): string | und
 export function resolveLastHttpAddress(protocol: MeshProtocol): string | undefined {
   const last = loadLastConnection(protocol);
   if (last?.type !== 'http' && last?.type !== 'tcp' && last?.type !== 'udp') return undefined;
-  const addr = last.httpAddress?.trim();
+  if (typeof last.httpAddress !== 'string') return undefined;
+  const addr = last.httpAddress.trim();
   return addr || undefined;
 }
 

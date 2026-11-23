@@ -1507,6 +1507,7 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1495: 'src/renderer/workers/messageEncoder.worker.ts:81',
   mcL1496: 'src/renderer/lib/connectionHistoryStorage.ts:persistHistory',
   mcL1497: 'src/renderer/lib/connectionHistoryStorage.ts:readRawHistory',
+  mcL1498: 'src/renderer/components/ConnectionPanel.tsx:historyUpsertFailed',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

@@ -2618,7 +2618,8 @@ describe('ConnectionPanel BLE MAC identity', () => {
         />,
       );
       expect(screen.getByText('Bluetooth MAC')).toBeInTheDocument();
-      expect(screen.getByText('aa:bb:cc:dd:ee:ff')).toBeInTheDocument();
+      // MAC appears on the Radio Connection card and in Saved devices.
+      expect(screen.getAllByText('aa:bb:cc:dd:ee:ff').length).toBeGreaterThanOrEqual(1);
     } finally {
       localStorage.removeItem(lastConnKey);
     }
@@ -2646,7 +2647,8 @@ describe('ConnectionPanel BLE MAC identity', () => {
         />,
       );
       expect(screen.getByText('Bluetooth ID')).toBeInTheDocument();
-      expect(screen.getByText(darwinUuid)).toBeInTheDocument();
+      // UUID appears on the Radio Connection card and in Saved devices after seed.
+      expect(screen.getAllByText(darwinUuid).length).toBeGreaterThanOrEqual(1);
       expect(screen.queryByText('Bluetooth MAC')).not.toBeInTheDocument();
     } finally {
       localStorage.removeItem(lastConnKey);
@@ -3160,6 +3162,33 @@ describe('ConnectionPanel saved device history', () => {
     localStorage.clear();
   });
 
+  it('shows Saved devices while configured after seeding from lastConnection', async () => {
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({ type: 'tcp', httpAddress: '10.0.0.9:4403' }),
+    );
+
+    render(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'configured',
+          connectionType: 'tcp',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Saved devices')).toBeInTheDocument();
+      expect(screen.getByText('10.0.0.9:4403')).toBeInTheDocument();
+    });
+  });
+
   it('lists multiple saved TCP hosts and reconnects the selected one', async () => {
     const user = userEvent.setup();
     localStorage.setItem(
@@ -3279,7 +3308,9 @@ describe('ConnectionPanel saved device history', () => {
       />,
     );
 
-    expect(screen.queryByText('Saved devices')).not.toBeInTheDocument();
+    // Connected view also shows Saved devices so the list is visible without disconnecting.
+    expect(screen.getByText('Saved devices')).toBeInTheDocument();
+    expect(screen.getByText('192.168.1.172:5000')).toBeInTheDocument();
     const radio = screen.getByText('Radio Connection').closest<HTMLElement>('.bg-deep-black')!;
     await user.click(within(radio).getByRole('button', { name: 'Disconnect' }));
     expect(onDisconnect).toHaveBeenCalled();
