@@ -138,14 +138,14 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     expect(resetContactPath).not.toHaveBeenCalled();
   });
 
-  it('skips flood retry when identity or connection changed before or after reset', async () => {
-    const resetContactPath = vi.fn(() => {
-      stale = true;
-      return Promise.resolve(true);
-    });
-    let stale = false;
+  it('skips flood retry when the live connection changed after reset', async () => {
     const connection = { id: 'conn-1' };
     const ctx = { identity: 'identity-a', connection };
+    let liveConnection: unknown = connection;
+    const resetContactPath = vi.fn(() => {
+      liveConnection = { id: 'conn-2' };
+      return Promise.resolve(true);
+    });
     let calls = 0;
     await expect(
       withMeshcoreRepeaterRouteEscalation(
@@ -154,8 +154,7 @@ describe('meshcoreRepeaterRouteEscalation', () => {
           resetContactPath,
           resolveRouteKind: () => 'direct',
           captureEscalationContext: () => ctx,
-          isEscalationContextCurrent: (c) =>
-            !stale && c.identity === ctx.identity && c.connection === ctx.connection,
+          isEscalationContextCurrent: (c) => c.connection === liveConnection,
           nowMs: () => 2_000,
         },
         () => {
@@ -165,6 +164,37 @@ describe('meshcoreRepeaterRouteEscalation', () => {
       ),
     ).rejects.toThrow(/timeout/);
     expect(calls).toBe(1);
+    expect(resetContactPath).toHaveBeenCalledTimes(1);
+  });
+
+  it('still floods when only the identity id changed after reset on the same connection', async () => {
+    const connection = { id: 'conn-1' };
+    const ctx = { identity: 'identity-pending', connection };
+    let liveIdentity = 'identity-pending';
+    const resetContactPath = vi.fn(() => {
+      liveIdentity = 'identity-final';
+      return Promise.resolve(true);
+    });
+    let calls = 0;
+    const result = await withMeshcoreRepeaterRouteEscalation(
+      43,
+      {
+        resetContactPath,
+        resolveRouteKind: () => 'direct',
+        captureEscalationContext: () => ctx,
+        // Mirrors useMeshcoreRuntime: connection-only freshness.
+        isEscalationContextCurrent: (c) => c.connection === connection,
+        nowMs: () => 2_000,
+      },
+      ({ escalated }) => {
+        calls += 1;
+        if (!escalated) return Promise.reject(new Error('timeout'));
+        expect(liveIdentity).toBe('identity-final');
+        return Promise.resolve('flooded');
+      },
+    );
+    expect(result).toBe('flooded');
+    expect(calls).toBe(2);
     expect(resetContactPath).toHaveBeenCalledTimes(1);
   });
 

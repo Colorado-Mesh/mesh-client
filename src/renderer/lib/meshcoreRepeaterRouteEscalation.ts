@@ -19,7 +19,11 @@ export interface MeshcoreRepeaterRouteEscalationDeps {
   escalationScope?: () => string | null | undefined;
   /** Snapshot the active identity and connection when the request starts. */
   captureEscalationContext?: () => MeshcoreRepeaterEscalationContext;
-  /** Returns false when identity or connection changed since {@link captureEscalationContext}. */
+  /**
+   * Returns false when the request should not flood-retry (typically the live connection
+   * handle changed). Identity alone may change after configure; callers should not treat that
+   * as stale after a successful path reset.
+   */
   isEscalationContextCurrent?: (ctx: MeshcoreRepeaterEscalationContext) => boolean;
   nowMs?: () => number;
   cooldownMs?: number;
