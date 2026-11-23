@@ -22,7 +22,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @zip.js/zip.js             | BSD-3-Clause                  | ^2.25.0         | 2.25.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
 | builder-util-runtime       | MIT                           | ^9.7.0          | 9.7.0             | git+https://github.com/electron-userland/electron-builder.git                  |
 | dbus-next                  | MIT                           | 0.10.2          | 0.10.2            | git+ssh://git@github.com/dbusjs/node-dbus-next.git                             |
-| dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.18         | 3.4.18            | git://github.com/cure53/DOMPurify.git                                          |
+| dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.5.0          | 3.5.0             | git://github.com/cure53/DOMPurify.git                                          |
 | electron-updater           | MIT                           | ^6.8.11         | 6.8.11            | git+https://github.com/electron-userland/electron-builder.git                  |
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
@@ -58,7 +58,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
 | @playwright/test                      | Apache-2.0      | ^1.65.1         | 1.65.1            | git+https://github.com/microsoft/playwright.git                                      |
 | @tailwindcss/vite                     | MIT             | ^4.3.5          | 4.3.5             | https://github.com/tailwindlabs/tailwindcss.git                                      |
-| @tanstack/react-virtual               | MIT             | ^3.14.26        | 3.14.26           | git+https://github.com/TanStack/virtual.git                                          |
+| @tanstack/react-virtual               | MIT             | ^3.14.28        | 3.14.28           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
 | @testing-library/user-event           | MIT             | ^14.6.13        | 14.6.13           | git+https://github.com/testing-library/user-event.git                                |
@@ -159,18 +159,18 @@ Licenses for all 399 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo m
 | Crate          | Version | License                                | Source                                                 |
 | -------------- | ------- | -------------------------------------- | ------------------------------------------------------ |
 | lrgp           | 0.4.1   | MIT                                    | [lrgp-rs](https://github.com/ratspeak/lrgp-rs)         |
-| lxmf-core      | 1.5.0   | LicenseRef-Reticulum                   | [rsLXMF](https://github.com/ratspeak/rsLXMF)           |
+| lxmf-core      | 1.5.1   | LicenseRef-Reticulum                   | [rsLXMF](https://github.com/ratspeak/rsLXMF)           |
 | lxst-codec2    | 0.4.0   | LGPL-2.1-only AND MIT AND BSD-3-Clause | [rsLXST](https://github.com/ratspeak/rsLXST)           |
 | lxst-core      | 0.4.0   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
 | lxst-rns       | 0.4.0   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
 | lxst-telephony | 0.4.0   | LicenseRef-LXST-Ratspeak               | [rsLXST](https://github.com/ratspeak/rsLXST)           |
 | nomad-core     | 0.1.0   | AGPL-3.0-or-later                      | [rsNomad](https://github.com/ratspeak/rsNomad)         |
-| rns-crypto     | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-identity   | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-interface  | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-link       | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-protocol   | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-ratkey     | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-runtime    | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-transport  | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
-| rns-wire       | 1.5.0   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-crypto     | 1.5.1   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-identity   | 1.5.1   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-interface  | 1.5.1   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-link       | 1.5.1   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-protocol   | 1.5.1   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-ratkey     | 1.5.1   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-runtime    | 1.5.1   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-transport  | 1.5.1   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-wire       | 1.5.1   | LicenseRef-Reticulum                   | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
