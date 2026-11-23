@@ -280,10 +280,74 @@ describe('ci-verify-pnpm', () => {
       resolvePnpmSpawnCommand({
         platform: 'win32',
         pnpmHome: home,
+        pinned: '12.3.4',
         existsSync: fs.existsSync,
         readdirSync: fs.readdirSync,
+        spawnSyncFn: (cmd) =>
+          String(cmd) === exe
+            ? { status: 0, stdout: '12.3.4\n', stderr: '', error: undefined }
+            : { status: 1, stdout: '', stderr: 'no', error: undefined },
       }),
     ).toBe(exe);
+  });
+
+  it('prefers a version-valid self-update exe over a stale bootstrap sibling', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-pnpm-stale-'));
+    tempDirs.push(root);
+    // PNPM_HOME = …/node_modules/.bin → bootstrap sibling is …/node_modules/pnpm/pnpm.exe
+    const nodeModules = path.join(root, 'node_modules');
+    const pnpmHome = path.join(nodeModules, '.bin');
+    const bootstrap = path.join(nodeModules, 'pnpm', 'pnpm.exe');
+    const selfUpdate = path.join(
+      pnpmHome,
+      'global',
+      'v11',
+      'hash123',
+      'node_modules',
+      '@pnpm',
+      'exe',
+      'pnpm.exe',
+    );
+    fs.mkdirSync(path.dirname(bootstrap), { recursive: true });
+    fs.mkdirSync(path.dirname(selfUpdate), { recursive: true });
+    fs.writeFileSync(bootstrap, '');
+    fs.writeFileSync(selfUpdate, '');
+
+    const versions = new Map([
+      [bootstrap, '12.0.0'],
+      [selfUpdate, '12.3.4'],
+    ]);
+    const spawnSyncFn = (cmd) => {
+      const version = versions.get(String(cmd));
+      if (!version) {
+        return { status: 1, stdout: '', stderr: 'missing', error: undefined };
+      }
+      return { status: 0, stdout: `${version}\n`, stderr: '', error: undefined };
+    };
+
+    expect(
+      resolvePnpmSpawnCommand({
+        platform: 'win32',
+        pnpmHome,
+        pinned: '12.3.4',
+        existsSync: fs.existsSync,
+        readdirSync: fs.readdirSync,
+        spawnSyncFn,
+      }),
+    ).toBe(selfUpdate);
+
+    // Bootstrap-only fallback when no self-update exe exists / works.
+    fs.unlinkSync(selfUpdate);
+    expect(
+      resolvePnpmSpawnCommand({
+        platform: 'win32',
+        pnpmHome,
+        pinned: '12.3.4',
+        existsSync: fs.existsSync,
+        readdirSync: fs.readdirSync,
+        spawnSyncFn,
+      }),
+    ).toBe(bootstrap);
   });
 
   it('spawns the resolved Windows exe, not pnpm.cmd', () => {
@@ -307,12 +371,14 @@ describe('ci-verify-pnpm', () => {
         readdirSync: fs.readdirSync,
         spawnSyncFn: (cmd) => {
           spawned.push(String(cmd));
-          return { status: 0, stdout: '12.9.0\n', stderr: '', error: undefined };
+          return { status: 0, stdout: '12.3.4\n', stderr: '', error: undefined };
         },
         log: () => {},
       }),
-    ).toBe('12.9.0');
-    expect(spawned).toEqual([exe]);
+    ).toBe('12.3.4');
+    expect(spawned[0]).toBe(exe);
+    expect(spawned.every((c) => c === exe)).toBe(true);
+    expect(spawned.some((c) => /\.cmd$/i.test(c))).toBe(false);
   });
 
   it('accepts matching major and rejects empty or wrong-major output', () => {

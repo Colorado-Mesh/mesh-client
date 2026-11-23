@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   flatpakCiPathFilterViolations,
+  flatpakStepRunCopiesImageRuntimes,
   flatpakWorkflowBuilderProvenanceViolations,
   flatpakWorkflowSidecarExecutableContractViolations,
   flatpakWorkflowTestBuildContractViolations,
@@ -69,7 +70,12 @@ describe('flatpakWorkflowTestBuildContractViolations', () => {
           steps: [
             {
               name: 'decoy',
-              run: '# write-flatpak-ci-build-info.mjs\necho rename-test-build-artifacts.mjs --flatpak',
+              run:
+                '# write-flatpak-ci-build-info.mjs\n' +
+                'echo rename-test-build-artifacts.mjs --flatpak\n' +
+                // Commented-out copy must not satisfy the overlayfs writable-layer gate.
+                '# cp -a /var/lib/flatpak /var/lib/flatpak.rw\n' +
+                '# for d in /var/lib/flatpak; do cp -a "$d" "$d.rw"; done',
             },
             {
               uses: 'flatpak/flatpak-github-actions/flatpak-builder@deadbeef',
@@ -93,16 +99,26 @@ describe('flatpakWorkflowTestBuildContractViolations', () => {
     expect(joined).toMatch(/archive: false for direct UI download/);
   });
 
+  it('does not treat a commented-out Flatpak runtime copy as present', () => {
+    expect(
+      flatpakStepRunCopiesImageRuntimes(
+        '# cp -a /var/lib/flatpak /var/lib/flatpak.rw\n# for d in /var/lib/flatpak; do cp -a "$d" "$d.rw"; done',
+      ),
+    ).toBe(false);
+    expect(
+      flatpakStepRunCopiesImageRuntimes(
+        'set -euo pipefail\nfor d in /var/lib/flatpak "$HOME/.local/share/flatpak"; do\n  cp -a "$d" "$d.rw"\ndone',
+      ),
+    ).toBe(true);
+  });
+
   it('rejects when the overlayfs runtime copy runs after flatpak-builder', () => {
     const doc = yaml.load(
       fs.readFileSync(path.join(ROOT, '.github/workflows/flatpak.yaml'), 'utf8'),
     );
     const steps = doc.jobs.flatpak.steps;
     const copyIdx = steps.findIndex(
-      (step) =>
-        typeof step.run === 'string' &&
-        step.run.includes('/var/lib/flatpak') &&
-        step.run.includes('cp -a'),
+      (step) => typeof step.run === 'string' && flatpakStepRunCopiesImageRuntimes(step.run),
     );
     const builderIdx = steps.findIndex(
       (step) => typeof step.uses === 'string' && step.uses.includes('flatpak-builder'),

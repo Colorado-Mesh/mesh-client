@@ -10,6 +10,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -97,9 +98,10 @@ export function windowsPnpmExeCandidatesUnderHome(pnpmHome, opts = {}) {
     found.push(p);
   };
 
+  // Prefer PNPM_HOME / self-update layouts first. Bootstrap sibling is often stale
+  // after action-setup self-update — keep it last (same order as prefer-windows).
   push(path.join(pnpmHome, 'pnpm.exe'));
   push(path.join(pnpmHome, 'bin', 'pnpm.exe'));
-  push(path.resolve(pnpmHome, '..', 'pnpm', 'pnpm.exe'));
 
   for (const cmdName of ['pnpm.cmd', 'pnpm.CMD']) {
     for (const dir of [pnpmHome, path.join(pnpmHome, 'bin')]) {
@@ -130,7 +132,50 @@ export function windowsPnpmExeCandidatesUnderHome(pnpmHome, opts = {}) {
     }
   }
 
+  // Bootstrap-only fallback when no self-update exe exists.
+  push(path.resolve(pnpmHome, '..', 'pnpm', 'pnpm.exe'));
+
   return found;
+}
+
+/**
+ * Probe `pnpm --version` for a native exe (shell:false). Outside the repo so a
+ * stale bootstrap does not attempt packageManager install into the store.
+ *
+ * @param {string} exe
+ * @param {typeof spawnSync} [spawnSyncFn]
+ * @returns {string | null}
+ */
+export function probeWindowsPnpmExeVersion(exe, spawnSyncFn = spawnSync) {
+  const result = spawnSyncFn(exe, ['--version'], {
+    encoding: 'utf8',
+    shell: false,
+    // Outside the repo so a stale bootstrap does not attempt packageManager install.
+    cwd: os.tmpdir(),
+  });
+  if (result.error || result.status !== 0) return null;
+  return parsePnpmVersionOutput(String(result.stdout ?? ''));
+}
+
+/**
+ * Prefer a version-valid self-update exe (exact packageManager pin) over a stale
+ * bootstrap sibling. Falls back to the first working probe, then bootstrap-only.
+ *
+ * @param {string[]} exes
+ * @param {string | null} pinned
+ * @param {typeof spawnSync} [spawnSyncFn]
+ * @returns {string | null}
+ */
+export function selectWindowsPnpmSpawnCommand(exes, pinned, spawnSyncFn = spawnSync) {
+  /** @type {string | null} */
+  let fallback = null;
+  for (const exe of exes) {
+    const version = probeWindowsPnpmExeVersion(exe, spawnSyncFn);
+    if (!version) continue;
+    if (pinned && version === pinned) return exe;
+    if (!fallback) fallback = exe;
+  }
+  return fallback;
 }
 
 /**
@@ -162,12 +207,17 @@ export function readPinnedPnpmVersion(packageJsonPath = path.join(ROOT, 'package
 
 /**
  * Pick a Windows pnpm spawn command that works with shell:false.
+ * When PNPM_HOME is set, probe candidates and prefer the packageManager pin
+ * (same selection policy as ci-prefer-windows-pnpm-exe).
  *
  * @param {{
  *   platform?: NodeJS.Platform
  *   pnpmHome?: string
+ *   pinned?: string | null
+ *   packageJsonPath?: string
  *   existsSync?: (p: string) => boolean
  *   readdirSync?: (p: string, opts: { withFileTypes: true }) => import('node:fs').Dirent[]
+ *   spawnSyncFn?: typeof spawnSync
  * }} [opts]
  * @returns {string}
  */
@@ -181,7 +231,14 @@ export function resolvePnpmSpawnCommand(opts = {}) {
       existsSync: opts.existsSync,
       readdirSync: opts.readdirSync,
     });
-    if (underHome[0]) return underHome[0];
+    const pinned =
+      opts.pinned !== undefined ? opts.pinned : readPinnedPnpmVersion(opts.packageJsonPath);
+    const selected = selectWindowsPnpmSpawnCommand(
+      underHome,
+      pinned,
+      opts.spawnSyncFn ?? spawnSync,
+    );
+    if (selected) return selected;
   }
   return 'pnpm.exe';
 }
@@ -205,8 +262,11 @@ export function verifyPnpmVersion(opts = {}) {
   const command = resolvePnpmSpawnCommand({
     platform: opts.platform,
     pnpmHome: opts.pnpmHome,
+    pinned,
+    packageJsonPath: opts.packageJsonPath,
     existsSync: opts.existsSync,
     readdirSync: opts.readdirSync,
+    spawnSyncFn,
   });
   const result = spawnSyncFn(command, ['--version'], {
     encoding: 'utf8',

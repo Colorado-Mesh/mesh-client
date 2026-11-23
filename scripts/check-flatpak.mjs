@@ -585,6 +585,26 @@ export function manifestCiBuildInfoExportViolations(doc, fileLabel) {
 }
 
 /**
+ * True when a step `run` script performs an executable (non-comment) `cp -a` of
+ * the image Flatpak install dir. Commented-out decoys must not satisfy the gate.
+ *
+ * @param {string} run
+ * @returns {boolean}
+ */
+export function flatpakStepRunCopiesImageRuntimes(run) {
+  if (typeof run !== 'string' || !run) return false;
+  const activeLines = run
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith('#'));
+  if (activeLines.length === 0) return false;
+  const active = activeLines.join('\n');
+  if (!active.includes('/var/lib/flatpak')) return false;
+  // Require a real cp -a invocation (start of line or after a shell separator).
+  return /(?:^|[\n;|&])\s*cp\s+-a\b/m.test(`\n${active}`);
+}
+
+/**
  * @param {unknown} doc
  * @param {string} fileLabel
  * @returns {{ file: string, message: string }[]}
@@ -628,6 +648,7 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
   let sawArchNamedBundle = false;
   let sawDirectFlatpakUpload = false;
   let builderStepIndex = -1;
+  let runtimeCopyStepIndex = -1;
 
   for (let i = 0; i < steps.length; i += 1) {
     const step = steps[i];
@@ -636,9 +657,10 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
     if (/(?:^|\n)\s*node\s+scripts\/write-flatpak-ci-build-info\.mjs\b/.test(run)) {
       sawBuildInfoWriter = true;
     }
-    // Overlayfs EXDEV: copy image runtimes into the writable layer before builder updates.
-    if (run.includes('/var/lib/flatpak') && run.includes('cp -a')) {
+    // Overlayfs EXDEV: require an executable (non-comment) cp -a of the image runtimes.
+    if (flatpakStepRunCopiesImageRuntimes(run)) {
       sawRuntimeWritableCopy = true;
+      if (runtimeCopyStepIndex === -1) runtimeCopyStepIndex = i;
     }
     if (
       /(?:^|\n)\s*node\s+scripts\/rename-test-build-artifacts\.mjs\b/.test(run) &&
@@ -691,23 +713,15 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
       message:
         'flatpak.yaml must copy image Flatpak runtimes into a writable layer before flatpak-builder (overlayfs EXDEV / Invalid cross-device link)',
     });
-  } else if (builderStepIndex !== -1) {
-    const copyIdx = steps.findIndex(
-      (step) =>
-        step &&
-        typeof step === 'object' &&
-        !Array.isArray(step) &&
-        typeof step.run === 'string' &&
-        step.run.includes('/var/lib/flatpak') &&
-        step.run.includes('cp -a'),
-    );
-    if (copyIdx === -1 || copyIdx > builderStepIndex) {
-      violations.push({
-        file: fileLabel,
-        message:
-          'flatpak.yaml must copy image Flatpak runtimes into a writable layer before flatpak-builder',
-      });
-    }
+  } else if (
+    builderStepIndex !== -1 &&
+    (runtimeCopyStepIndex === -1 || runtimeCopyStepIndex > builderStepIndex)
+  ) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must copy image Flatpak runtimes into a writable layer before flatpak-builder',
+    });
   }
   if (!sawDeferredUpload) {
     violations.push({
