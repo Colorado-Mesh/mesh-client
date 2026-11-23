@@ -350,6 +350,49 @@ describe('ci-verify-pnpm', () => {
     ).toBe(bootstrap);
   });
 
+  it('prefers a same-major working exe over an earlier other-major candidate', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-pnpm-major-'));
+    tempDirs.push(root);
+    const nodeModules = path.join(root, 'node_modules');
+    const pnpmHome = path.join(nodeModules, '.bin');
+    const otherMajor = path.join(pnpmHome, 'pnpm.exe');
+    const sameMajor = path.join(
+      pnpmHome,
+      'global',
+      'v11',
+      'hash456',
+      'node_modules',
+      '@pnpm',
+      'exe',
+      'pnpm.exe',
+    );
+    fs.mkdirSync(path.dirname(otherMajor), { recursive: true });
+    fs.mkdirSync(path.dirname(sameMajor), { recursive: true });
+    fs.writeFileSync(otherMajor, '');
+    fs.writeFileSync(sameMajor, '');
+
+    const versions = new Map([
+      [otherMajor, '11.25.0'],
+      [sameMajor, '12.0.0'],
+    ]);
+    expect(
+      resolvePnpmSpawnCommand({
+        platform: 'win32',
+        pnpmHome,
+        pinned: '12.3.4',
+        existsSync: fs.existsSync,
+        readdirSync: fs.readdirSync,
+        spawnSyncFn: (cmd) => {
+          const version = versions.get(String(cmd));
+          if (!version) {
+            return { status: 1, stdout: '', stderr: 'missing', error: undefined };
+          }
+          return { status: 0, stdout: `${version}\n`, stderr: '', error: undefined };
+        },
+      }),
+    ).toBe(sameMajor);
+  });
+
   it('spawns the resolved Windows exe, not pnpm.cmd', () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-verify-spawn-'));
     tempDirs.push(home);

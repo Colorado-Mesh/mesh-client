@@ -585,8 +585,10 @@ export function manifestCiBuildInfoExportViolations(doc, fileLabel) {
 }
 
 /**
- * True when a step `run` script performs an executable (non-comment) `cp -a` of
- * the image Flatpak install dir. Commented-out decoys must not satisfy the gate.
+ * True when a step `run` script performs an executable (non-comment) `cp -a`
+ * whose source is `/var/lib/flatpak` (or a `for` loop variable over that dir /
+ * `$HOME/.local/share/flatpak`). Commented-out decoys and unrelated copies must
+ * not satisfy the gate.
  *
  * @param {string} run
  * @returns {boolean}
@@ -598,10 +600,41 @@ export function flatpakStepRunCopiesImageRuntimes(run) {
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !line.startsWith('#'));
   if (activeLines.length === 0) return false;
-  const active = activeLines.join('\n');
-  if (!active.includes('/var/lib/flatpak')) return false;
-  // Require a real cp -a invocation (start of line or after a shell separator).
-  return /(?:^|[\n;|&])\s*cp\s+-a\b/m.test(`\n${active}`);
+
+  /** @type {Set<string>} */
+  const loopVarsOverFlatpak = new Set();
+  for (const line of activeLines) {
+    // for d in /var/lib/flatpak "$HOME/.local/share/flatpak"; do
+    const forMatch = /^for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\b(.*)$/.exec(line);
+    if (!forMatch) continue;
+    const list = forMatch[2] ?? '';
+    if (
+      list.includes('/var/lib/flatpak') ||
+      list.includes('$HOME/.local/share/flatpak') ||
+      list.includes('${HOME}/.local/share/flatpak')
+    ) {
+      loopVarsOverFlatpak.add(forMatch[1] ?? '');
+    }
+  }
+
+  for (const line of activeLines) {
+    // cp -a SOURCE DEST… (start of line or after a shell separator)
+    const cpMatch = /(?:^|[;|&])\s*cp\s+-a\s+(\S+)/.exec(`;${line}`);
+    if (!cpMatch?.[1]) continue;
+    const src = cpMatch[1].replace(/^["']|["']$/g, '');
+    if (
+      src === '/var/lib/flatpak' ||
+      src === '$HOME/.local/share/flatpak' ||
+      src === '${HOME}/.local/share/flatpak'
+    ) {
+      return true;
+    }
+    const varMatch = /^\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?$/.exec(src);
+    if (varMatch?.[1] && loopVarsOverFlatpak.has(varMatch[1])) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

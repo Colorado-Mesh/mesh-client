@@ -158,8 +158,9 @@ export function probeWindowsPnpmExeVersion(exe, spawnSyncFn = spawnSync) {
 }
 
 /**
- * Prefer a version-valid self-update exe (exact packageManager pin) over a stale
- * bootstrap sibling. Falls back to the first working probe, then bootstrap-only.
+ * Prefer a version-valid self-update exe over a stale bootstrap sibling:
+ * exact packageManager pin → same major → first other working probe.
+ * Bootstrap stays last in the candidate list for bootstrap-only fallback.
  *
  * @param {string[]} exes
  * @param {string | null} pinned
@@ -168,14 +169,20 @@ export function probeWindowsPnpmExeVersion(exe, spawnSyncFn = spawnSync) {
  */
 export function selectWindowsPnpmSpawnCommand(exes, pinned, spawnSyncFn = spawnSync) {
   /** @type {string | null} */
+  let sameMajor = null;
+  /** @type {string | null} */
   let fallback = null;
+  const pinnedMajor = pinned ? pinned.split('.', 1)[0] : null;
   for (const exe of exes) {
     const version = probeWindowsPnpmExeVersion(exe, spawnSyncFn);
     if (!version) continue;
     if (pinned && version === pinned) return exe;
+    if (pinnedMajor && version.split('.', 1)[0] === pinnedMajor && !sameMajor) {
+      sameMajor = exe;
+    }
     if (!fallback) fallback = exe;
   }
-  return fallback;
+  return sameMajor ?? fallback;
 }
 
 /**

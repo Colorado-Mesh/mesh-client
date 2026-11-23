@@ -112,6 +112,17 @@ describe('flatpakWorkflowTestBuildContractViolations', () => {
     ).toBe(true);
   });
 
+  it('does not associate an echoed Flatpak path with an unrelated cp -a', () => {
+    expect(
+      flatpakStepRunCopiesImageRuntimes(
+        'echo /var/lib/flatpak is the system install\ncp -a /tmp/unrelated /tmp/out',
+      ),
+    ).toBe(false);
+    expect(flatpakStepRunCopiesImageRuntimes('cp -a /var/lib/flatpak /var/lib/flatpak.rw')).toBe(
+      true,
+    );
+  });
+
   it('rejects when the overlayfs runtime copy runs after flatpak-builder', () => {
     const doc = yaml.load(
       fs.readFileSync(path.join(ROOT, '.github/workflows/flatpak.yaml'), 'utf8'),
