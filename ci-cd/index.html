@@ -4170,7 +4170,7 @@ The workflow does not change repository security settings. Existing global cover
 <li><code>pnpm run test:e2e</code> (Linux under <code>xvfb-run -a</code>; macOS/Windows plain) — Playwright launches the local Electron binary via <code>resolveLocalElectronBin()</code> with an isolated <code>--user-data-dir</code></li>
 <li>On failure, upload <code>test-results/</code> + <code>playwright-report/</code> (7-day retention)</li>
 </ol>
-<p>A separate <strong>Release preflight</strong> job (<code>ubuntu-latest</code>) runs <code>pnpm run release -- --preflight-only</code> with the same <code>setup-node-pnpm</code> + <code>setup-release-toolchain</code> composites as <code>cut-release.yaml</code>, stopping before any bump, tag, or push. Its ESLint step matches the CI lint job (<code>--concurrency 2 --config eslint.ci.config.mjs</code>) after <code>format:check</code>, so type-aware lint does not OOM on the runner. Check it is green before cutting a release.</p>
+<p>A separate <strong>Release preflight</strong> job (<code>ubuntu-latest</code>) runs <code>pnpm run release -- --preflight-only</code> with the same <code>setup-node-pnpm</code> + <code>setup-release-toolchain</code> composites as <code>cut-release.yaml</code>, stopping before any bump, tag, or push. The toolchain composite installs Semgrep (<code>pip install --user semgrep</code> + <code>~/.local/bin</code> on <code>PATH</code>) so always-on <code>check:semgrep</code> matches <code>ci.yaml</code> policy-scanners. Its ESLint step matches the CI lint job (<code>--concurrency 2 --config eslint.ci.config.mjs</code>) after <code>format:check</code>, so type-aware lint does not OOM on the runner. Check it is green before cutting a release.</p>
 <p>Local: <code>pnpm run test:e2e:build</code>. See <a href="../development-environment/#playwright-electron-e2e">development-environment.md</a>.</p>
 <h3 id="meshcore-repeater-e2e-e2e-meshcore-repeatersyaml">MeshCore repeater E2E (<code>e2e-meshcore-repeaters.yaml</code>)<a class="headerlink" href="#meshcore-repeater-e2e-e2e-meshcore-repeatersyaml" title="Permanent link">&para;</a></h3>
 <p>Runs <code>e2e/meshcore-repeater-admin.spec.ts</code> (repeater Ping, Status, Neighbors and login against the fake MeshCore radio in <code>e2e/fixtures/meshcore-repeater-radio.ts</code>) on pull requests to <code>main</code> that touch MeshCore ping or repeater code, so a change that breaks pings fails on its own PR instead of in the next daily run.</p>
@@ -4231,7 +4231,8 @@ The workflow does not change repository security settings. Existing global cover
 <ol>
 <li><strong><code>schema-release-compare</code></strong> — same compare as Build Binaries / Release; uploads <code>READ-ME-FIRST-flatpak.md</code> and feeds <code>write-schema-upgrade-notice.mjs</code> so bumped schemas embed <code>SCHEMA-UPGRADE.txt</code> under Flatpak <code>resources/</code></li>
 <li>Builds the Reticulum sidecar on bare Ubuntu runners, then generates <code>flatpak/generated-sources.json</code> via <code>flatpak-node-generator</code></li>
-<li>Stamps CI build info (<code>test</code> on dispatch / <code>release</code> on tag), builds from <code>org.coloradomesh.MeshClient.yml</code> with offline pnpm sources</li>
+<li>Stamps CI build info (<code>test</code> on dispatch / <code>release</code> on tag), then <strong>copies the image’s Flatpak runtimes into a writable overlay layer</strong> so Sdk/Platform updates do not fail with overlayfs <code>EXDEV</code> (<code>Invalid cross-device link</code>) when Flathub is ahead of the pinned builder image</li>
+<li>Builds from <code>org.coloradomesh.MeshClient.yml</code> with offline pnpm sources</li>
 <li>Smoke-installs the unstamped local bundle; on <strong>dispatch only</strong>, renames the <strong>intermediate</strong> smoke-install basename to <code>org.coloradomesh.MeshClient-run{N}.flatpak</code> (repo-root intermediate — not the Actions artifact name).</li>
 <li>Uploads each arch as an <strong><code>archive: false</code></strong> artifact whose <strong>final</strong> basename is <code>org.coloradomesh.MeshClient.flatpak-{arch}.flatpak</code> (test dispatch: <code>org.coloradomesh.MeshClient.flatpak-{arch}-run{N}.flatpak</code>) plus per-arch <code>flatpak-schema-warning-*</code></li>
 </ol>
@@ -4778,7 +4779,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 23, 2026 03:37:34 UTC">November 23, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 23, 2026 04:40:45 UTC">November 23, 2026</span>
   </span>
 
     
