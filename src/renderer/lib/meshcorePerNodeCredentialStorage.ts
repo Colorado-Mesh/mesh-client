@@ -40,9 +40,10 @@ export function parseLegacyCredentialRaw<T>(
     let parsed: unknown;
     try {
       parsed = JSON.parse(raw) as unknown;
-    } catch (e: unknown) {
-      console.debug('[renderer/lib/meshcorePerNodeCredentialStorage] catch:', e);
-
+    } catch {
+      // Expected for legacy plain-string secrets. Never log `e` — SyntaxError.message
+      // embeds the input and would persist the password into verbose/support logs.
+      console.debug('[meshcorePerNodeCredentialStorage] legacy plain-string credential (non-JSON)');
       return mappers.fromPlainString(raw);
     }
     return parseLegacyCredentialRaw(parsed, mappers);

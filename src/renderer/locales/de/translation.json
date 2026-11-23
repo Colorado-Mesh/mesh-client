@@ -539,7 +539,8 @@
     "clearAllRoomsConfirm": "Dadurch werden alle nicht zu den Favoriten gehörenden MeshCore-Room-Server aus dem verbundenen Radio und der lokalen Datenbank entfernt. Räume werden wieder angezeigt, wenn sie erneut angekündigt werden. Dieser Vorgang kann nicht rückgängig gemacht werden.",
     "meshcomWatchlistHeading": "MeshCom-Rufzeichen-Beobachtungsliste",
     "verboseLogging": "Debugging- und Info-Daten in Protokolle aufnehmen",
-    "verboseLoggingDesc": "Standardmäßig deaktiviert, damit die Exporte klein bleiben. Aktivieren Sie die Option, reproduzieren Sie das Problem und exportieren Sie dann für GitHub. Geben Sie beim Melden eines Problems alle mcL####-Codes aus dem Protokoll an."
+    "verboseLoggingDesc": "Standardmäßig deaktiviert, damit die Exporte klein bleiben. Aktivieren Sie die Option, reproduzieren Sie das Problem und exportieren Sie dann für GitHub. Geben Sie beim Melden eines Problems alle mcL####-Codes aus dem Protokoll an.",
+    "verboseLoggingSupportHint": "Bei schwer zu reproduzierenden Fehlern aktivieren Sie unter App → Protokoll-Panel die Option „Debug- und Info-Daten in die Protokolldatei schreiben“, reproduzieren Sie das Problem und klicken Sie dann auf „Exportieren“. Support-Exporte enthalten immer das vollständige Protokoll auf dem Datenträger. Geben Sie alle mcL####-Codes an, wenn Sie ein Problem melden."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

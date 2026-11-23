@@ -555,7 +555,8 @@
     "clearAllRoomsConfirm": "Spowoduje to usunięcie wszystkich nieulubionych serwerów pomieszczeń MeshCore z podłączonego radia i lokalnej bazy danych. Pokoje pojawiają się ponownie, gdy znów się ogłoszą. Tej czynności nie można cofnąć.",
     "meshcomWatchlistHeading": "Lista obserwowanych sygnałów wywoławczych MeshCom",
     "verboseLogging": "Uwzględnij w dziennikach informacje debugowania i inne informacje",
-    "verboseLoggingDesc": "Domyślnie wyłączone, aby eksporty pozostawały niewielkie. Włącz, odtwórz problem, a następnie wyeksportuj dla GitHub. Podczas zgłaszania problemu podaj wszelkie kody mcL#### z dziennika."
+    "verboseLoggingDesc": "Domyślnie wyłączone, aby eksporty pozostawały niewielkie. Włącz, odtwórz problem, a następnie wyeksportuj dla GitHub. Podczas zgłaszania problemu podaj wszelkie kody mcL#### z dziennika.",
+    "verboseLoggingSupportHint": "W przypadku błędów, które trudno odtworzyć, włącz opcję Zapisuj informacje debugowania i inne informacje w pliku dziennika w sekcji Aplikacja → Panel dziennika, odtwórz problem, a następnie wybierz Eksportuj. Eksporty pomocy technicznej zawsze zawierają pełny dziennik na dysku. Podczas zgłaszania problemu podaj wszelkie kody mcL####."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

@@ -539,7 +539,8 @@
     "clearAllRoomsConfirm": "Bu işlem, favori olmayan tüm MeshCore oda sunucularını bağlı radyodan ve yerel veritabanından kaldırır. Odalar tekrar duyuru yaptıklarında yeniden görünür. Bu işlem geri alınamaz.",
     "meshcomWatchlistHeading": "MeshCom çağrı işareti izleme listesi",
     "verboseLogging": "Günlüklere hata ayıklama ve bilgi ekleyin",
-    "verboseLoggingDesc": "Varsayılan olarak kapalıdır, böylece dışa aktarımlar küçük kalır. Açın, sorunu yeniden oluşturun, ardından GitHub için dışa aktarın. Bir sorun bildirirken günlükten herhangi bir mcL#### kodunu belirtin."
+    "verboseLoggingDesc": "Varsayılan olarak kapalıdır, böylece dışa aktarımlar küçük kalır. Açın, sorunu yeniden oluşturun, ardından GitHub için dışa aktarın. Bir sorun bildirirken günlükten herhangi bir mcL#### kodunu belirtin.",
+    "verboseLoggingSupportHint": "Yeniden oluşturulması zor hatalar için Uygulama → Günlük paneli altında Günlük dosyasına hata ayıklama ve bilgi yaz seçeneğini açın, sorunu yeniden oluşturun ve ardından Dışa aktar seçeneğini kullanın. Destek dışa aktarımları her zaman diske kaydedilen günlüğün tamamını içerir. Bir sorun bildirirken mcL#### kodlarını belirtin."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

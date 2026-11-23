@@ -539,7 +539,8 @@
     "clearAllRoomsConfirm": "Questa operazione rimuove tutti i server delle room MeshCore non preferiti dalla radio connessa e dal database locale. Le room ricompaiono quando vengono nuovamente pubblicizzate. Questa operazione non può essere annullata.",
     "meshcomWatchlistHeading": "Elenco di controllo dei nominativi MeshCom",
     "verboseLogging": "Includi debug e informazioni nei registri",
-    "verboseLoggingDesc": "Disattivata per impostazione predefinita, in modo che le esportazioni rimangano di dimensioni ridotte. Attiva, riproduci il problema, quindi esporta per GitHub. Quando segnali un problema, cita tutti i codici mcL#### presenti nel registro."
+    "verboseLoggingDesc": "Disattivata per impostazione predefinita, in modo che le esportazioni rimangano di dimensioni ridotte. Attiva, riproduci il problema, quindi esporta per GitHub. Quando segnali un problema, cita tutti i codici mcL#### presenti nel registro.",
+    "verboseLoggingSupportHint": "Per i bug difficili da riprodurre, attiva l'opzione Scrivi debug e informazioni nel file di registro nel pannello App → Registro, riproduci il problema, quindi seleziona Esporta. Le esportazioni di assistenza includono sempre il registro completo su disco. Quando segnali un problema, riporta tutti i codici mcL####."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

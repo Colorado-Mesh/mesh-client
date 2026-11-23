@@ -547,7 +547,8 @@
     "clearAllRoomsConfirm": "Tímto se odstraní všechny neoblíbené servery místností MeshCore z připojeného rádia a z místní databáze. Místnosti se znovu objeví, když se znovu zviditelní. Tento krok nelze vrátit zpět.",
     "meshcomWatchlistHeading": "Seznam sledovaných volacích značek MeshCom",
     "verboseLogging": "Zahrnout do protokolů ladění a informace",
-    "verboseLoggingDesc": "Ve výchozím nastavení je vypnuto, aby exporty zůstaly malé. Zapněte, reprodukujte problém a poté exportujte pro GitHub. Při hlášení problému uveďte všechny kódy mcL#### ze záznamu."
+    "verboseLoggingDesc": "Ve výchozím nastavení je vypnuto, aby exporty zůstaly malé. Zapněte, reprodukujte problém a poté exportujte pro GitHub. Při hlášení problému uveďte všechny kódy mcL#### ze záznamu.",
+    "verboseLoggingSupportHint": "V případě chyb, které je obtížné reprodukovat, zapněte možnost Zapsat ladění a informace do souboru protokolu na panelu Aplikace → Protokol, reprodukujte problém a poté vyberte možnost Exportovat. Exporty podpory vždy obsahují úplný protokol na disku. Při hlášení problému uveďte všechny kódy mcL####."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

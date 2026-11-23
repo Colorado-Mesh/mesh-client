@@ -539,7 +539,8 @@
     "clearAllRoomsConfirm": "这将从已连接的收音机和本地数据库中移除所有未收藏的MeshCore房间服务器。房间在再次发布时会重新出现。此操作无法撤消。",
     "meshcomWatchlistHeading": "MeshCom呼号观察名单",
     "verboseLogging": "在日志中包含调试信息和一般信息",
-    "verboseLoggingDesc": "默认情况下处于关闭状态，因此导出文件保持较小。开启，重现问题，然后导出为GitHub。提交问题时，请引用日志中的任何 mcL#### 代码。"
+    "verboseLoggingDesc": "默认情况下处于关闭状态，因此导出文件保持较小。开启，重现问题，然后导出为GitHub。提交问题时，请引用日志中的任何 mcL#### 代码。",
+    "verboseLoggingSupportHint": "对于难以重现的错误，请在“应用”→“日志”面板下启用“将调试和信息写入日志文件”，重现问题，然后“导出”。支持导出始终包含完整的磁盘日志。在提交问题时，请引用所有 mcL#### 代码。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

@@ -539,7 +539,8 @@
     "clearAllRoomsConfirm": "Cette action supprime tous les serveurs de salles MeshCore non favoris de la radio connectée et de la base de données locale. Les salles réapparaissent lorsqu’elles se signalent à nouveau. Cette action est irréversible.",
     "meshcomWatchlistHeading": "Liste de surveillance des indicatifs d’appel MeshCom",
     "verboseLogging": "Inclure le débogage et les informations dans les journaux",
-    "verboseLoggingDesc": "Désactivé par défaut afin que les exportations restent de petite taille. Activez, reproduisez le problème, puis exportez pour GitHub. Indiquez tous les codes mcL#### du journal lorsque vous signalez un problème."
+    "verboseLoggingDesc": "Désactivé par défaut afin que les exportations restent de petite taille. Activez, reproduisez le problème, puis exportez pour GitHub. Indiquez tous les codes mcL#### du journal lorsque vous signalez un problème.",
+    "verboseLoggingSupportHint": "Pour les bugs difficiles à reproduire, activez l'option Écrire le débogage et les informations dans le fichier journal sous Application → Panneau Journal, reproduisez le problème, puis cliquez sur Exporter. Les exportations d'assistance incluent toujours le journal complet sur le disque. Indiquez tous les codes mcL#### lorsque vous signalez un problème."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

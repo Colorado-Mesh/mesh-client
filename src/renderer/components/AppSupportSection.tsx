@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { bundledWllamaThreadCount } from '@/renderer/lib/aiWorkerHost';
@@ -15,10 +15,7 @@ import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
 import { buttonClassName } from './ui/Button';
-import { CHECKBOX_CLASS } from './ui/formClasses';
 import { SettingsCollapsible } from './ui/SettingsSection';
-
-const VERBOSE_LOGGING_SETTING_KEY = 'verboseLogging';
 
 interface AppSupportSectionProps {
   exporting: SupportBundleMode | null;
@@ -34,37 +31,7 @@ function formatSignedMemory(bytes: number, formatMemory: (bytes: number) => stri
 
 export function AppSupportSection({ exporting, onExport }: AppSupportSectionProps) {
   const { t, i18n } = useTranslation();
-  const [verboseLogging, setVerboseLogging] = useState(false);
   const memory = useSyncExternalStore(subscribeCoiMemorySnapshot, getCoiMemorySnapshot);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const enabled = await window.electronAPI.log.isVerboseEnabled();
-        if (!cancelled) setVerboseLogging(enabled);
-      } catch (e) {
-        console.debug('[AppSupportSection] isVerboseEnabled failed', e);
-      }
-    })();
-    const off = window.electronAPI.log.onVerboseChanged((enabled) => {
-      setVerboseLogging(enabled);
-    });
-    return () => {
-      cancelled = true;
-      off();
-    };
-  }, []);
-
-  const onVerboseChange = useCallback(async (checked: boolean) => {
-    setVerboseLogging(checked);
-    try {
-      await window.electronAPI.appSettings.set(VERBOSE_LOGGING_SETTING_KEY, checked ? '1' : '0');
-    } catch (e) {
-      console.warn('mcL0376 [AppSupportSection] verboseLogging persist failed', e);
-      setVerboseLogging(!checked);
-    }
-  }, []);
   const use24Hour = useTimeFormatStore((state) => state.use24HourTime);
   const latest = memory.samples.at(-1);
   const previous = memory.samples.length >= 2 ? memory.samples.at(-2) : undefined;
@@ -109,23 +76,9 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
         title={t('appPanel.supportSection')}
         description={t('appPanel.supportSectionDesc')}
       >
-        <div data-setting-anchor="app.support.verboseLogging" className="mb-3 space-y-1">
-          <label className="text-muted flex cursor-pointer items-center gap-2 text-xs">
-            <input
-              type="checkbox"
-              className={CHECKBOX_CLASS}
-              checked={verboseLogging}
-              onChange={(e) => {
-                void onVerboseChange(e.target.checked);
-              }}
-              aria-describedby="app-support-verbose-logging-desc"
-            />
-            {t('appPanel.verboseLogging')}
-          </label>
-          <p id="app-support-verbose-logging-desc" className="text-muted text-xs">
-            {t('appPanel.verboseLoggingDesc')}
-          </p>
-        </div>
+        <p className="text-muted mb-3 text-xs" role="note">
+          {t('appPanel.verboseLoggingSupportHint')}
+        </p>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div data-setting-anchor="app.support.exportForGitHub" className="space-y-2">
             <button

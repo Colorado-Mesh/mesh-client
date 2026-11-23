@@ -111,7 +111,7 @@ import { ThemePicker } from './ThemePicker';
 import { useToast } from './Toast';
 import { buttonClassName, DANGER_ROW_CLASS } from './ui/Button';
 import { DocsSiteLink } from './ui/DocsSiteLink';
-import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
+import { CHECKBOX_CLASS, INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 import { SettingsCollapsible } from './ui/SettingsSection';
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
@@ -368,8 +368,38 @@ export default function AppPanel({
     null,
   );
   const [mecpExportBusy, setMecpExportBusy] = useState(false);
+  const [verboseLogging, setVerboseLogging] = useState(false);
   const { addToast } = useToast();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const enabled = await window.electronAPI.log.isVerboseEnabled();
+        if (!cancelled) setVerboseLogging(enabled);
+      } catch (e) {
+        console.debug('[AppPanel] isVerboseEnabled failed: ' + errLikeToLogString(e));
+      }
+    })();
+    const off = window.electronAPI.log.onVerboseChanged((enabled) => {
+      setVerboseLogging(enabled);
+    });
+    return () => {
+      cancelled = true;
+      off();
+    };
+  }, []);
+
+  const onVerboseLoggingChange = useCallback(async (checked: boolean) => {
+    setVerboseLogging(checked);
+    try {
+      await window.electronAPI.appSettings.set('verboseLogging', checked ? '1' : '0');
+    } catch (e) {
+      console.warn('mcL0376 [AppPanel] verboseLogging persist failed ' + errLikeToLogString(e));
+      setVerboseLogging(!checked);
+    }
+  }, []);
   const resolveNodes = useCallback(
     (): Map<number, MeshNode> => nodesProp ?? readNodesMapForProtocol(protocol),
     [nodesProp, protocol],
@@ -1016,9 +1046,9 @@ export default function AppPanel({
         </div>
       </SettingsCollapsible>
 
-      {/* Log panel visibility */}
-      {onLogPanelVisibleChange && (
-        <SettingsCollapsible title={t('appPanel.logPanelSection')}>
+      {/* Log panel visibility + on-disk debug/info gate */}
+      <SettingsCollapsible title={t('appPanel.logPanelSection')}>
+        {onLogPanelVisibleChange && (
           <div data-setting-anchor="app.logPanel.showLogPanel">
             <div className="flex items-center gap-2">
               <input
@@ -1040,8 +1070,28 @@ export default function AppPanel({
             </div>
             <p className="text-muted mt-2 text-xs">{t('appPanel.logPanelHelp')}</p>
           </div>
-        </SettingsCollapsible>
-      )}
+        )}
+        <div
+          data-setting-anchor="app.logPanel.verboseLogging"
+          className={onLogPanelVisibleChange ? 'mt-3 space-y-1' : 'space-y-1'}
+        >
+          <label className="text-ink-300 flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className={CHECKBOX_CLASS}
+              checked={verboseLogging}
+              onChange={(e) => {
+                void onVerboseLoggingChange(e.target.checked);
+              }}
+              aria-describedby="app-log-panel-verbose-logging-desc"
+            />
+            {t('appPanel.verboseLogging')}
+          </label>
+          <p id="app-log-panel-verbose-logging-desc" className="text-muted text-xs">
+            {t('appPanel.verboseLoggingDesc')}
+          </p>
+        </div>
+      </SettingsCollapsible>
 
       {/* Flood Advert schedule (MeshCore only) */}
       {protocol === 'meshcore' && (

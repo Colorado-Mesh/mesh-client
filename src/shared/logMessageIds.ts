@@ -390,7 +390,7 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL0373: 'src/renderer/components/AppPanel.tsx:2588',
   mcL0374: 'src/renderer/components/AppPanel.tsx:2615',
   mcL0375: 'src/renderer/components/AppPanel.tsx:2779',
-  mcL0376: 'src/renderer/components/AppSupportSection.tsx:64',
+  mcL0376: 'src/renderer/components/AppPanel.tsx:399',
   mcL0377: 'src/renderer/components/ChatComposer.tsx:797',
   mcL0378: 'src/renderer/components/ChatComposer.tsx:908',
   mcL0379: 'src/renderer/components/ChatComposer.tsx:1012',

@@ -539,7 +539,8 @@
     "clearAllRoomsConfirm": "Hiermee worden alle niet-favoriete MeshCore-roomservers van de aangesloten radio en de lokale database verwijderd. Ruimtes verschijnen opnieuw wanneer ze weer worden aangekondigd. Dit kan niet ongedaan worden gemaakt.",
     "meshcomWatchlistHeading": "Watchlist voor MeshCom-roepnamen",
     "verboseLogging": "Debug- en infogegevens opnemen in logboeken",
-    "verboseLoggingDesc": "Standaard uitgeschakeld, zodat exporten klein blijven. Schakel in, reproduceer het probleem en exporteer vervolgens voor GitHub. Vermeld eventuele mcL####-codes uit het logboek wanneer u een probleem meldt."
+    "verboseLoggingDesc": "Standaard uitgeschakeld, zodat exporten klein blijven. Schakel in, reproduceer het probleem en exporteer vervolgens voor GitHub. Vermeld eventuele mcL####-codes uit het logboek wanneer u een probleem meldt.",
+    "verboseLoggingSupportHint": "Voor moeilijk te reproduceren bugs schakelt u Debuggen en informatie naar het logbestand schrijven in onder App → Logvenster, reproduceert u het probleem en vervolgens Exporteren. Supportexports bevatten altijd het volledige logbestand op de schijf. Vermeld eventuele mcL####-codes wanneer u een probleem meldt."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

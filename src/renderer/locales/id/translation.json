@@ -539,7 +539,8 @@
     "clearAllRoomsConfirm": "Ini akan menghapus semua server ruang MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Ruangan akan muncul kembali saat diiklankan lagi. Tindakan ini tidak dapat dibatalkan.",
     "meshcomWatchlistHeading": "Daftar pantau nama panggilan MeshCom",
     "verboseLogging": "Sertakan debug dan info dalam log",
-    "verboseLoggingDesc": "Nonaktif secara default agar ekspor tetap berukuran kecil. Aktifkan, reproduksi masalah, lalu Ekspor untuk GitHub. Sebutkan kode mcL#### apa pun dari log saat melaporkan masalah."
+    "verboseLoggingDesc": "Nonaktif secara default agar ekspor tetap berukuran kecil. Aktifkan, reproduksi masalah, lalu Ekspor untuk GitHub. Sebutkan kode mcL#### apa pun dari log saat melaporkan masalah.",
+    "verboseLoggingSupportHint": "Untuk bug yang sulit direproduksi, aktifkan Tulis debug dan info ke file log di panel Aplikasi → Log, reproduksi masalahnya, lalu Ekspor. Ekspor dukungan selalu menyertakan log lengkap di disk. Sebutkan kode mcL#### saat melaporkan masalah."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
