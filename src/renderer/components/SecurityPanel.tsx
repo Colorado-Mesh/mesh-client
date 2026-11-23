@@ -70,8 +70,9 @@ function isValidBase64Key(b64: string): boolean {
   try {
     const bytes = base64ToBytes(b64);
     return bytes.length === 32;
-  } catch {
-    return false; // catch-no-log-ok: pure validation helper, invalid input is expected
+  } catch (e: unknown) {
+    console.debug('[renderer/components/SecurityPanel] catch:', e);
+    return false;
   }
 }
 
@@ -265,7 +266,7 @@ export default function SecurityPanel({
       });
       addToast(t('securityPanel.keyRegenRequested'), 'success');
     } catch (err) {
-      console.warn('[SecurityPanel] handleRegenerate ' + errLikeToLogString(err));
+      console.warn('mcL0619 [SecurityPanel] handleRegenerate ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.failed', {
           message: formatMeshtasticModuleApplyError(err, t),
@@ -292,7 +293,7 @@ export default function SecurityPanel({
       await applyConfig({ adminKey: parsed });
       addToast(t('securityPanel.adminKeysApplied'), 'success');
     } catch (err) {
-      console.warn('[SecurityPanel] handleApplyAdminKeys ' + errLikeToLogString(err));
+      console.warn('mcL0620 [SecurityPanel] handleApplyAdminKeys ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.failed', {
           message: formatMeshtasticModuleApplyError(err, t),
@@ -326,7 +327,7 @@ export default function SecurityPanel({
       });
       addToast(t('securityPanel.adminSettingsApplied'), 'success');
     } catch (err) {
-      console.warn('[SecurityPanel] handleApplyToggles ' + errLikeToLogString(err));
+      console.warn('mcL0621 [SecurityPanel] handleApplyToggles ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.failed', {
           message: formatMeshtasticModuleApplyError(err, t),
@@ -410,7 +411,7 @@ export default function SecurityPanel({
         addToast(t('securityPanel.signNoResult'), 'error');
       }
     } catch (err) {
-      console.warn('[SecurityPanel] handleSignData ' + errLikeToLogString(err));
+      console.warn('mcL0622 [SecurityPanel] handleSignData ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.signFailed', {
           message: err instanceof Error ? err.message : t('common.unknown'),
@@ -435,7 +436,7 @@ export default function SecurityPanel({
         addToast(t('securityPanel.exportNoKey'), 'error');
       }
     } catch (err) {
-      console.warn('[SecurityPanel] handleExportPrivateKey ' + errLikeToLogString(err));
+      console.warn('mcL0623 [SecurityPanel] handleExportPrivateKey ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.exportFailed', {
           message: err instanceof Error ? err.message : t('common.unknown'),
@@ -461,7 +462,7 @@ export default function SecurityPanel({
         addToast(t('securityPanel.importFailed'), 'error');
       }
     } catch (err) {
-      console.warn('[SecurityPanel] handleImportPrivateKey ' + errLikeToLogString(err));
+      console.warn('mcL0624 [SecurityPanel] handleImportPrivateKey ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.importFailedWithMessage', {
           message: err instanceof Error ? err.message : t('common.unknown'),

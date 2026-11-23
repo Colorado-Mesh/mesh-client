@@ -12,6 +12,7 @@ import {
 } from '../../shared/translation-types';
 import { isTranslationLanguage } from '../../shared/translationLanguages';
 import { createIpcRateLimiter } from '../ipcRateLimit';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { BergamotWorker } from '../translation/bergamotWorker';
 import { LibreTranslateClient } from '../translation/libreTranslateClient';
 import { TranslationPackManager } from '../translation/packManager';
@@ -197,8 +198,12 @@ export function registerTranslationHandlers(deps: TranslationHandlerDependencies
     try {
       await libre.detect('Hello, this is a translation connection test.');
       return { ok: true };
-    } catch {
-      // catch-no-log-ok report failure without server content, URLs or keys
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ipc/translation-handlers] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return { ok: false, reason: 'error' };
     }
   });

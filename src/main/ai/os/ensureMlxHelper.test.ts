@@ -193,7 +193,7 @@ describe('ensureMlxHelper', () => {
     });
     expect(result).toEqual({ available: false, reason: 'sourcesUnavailable', binaryPath: null });
     expect(warn).toHaveBeenCalledWith(
-      '[ensureMlxHelper] Metal helper unavailable',
+      'mcL0004 [ensureMlxHelper] Metal helper unavailable',
       'sourcesUnavailable',
       expect.any(String),
     );

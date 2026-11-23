@@ -52,19 +52,24 @@ export async function readBoundedResponseBody(
       if (done || !value) break;
       total += value.length;
       if (total > maxBytes) {
-        await reader.cancel().catch(() => {
-          // catch-no-log-ok stream may already be closed
+        await reader.cancel().catch((e: unknown) => {
+          console.debug(
+            '[main/weather/http] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         });
         return null;
       }
       chunks.push(value);
     }
   } catch {
-    // catch-no-log-ok aborted / truncated body → treat as miss
     try {
       await reader.cancel();
-    } catch {
-      // catch-no-log-ok already closed
+    } catch (e: unknown) {
+      console.debug(
+        '[main/weather/http] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
     return null;
   }
@@ -102,16 +107,22 @@ async function fetchPinned(
       redirect: 'manual',
     } as Parameters<typeof undiciFetch>[1])) as unknown as Response;
   } finally {
-    void agent.close().catch(() => {
-      // catch-no-log-ok agent cleanup
+    void agent.close().catch((e: unknown) => {
+      console.debug(
+        '[main/weather/http] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
   }
 }
 
 /** Drop an unused Response body so undici / fetch can release the connection. */
 function discardResponseBody(response: Response): void {
-  void response.body?.cancel().catch(() => {
-    // catch-no-log-ok stream may already be closed
+  void response.body?.cancel().catch((e: unknown) => {
+    console.debug(
+      '[main/weather/http] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   });
 }
 
@@ -131,12 +142,12 @@ export async function fetchBounded(
     try {
       parsed = new URL(current);
     } catch {
-      console.warn('[weather] invalid URL ' + sanitizeLogMessage(current.slice(0, 80)));
+      console.warn('mcL0320 [weather] invalid URL ' + sanitizeLogMessage(current.slice(0, 80)));
       return null;
     }
     if (parsed.protocol !== 'https:') return null;
     if (!isAllowedHost(parsed.hostname)) {
-      console.warn('[weather] host rejected ' + sanitizeLogMessage(parsed.hostname));
+      console.warn('mcL0321 [weather] host rejected ' + sanitizeLogMessage(parsed.hostname));
       return null;
     }
 
@@ -156,7 +167,7 @@ export async function fetchBounded(
       );
     } catch (err) {
       console.warn(
-        '[weather] fetch failed ' +
+        'mcL0322 [weather] fetch failed ' +
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       return null;
@@ -170,8 +181,12 @@ export async function fetchBounded(
       }
       try {
         current = new URL(loc, current).toString();
-      } catch {
-        // catch-no-log-ok malformed redirect Location
+      } catch (e: unknown) {
+        console.debug(
+          '[main/weather/http] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         discardResponseBody(response);
         return null;
       }
@@ -181,7 +196,7 @@ export async function fetchBounded(
 
     if (!response.ok) {
       discardResponseBody(response);
-      console.warn(`[weather] upstream status ${response.status}`);
+      console.warn(`mcL0323 [weather] upstream status ${response.status}`);
       return null;
     }
 
@@ -197,7 +212,9 @@ export async function fetchBounded(
       );
       if (!wildcardOk && !accepted.includes(contentType)) {
         discardResponseBody(response);
-        console.warn('[weather] unexpected content-type ' + sanitizeLogMessage(contentType));
+        console.warn(
+          'mcL0324 [weather] unexpected content-type ' + sanitizeLogMessage(contentType),
+        );
         return null;
       }
     }

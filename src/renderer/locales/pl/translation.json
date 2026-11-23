@@ -553,7 +553,10 @@
     "dangerZoneEnvironmentHistoryDesc": "Usuwa wszystkie zapisane odczyty temperatury, wilgotności, ciśnienia i jakości powietrza dla każdego protokołu i tożsamości.",
     "clearAllRooms": "Wyczyść wszystkie pokoje",
     "clearAllRoomsConfirm": "Spowoduje to usunięcie wszystkich nieulubionych serwerów pomieszczeń MeshCore z podłączonego radia i lokalnej bazy danych. Pokoje pojawiają się ponownie, gdy znów się ogłoszą. Tej czynności nie można cofnąć.",
-    "meshcomWatchlistHeading": "Lista obserwowanych sygnałów wywoławczych MeshCom"
+    "meshcomWatchlistHeading": "Lista obserwowanych sygnałów wywoławczych MeshCom",
+    "verboseLogging": "Uwzględnij w dziennikach informacje debugowania i inne informacje",
+    "verboseLoggingDesc": "Domyślnie wyłączone, aby eksporty pozostawały niewielkie. Włącz, odtwórz problem, a następnie wyeksportuj dla GitHub. Podczas zgłaszania problemu podaj wszelkie kody mcL#### z dziennika.",
+    "verboseLoggingSupportHint": "W przypadku błędów, które trudno odtworzyć, włącz opcję Zapisuj informacje debugowania i inne informacje w pliku dziennika w sekcji Aplikacja → Panel dziennika, odtwórz problem, a następnie wybierz Eksportuj. Eksporty pomocy technicznej zawsze zawierają pełny dziennik na dysku. Podczas zgłaszania problemu podaj wszelkie kody mcL####."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -2757,6 +2760,14 @@
       "gps": {
         "label": "Wyszukiwanie lokalizacji IP nie powiodło się",
         "recommendation": "Awaria lokalizacji opartej na IP nie powiodła się. Sprawdź dostępność Internetu; radio GPS i ręcznie ustawiona lokalizacja statyczna są oddzielone od tego wyszukiwania IP."
+      },
+      "caught-serious-error": {
+        "label": "Wykryto poważne błędy",
+        "recommendation": "Wykryto poważny błąd bez awarii. Podaj wszelkie kody mcL####, w razie potrzeby włącz szczegółowe logowanie, odtwórz problem, a następnie wyeksportuj dla GitHub i zgłoś błąd."
+      },
+      "path-containment": {
+        "label": "Ograniczenie ścieżki",
+        "recommendation": "Ścieżka wyszła poza dozwolony katalog główny (jail). Jeśli było to nieoczekiwane, wyeksportuj dla GitHub i zgłoś to; podaj wszelkie kody mcL#### w dzienniku."
       }
     },
     "recommendationGroups": {
@@ -2789,7 +2800,8 @@
     "deviceSource": "Urządzenie ({{count}})",
     "narrowLogPanel": "Wąski panel z bali",
     "widenLogPanel": "Poszerz panel dziennika",
-    "clearFailed": "Nie udało się wyczyścić dziennika"
+    "clearFailed": "Nie udało się wyczyścić dziennika",
+    "verboseLoggingOn": "Rejestrowanie szczegółowe włączone – rejestrowane są dane debugowania i informacje."
   },
   "mapPanel": {
     "locationUnavailable": "Lokalizacja niedostępna.",

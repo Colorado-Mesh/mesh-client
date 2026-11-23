@@ -426,8 +426,12 @@ function withRebuiltPreferenceMap(
     }
     try {
       values[key] = JSON.parse(clean) as unknown;
-    } catch {
-      // catch-no-log-ok keep the sanitized string when structured round-trip fails
+    } catch (e: unknown) {
+      console.debug(
+        '[main/webStorageOriginMigration] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       values[key] = clean;
     }
   }
@@ -467,8 +471,11 @@ function recoverMissingAppFields(
       ) {
         result[key] = JSON.stringify({ ...original, ...latest });
       }
-    } catch {
-      // catch-no-log-ok keep malformed originals intact for the startup recovery surface
+    } catch (e: unknown) {
+      console.debug(
+        '[main/webStorageOriginMigration] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
   return result;
@@ -524,8 +531,12 @@ async function importAndVerify(
             !Array.isArray(parsed.values) &&
             Object.keys(parsed.values).length === 0;
           if (!baseline) localStorage.removeItem(prefsKey);
-        } catch {
-          // catch-no-log-ok malformed preference envelopes are replaced by the set loop
+        } catch (e) {
+          // Injected into Chromium — keep browser-safe JS only (no sanitizeLogMessage / TS types).
+          console.debug(
+            '[main/webStorageOriginMigration] catch:',
+            e instanceof Error ? e.message : String(e),
+          );
           localStorage.removeItem(prefsKey);
         }
       }
@@ -657,7 +668,7 @@ async function reverifyExistingStorage(
 
 function reportFailure(error: unknown): void {
   console.warn(
-    '[Startup] Renderer origin migration/health check failed; retaining file origin:',
+    'mcL0327 [Startup] Renderer origin migration/health check failed; retaining file origin:',
     sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
   );
 }
@@ -729,7 +740,7 @@ export async function runWebStorageOriginMigration(
     } catch (error) {
       if (!snapshot) throw error;
       console.warn(
-        '[Startup] Renderer origin legacy storage unavailable; resuming from the saved recovery export',
+        'mcL0328 [Startup] Renderer origin legacy storage unavailable; resuming from the saved recovery export',
       );
       entries = snapshot.entries;
     }
@@ -744,7 +755,7 @@ export async function runWebStorageOriginMigration(
         Object.keys(snapshot.entries).some((key) => !Object.hasOwn(entries, key)))
     ) {
       console.warn(
-        '[Startup] Renderer origin keeping the existing recovery export; legacy snapshot lost keys',
+        'mcL0329 [Startup] Renderer origin keeping the existing recovery export; legacy snapshot lost keys',
       );
     } else {
       snapshot = {
@@ -792,13 +803,16 @@ export async function runWebStorageOriginMigration(
     );
     return 'completed';
   } catch (error) {
-    // catch-no-log-ok reportFailure logs a sanitized migration failure without exported values.
     reportFailure(error);
     if (state?.hasCompleted && snapshot && state.exportSha256 === snapshot.sha256) {
       try {
         saveState(options, 'needsRepair', snapshot, true);
       } catch (stateError) {
-        // catch-no-log-ok reportFailure logs the state-write failure through the sanitizer.
+        console.debug(
+          '[main/webStorageOriginMigration] catch:',
+          sanitizeLogMessage(stateError instanceof Error ? stateError.message : String(stateError)),
+        );
+
         reportFailure(stateError);
       }
     }
@@ -847,13 +861,16 @@ export async function checkRendererOriginStorageHealth(
     await repairStorage(options, snapshot, unloaded);
     return 'repaired';
   } catch (error) {
-    // catch-no-log-ok reportFailure logs a sanitized migration failure without exported values.
     reportFailure(error);
     if (state?.hasCompleted && snapshot && state.exportSha256 === snapshot.sha256) {
       try {
         saveState(options, 'needsRepair', snapshot, true);
       } catch (stateError) {
-        // catch-no-log-ok reportFailure logs the state-write failure through the sanitizer.
+        console.debug(
+          '[main/webStorageOriginMigration] catch:',
+          sanitizeLogMessage(stateError instanceof Error ? stateError.message : String(stateError)),
+        );
+
         reportFailure(stateError);
       }
     }

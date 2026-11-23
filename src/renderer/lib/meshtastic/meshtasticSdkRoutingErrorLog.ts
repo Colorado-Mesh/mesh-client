@@ -238,7 +238,7 @@ export function applyMeshtasticOutboundRoutingError(
   if (missingKey) {
     markOutboundBlocked(identityId, storeMessageId, CHAT_SEND_ERROR_DEST_KEY_KEY);
     console.warn(
-      `[meshtasticAck] PKI packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
+      `mcL0958 [meshtasticAck] PKI packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
     );
   } else if (priorStatus === 'blocked') {
     // Keep Blocked rows sticky unless this event is another missing-key PKI failure.
@@ -251,7 +251,7 @@ export function applyMeshtasticOutboundRoutingError(
       parsed.errorName === 'MAX_RETRANSMIT'
     ) {
       console.warn(
-        `[meshtasticAck] TIMEOUT packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
+        `mcL0959 [meshtasticAck] TIMEOUT packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
       );
       const connectionType = getConnection(identityId)?.connectionType ?? null;
       if (connectionType === 'serial') {
@@ -263,7 +263,7 @@ export function applyMeshtasticOutboundRoutingError(
       }
     } else {
       console.warn(
-        `[meshtasticAck] NACK packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
+        `mcL0960 [meshtasticAck] NACK packetId=${parsed.packetId} dest=${target.to ?? '?'} detail=${parsed.errorName}`,
       );
     }
   }

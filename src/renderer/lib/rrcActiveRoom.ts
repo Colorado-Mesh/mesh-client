@@ -13,8 +13,9 @@ export function loadRrcActiveRoom(hubHash: string): string | null {
   try {
     const room = localStorage.getItem(storageKey(hubHash))?.trim();
     return room ? room : null;
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcActiveRoom] catch:', e);
+
     return null;
   }
 }
@@ -22,15 +23,15 @@ export function loadRrcActiveRoom(hubHash: string): string | null {
 export function saveRrcActiveRoom(hubHash: string, room: string): void {
   try {
     localStorage.setItem(storageKey(hubHash), room.trim());
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcActiveRoom] catch:', e);
   }
 }
 
 export function clearRrcActiveRoom(hubHash: string): void {
   try {
     localStorage.removeItem(storageKey(hubHash));
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcActiveRoom] catch:', e);
   }
 }

@@ -69,7 +69,7 @@ export async function hydrateRrcRoomMessages(
       useRrcSessionStore.getState().mergeHistoryMessages(hub, roomKey, mapped);
     }
   } catch (e) {
-    console.warn('[rrcRoomHistory] hydrate failed ' + errLikeToLogString(e));
+    console.warn('mcL1107 [rrcRoomHistory] hydrate failed ' + errLikeToLogString(e));
   }
 }
 
@@ -85,7 +85,7 @@ export async function clearRrcRoomHistory(hubHash: string, room: string): Promis
   try {
     await window.electronAPI.db.deleteRrcMessagesByRoom(hub, roomKey);
   } catch (e) {
-    console.warn('[rrcRoomHistory] deleteByRoom failed ' + errLikeToLogString(e));
+    console.warn('mcL1108 [rrcRoomHistory] deleteByRoom failed ' + errLikeToLogString(e));
   }
   unmarkHydratedRrcRoomKey(key);
   useRrcSessionStore.getState().clearRoomMessages(hub, roomKey);

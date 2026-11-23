@@ -93,7 +93,8 @@ export function useMeshcoreNoiseFloorTrend({
       void request(nodeId)
         .catch((e: unknown) => {
           console.warn(
-            '[useMeshcoreNoiseFloorTrend] remote status poll failed ' + errLikeToLogString(e),
+            'mcL0759 [useMeshcoreNoiseFloorTrend] remote status poll failed ' +
+              errLikeToLogString(e),
           );
         })
         .finally(() => {

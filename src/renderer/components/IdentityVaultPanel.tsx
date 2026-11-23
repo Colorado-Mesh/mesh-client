@@ -26,7 +26,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
     try {
       setStatus(await window.electronAPI.vault.status());
     } catch (e) {
-      console.warn('[IdentityVaultPanel] status ' + errLikeToLogString(e));
+      console.warn('mcL0425 [IdentityVaultPanel] status ' + errLikeToLogString(e));
     }
   }, []);
 
@@ -58,7 +58,8 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
       setMessage(t('identityVault.setSuccess'));
       await refreshStatus();
     } catch (e) {
-      // catch-no-log-ok surfaced inline via setError
+      console.debug('[renderer/components/IdentityVaultPanel] catch:', e);
+
       setError(errLikeToLogString(e));
     } finally {
       setBusy(false);
@@ -79,7 +80,8 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
       setMessage(t('identityVault.unlockSuccess'));
       await refreshStatus();
     } catch (e) {
-      // catch-no-log-ok surfaced inline via setError
+      console.debug('[renderer/components/IdentityVaultPanel] catch:', e);
+
       setError(errLikeToLogString(e));
     } finally {
       setBusy(false);
@@ -95,7 +97,8 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
       setMessage(t('identityVault.lockSuccess'));
       await refreshStatus();
     } catch (e) {
-      // catch-no-log-ok surfaced inline via setError
+      console.debug('[renderer/components/IdentityVaultPanel] catch:', e);
+
       setError(errLikeToLogString(e));
     } finally {
       setBusy(false);

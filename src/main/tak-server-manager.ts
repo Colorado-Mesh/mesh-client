@@ -409,7 +409,7 @@ export class TakServerManager extends EventEmitter {
     this.server.on('error', (err) => {
       const msg = `Server error: ${String(err)}`;
       const safe = sanitizeLogMessage(msg);
-      console.error('[TakServer]', safe);
+      console.error('mcL0302 [TakServer]', safe);
       this._status = { running: false, port: settings.port, clientCount: 0, error: safe };
       this.emit('status', this.getStatus());
       this.emit('error', safe);
@@ -433,8 +433,11 @@ export class TakServerManager extends EventEmitter {
       this.clearClientIdleTimer(client);
       try {
         client.socket.destroy();
-      } catch {
-        // catch-no-log-ok: socket may already be closed; destroy error is expected during shutdown
+      } catch (e: unknown) {
+        console.debug(
+          '[main/tak-server-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
       this.clients.delete(id);
     }
@@ -990,7 +993,11 @@ export class TakServerManager extends EventEmitter {
     try {
       client.socket.write(cot + '\n');
     } catch (err) {
-      console.warn(`[TakServer] Failed to write to client ${id}:`, sanitizeLogMessage(String(err)));
+      console.warn(
+        'mcL0303 [TakServer] Failed to write to client',
+        id + ':',
+        sanitizeLogMessage(String(err)),
+      );
     }
   }
 
@@ -1066,7 +1073,7 @@ export class TakServerManager extends EventEmitter {
       newCertBundle = await regenerateCerts(this.resolveServerIdentity(serverName));
     } catch (err) {
       const msg = `Certificate regeneration failed: ${String(err)}`;
-      console.error('[TakServer]', sanitizeLogMessage(msg));
+      console.error('mcL0304 [TakServer]', sanitizeLogMessage(msg));
       this._status = {
         running: false,
         port: this.settings?.port ?? this._status.port,
@@ -1092,11 +1099,14 @@ export class TakServerManager extends EventEmitter {
         try {
           await this.start(this.settings);
           console.warn(
-            '[TakServer] Restart with regenerated certificates failed; restored previous certificate bundle and restarted',
+            'mcL0305 [TakServer] Restart with regenerated certificates failed; restored previous certificate bundle and restarted',
           );
           return;
-        } catch {
-          // catch-no-log-ok: fallback restart failed too; start() already recorded status/error for this attempt
+        } catch (e: unknown) {
+          console.debug(
+            '[main/tak-server-manager] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         }
       }
       throw startErr;
@@ -1116,8 +1126,11 @@ export class TakServerManager extends EventEmitter {
       console.debug(`[TakServer] Idle timeout disconnect: ${sanitizeLogMessage(id)}`);
       try {
         client.socket.destroy();
-      } catch {
-        // catch-no-log-ok: socket may already be closed
+      } catch (e: unknown) {
+        console.debug(
+          '[main/tak-server-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }, TAK_CLIENT_IDLE_MS);
   }
@@ -1150,8 +1163,11 @@ export class TakServerManager extends EventEmitter {
   private sendPong(socket: tls.TLSSocket, nowMs: number): void {
     try {
       socket.write(cotPongEvent(nowMs) + '\n');
-    } catch {
-      // catch-no-log-ok: socket may close between the ping and the reply; not actionable
+    } catch (e: unknown) {
+      console.debug(
+        '[main/tak-server-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
 
@@ -1194,12 +1210,14 @@ export class TakServerManager extends EventEmitter {
   ): void {
     if (!this.claimChatSender(id, client, chat.senderUid)) {
       console.warn(
-        `[TakServer] Client ${sanitizeLogMessage(id)} sent chat as another sender; message dropped`,
+        `mcL0306 [TakServer] Client ${sanitizeLogMessage(id)} sent chat as another sender; message dropped`,
       );
       return;
     }
     if (!this.allowClientChat(client, nowMs)) {
-      console.warn(`[TakServer] Client ${sanitizeLogMessage(id)} chat rate limit; message dropped`);
+      console.warn(
+        `mcL0307 [TakServer] Client ${sanitizeLogMessage(id)} chat rate limit; message dropped`,
+      );
       return;
     }
     // The callsign from the connection's own position report wins over the one in the message.
@@ -1404,7 +1422,7 @@ export class TakServerManager extends EventEmitter {
     const address = socket.remoteAddress ?? 'unknown';
     if (this.clients.size >= MAX_TAK_CLIENTS) {
       console.warn(
-        `[TakServer] Client cap (${MAX_TAK_CLIENTS}) reached; rejecting ${sanitizeLogMessage(address)}`,
+        `mcL0308 [TakServer] Client cap (${MAX_TAK_CLIENTS}) reached; rejecting ${sanitizeLogMessage(address)}`,
       );
       socket.destroy();
       return;
@@ -1429,8 +1447,11 @@ export class TakServerManager extends EventEmitter {
     this.forEachFreshCot((cot) => {
       try {
         socket.write(cot + '\n');
-      } catch {
-        // catch-no-log-ok: socket may close between connection and flush; not actionable
+      } catch (e: unknown) {
+        console.debug(
+          '[main/tak-server-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }, true);
     this.forEachChatRoomContact((cot) => {
@@ -1455,7 +1476,7 @@ export class TakServerManager extends EventEmitter {
       } catch (err) {
         if (!(err instanceof CotFrameTooLargeError)) throw err;
         console.warn(
-          `[TakServer] Client ${sanitizeLogMessage(id)} sent an oversized CoT event; disconnecting`,
+          `mcL0309 [TakServer] Client ${sanitizeLogMessage(id)} sent an oversized CoT event; disconnecting`,
         );
         socket.destroy();
         return;
@@ -1487,7 +1508,9 @@ export class TakServerManager extends EventEmitter {
     });
 
     socket.on('error', () => {
-      console.warn(`[TakServer] Client socket error ${sanitizeLogMessage(id)}: socket error`);
+      console.warn(
+        `mcL0310 [TakServer] Client socket error ${sanitizeLogMessage(id)}: socket error`,
+      );
     });
   }
 }

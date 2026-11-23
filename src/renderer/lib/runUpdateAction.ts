@@ -17,7 +17,7 @@ export function runUpdateAction(
   logLabel: string,
 ): void {
   void action().catch((e: unknown) => {
-    console.warn(`[App] ${logLabel} failed ` + errLikeToLogString(e));
+    console.warn(`mcL1109 [App] ${logLabel} failed ` + errLikeToLogString(e));
     setUpdateState((s) => updateStateWithActionError(s, e));
   });
 }

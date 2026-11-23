@@ -10,8 +10,9 @@ function loadUse24HourTime(): boolean {
       'timeFormatStore loadUse24HourTime',
     );
     return o?.use24HourTime === true;
-  } catch {
-    // catch-no-log-ok: localStorage unavailable in node / restricted environments
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/timeFormatStore] catch:', e);
+
     return false;
   }
 }

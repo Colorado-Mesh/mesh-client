@@ -51,7 +51,8 @@ export function runMeshcoreCompanionRequest<T>(
           },
         );
       } catch (error) {
-        // catch-no-log-ok request setup errors propagate to the caller
+        console.debug('[renderer/lib/meshcoreCompanionRequestQueue] catch:', error);
+
         reject(unknownToError(error, 'companion request setup failed'));
         finish();
       }

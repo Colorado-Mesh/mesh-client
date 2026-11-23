@@ -139,7 +139,9 @@ async function saveMqttProfilesNow(
       if (previousPasswords == null) await removeSecureSecret(secretKey);
       else await setSecureSecret(secretKey, previousPasswords);
     } catch (rollbackError) {
-      console.warn('[mqttProfiles] password rollback failed ' + errLikeToLogString(rollbackError));
+      console.warn(
+        'mcL0983 [mqttProfiles] password rollback failed ' + errLikeToLogString(rollbackError),
+      );
     }
     console.debug('[mqttProfiles] save failed ' + errLikeToLogString(e));
     throw e instanceof Error ? e : new Error(String(e));

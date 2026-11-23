@@ -70,8 +70,12 @@ export function liveMapWindowUrl(
   let base: URL;
   try {
     base = new URL(rendererUrl);
-  } catch {
-    // catch-no-log-ok an unloaded or malformed main window URL means no pop-out is offered.
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ipc/live-map-handlers] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
   if (base.username || base.password) return null;
@@ -108,8 +112,12 @@ export function readLiveMapWindowState(statePath: string): StoredState {
       if (isStoredWindow(entry)) state[protocol] = entry;
     }
     return state;
-  } catch {
-    // catch-no-log-ok a missing or unreadable file falls back to default size and position.
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ipc/live-map-handlers] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return {};
   }
 }
@@ -119,7 +127,7 @@ function writeLiveMapWindowState(statePath: string, state: StoredState): void {
     fs.writeFileSync(statePath, JSON.stringify(state), 'utf-8');
   } catch (e: unknown) {
     console.warn(
-      '[live-map] window state save failed:',
+      'mcL0164 [live-map] window state save failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
@@ -195,7 +203,7 @@ export function registerLiveMapWindows(deps: LiveMapWindowDeps): void {
   const create = (main: BrowserWindow, protocol: LiveMapProtocol, view: LiveMapView | null) => {
     const url = liveMapWindowUrl(main.webContents.getURL(), protocol, deps.allowDevServer);
     if (!url) {
-      console.warn('[live-map] pop-out is unavailable for this renderer origin');
+      console.warn('mcL0165 [live-map] pop-out is unavailable for this renderer origin');
       return;
     }
     const stored = readLiveMapWindowState(deps.statePath)[protocol];
@@ -262,7 +270,7 @@ export function registerLiveMapWindows(deps: LiveMapWindowDeps): void {
     notifyMain({ protocol, open: true, ready: false, view: null });
     window.loadURL(url).catch((e: unknown) => {
       console.error(
-        '[live-map] pop-out load failed:',
+        'mcL0166 [live-map] pop-out load failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       if (!window.isDestroyed()) window.destroy();
@@ -311,7 +319,7 @@ export function registerLiveMapWindows(deps: LiveMapWindowDeps): void {
 
   ipcMain.on('liveMap:publish', (event, protocol: unknown, snapshot: unknown) => {
     if (!isFromMainWindow(event)) {
-      console.warn('[IPC] liveMap:publish: unauthorized sender');
+      console.warn('mcL0167 [IPC] liveMap:publish: unauthorized sender');
       return;
     }
     if (!isLiveMapProtocol(protocol) || !snapshot || typeof snapshot !== 'object') return;

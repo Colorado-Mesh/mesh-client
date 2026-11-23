@@ -64,8 +64,9 @@ export function isSafeChatUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    // catch-no-log-ok URL parse failure — treat as unsafe link
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/chatMentionSegments] catch:', e);
+
     return false;
   }
 }

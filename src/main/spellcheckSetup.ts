@@ -37,7 +37,9 @@ function warnExhausted(sess: Session, state: SpellcheckSessionState): void {
   state.warnedExhausted = true;
   const available = sess.availableSpellCheckerLanguages;
   const count = Array.isArray(available) ? available.length : 0;
-  console.warn(`[main] spellcheck: dictionary list still empty after retries (${count} available)`);
+  console.warn(
+    `mcL0292 [main] spellcheck: dictionary list still empty after retries (${count} available)`,
+  );
 }
 
 /** Attempt Hunspell language setup; returns true when no further Win/Linux setup is needed. */
@@ -63,7 +65,7 @@ export function tryConfigureRendererSpellcheck(sess: Session): boolean {
     return true;
   } catch (e) {
     console.warn(
-      '[main] spellcheck: configure failed',
+      'mcL0293 [main] spellcheck: configure failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     return false;

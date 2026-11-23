@@ -48,7 +48,7 @@ export function useContactGroups(
       const result = await window.electronAPI.db.getContactGroups(id);
       setGroups(result);
     } catch (e: unknown) {
-      console.error('[useContactGroups] reloadGroups failed: ' + errLikeToLogString(e));
+      console.error('mcL0741 [useContactGroups] reloadGroups failed: ' + errLikeToLogString(e));
     }
   }, []);
 
@@ -76,7 +76,7 @@ export function useContactGroups(
         })
         .catch((e: unknown) => {
           console.error(
-            '[useContactGroups] getContactGroupMembers failed: ' + errLikeToLogString(e),
+            'mcL0742 [useContactGroups] getContactGroupMembers failed: ' + errLikeToLogString(e),
           );
         });
     }

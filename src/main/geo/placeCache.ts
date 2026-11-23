@@ -60,7 +60,7 @@ export class PlaceCache {
       }
     } catch (err) {
       console.warn(
-        '[geo] place cache unreadable, starting empty:',
+        'mcL0034 [geo] place cache unreadable, starting empty:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
     }
@@ -111,13 +111,16 @@ export class PlaceCache {
       fs.renameSync(tmp, this.filePath);
     } catch (err) {
       console.warn(
-        '[geo] place cache write failed (lookup result kept in memory):',
+        'mcL0035 [geo] place cache write failed (lookup result kept in memory):',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       try {
         fs.rmSync(tmp, { force: true });
-      } catch {
-        // catch-no-log-ok best-effort temp cleanup after a logged write failure
+      } catch (e: unknown) {
+        console.debug(
+          '[main/geo/placeCache] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }
   }

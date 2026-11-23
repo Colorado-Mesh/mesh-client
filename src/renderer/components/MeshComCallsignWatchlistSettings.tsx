@@ -31,7 +31,7 @@ export function MeshComCallsignWatchlistSettings() {
       try {
         await saveMeshcomCallsignWatchlist(next);
       } catch (e) {
-        console.warn('[MeshComCallsignWatchlist] save failed ' + errLikeToLogString(e));
+        console.warn('mcL0441 [MeshComCallsignWatchlist] save failed ' + errLikeToLogString(e));
         setError(t('meshcomWatchlist.saveFailed'));
       } finally {
         setBusy(false);

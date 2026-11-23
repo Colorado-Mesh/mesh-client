@@ -123,7 +123,7 @@ export async function sendGamesAction(opts: SendGamesActionOpts): Promise<boolea
     if (beganOptimistic && sessionId) {
       store.rollbackOptimistic(sessionId);
     }
-    console.warn('[reticulumGamesSession] sendAction failed', e);
+    console.warn('mcL1034 [reticulumGamesSession] sendAction failed', e);
     pushAppToast(
       i18n.t('gamesPanel.errors.actionFailed', {
         reason: i18n.t('gamesPanel.errors.unknownReason'),
@@ -151,7 +151,7 @@ export async function resendGamesAction(sessionId: string): Promise<boolean> {
     }
     return ok;
   } catch (e) {
-    console.warn('[reticulumGamesSession] resend failed', e);
+    console.warn('mcL1035 [reticulumGamesSession] resend failed', e);
     pushAppToast(i18n.t('gamesPanel.errors.resendFailed'), 'error');
     return false;
   } finally {
@@ -182,7 +182,7 @@ export async function deleteGamesSession(sessionId: string): Promise<void> {
     await window.electronAPI.reticulum.games.deleteSession(sessionId);
     useReticulumGamesStore.getState().removeSession(sessionId);
   } catch (e) {
-    console.warn('[reticulumGamesSession] deleteSession failed', e);
+    console.warn('mcL1036 [reticulumGamesSession] deleteSession failed', e);
     pushAppToast(i18n.t('gamesPanel.errors.deleteFailed'), 'error');
   }
 }

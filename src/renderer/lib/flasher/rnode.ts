@@ -121,13 +121,13 @@ export class RNode {
           bytesDiscarded += chunk.value.length;
         }
       }
-    } catch {
-      // catch-no-log-ok boot drain is best-effort before detect
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/flasher/rnode] catch:', e);
     } finally {
       try {
         reader.releaseLock();
-      } catch {
-        // catch-no-log-ok reader may already be released
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/flasher/rnode] catch:', e);
       }
     }
     return bytesDiscarded;
@@ -136,13 +136,13 @@ export class RNode {
   async close(): Promise<void> {
     try {
       this.reader.releaseLock();
-    } catch {
-      // catch-no-log-ok: reader may already be released on disconnect
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/flasher/rnode] catch:', e);
     }
     try {
       await this.serialPort.close();
-    } catch {
-      // catch-no-log-ok: port may already be closed
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/flasher/rnode] catch:', e);
     }
   }
 
@@ -170,7 +170,7 @@ export class RNode {
               if (decodedFrame) {
                 this.onCommandReceived(decodedFrame);
               } else {
-                console.warn('[RNode] Invalid KISS frame ignored');
+                console.warn('mcL0839 [RNode] Invalid KISS frame ignored');
               }
               buffer = [];
             }
@@ -182,12 +182,12 @@ export class RNode {
       }
     } catch (error) {
       if (error instanceof TypeError) return;
-      console.error('[RNode] Serial read error', error);
+      console.error('mcL0840 [RNode] Serial read error', error);
     } finally {
       try {
         this.reader.releaseLock();
-      } catch {
-        // catch-no-log-ok: lock may already be released
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/flasher/rnode] catch:', e);
       }
     }
   }

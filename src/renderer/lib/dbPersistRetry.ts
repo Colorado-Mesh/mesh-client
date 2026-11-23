@@ -35,11 +35,10 @@ async function flushRetries(): Promise<void> {
       } catch (error) {
         if (pending.attempt >= MAX_RETRY_ATTEMPTS) {
           console.warn(
-            `[dbPersistRetry] degraded persistence: ${pending.label} failed after retries: ` +
+            `mcL0815 [dbPersistRetry] degraded persistence: ${pending.label} failed after retries: ` +
               errLikeToLogString(error),
           );
         } else {
-          // catch-no-log-ok intermediate failures are retried; only the final attempt warns
           pending.attempt++;
           pendingWrites.push(pending);
         }
@@ -60,12 +59,12 @@ export function persistDbWrite(label: string, write: () => Promise<unknown>): vo
   void write().catch((error: unknown) => {
     if (pendingWrites.length >= MAX_PENDING_PERSIST_WRITES) {
       console.warn(
-        `[dbPersistRetry] degraded persistence: queue full; dropping ${label}: ` +
+        `mcL0816 [dbPersistRetry] degraded persistence: queue full; dropping ${label}: ` +
           errLikeToLogString(error),
       );
       return;
     }
-    // catch-no-log-ok first failure is queued for bounded retry; final attempt warns in flush
+    console.debug('[renderer/lib/dbPersistRetry] catch:', error);
     pendingWrites.push({ label, attempt: 0, write });
     scheduleRetry();
   });

@@ -180,7 +180,9 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
       })
       .catch((error: unknown) => {
         if (requestGeneration === generation) {
-          console.warn('[coiMemorySampler] measurement failed ' + errLikeToLogString(error));
+          console.warn(
+            'mcL0802 [coiMemorySampler] measurement failed ' + errLikeToLogString(error),
+          );
           update({ failed: true });
         }
         return null;
@@ -246,7 +248,7 @@ function persistRendererMemorySample(sample: CoiMemorySample): void {
     totalJsHeapBytes: sample.totalJsHeapBytes,
     domNodes: sample.domNodes,
   }).catch((error: unknown) => {
-    console.warn('[coiMemorySampler] persist failed ' + errLikeToLogString(error));
+    console.warn('mcL0803 [coiMemorySampler] persist failed ' + errLikeToLogString(error));
   });
 }
 

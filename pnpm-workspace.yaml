@@ -1,6 +1,9 @@
 # 12 hours. pnpm 11+ defaults to 1440; 0 disables the gate. #1304 set 0 so a
 # same-day undici/i18next refresh could install. Those versions are in the
 # lockfile now, so the age gate is back.
+# Semgrep's pnpm-minimum-release-age rule wants 7d (10080); Mesh Client policy is
+# 12h so Dependabot/`pnpm run update` can take patched releases the same day.
+# nosemgrep: package_managers.pnpm.pnpm-missing-minimum-release-age.pnpm-minimum-release-age
 minimumReleaseAge: 720
 
 # Reject transitive git/tarball/exotic sources (registry + scoped JSR only)

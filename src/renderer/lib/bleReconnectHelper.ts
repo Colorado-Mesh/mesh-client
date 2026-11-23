@@ -148,8 +148,9 @@ export async function verifyGattRfLink(
   if (rfType !== 'ble') return true;
   try {
     return await window.electronAPI.isGattConnected(sessionId);
-  } catch {
-    // catch-no-log-ok GATT IPC may fail during teardown; treat as dead link
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/bleReconnectHelper] catch:', e);
+
     return false;
   }
 }

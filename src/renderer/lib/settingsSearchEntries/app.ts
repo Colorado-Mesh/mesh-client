@@ -40,6 +40,13 @@ const appEntries: readonly SettingSearchEntry[] = [
     keywords: ['log', 'debug', 'console'],
   },
   {
+    id: 'app.logPanel.verboseLogging',
+    slot: 'App',
+    labelKey: 'appPanel.verboseLogging',
+    sectionKey: 'appPanel.logPanelSection',
+    keywords: ['debug', 'info', 'verbose', 'logs', 'disk', 'file'],
+  },
+  {
     id: 'app.floodAdvert.schedule',
     slot: 'App',
     labelKey: 'appPanel.floodAdvertScheduleLabel',
@@ -986,6 +993,9 @@ export const appSurface: SettingsSearchSurface = {
     'appPanel.capStoredMessages': 'accessible name of the indexed stored-message caps',
     'appPanel.capStoredRrcMessages': 'accessible name of the indexed RRC message cap',
     'appPanel.supportSectionDesc': 'section prose, no control',
+    'appPanel.verboseLoggingDesc': 'help text under the indexed verbose logging checkbox',
+    'appPanel.verboseLoggingSupportHint':
+      'guidance under Support exports pointing at the indexed Log panel verbose toggle',
     'appPanel.memorySampleNow': 'child action of the indexed renderer memory section',
     'appPanel.memorySampling': 'busy label of the indexed memory sample action',
     'appPanel.memoryRendererProcess': 'scope label for the indexed renderer memory measurement',

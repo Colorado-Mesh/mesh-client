@@ -214,7 +214,7 @@ export function ReticulumSetupGuide({
       await action();
     } catch (e) {
       const detail = errLikeToLogString(e);
-      console.warn('[ReticulumSetupGuide] setup action failed ' + detail);
+      console.warn('mcL0678 [ReticulumSetupGuide] setup action failed ' + detail);
       const matched = Object.entries(SETUP_ERROR_KEYS).find(([code]) => detail.includes(code));
       setError(matched ? t(matched[1]) : detail);
     } finally {

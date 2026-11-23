@@ -602,7 +602,7 @@ describe('Web Serial window ownership', () => {
 
       expect(callback).toHaveBeenCalledExactlyOnceWith('');
       expect(harness.state.console.warn).toHaveBeenCalledWith(
-        '[IPC] Serial port selection callback stale after timeout — auto-cancelling',
+        'mcL0062 [IPC] Serial port selection callback stale after timeout — auto-cancelling',
       );
       expect(clearSpy).toHaveBeenCalled();
       expect(harness.state.lastSerialPortIds.size).toBe(0);

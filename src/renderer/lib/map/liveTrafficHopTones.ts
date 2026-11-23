@@ -53,8 +53,9 @@ function getSharedAudioContext(): AudioContext | null {
       sharedAudioContext = new AudioContext();
     }
     return sharedAudioContext;
-  } catch {
-    // catch-no-log-ok: AudioContext unavailable in test/headless environments
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/map/liveTrafficHopTones] catch:', e);
+
     return null;
   }
 }
@@ -62,8 +63,9 @@ function getSharedAudioContext(): AudioContext | null {
 function isNotifMuted(): boolean {
   try {
     return localStorage.getItem(CHAT_NOTIF_MUTED_STORAGE_KEY) === '1';
-  } catch {
-    // catch-no-log-ok: localStorage may throw in private/restricted contexts
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/map/liveTrafficHopTones] catch:', e);
+
     return false;
   }
 }
@@ -83,8 +85,8 @@ export function stopActiveLiveTrafficHopTones(): void {
     try {
       osc.stop();
       osc.disconnect();
-    } catch {
-      // catch-no-log-ok: oscillator may already be stopped
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/map/liveTrafficHopTones] catch:', e);
     }
   }
   activeOscillators.clear();
@@ -94,8 +96,9 @@ export function stopActiveLiveTrafficHopTones(): void {
 export function readLiveTrafficHopTonesEnabled(): boolean {
   try {
     return localStorage.getItem(LIVE_TRAFFIC_HOP_TONES_STORAGE_KEY) === '1';
-  } catch {
-    // catch-no-log-ok: localStorage may throw in private/restricted contexts
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/map/liveTrafficHopTones] catch:', e);
+
     return false;
   }
 }
@@ -103,8 +106,8 @@ export function readLiveTrafficHopTonesEnabled(): boolean {
 export function setLiveTrafficHopTonesEnabled(enabled: boolean): void {
   try {
     localStorage.setItem(LIVE_TRAFFIC_HOP_TONES_STORAGE_KEY, enabled ? '1' : '0');
-  } catch {
-    // catch-no-log-ok: localStorage may throw in private/restricted contexts
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/map/liveTrafficHopTones] catch:', e);
   }
 }
 
@@ -114,8 +117,8 @@ export function warmLiveTrafficHopTones(): void {
   const ctx = getSharedAudioContext();
   if (!ctx) return;
   if (ctx.state === 'suspended') {
-    void ctx.resume().catch(() => {
-      // catch-no-log-ok: resume blocked without user gesture in some environments
+    void ctx.resume().catch((e: unknown) => {
+      console.debug('[renderer/lib/map/liveTrafficHopTones] catch:', e);
     });
   }
 }
@@ -254,8 +257,9 @@ export function playLiveTrafficHopTone(tone: LiveTrafficHopTone): void {
     }
     try {
       playTonePulse(ctx, tone.frequencyHz, durationSec, ctx.currentTime, playGeneration);
-    } catch {
-      // catch-no-log-ok: AudioContext unavailable in test/headless environments
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/map/liveTrafficHopTones] catch:', e);
+
       releaseReservation();
     }
   };
@@ -263,8 +267,8 @@ export function playLiveTrafficHopTone(tone: LiveTrafficHopTone): void {
     void ctx
       .resume()
       .then(go)
-      .catch(() => {
-        // catch-no-log-ok: resume blocked without user gesture in some environments
+      .catch((e: unknown) => {
+        console.debug('[renderer/lib/map/liveTrafficHopTones] catch:', e);
         releaseReservation();
       });
     return;

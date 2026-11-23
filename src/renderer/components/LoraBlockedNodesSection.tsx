@@ -54,7 +54,8 @@ export function LoraBlockedNodesSection({
                     void unblock(protocol, LORA_BLOCKLIST_SCOPE_ID, entry.hash).catch(
                       (err: unknown) => {
                         console.warn(
-                          '[LoraBlockedNodesSection] unblock failed ' + errLikeToLogString(err),
+                          'mcL0435 [LoraBlockedNodesSection] unblock failed ' +
+                            errLikeToLogString(err),
                         );
                         addToast(t('appPanel.loraBlocklist.unblockFailed'), 'error');
                       },

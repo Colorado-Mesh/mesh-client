@@ -149,7 +149,7 @@ export function attachMeshtasticProtocolIngress(
       packetRouter.dispatch(event, identityId);
     } catch (err) {
       console.error(
-        '[meshIdentityBridge] packetRouter.dispatch failed:',
+        'mcL0875 [meshIdentityBridge] packetRouter.dispatch failed:',
         err instanceof Error ? err.message : String(err),
       );
     }
@@ -207,7 +207,7 @@ export function attachMeshcoreProtocolIngress(
       packetRouter.dispatch(event, identityId);
     } catch (err) {
       console.error(
-        '[meshIdentityBridge] packetRouter.dispatch failed:',
+        'mcL0876 [meshIdentityBridge] packetRouter.dispatch failed:',
         err instanceof Error ? err.message : String(err),
       );
     }

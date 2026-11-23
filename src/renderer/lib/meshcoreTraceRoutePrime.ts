@@ -90,7 +90,7 @@ async function refreshPathAfterPrimeRound(
     return snap;
   } catch (e: unknown) {
     console.warn(
-      '[meshcoreTraceRoutePrime] post-prime getContacts failed ' + errLikeToLogString(e),
+      'mcL0943 [meshcoreTraceRoutePrime] post-prime getContacts failed ' + errLikeToLogString(e),
     );
     const fromMap = outPathMapRef.get(nodeId);
     return {
@@ -176,7 +176,9 @@ async function primeMeshcoreTraceRouteInner(opts: {
           );
           floodAdvertsSent += 1;
         } catch (e: unknown) {
-          console.warn('[meshcoreTraceRoutePrime] sendFloodAdvert failed ' + errLikeToLogString(e));
+          console.warn(
+            'mcL0944 [meshcoreTraceRoutePrime] sendFloodAdvert failed ' + errLikeToLogString(e),
+          );
         }
       }
       if (opts.isAborted?.()) break;
@@ -294,7 +296,7 @@ export async function primeMeshcoreTraceRoute(opts: {
     );
   } catch (e: unknown) {
     aggregateTimedOut = true;
-    // catch-no-log-ok expected when aggregate or getContacts times out during priming
+
     console.debug('[meshcoreTraceRoutePrime] aggregate timeout ' + errLikeToLogString(e));
     const fromMap = opts.outPathMapRef.get(opts.nodeId);
     return {

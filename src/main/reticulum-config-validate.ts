@@ -29,8 +29,11 @@ function killProc(proc: ChildProcess): void {
     } else {
       proc.kill('SIGTERM');
     }
-  } catch {
-    // catch-no-log-ok: best-effort kill after validate timeout
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-config-validate] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   setTimeout(() => {
     try {
@@ -41,8 +44,11 @@ function killProc(proc: ChildProcess): void {
           proc.kill('SIGKILL');
         }
       }
-    } catch {
-      // catch-no-log-ok: process may already be gone during forced shutdown
+    } catch (e: unknown) {
+      console.debug(
+        '[main/reticulum-config-validate] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }, VALIDATE_KILL_ESCALATE_MS);
 }
@@ -112,7 +118,11 @@ async function validateReticulumUserConfigImpl(opts?: {
   try {
     await ensureDevSidecarBinary(binary);
   } catch (err) {
-    // catch-no-log-ok: surfaced to caller via result.error for Network Check config UI
+    console.debug(
+      '[main/reticulum-config-validate] catch:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+
     const message = err instanceof Error ? err.message : String(err);
     return {
       ok: false,
@@ -126,6 +136,14 @@ async function validateReticulumUserConfigImpl(opts?: {
       : `Reticulum sidecar binary not found: ${binary}. Run \`pnpm run reticulum:sidecar:build\`.`;
     return { ok: false, issues: [], error: sanitizeLogMessage(msg) };
   }
+  if (!path.isAbsolute(binary)) {
+    return {
+      ok: false,
+      issues: [],
+      error: 'Reticulum sidecar binary path is not absolute',
+    };
+  }
+  // Sidecar path comes from resolveSidecarBinaryPath() / opts.binaryPath after ensureDevSidecarBinary.
 
   return await new Promise((resolve) => {
     let settled = false;
@@ -136,6 +154,9 @@ async function validateReticulumUserConfigImpl(opts?: {
       resolve(result);
     };
 
+    // binary is absolute and comes from resolveSidecarBinaryPath / opts after
+    // ensureDevSidecarBinary (validated above). Argv-only spawn, no shell.
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
     const proc = spawn(binary, ['validate-config', '--reticulum-config-dir', configDir, '--json'], {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: sidecarChildEnv(),
@@ -218,7 +239,11 @@ async function validateReticulumUserConfigImpl(opts?: {
                 ),
         });
       } catch (e) {
-        // catch-no-log-ok: malformed sidecar JSON returned to caller as result.error
+        console.debug(
+          '[main/reticulum-config-validate] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         settle({
           ok: false,
           issues: [],

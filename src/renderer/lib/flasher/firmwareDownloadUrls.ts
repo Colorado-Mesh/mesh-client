@@ -30,8 +30,9 @@ export async function resolveLatestOfficialFirmwareDownloadUrl(filename: string)
     const body = (await response.json()) as { assets?: GitHubReleaseAsset[] };
     const asset = body.assets?.find((entry) => entry.name === filename);
     return asset?.browser_download_url ?? buildOfficialFirmwareDownloadUrl(filename);
-  } catch {
-    // catch-no-log-ok GitHub API unreachable — fall back to /releases/latest/download
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/flasher/firmwareDownloadUrls] catch:', e);
+
     return buildOfficialFirmwareDownloadUrl(filename);
   }
 }

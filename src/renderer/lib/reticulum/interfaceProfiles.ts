@@ -87,7 +87,7 @@ export function loadInterfaceProfiles(): InterfaceProfilesState {
         : null,
     };
   } catch (e) {
-    console.warn('[interfaceProfiles] load ' + errLikeToLogString(e));
+    console.warn('mcL1022 [interfaceProfiles] load ' + errLikeToLogString(e));
     return emptyInterfaceProfilesState();
   }
 }
@@ -107,7 +107,7 @@ export function saveInterfaceProfiles(state: InterfaceProfilesState): void {
       }),
     );
   } catch (e) {
-    console.warn('[interfaceProfiles] save ' + errLikeToLogString(e));
+    console.warn('mcL1023 [interfaceProfiles] save ' + errLikeToLogString(e));
   }
 }
 

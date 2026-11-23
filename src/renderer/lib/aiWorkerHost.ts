@@ -67,8 +67,8 @@ export class AiWorkerHost {
     if (this.busy) throw new Error('busy');
     this.busy = true;
     const abort = () => {
-      void this.dispose().catch(() => {
-        /* catch-no-log-ok teardown errors do not expose model data */
+      void this.dispose().catch((e: unknown) => {
+        console.debug('[renderer/lib/aiWorkerHost] catch:', e);
       });
     };
     signal.addEventListener('abort', abort, { once: true });
@@ -80,8 +80,8 @@ export class AiWorkerHost {
     });
     this.failRuntime = failRuntime;
     // A worker can fail before the first runtime operation attaches its race.
-    void fatal.catch(() => {
-      /* catch-no-log-ok the operation race reports a fixed runtime error */
+    void fatal.catch((e: unknown) => {
+      console.debug('[renderer/lib/aiWorkerHost] catch:', e);
     });
     const raced = <T>(work: Promise<T>): Promise<T> =>
       new Promise<T>((resolve, reject) => {
@@ -130,7 +130,7 @@ export class AiWorkerHost {
                   head.includes('Model returned an error') ||
                   head.includes('Failed to parse JSON')
                 ) {
-                  console.warn('[Catch up] wllama inference error');
+                  console.warn('mcL0778 [Catch up] wllama inference error');
                   return;
                 }
                 this.failRuntime();
@@ -222,7 +222,8 @@ export class AiWorkerHost {
       try {
         if (!options?.keepAlive || !completed) await this.dispose();
       } catch (error) {
-        // catch-no-log-ok preserve an existing generation failure if teardown also fails
+        console.debug('[renderer/lib/aiWorkerHost] catch:', error);
+
         if (completed) cleanupFailure = { cause: error };
       } finally {
         this.busy = false;

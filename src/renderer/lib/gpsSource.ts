@@ -59,8 +59,8 @@ export function persistStoredStaticGps(
       GPS_SETTINGS_STORAGE_KEY,
       JSON.stringify({ ...existing, staticLat: lat, staticLon: lon, refreshInterval }),
     );
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/gpsSource] catch:', e);
   }
   notifyStaticGpsChanged();
 }
@@ -73,8 +73,8 @@ export function clearStoredStaticGps(): void {
     delete existing.staticLat;
     delete existing.staticLon;
     localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify(existing));
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/gpsSource] catch:', e);
   }
   notifyStaticGpsChanged();
 }

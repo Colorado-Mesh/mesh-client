@@ -29,8 +29,9 @@ export function hostFromAddressInput(address: string): string {
     return stripConnectHostBrackets(
       new URL(raw.includes('://') ? raw : `http://${raw}`).hostname,
     ).toLowerCase();
-  } catch {
-    // catch-no-log-ok user-typed host/IP without scheme
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/connectionPanelErrorHumanize] catch:', e);
+
     return stripConnectHostBrackets(parseConnectHostPort(raw, 80).host).toLowerCase();
   }
 }
@@ -188,8 +189,9 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
         : (() => {
             try {
               return JSON.stringify(err);
-            } catch {
-              // catch-no-log-ok stringify fallback for arbitrary renderer error shapes
+            } catch (e: unknown) {
+              console.debug('[renderer/lib/connectionPanelErrorHumanize] catch:', e);
+
               return String(err);
             }
           })();

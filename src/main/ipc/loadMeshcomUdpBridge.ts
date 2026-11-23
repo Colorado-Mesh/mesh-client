@@ -46,7 +46,7 @@ export async function loadMeshcomUdpBridge(
     return udpBridgeMod.destroyRegisteredUdpBridgeSockets;
   } catch (err: unknown) {
     console.error(
-      '[main] MeshCom UDP bridge IPC registration failed:',
+      'mcL0168 [main] MeshCom UDP bridge IPC registration failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     return registerFallback();

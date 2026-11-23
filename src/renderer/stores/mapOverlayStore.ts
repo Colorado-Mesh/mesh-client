@@ -98,8 +98,8 @@ export const useMapOverlayStore = create<MapOverlayState>()(
         } catch (err) {
           try {
             set({ layers: prevLayers });
-          } catch {
-            // catch-no-log-ok rollback persist may also fail; preserve original error
+          } catch (e: unknown) {
+            console.debug('[renderer/stores/mapOverlayStore] catch:', e);
           }
           if (isRendererStorageQuotaError(err)) {
             return { ok: false, code: 'quota' };
@@ -112,8 +112,8 @@ export const useMapOverlayStore = create<MapOverlayState>()(
           try {
             const parsed = JSON.parse(raw) as { state?: { layers?: unknown[] } };
             persistedLayerCount = parsed.state?.layers?.length ?? 0;
-          } catch {
-            // catch-no-log-ok corrupt persisted overlay payload
+          } catch (e: unknown) {
+            console.debug('[renderer/stores/mapOverlayStore] catch:', e);
           }
         }
         if (persistedLayerCount !== prevLayers.length + 1) {
@@ -165,8 +165,9 @@ export const useMapOverlayStore = create<MapOverlayState>()(
           if (!raw) return null;
           try {
             return JSON.parse(raw) as { state: { layers: MapOverlayLayer[] } };
-          } catch {
-            // catch-no-log-ok invalid persisted overlay JSON
+          } catch (e: unknown) {
+            console.debug('[renderer/stores/mapOverlayStore] catch:', e);
+
             return null;
           }
         },

@@ -48,8 +48,12 @@ export async function saveBlocklistToFile(
   try {
     await fs.promises.writeFile(result.filePath, serializeBlockedContacts(hashes), 'utf8');
     return { path: result.filePath, error: null };
-  } catch {
-    // catch-no-log-ok: write failure surfaced to the UI as a toast
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-blocklist-file] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return { path: null, error: 'write_failed' };
   }
 }
@@ -79,7 +83,7 @@ export async function readBlocklistFromFile(): Promise<BlocklistImportFileResult
   } catch (err) {
     const tooLarge = err instanceof Error && err.message === 'File too large';
     console.warn(
-      '[ReticulumBlocklistFile] read failed:',
+      'mcL0277 [ReticulumBlocklistFile] read failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     return { hashes: null, skipped: 0, error: tooLarge ? 'file_too_large' : 'read_failed' };

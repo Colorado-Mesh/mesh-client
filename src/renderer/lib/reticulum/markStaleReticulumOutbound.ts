@@ -17,8 +17,9 @@ export async function markStaleReticulumOutboundMessages(
   try {
     const res = await window.electronAPI.db.markStaleReticulumOutbound(identityId, staleAfterMs);
     return res.changes ?? 0;
-  } catch {
-    // catch-no-log-ok DB IPC unavailable on startup — caller treats as zero changes
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulum/markStaleReticulumOutbound] catch:', e);
+
     return 0;
   }
 }

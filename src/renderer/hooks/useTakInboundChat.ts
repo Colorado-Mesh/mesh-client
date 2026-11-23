@@ -65,7 +65,7 @@ function useSendWhileSinkActive(
     const attempt = (): void => {
       send(value).catch((e: unknown) => {
         if (cancelled) return;
-        console.warn(`[TakInboundChat] ${label} failed; retrying ` + errLikeToLogString(e));
+        console.warn(`mcL0772 [TakInboundChat] ${label} failed; retrying ` + errLikeToLogString(e));
         retryTimer = setTimeout(attempt, delayMs);
         delayMs = Math.min(delayMs * 2, TAK_SEND_ROOMS_RETRY_MAX_MS);
       });
@@ -222,7 +222,7 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     const rooms = getTakRetiredRooms();
     if (!sinkActive || rooms.length === 0) return;
     window.electronAPI.tak.retireChatRooms(rooms).catch((e: unknown) => {
-      console.warn('[TakInboundChat] retireChatRooms failed ' + errLikeToLogString(e));
+      console.warn('mcL0773 [TakInboundChat] retireChatRooms failed ' + errLikeToLogString(e));
     });
   }, [sinkActive, retiredRooms]);
   // The stores change for many reasons that leave the served list alone. Keying the effect on

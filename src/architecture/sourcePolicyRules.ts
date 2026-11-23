@@ -208,4 +208,16 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     message:
       'Use closeElectronApplication / closeApp / teardownApp so hung Electron cannot burn the Playwright test/worker timeout (macOS E2E flake)',
   },
+  {
+    id: 'main-executeJavaScript-browser-safe',
+    include: ['src/main/**/*.ts'],
+    exclude: ['src/main/**/*.test.ts'],
+    when: /executeJavaScript\s*\(\s*`/,
+    // Bound to the template literal (no nested backticks) so later main-side
+    // sanitizeLogMessage / catch (e: unknown) after the closing ` do not match.
+    forbid:
+      /executeJavaScript\s*\(\s*`[^`]*?(?:sanitizeLogMessage\s*\(|catch\s*\(\s*\w+\s*:\s*unknown\s*\))[^`]*`/,
+    message:
+      'Injected executeJavaScript templates must stay browser-safe JS — no sanitizeLogMessage() calls or TypeScript catch (e: unknown); sanitize on the main side after return',
+  },
 ];

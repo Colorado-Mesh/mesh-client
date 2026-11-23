@@ -125,8 +125,9 @@ export function findRegionalFeedPreset(
       return undefined;
     }
     return getRegionalFeedPresets(provider).find((preset) => preset.baseUrl === url.origin);
-  } catch {
-    // catch-no-log-ok Draft URLs need not be valid until the user explicitly connects.
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/map/beaconPresets] catch:', e);
+
     return undefined;
   }
 }

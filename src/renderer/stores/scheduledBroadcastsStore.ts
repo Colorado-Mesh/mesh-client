@@ -80,7 +80,7 @@ export const useScheduledBroadcastsStore = create<ScheduledBroadcastsState>((set
       } catch (error) {
         // Leave hydrated false and drop the in-flight promise so a later hydrate can retry.
         // A missing list API above stays terminal: there is no IPC to retry.
-        console.warn('[scheduledBroadcasts] hydrate failed:', error);
+        console.warn('mcL1477 [scheduledBroadcasts] hydrate failed:', error);
       } finally {
         hydration = null;
       }
@@ -93,7 +93,7 @@ export const useScheduledBroadcastsStore = create<ScheduledBroadcastsState>((set
       const row = await window.electronAPI.db.saveScheduledBroadcast(input);
       set((s) => ({ slots: { ...s.slots, [row.slot]: row } }));
     } catch (error) {
-      console.warn('[scheduledBroadcasts] save failed:', error);
+      console.warn('mcL1478 [scheduledBroadcasts] save failed:', error);
       throw error;
     }
   },
@@ -103,7 +103,7 @@ export const useScheduledBroadcastsStore = create<ScheduledBroadcastsState>((set
       await window.electronAPI.db.deleteScheduledBroadcast(slot);
       set((s) => ({ slots: { ...s.slots, [slot]: null } }));
     } catch (error) {
-      console.warn('[scheduledBroadcasts] delete failed:', error);
+      console.warn('mcL1479 [scheduledBroadcasts] delete failed:', error);
       throw error;
     }
   },
@@ -113,7 +113,7 @@ export const useScheduledBroadcastsStore = create<ScheduledBroadcastsState>((set
       await window.electronAPI.db.clearScheduledBroadcasts();
       set({ slots: emptySlots() });
     } catch (error) {
-      console.warn('[scheduledBroadcasts] clearAll failed:', error);
+      console.warn('mcL1480 [scheduledBroadcasts] clearAll failed:', error);
       throw error;
     }
   },

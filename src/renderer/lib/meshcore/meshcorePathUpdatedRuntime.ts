@@ -55,7 +55,7 @@ export async function refreshMeshcoreOutPathAfterPathUpdated(
     }
   } catch (e) {
     console.warn(
-      '[meshcorePathUpdatedRuntime] getContacts refresh failed ' + errLikeToLogString(e),
+      'mcL0896 [meshcorePathUpdatedRuntime] getContacts refresh failed ' + errLikeToLogString(e),
     );
   }
 }
@@ -119,7 +119,8 @@ export async function rebuildMeshcoreContactsAfterPathUpdated(
     }
   } catch (e) {
     console.warn(
-      '[meshcorePathUpdatedRuntime] debounced contacts refresh error ' + errLikeToLogString(e),
+      'mcL0897 [meshcorePathUpdatedRuntime] debounced contacts refresh error ' +
+        errLikeToLogString(e),
     );
     // The caller already drained these ids into a fresh set, so a rejection here would otherwise
     // discard them until another 129 arrives; hand them back so path history can retry.

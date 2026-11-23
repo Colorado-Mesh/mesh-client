@@ -41,7 +41,8 @@ export async function getServingStatus(): Promise<NomadServingApiResponse> {
     }
     return { ok: false, error: body.error ?? 'serving_status_unavailable' };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -65,7 +66,8 @@ export async function setServing(opts: {
     }
     return { ok: true, serving: body.serving };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -83,7 +85,8 @@ export async function listServingPages(): Promise<NomadServingApiResponse> {
     }
     return { ok: true, pages: body.pages };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -101,7 +104,8 @@ export async function listServingFiles(): Promise<NomadServingApiResponse> {
     }
     return { ok: true, files: body.files };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -130,7 +134,8 @@ export async function getServingPageRaw(path: string): Promise<NomadServingPageR
     }
     return { ok: true, path: body.path ?? path, content: body.content };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -153,7 +158,8 @@ export async function putServingPage(
     }
     return { ok: true };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -182,7 +188,8 @@ export async function getServingPageAcl(pagePath: string): Promise<NomadServingP
     }
     return { ok: true, exists: body.exists === true, content: body.content };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -204,7 +211,8 @@ export async function putServingPageAcl(
     }
     return { ok: true };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -222,7 +230,8 @@ export async function deleteServingPageAcl(pagePath: string): Promise<NomadServi
     }
     return { ok: true };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -240,7 +249,8 @@ export async function deleteServingPage(path: string): Promise<NomadServingApiRe
     }
     return { ok: true };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -264,7 +274,8 @@ export async function setServingContentSource(path: string): Promise<NomadServin
     }
     return { ok: true, serving: body.serving };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return asApiError(e);
   }
 }
@@ -280,7 +291,8 @@ export async function pickServingContentSource(): Promise<
     }
     return { ok: true, path: result.path };
   } catch (e) {
-    // catch-no-log-ok returned to caller for panel UI
+    console.debug('[renderer/lib/nomad/nomadServingApi] catch:', e);
+
     return { ok: false, error: errLikeToLogString(e) };
   }
 }

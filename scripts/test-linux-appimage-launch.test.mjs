@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
-import path from 'path';
+
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 import { describe, expect, it } from 'vitest';
 
 import { EM_AARCH64, EM_X86_64 } from './test-linux-appimage-reticulum-sidecar.mjs';
@@ -24,7 +25,7 @@ function writeElfAppImage(dir, name, machine) {
   header[2] = 0x4c; // L
   header[3] = 0x46; // F
   header.writeUInt16LE(machine, 18);
-  const filePath = path.join(dir, name);
+  const filePath = joinUnderRoot(dir, name);
   writeFileSync(filePath, header);
   return filePath;
 }
@@ -93,7 +94,7 @@ describe('logShowsRendererFailure', () => {
 
 describe('shouldLaunchOnHost', () => {
   it('launches a native-arch AppImage', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'launch-arch-'));
+    const dir = mkdtempSync(joinUnderRoot(tmpdir(), 'launch-arch-'));
     try {
       const x64 = writeElfAppImage(dir, 'app-x64.AppImage', EM_X86_64);
       const arm64 = writeElfAppImage(dir, 'app-arm64.AppImage', EM_AARCH64);
@@ -105,7 +106,7 @@ describe('shouldLaunchOnHost', () => {
   });
 
   it('skips a cross-arch AppImage that cannot execute on the host', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'launch-arch-'));
+    const dir = mkdtempSync(joinUnderRoot(tmpdir(), 'launch-arch-'));
     try {
       const arm64 = writeElfAppImage(dir, 'app-arm64.AppImage', EM_AARCH64);
       expect(shouldLaunchOnHost(arm64, 'x64')).toBe(false);
@@ -119,7 +120,7 @@ describe('shouldLaunchOnHost', () => {
 
 describe('listLaunchableAppImages', () => {
   it('fails when no AppImage matches the host architecture', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'launch-none-'));
+    const dir = mkdtempSync(joinUnderRoot(tmpdir(), 'launch-none-'));
     try {
       writeElfAppImage(dir, 'app-arm64.AppImage', EM_AARCH64);
       expect(() => listLaunchableAppImages(dir, 'x64')).toThrow(LaunchSmokeError);
@@ -132,7 +133,7 @@ describe('listLaunchableAppImages', () => {
   });
 
   it('fails when the release directory has no AppImage', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'launch-empty-'));
+    const dir = mkdtempSync(joinUnderRoot(tmpdir(), 'launch-empty-'));
     try {
       expect(() => listLaunchableAppImages(dir, 'x64')).toThrow(/No AppImage found in release\//);
     } finally {
@@ -141,7 +142,7 @@ describe('listLaunchableAppImages', () => {
   });
 
   it('returns the native-arch AppImage', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'launch-native-'));
+    const dir = mkdtempSync(joinUnderRoot(tmpdir(), 'launch-native-'));
     try {
       writeElfAppImage(dir, 'app-x64.AppImage', EM_X86_64);
       writeElfAppImage(dir, 'app-arm64.AppImage', EM_AARCH64);
@@ -197,7 +198,7 @@ function fakeAppSource(spec) {
  * @param {{ startupAliveMs: number, logWaitMs: number }} timings
  */
 async function runFake(source, timings) {
-  const userDataDir = mkdtempSync(path.join(tmpdir(), 'mesh-launch-smoke-'));
+  const userDataDir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-launch-smoke-'));
   try {
     await launchAndAssert({
       command: process.execPath,

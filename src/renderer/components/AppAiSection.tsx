@@ -124,8 +124,9 @@ export function AppAiSection() {
     setNotice('');
     try {
       await work();
-    } catch {
-      // catch-no-log-ok IPC errors may include provider details; display fixed guidance
+    } catch (e: unknown) {
+      console.debug('[renderer/components/AppAiSection] catch:', e);
+
       setNotice(t('aiSummary.settingsError'));
     } finally {
       setBusy(false);
@@ -148,8 +149,9 @@ export function AppAiSection() {
         !/^127\.\d+\.\d+\.\d+$/.test(host) &&
         !/^::ffff:7f[0-9a-f]{2}:/i.test(host)
       );
-    } catch {
-      // catch-no-log-ok invalid endpoint is rejected on save
+    } catch (e: unknown) {
+      console.debug('[renderer/components/AppAiSection] catch:', e);
+
       return false;
     }
   })();

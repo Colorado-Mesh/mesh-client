@@ -80,8 +80,8 @@ function writeRawState(state: SavedLocationsState): void {
   if (typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(SAVED_LOCATIONS_STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/savedLocations] catch:', e);
   }
 }
 

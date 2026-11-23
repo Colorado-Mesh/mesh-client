@@ -53,8 +53,8 @@ async function drainAutoQueue(): Promise<void> {
         if (needed.some((id) => !status?.packs.some((pack) => pack.id === id && pack.installed)))
           continue;
         await translateMessage(job.messageKey, job.text, 'offline', detection.language, 'auto');
-      } catch {
-        // catch-no-log-ok offline auto work is best effort; never send text to an online fallback
+      } catch (e: unknown) {
+        console.debug('[renderer/hooks/useAutoTranslate] catch:', e);
       } finally {
         if (queued.get(job.key) === job) queued.delete(job.key);
       }

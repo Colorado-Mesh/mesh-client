@@ -73,6 +73,8 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/appWindowActivity.test.ts',
   'src/renderer/lib/bleReconnectHelper.test.ts',
   'src/renderer/lib/chatNotifications.test.ts',
+  // localStorage migration — needs jsdom (file pragma alone does not override project env).
+  'src/renderer/lib/chatOrderScope.test.ts',
   'src/renderer/lib/notificationSoundSettings.test.ts',
   'src/renderer/lib/notificationSoundPlayback.test.ts',
   'src/renderer/lib/reticulumVoiceCallTones.test.ts',

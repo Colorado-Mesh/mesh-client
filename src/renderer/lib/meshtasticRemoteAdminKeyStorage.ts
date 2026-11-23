@@ -59,8 +59,9 @@ export function normalizeMeshtasticAdminKeyInput(raw: string): string | undefine
       bytes[i] = binary.charCodeAt(i);
     }
     return bytesToCanonicalAdminKeyBase64(bytes);
-  } catch {
-    // catch-no-log-ok invalid base64/hex input returns undefined for validation
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtasticRemoteAdminKeyStorage] catch:', e);
+
     return undefined;
   }
 }
@@ -77,8 +78,9 @@ export function parseMeshtasticAdminKeyBase64(b64: string): Uint8Array | undefin
       bytes[i] = binary.charCodeAt(i);
     }
     return bytes;
-  } catch {
-    // catch-no-log-ok invalid base64 input returns undefined for validation
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtasticRemoteAdminKeyStorage] catch:', e);
+
     return undefined;
   }
 }
@@ -105,8 +107,9 @@ function readLegacyAdminKeyMap(settings: Record<string, unknown> | null): Record
   if (typeof raw === 'string') {
     try {
       return parseAdminKeyMap(JSON.parse(raw) as unknown);
-    } catch {
-      // catch-no-log-ok corrupt legacy JSON blob is ignored on read
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshtasticRemoteAdminKeyStorage] catch:', e);
+
       return {};
     }
   }
@@ -151,7 +154,7 @@ export async function setMeshtasticRemoteAdminKeyForNode(
       await window.electronAPI.appSettings.set(settingKey, '');
     } catch (e: unknown) {
       console.warn(
-        '[meshtasticRemoteAdminKeyStorage] persist clear failed ' + errLikeToLogString(e),
+        'mcL0970 [meshtasticRemoteAdminKeyStorage] persist clear failed ' + errLikeToLogString(e),
       );
       throw e instanceof Error ? e : new Error(String(e));
     }
@@ -167,7 +170,9 @@ export async function setMeshtasticRemoteAdminKeyForNode(
   try {
     await window.electronAPI.appSettings.set(settingKey, normalized);
   } catch (e: unknown) {
-    console.warn('[meshtasticRemoteAdminKeyStorage] persist failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0971 [meshtasticRemoteAdminKeyStorage] persist failed ' + errLikeToLogString(e),
+    );
     throw e instanceof Error ? e : new Error(String(e));
   }
   return map;

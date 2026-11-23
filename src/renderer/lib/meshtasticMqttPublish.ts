@@ -57,8 +57,9 @@ function decodePskBase64(b64: string): Uint8Array | null {
     const raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     if (raw.length === 16 || raw.length === 32 || raw.length < 16) return raw;
     return null;
-  } catch {
-    // catch-no-log-ok invalid base64 on a manual PSK line — skip entry
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtasticMqttPublish] catch:', e);
+
     return null;
   }
 }

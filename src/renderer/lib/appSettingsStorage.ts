@@ -18,8 +18,8 @@ export function migrateLegacyAppSettingsIfNeeded(): void {
     if (legacy == null) return;
     localStorage.setItem(APP_SETTINGS_STORAGE_KEY, legacy);
     localStorage.removeItem(LEGACY_APP_SETTINGS_STORAGE_KEY);
-  } catch {
-    // catch-no-log-ok localStorage unavailable in private/restricted environments
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/appSettingsStorage] catch:', e);
   }
 }
 
@@ -36,8 +36,8 @@ export function setAppSettingsRaw(json: string): void {
   try {
     migrateLegacyAppSettingsIfNeeded();
     localStorage.setItem(APP_SETTINGS_STORAGE_KEY, json);
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/appSettingsStorage] catch:', e);
   }
 }
 
@@ -318,7 +318,7 @@ export function setReticulumAutostartEnabled(enabled: boolean): void {
     .set('reticulumAutostart', enabled ? '1' : '0')
     .catch((e: unknown) => {
       console.warn(
-        '[appSettingsStorage] persist reticulumAutostart failed ' + errLikeToLogString(e),
+        'mcL0779 [appSettingsStorage] persist reticulumAutostart failed ' + errLikeToLogString(e),
       );
     });
 }
@@ -344,7 +344,7 @@ export function setReticulumAutoResendOnAnnounceEnabled(enabled: boolean): void 
     .set('reticulumAutoResendOnAnnounce', enabled ? '1' : '0')
     .catch((e: unknown) => {
       console.warn(
-        '[appSettingsStorage] persist reticulumAutoResendOnAnnounce failed ' +
+        'mcL0780 [appSettingsStorage] persist reticulumAutoResendOnAnnounce failed ' +
           errLikeToLogString(e),
       );
     });
@@ -364,6 +364,8 @@ export function mergeAppSettingsPartial(
       window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
     }
   } catch (e) {
-    console.warn('[appSettingsStorage] mergeAppSettingsPartial failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0781 [appSettingsStorage] mergeAppSettingsPartial failed ' + errLikeToLogString(e),
+    );
   }
 }

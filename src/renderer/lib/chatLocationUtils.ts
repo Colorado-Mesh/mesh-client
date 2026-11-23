@@ -165,8 +165,9 @@ function parseHttpUrl(url: string): URL | null {
   try {
     const parsed = new URL(url);
     return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed : null;
-  } catch {
-    // catch-no-log-ok not a URL; caller treats as no coordinates
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/chatLocationUtils] catch:', e);
+
     return null;
   }
 }

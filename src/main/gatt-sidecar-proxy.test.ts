@@ -947,7 +947,7 @@ describe('GattSidecarProxy', () => {
     }
     expect(proxy.getConnections()).toEqual([]);
     expect(warn).toHaveBeenCalledWith(
-      '[GATT] abandoning remote cleanup after',
+      'mcL0031 [GATT] abandoning remote cleanup after',
       8,
       'attempts:',
       expect.stringContaining('meshcore'),

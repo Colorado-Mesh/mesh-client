@@ -32,7 +32,7 @@ function createEsploader(transport: Transport): ESPLoader {
     enableTracing: false,
     terminal: {
       clean() {
-        // catch-no-log-ok esptool-js terminal interface requires clean()
+        // esptool-js terminal interface requires clean(); no buffer to clear here
       },
       writeLine(data: string) {
         console.debug('[esptool]', data);
@@ -95,7 +95,8 @@ async function connectEsp32Bootloader(
       await runEsp32MainWithTimeout(esploader, serialPort);
       return { esploader, transport };
     } catch (e) {
-      // catch-no-log-ok sync retries collect lastError; failure thrown after loop
+      console.debug('[renderer/lib/flasher/esp32Flasher] catch:', e);
+
       lastError = e instanceof Error ? e : new Error(String(e));
       if (lastError.message !== 'ESP32_SYNC_FAILED' || attempt >= ESP32_SYNC_MAX_ATTEMPTS) {
         break;
@@ -139,8 +140,8 @@ export async function flashEsp32Firmware(
   } finally {
     try {
       await zipReader.close();
-    } catch {
-      // catch-no-log-ok zip may already be closed after successful flash
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/flasher/esp32Flasher] catch:', e);
     }
   }
 }
@@ -180,8 +181,8 @@ async function disconnectEsp32Transport(
   try {
     // Do not await disconnect forever — a mid-write hang would block abort/stall cleanup.
     await Promise.race([transport.disconnect(), sleepMillis(ESP32_DISCONNECT_TIMEOUT_MS)]);
-  } catch {
-    // catch-no-log-ok port may already be closed
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/flasher/esp32Flasher] catch:', e);
   }
   await closeSerialPortIfOpen(serialPort);
 }
@@ -222,7 +223,7 @@ export async function flashEsp32Images(
     throw new Error('ESP32_SYNC_FAILED');
   }
   if (expectedChipName && chipName !== expectedChipName) {
-    console.warn('[esp32Flasher] chip mismatch — refusing to write', {
+    console.warn('mcL0833 [esp32Flasher] chip mismatch — refusing to write', {
       chipName,
       expectedChipName,
     });
@@ -275,7 +276,7 @@ export async function flashEsp32Images(
             return;
           }
           if (Date.now() - lastProgressAt >= ESP32_FLASH_STALL_TIMEOUT_MS) {
-            console.warn('[esp32Flasher] writeFlash stalled — disconnecting');
+            console.warn('mcL0834 [esp32Flasher] writeFlash stalled — disconnecting');
             void disconnectEsp32Transport(transport, serialPort).then(
               () => {
                 reject(new Error('ESP32_FLASH_STALLED'));
@@ -377,13 +378,13 @@ async function verifyEsp32ReadDigest(transport: Transport, data: Uint8Array): Pr
     digest = await transport.read(ESP32_READ_DIGEST_TIMEOUT_MS);
   } catch (e) {
     console.warn(
-      '[esp32Flasher] readFlash digest frame missing',
+      'mcL0835 [esp32Flasher] readFlash digest frame missing',
       e instanceof Error ? e.message : String(e),
     );
     throw new Error('ESP32_READ_VERIFY_FAILED');
   }
   if (digest.byteLength !== ESP32_READ_DIGEST_BYTES || bytesToHex(digest) !== md5HexBytes(data)) {
-    console.warn('[esp32Flasher] readFlash digest mismatch');
+    console.warn('mcL0836 [esp32Flasher] readFlash digest mismatch');
     throw new Error('ESP32_READ_VERIFY_FAILED');
   }
 }
@@ -429,7 +430,7 @@ export async function readEsp32Flash(
       new Promise<never>((_, reject) => {
         stallInterval = setInterval(() => {
           if (Date.now() - lastProgressAt >= ESP32_FLASH_STALL_TIMEOUT_MS) {
-            console.warn('[esp32Flasher] readFlash stalled — closing serial port');
+            console.warn('mcL0837 [esp32Flasher] readFlash stalled — closing serial port');
             void closeSerialPortIfOpen(serialPort);
             reject(new Error('ESP32_READ_STALLED'));
           }
@@ -462,8 +463,8 @@ export async function readEsp32Flash(
     if (signal && rejectOnAbort) signal.removeEventListener('abort', rejectOnAbort);
     try {
       await transport.disconnect();
-    } catch {
-      // catch-no-log-ok port may already be closed
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/flasher/esp32Flasher] catch:', e);
     }
     await closeSerialPortIfOpen(serialPort);
   }

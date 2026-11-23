@@ -45,8 +45,9 @@ export function startLongTaskProbe(): void {
       }
     });
     observer.observe({ type: 'longtask', buffered: false });
-  } catch {
-    // catch-no-log-ok: probe must never break renderer boot
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/longTaskProbe] catch:', e);
+
     observer = null;
   }
 }

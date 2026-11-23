@@ -28,8 +28,8 @@ function pathHistoryWireRowToRecord(row: MeshcorePathHistoryWireRow): PathRecord
   let pathBytes: number[] = [];
   try {
     pathBytes = JSON.parse(row.path_bytes) as number[];
-  } catch {
-    // catch-no-log-ok malformed stored path_bytes
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/pathHistoryStore] catch:', e);
   }
   return {
     id: row.id,
@@ -208,7 +208,7 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
       persist(nodeId, pathHash, hopCount, pathBytes, wasFloodDiscovery, routeWeight).catch(
         (err: unknown) => {
           console.warn(
-            '[pathHistory] upsertMeshcorePathHistory failed: ' + errLikeToLogString(err),
+            'mcL1430 [pathHistory] upsertMeshcorePathHistory failed: ' + errLikeToLogString(err),
           );
         },
       );
@@ -254,7 +254,9 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     const persist = window.electronAPI?.db?.recordMeshcorePathOutcome;
     if (typeof persist === 'function') {
       persist(nodeId, pathHash, success, tripTimeMs).catch((err: unknown) => {
-        console.warn('[pathHistory] recordMeshcorePathOutcome failed: ' + errLikeToLogString(err));
+        console.warn(
+          'mcL1431 [pathHistory] recordMeshcorePathOutcome failed: ' + errLikeToLogString(err),
+        );
       });
     }
   },
@@ -312,7 +314,7 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
       evictLRU(newRecords, newLru);
       set({ records: newRecords, lruOrder: newLru });
     } catch (err) {
-      console.warn('[pathHistory] loadForNode failed: ' + errLikeToLogString(err));
+      console.warn('mcL1432 [pathHistory] loadForNode failed: ' + errLikeToLogString(err));
     }
   },
 
@@ -325,7 +327,7 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
       const rows = rawResult as MeshcorePathHistoryWireRow[];
       if (rows.length >= MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT) {
         console.warn(
-          '[pathHistory] loadAllFromDb: loaded row count hit global DB limit; some history may be missing',
+          'mcL1433 [pathHistory] loadAllFromDb: loaded row count hit global DB limit; some history may be missing',
           MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT,
         );
       }
@@ -353,7 +355,7 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
       }
       set({ records, lruOrder });
     } catch (err) {
-      console.warn('[pathHistory] loadAllFromDb failed: ' + errLikeToLogString(err));
+      console.warn('mcL1434 [pathHistory] loadAllFromDb failed: ' + errLikeToLogString(err));
     }
   },
 
@@ -366,7 +368,8 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     if (typeof deleteForNode === 'function') {
       deleteForNode(nodeId).catch((err: unknown) => {
         console.warn(
-          '[pathHistory] deleteMeshcorePathHistoryForNode failed: ' + errLikeToLogString(err),
+          'mcL1435 [pathHistory] deleteMeshcorePathHistoryForNode failed: ' +
+            errLikeToLogString(err),
         );
       });
     }
@@ -378,7 +381,7 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     if (typeof deleteAll === 'function') {
       deleteAll().catch((err: unknown) => {
         console.warn(
-          '[pathHistory] deleteAllMeshcorePathHistory failed: ' + errLikeToLogString(err),
+          'mcL1436 [pathHistory] deleteAllMeshcorePathHistory failed: ' + errLikeToLogString(err),
         );
       });
     }

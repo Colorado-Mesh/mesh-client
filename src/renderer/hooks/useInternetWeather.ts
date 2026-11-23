@@ -85,7 +85,7 @@ export function useInternetWeather(): void {
         }
       } catch (e) {
         if (gen !== generationRef.current) return;
-        console.warn('[useInternetWeather] refresh failed ' + errLikeToLogString(e));
+        console.warn('mcL0746 [useInternetWeather] refresh failed ' + errLikeToLogString(e));
         const store = useInternetWeatherStore.getState();
         if (store.gridStatus === 'loading') store.setGridStatus('error');
         if (store.radarStatus === 'loading') store.setRadarStatus('error');

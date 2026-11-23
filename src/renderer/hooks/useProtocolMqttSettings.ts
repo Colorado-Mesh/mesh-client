@@ -89,7 +89,9 @@ export function persistMqttSettingsIfChanged(key: string, settings: MQTTSettings
       });
   const tracked = operation
     .catch((error: unknown) => {
-      console.warn('[useProtocolMqttSettings] secure persist failed ' + errLikeToLogString(error));
+      console.warn(
+        'mcL0761 [useProtocolMqttSettings] secure persist failed ' + errLikeToLogString(error),
+      );
     })
     .finally(() => {
       if (pendingMqttSecretWrites.get(secretKey) === tracked) {

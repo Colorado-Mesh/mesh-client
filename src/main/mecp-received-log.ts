@@ -7,6 +7,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
 export const MECP_RECEIVED_LOG_FILENAME = 'mecp-received.log';
@@ -37,7 +38,7 @@ let appendChain: Promise<void> = Promise.resolve();
 
 export function getMecpReceivedLogPath(): string {
   if (!logFilePath) {
-    logFilePath = path.join(app.getPath('userData'), MECP_RECEIVED_LOG_FILENAME);
+    logFilePath = joinUnderRoot(app.getPath('userData'), MECP_RECEIVED_LOG_FILENAME);
   }
   return logFilePath;
 }
@@ -57,14 +58,14 @@ function rotateIfNeeded(filePath: string): void {
     if (!fs.existsSync(filePath)) return;
     const { size } = fs.statSync(filePath);
     if (size < MECP_RECEIVED_LOG_MAX_BYTES) return;
-    const backup = path.join(path.dirname(filePath), MECP_RECEIVED_LOG_BACKUP_FILENAME);
+    const backup = joinUnderRoot(path.dirname(filePath), MECP_RECEIVED_LOG_BACKUP_FILENAME);
     if (fs.existsSync(backup)) {
       fs.unlinkSync(backup);
     }
     fs.renameSync(filePath, backup);
   } catch (e) {
     console.warn(
-      '[mecp-received-log] rotate failed',
+      'mcL0228 [mecp-received-log] rotate failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
@@ -100,7 +101,7 @@ export function appendMecpReceivedLog(entry: MecpReceivedLogEntry): Promise<void
   // Keep the chain alive after failures so later appends still run.
   appendChain = write.catch((e: unknown) => {
     console.warn(
-      '[mecp-received-log] append failed',
+      'mcL0229 [mecp-received-log] append failed',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   });
@@ -110,21 +111,27 @@ export function appendMecpReceivedLog(entry: MecpReceivedLogEntry): Promise<void
 export async function readMecpReceivedLogForExport(): Promise<string> {
   await appendChain.catch(() => undefined);
   const filePath = getMecpReceivedLogPath();
-  const backup = path.join(path.dirname(filePath), MECP_RECEIVED_LOG_BACKUP_FILENAME);
+  const backup = joinUnderRoot(path.dirname(filePath), MECP_RECEIVED_LOG_BACKUP_FILENAME);
   const parts: string[] = [];
   try {
     if (fs.existsSync(backup)) {
       parts.push(await fs.promises.readFile(backup, 'utf8'));
     }
-  } catch {
-    // catch-no-log-ok missing backup is fine
+  } catch (e: unknown) {
+    console.debug(
+      '[main/mecp-received-log] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   try {
     if (fs.existsSync(filePath)) {
       parts.push(await fs.promises.readFile(filePath, 'utf8'));
     }
-  } catch {
-    // catch-no-log-ok missing current is fine
+  } catch (e: unknown) {
+    console.debug(
+      '[main/mecp-received-log] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   return parts.join('');
 }

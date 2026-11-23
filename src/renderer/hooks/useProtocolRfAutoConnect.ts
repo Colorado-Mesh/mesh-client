@@ -84,8 +84,8 @@ function watchPrimaryAutoConnectAttempt(protocol: MeshProtocol, attempt: Promise
     .finally(() => {
       notifyPrimaryAutoConnectSettledIfNeeded(protocol);
     })
-    .catch(() => {
-      // catch-no-log-ok — reconnectBleWithScan awaits this rejected attempt
+    .catch((e: unknown) => {
+      console.debug('[renderer/hooks/useProtocolRfAutoConnect] catch:', e);
     });
 }
 
@@ -148,7 +148,9 @@ export function useProtocolRfAutoConnect({
     const startAutoConnectTimeout = () => {
       clearAutoConnectTimeout();
       timeoutRef.current = setTimeout(() => {
-        console.warn(`[useProtocolRfAutoConnect] ${protocol} auto-connect timed out after 30s`);
+        console.warn(
+          `mcL0762 [useProtocolRfAutoConnect] ${protocol} auto-connect timed out after 30s`,
+        );
       }, 30_000);
     };
     const onAutoConnectCancelled = () => {
@@ -169,7 +171,7 @@ export function useProtocolRfAutoConnect({
       }
       clearAutoConnectTimeout();
       console.warn(
-        `[useProtocolRfAutoConnect] ${protocol} ${transport} auto-connect failed: ${errLikeToLogString(error)}`,
+        `mcL0763 [useProtocolRfAutoConnect] ${protocol} ${transport} auto-connect failed: ${errLikeToLogString(error)}`,
       );
       notifyPrimaryAutoConnectSettledIfNeeded(protocol);
     };
@@ -271,7 +273,7 @@ export function useProtocolRfAutoConnect({
       }
       if (lastBleId) {
         console.warn(
-          `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE GATT scan: ${errLikeToLogString(error)}`,
+          `mcL0764 [useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE GATT scan: ${errLikeToLogString(error)}`,
         );
         runBleAutoConnect(lastBleId)
           .then((finished) => {
@@ -319,7 +321,7 @@ export function useProtocolRfAutoConnect({
       }
       if (!ready) {
         console.warn(
-          `[useProtocolRfAutoConnect] ${protocol} auto-connect skipped — runtime session never registered`,
+          `mcL0765 [useProtocolRfAutoConnect] ${protocol} auto-connect skipped — runtime session never registered`,
         );
         onAutoConnectCancelled();
         return;
@@ -369,7 +371,7 @@ export function useProtocolRfAutoConnect({
         if (protocol === 'meshcom' && lastConnection.type === 'tcp') {
           if (isMeshcomMeshtasticOnlyTcpLastConnection(lastConnection)) {
             console.warn(
-              '[useProtocolRfAutoConnect] meshcom auto-connect skipped — ignoring Meshtastic-only tcp lastConnection',
+              'mcL0766 [useProtocolRfAutoConnect] meshcom auto-connect skipped — ignoring Meshtastic-only tcp lastConnection',
             );
             clearLastConnection('meshcom');
             onAutoConnectCancelled();

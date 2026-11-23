@@ -136,7 +136,8 @@ function performPrefixPushRequest<T>(
       try {
         succeed(opts.parseMatchedPush(response));
       } catch (err) {
-        // catch-no-log-ok parse errors propagate via fail() to the RPC caller
+        console.debug('[renderer/lib/meshcoreRepeaterPrefixPushRpc] catch:', err);
+
         fail(err);
       }
     };

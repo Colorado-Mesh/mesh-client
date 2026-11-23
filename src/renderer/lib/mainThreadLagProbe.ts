@@ -22,8 +22,9 @@ let started = false;
 function visibility(): DocumentVisibilityState | 'unknown' {
   try {
     return document.visibilityState;
-  } catch {
-    // catch-no-log-ok: probe must never throw when document is unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/mainThreadLagProbe] catch:', e);
+
     return 'unknown';
   }
 }

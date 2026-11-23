@@ -1,6 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+import { sanitizeLogMessage } from '../sanitize-log-message';
+
 /** Round lat/lon to ~100 m for cache keys (~0.001°). */
 export function elevationCacheKey(lat: number, lon: number): string {
   return `${lat.toFixed(3)},${lon.toFixed(3)}`;
@@ -41,8 +43,11 @@ export class ElevationSampleCache {
           this.entries.set(key, { elevationM: value.elevationM, updatedAt: value.updatedAt });
         }
       }
-    } catch {
-      // catch-no-log-ok missing or corrupt cache
+    } catch (e: unknown) {
+      console.debug(
+        '[main/elevation/sample-cache] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
 
@@ -86,10 +91,12 @@ export class ElevationSampleCache {
       await fs.writeFile(tmp, JSON.stringify(payload), 'utf8');
       await fs.rename(tmp, this.filePath());
     } catch (err) {
+      console.debug(
+        '[main/elevation/sample-cache] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
       this.dirty = true;
-      await fs.unlink(tmp).catch(() => {
-        // catch-no-log-ok cleanup
-      });
+      await fs.unlink(tmp).catch(() => {});
       throw err;
     }
   }
@@ -99,8 +106,11 @@ export class ElevationSampleCache {
     this.dirty = false;
     try {
       await fs.unlink(this.filePath());
-    } catch {
-      // catch-no-log-ok
+    } catch (e: unknown) {
+      console.debug(
+        '[main/elevation/sample-cache] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
 }

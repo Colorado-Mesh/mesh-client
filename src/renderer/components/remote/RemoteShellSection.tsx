@@ -172,7 +172,7 @@ export function RemoteShellSection({
       try {
         await window.electronAPI.reticulum.rnsh.disconnect({ session_id: sessionId });
       } catch (e) {
-        console.warn('[RemoteShellSection] disconnect ' + errLikeToLogString(e));
+        console.warn('mcL0670 [RemoteShellSection] disconnect ' + errLikeToLogString(e));
       } finally {
         removeSession(sessionId);
       }

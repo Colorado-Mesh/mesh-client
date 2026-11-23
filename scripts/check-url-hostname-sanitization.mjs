@@ -12,9 +12,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot, resolveUnderRoot } from './lib/path-under-root.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const SCAN_DIRS = ['src/main', 'src/preload', 'src/renderer'].map((d) => path.join(ROOT, d));
+const SCAN_DIRS = ['src/main', 'src/preload', 'src/renderer'].map((d) => resolveUnderRoot(ROOT, d));
 
 const SUBSTRING_ON_LITERAL = /\.(?:includes|indexOf)\s*\(\s*['"]([^'"]+)['"]\s*[,)]/g;
 
@@ -61,9 +63,9 @@ function collectSourceFiles(dir) {
   if (!fs.existsSync(dir)) return results;
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     if (ent.isDirectory()) {
-      results.push(...collectSourceFiles(path.join(dir, ent.name)));
+      results.push(...collectSourceFiles(joinUnderRoot(dir, ent.name)));
     } else if (ent.isFile() && /\.(ts|tsx)$/.test(ent.name)) {
-      results.push(path.join(dir, ent.name));
+      results.push(joinUnderRoot(dir, ent.name));
     }
   }
   return results;

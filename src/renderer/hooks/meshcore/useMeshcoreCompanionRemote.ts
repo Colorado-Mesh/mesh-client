@@ -64,7 +64,8 @@ export function useMeshcoreCompanionRemote(
         return flags == null ? null : isMeshcoreRemoteCliAllowed(flags);
       } catch (e) {
         console.warn(
-          '[useMeshcoreCompanionRemote] set remote CLI flag failed ' + errLikeToLogString(e),
+          'mcL0713 [useMeshcoreCompanionRemote] set remote CLI flag failed ' +
+            errLikeToLogString(e),
         );
         throw e;
       }

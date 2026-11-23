@@ -185,7 +185,9 @@ export class TakRemoteClient extends EventEmitter {
     } catch (err) {
       // tls.connect throws synchronously on unusable credentials; retrying cannot fix that.
       const error = sanitizeLogMessage(err instanceof Error ? err.message : String(err));
-      console.warn(`[TakRemote] Cannot connect to ${sanitizeLogMessage(host)}:${port}: ${error}`);
+      console.warn(
+        `mcL0296 [TakRemote] Cannot connect to ${sanitizeLogMessage(host)}:${port}: ${error}`,
+      );
       this.stopped = true;
       this.setStatus({ state: 'disconnected', host, port, error });
       return;
@@ -227,7 +229,7 @@ export class TakRemoteClient extends EventEmitter {
           }
           lastError = TAK_REMOTE_HTTP_PORT_ERROR;
           console.warn(
-            `[TakRemote] ${sanitizeLogMessage(host)}:${port} answered with HTTP; not a CoT streaming port`,
+            `mcL0297 [TakRemote] ${sanitizeLogMessage(host)}:${port} answered with HTTP; not a CoT streaming port`,
           );
           socket.destroy();
           return;
@@ -242,7 +244,7 @@ export class TakRemoteClient extends EventEmitter {
         if (!(err instanceof CotFrameTooLargeError)) throw err;
         lastError = err.message;
         console.warn(
-          `[TakRemote] ${sanitizeLogMessage(host)}:${port} sent an oversized CoT event; disconnecting`,
+          `mcL0298 [TakRemote] ${sanitizeLogMessage(host)}:${port} sent an oversized CoT event; disconnecting`,
         );
         socket.destroy();
         return;
@@ -261,7 +263,7 @@ export class TakRemoteClient extends EventEmitter {
         return;
       }
       lastError = sanitizeLogMessage(describeTakRemoteError(err));
-      console.warn(line);
+      console.warn(`mcL0299 ${line}`);
     });
     socket.once('close', () => {
       if (stableTimer) clearTimeout(stableTimer);

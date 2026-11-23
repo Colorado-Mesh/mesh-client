@@ -45,23 +45,24 @@ export function saveLastConnection(protocol: MeshProtocol, connection: LastConne
   try {
     setRendererStorageItem(lastConnectionKey(protocol), JSON.stringify(connection));
   } catch (error) {
-    console.warn('[lastConnectionStorage] saveLastConnection failed', error);
+    console.warn('mcL0857 [lastConnectionStorage] saveLastConnection failed', error);
   }
 }
 
 export function clearLastConnection(protocol: MeshProtocol): void {
   try {
     removeRendererStorageItem(lastConnectionKey(protocol));
-  } catch {
-    // catch-no-log-ok localStorage unavailable in tests or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/lastConnectionStorage] catch:', e);
   }
 }
 
 export function loadLastBleDeviceId(protocol: MeshProtocol): string | null {
   try {
     return localStorage.getItem(lastBleDeviceKey(protocol));
-  } catch {
-    // catch-no-log-ok localStorage unavailable in tests or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/lastConnectionStorage] catch:', e);
+
     return null;
   }
 }
@@ -69,8 +70,8 @@ export function loadLastBleDeviceId(protocol: MeshProtocol): string | null {
 export function clearLastBleDeviceId(protocol: MeshProtocol): void {
   try {
     removeRendererStorageItem(lastBleDeviceKey(protocol));
-  } catch {
-    // catch-no-log-ok localStorage unavailable in tests or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/lastConnectionStorage] catch:', e);
   }
 }
 
@@ -148,8 +149,9 @@ export function resolveLastSerialPortId(protocol: MeshProtocol): string | null {
   if (protocol === 'meshcom') return null;
   try {
     return localStorage.getItem(LAST_SERIAL_PORT_KEY);
-  } catch {
-    // catch-no-log-ok localStorage unavailable in tests or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/lastConnectionStorage] catch:', e);
+
     return null;
   }
 }

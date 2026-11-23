@@ -4,6 +4,7 @@ import { createInterface } from 'node:readline';
 
 import { AI_MAX_RESPONSE_BYTES, AI_REQUEST_TIMEOUT_MS } from '../../../shared/ai-types';
 import { MS_PER_SECOND } from '../../../shared/timeConstants';
+import { sanitizeLogMessage } from '../../sanitize-log-message';
 import { AiFailure } from '../errors';
 import { isAppleSiliconMac } from '../local/modelManifest';
 import { isMlxHelperInstallComplete } from './mlxHelperInstall';
@@ -51,7 +52,7 @@ export class MlxAiHelper {
     this.process = child;
     child.stderr.on('data', (chunk: Buffer) => {
       const text = chunk.toString('utf8').trim();
-      if (text) console.warn('[mesh-ai-mlx]', text.slice(0, 500));
+      if (text) console.warn('mcL0006 [mesh-ai-mlx]', text.slice(0, 500));
     });
     const lines = createInterface({ input: child.stdout });
     this.reader = lines;
@@ -68,8 +69,7 @@ export class MlxAiHelper {
         if (reply && typeof reply === 'object' && 'type' in reply && typeof reply.type === 'string')
           for (const listener of this.listeners) listener(reply as Reply);
       } catch {
-        // catch-no-log-ok mlx-swift may print non-JSON diagnostics on stdout
-        console.warn('[mesh-ai-mlx] non-JSON stdout', line.slice(0, 300));
+        console.warn('mcL0007 [mesh-ai-mlx] non-JSON stdout', line.slice(0, 300));
       }
     });
     const exit = () => {
@@ -116,8 +116,12 @@ export class MlxAiHelper {
       this.probed = reply.available === true;
       this.scheduleIdle();
       return this.probed;
-    } catch {
-      // catch-no-log-ok missing/broken helpers leave MLX unavailable
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ai/os/mlxAiHelper] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       if (this.process) this.scheduleIdle();
       this.probed = false;
       return false;
@@ -160,7 +164,11 @@ export class MlxAiHelper {
           try {
             onDelta(reply.text);
           } catch (error) {
-            // catch-no-log-ok fail the request without native output
+            console.debug(
+              '[main/ai/os/mlxAiHelper] catch:',
+              sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+            );
+
             finish(error instanceof AiFailure ? error : new AiFailure('error'));
             this.kill();
             return;

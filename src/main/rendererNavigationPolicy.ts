@@ -1,5 +1,7 @@
 import { RENDERER_HOST, RENDERER_SCHEME } from '@/shared/rendererOrigin';
 
+import { sanitizeLogMessage } from './sanitize-log-message';
+
 function hasCredentials(url: URL): boolean {
   return url.username !== '' || url.password !== '';
 }
@@ -31,8 +33,12 @@ export function isAllowedRendererNavigation(rendererUrl: string, targetUrl: stri
       return renderer.origin === target.origin;
     }
     return false;
-  } catch {
-    // catch-no-log-ok malformed navigation targets are untrusted.
+  } catch (e: unknown) {
+    console.debug(
+      '[main/rendererNavigationPolicy] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }
@@ -76,8 +82,12 @@ export function isAllowedRendererDeviceOrigin(
       return origin.protocol === 'file:' && origin.host === renderer.host;
     }
     return isAllowedRendererNavigation(rendererUrl, requestingOrigin);
-  } catch {
-    // catch-no-log-ok opaque or malformed origins cannot establish device access.
+  } catch (e: unknown) {
+    console.debug(
+      '[main/rendererNavigationPolicy] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }

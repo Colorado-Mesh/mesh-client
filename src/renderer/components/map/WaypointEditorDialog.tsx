@@ -212,7 +212,7 @@ function WaypointEditorDialogForm({
       // A pending save from a previous editor instance must not close a newly opened one.
       if (mountedRef.current) onClose();
     } catch (err) {
-      console.warn('[WaypointEditorDialog] submit failed', err);
+      console.warn('mcL0663 [WaypointEditorDialog] submit failed', err);
       if (mountedRef.current) setError(t('mapPanel.waypointSaveFailed'));
     } finally {
       if (mountedRef.current) setBusy(false);

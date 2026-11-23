@@ -326,8 +326,11 @@ export class GattSidecarProxy extends EventEmitter {
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         body = parsed as Record<string, unknown>;
       }
-    } catch {
-      // catch-no-log-ok: empty or non-JSON body
+    } catch (e: unknown) {
+      console.debug(
+        '[main/gatt-sidecar-proxy] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
     return { status: res.status, body };
   }
@@ -479,7 +482,11 @@ export class GattSidecarProxy extends EventEmitter {
       this.emit('connected', { sessionId });
       return { ok: true };
     } catch (e) {
-      // catch-no-log-ok: reported via connect-aborted; canceled attempts stay quiet.
+      console.debug(
+        '[main/gatt-sidecar-proxy] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       // A cancelled attempt must not send errors into its replacement's reconnect loop.
       if (!isCurrent()) return cancelled;
       this.clearLocalSession(sessionId);
@@ -522,7 +529,7 @@ export class GattSidecarProxy extends EventEmitter {
       // A hung pair-state call is the same wedge as a hung connect. Surface it as
       // connect_timeout so the panel can stop instead of calling connect.
       if (isHttpTimeoutError(err)) {
-        console.warn('[GATT] pair-state timed out');
+        console.warn('mcL0029 [GATT] pair-state timed out');
         return { ok: false, code: 'connect_timeout', error: 'pair state timed out' };
       }
       throw err;
@@ -651,7 +658,7 @@ export class GattSidecarProxy extends EventEmitter {
         }
       } catch (e) {
         console.warn(
-          '[GATT] ws parse failed:',
+          'mcL0030 [GATT] ws parse failed:',
           sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
         );
       }
@@ -668,8 +675,11 @@ export class GattSidecarProxy extends EventEmitter {
     try {
       if (live.ws?.readyState === WebSocket.CONNECTING) live.ws.terminate();
       else live.ws?.close();
-    } catch {
-      // catch-no-log-ok
+    } catch (e: unknown) {
+      console.debug(
+        '[main/gatt-sidecar-proxy] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
 
@@ -754,7 +764,7 @@ export class GattSidecarProxy extends EventEmitter {
     // the next connect clears any orphaned session that survived failed DELETEs.
     if (reservation.cleanupAttempts >= GATT_CLEANUP_MAX_ATTEMPTS) {
       console.warn(
-        '[GATT] abandoning remote cleanup after',
+        'mcL0031 [GATT] abandoning remote cleanup after',
         reservation.cleanupAttempts,
         'attempts:',
         sanitizeLogMessage(`${reservation.profile} ${reservation.address}`),
@@ -781,8 +791,12 @@ export class GattSidecarProxy extends EventEmitter {
         { timeoutMs: GATT_HTTP_TIMEOUT_MS, port: live.port, authToken: live.authToken },
       );
       return this.sessions.get(sessionId) === live && body.connected === true;
-    } catch {
-      // catch-no-log-ok: treat probe failures as disconnected
+    } catch (e: unknown) {
+      console.debug(
+        '[main/gatt-sidecar-proxy] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return false;
     }
   }
@@ -822,8 +836,11 @@ export class GattSidecarProxy extends EventEmitter {
         live.seedRssi = body.rssi;
         return body.rssi;
       }
-    } catch {
-      // catch-no-log-ok: fall through to scan-time seed
+    } catch (e: unknown) {
+      console.debug(
+        '[main/gatt-sidecar-proxy] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
     // CoreBluetooth often omits live RSSI on a connected peripheral — use last scan sample.
     return this.scanRssiFor(live.address) ?? live.seedRssi;

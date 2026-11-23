@@ -23,7 +23,7 @@ export function migrateLegacyChatOrderScope(protocol: string, nodeScope: string)
     try {
       raw = localStorage.getItem(fromKey);
     } catch (error) {
-      console.warn('[chatOrderScope] read legacy key failed ' + errLikeToLogString(error));
+      console.warn('mcL0793 [chatOrderScope] read legacy key failed ' + errLikeToLogString(error));
       continue;
     }
     if (raw == null) continue;
@@ -31,27 +31,33 @@ export function migrateLegacyChatOrderScope(protocol: string, nodeScope: string)
     try {
       destMissing = localStorage.getItem(toKey) == null;
     } catch (error) {
-      console.warn('[chatOrderScope] read dest key failed ' + errLikeToLogString(error));
+      console.warn('mcL0794 [chatOrderScope] read dest key failed ' + errLikeToLogString(error));
       continue;
     }
     if (destMissing) {
       try {
         localStorage.setItem(toKey, raw);
       } catch (error) {
-        console.warn('[chatOrderScope] copy legacy order failed ' + errLikeToLogString(error));
+        console.warn(
+          'mcL0795 [chatOrderScope] copy legacy order failed ' + errLikeToLogString(error),
+        );
         continue;
       }
       try {
         const verify = localStorage.getItem(toKey);
         if (verify !== raw) continue;
       } catch (error) {
-        console.warn('[chatOrderScope] verify dest key failed ' + errLikeToLogString(error));
+        console.warn(
+          'mcL0796 [chatOrderScope] verify dest key failed ' + errLikeToLogString(error),
+        );
         continue;
       }
       try {
         localStorage.removeItem(fromKey);
       } catch (error) {
-        console.warn('[chatOrderScope] remove legacy key failed ' + errLikeToLogString(error));
+        console.warn(
+          'mcL0797 [chatOrderScope] remove legacy key failed ' + errLikeToLogString(error),
+        );
       }
       continue;
     }
@@ -61,7 +67,7 @@ export function migrateLegacyChatOrderScope(protocol: string, nodeScope: string)
         localStorage.removeItem(fromKey);
       }
     } catch (error) {
-      console.warn('[chatOrderScope] compare dest key failed ' + errLikeToLogString(error));
+      console.warn('mcL0798 [chatOrderScope] compare dest key failed ' + errLikeToLogString(error));
     }
   }
 }

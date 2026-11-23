@@ -299,7 +299,8 @@ export async function settleOpenHopPendingResult<T>(
   try {
     return { status: 'fulfilled', value: await resultPromise };
   } catch (reason: unknown) {
-    // catch-no-log-ok settle helper returns rejected status to caller for OpenHop retry decision
+    console.debug('[renderer/lib/meshcore/meshcoreTcpInitBurst] catch:', reason);
+
     return { status: 'rejected', reason };
   }
 }

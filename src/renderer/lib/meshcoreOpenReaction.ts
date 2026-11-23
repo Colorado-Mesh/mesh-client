@@ -314,7 +314,6 @@ export function findMeshcoreOpenReactionParent(
     const tsSec = Math.floor(m.timestamp / 1000);
     const senderName = opts.isDm ? null : m.sender_name;
     const hash = computeMeshcoreOpenReactionHash(tsSec, senderName, m.payload);
-    // catch-no-log-ok timing-safe compare not needed for public mesh reaction hash lookup
     if (hash.toLowerCase() === wantHash) return m;
   }
   return undefined;

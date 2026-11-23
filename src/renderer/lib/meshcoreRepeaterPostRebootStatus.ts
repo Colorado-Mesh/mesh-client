@@ -24,7 +24,7 @@ export function createRepeaterPostRebootStatusScheduler(
           if (!isCurrent()) return;
           requestStatus(nodeId).catch((e: unknown) => {
             console.warn(
-              '[meshcoreRepeaterPostRebootStatus] post-reboot status error ' +
+              'mcL0917 [meshcoreRepeaterPostRebootStatus] post-reboot status error ' +
                 errLikeToLogString(e),
             );
           });

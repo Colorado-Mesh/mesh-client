@@ -85,8 +85,8 @@ async function recoverStaleRrcHubPath(hub: string): Promise<boolean> {
   });
   try {
     await refreshReticulumPeersFromSidecar({ forceRefresh: true });
-  } catch {
-    // catch-no-log-ok rate-limit or sidecar blip — fast poll will retry
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulum/reticulumRrcPathReady] catch:', e);
   }
   return true;
 }
@@ -119,8 +119,8 @@ export async function probeReticulumRrcPathReady(hubHash: string): Promise<Retic
       pathRequestSentForHub.add(hub);
       try {
         await refreshReticulumPeersFromSidecar({ forceRefresh: true });
-      } catch {
-        // catch-no-log-ok rate-limit or sidecar blip — fast poll will retry
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/reticulum/reticulumRrcPathReady] catch:', e);
       }
       Object.assign(passive, passivePathSnapshot(hub));
     }

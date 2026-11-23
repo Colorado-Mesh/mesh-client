@@ -93,7 +93,7 @@ export default function ScanQrDisclosure({
         await Promise.resolve(onDecoded(text));
         if (closeOnDecoded && sessionRef.current === session) close();
       } catch (err: unknown) {
-        console.error('[ScanQrDisclosure] onDecoded failed: ' + errLikeToLogString(err));
+        console.error('mcL0618 [ScanQrDisclosure] onDecoded failed: ' + errLikeToLogString(err));
       }
     })();
   };

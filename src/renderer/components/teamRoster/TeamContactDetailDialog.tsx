@@ -37,8 +37,9 @@ export interface TeamContactDetailDialogProps {
 function formatTime(ts: number): string {
   try {
     return new Date(ts).toLocaleString();
-  } catch {
-    // catch-no-log-ok Invalid Date / locale edge — fall back to numeric timestamp
+  } catch (e: unknown) {
+    console.debug('[renderer/components/teamRoster/TeamContactDetailDialog] catch:', e);
+
     return String(ts);
   }
 }

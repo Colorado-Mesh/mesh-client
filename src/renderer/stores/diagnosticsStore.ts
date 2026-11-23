@@ -89,12 +89,15 @@ function meshcoreTracePathSnrsFromDbJson(raw: string | null | undefined): number
   try {
     const p = JSON.parse(raw) as unknown;
     if (!Array.isArray(p)) {
-      console.warn('[diagnosticsStore] meshcoreTracePathSnrs: unexpected non-array JSON in DB');
+      console.warn(
+        'mcL1390 [diagnosticsStore] meshcoreTracePathSnrs: unexpected non-array JSON in DB',
+      );
       return [];
     }
     return p.filter((x): x is number => typeof x === 'number' && Number.isFinite(x));
-  } catch {
-    // catch-no-log-ok corrupt JSON in DB column; treat as empty SNR list
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/diagnosticsStore] catch:', e);
+
     return [];
   }
 }
@@ -329,7 +332,9 @@ function schedulePersistForeignLora(
       const payload: ForeignLoraSnapshot = { v: 1, savedAt: now, entries };
       localStorage.setItem(FOREIGN_LORA_STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
-      console.warn('[diagnosticsStore] persist foreignLora failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1391 [diagnosticsStore] persist foreignLora failed ' + errLikeToLogString(e),
+      );
     }
   }, 500);
 }
@@ -341,8 +346,8 @@ function clearPersistedForeignLoraSnapshot(): void {
   }
   try {
     localStorage.removeItem(FOREIGN_LORA_STORAGE_KEY);
-  } catch {
-    // catch-no-log-ok localStorage unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/diagnosticsStore] catch:', e);
   }
 }
 
@@ -368,8 +373,8 @@ function loadCuHistoryPersistEnabled(): boolean {
     const raw = localStorage.getItem('mesh-client:cuHistoryPersistEnabled');
     if (raw === '0') return false;
     if (raw === '1') return true;
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/diagnosticsStore] catch:', e);
   }
   return true;
 }
@@ -379,8 +384,9 @@ function loadCuHistorySnapshot(): Map<number, CuSample[]> {
   let raw: string | null;
   try {
     raw = localStorage.getItem(CU_HISTORY_STORAGE_KEY);
-  } catch {
-    // catch-no-log-ok localStorage unavailable during module init
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/diagnosticsStore] catch:', e);
+
     return new Map();
   }
   const parsed = parseStoredJson<CuHistorySnapshot>(raw, 'diagnosticsStore loadCuHistorySnapshot');
@@ -419,7 +425,7 @@ function schedulePersistCuHistory(getMap: () => Map<number, CuSample[]>): void {
       const payload: CuHistorySnapshot = { v: 1, savedAt: now, entries };
       localStorage.setItem(CU_HISTORY_STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
-      console.warn('[diagnosticsStore] persist cuHistory failed ' + errLikeToLogString(e));
+      console.warn('mcL1392 [diagnosticsStore] persist cuHistory failed ' + errLikeToLogString(e));
     }
   }, 500);
 }
@@ -431,8 +437,8 @@ function clearPersistedCuHistorySnapshot(): void {
   }
   try {
     localStorage.removeItem(CU_HISTORY_STORAGE_KEY);
-  } catch {
-    // catch-no-log-ok localStorage unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/diagnosticsStore] catch:', e);
   }
 }
 
@@ -520,7 +526,9 @@ function loadDiagnosticRowsSnapshot(): { rows: DiagnosticRow[]; savedAt: number 
   let rows = parsed.rows.filter(isValidDiagnosticRow);
   const droppedCount = parsed.rows.length - rows.length;
   if (droppedCount > 0) {
-    console.warn(`[diagnosticsStore] dropped ${droppedCount} invalid diagnostic rows on load`);
+    console.warn(
+      `mcL1393 [diagnosticsStore] dropped ${droppedCount} invalid diagnostic rows on load`,
+    );
   }
   rows = filterRetiredRfDiagnosticRows(rows);
   if (rows.length === 0 && parsed.rows.length > 0) return null;
@@ -543,8 +551,8 @@ function clearPersistedDiagnosticRowsSnapshot(): void {
   }
   try {
     localStorage.removeItem(DIAGNOSTIC_ROWS_STORAGE_KEY);
-  } catch {
-    // catch-no-log-ok localStorage unavailable — non-critical diagnostic row cleanup
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/diagnosticsStore] catch:', e);
   }
 }
 
@@ -572,7 +580,9 @@ function schedulePersistDiagnosticRows(getRows: () => DiagnosticRow[]): void {
       };
       localStorage.setItem(DIAGNOSTIC_ROWS_STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
-      console.warn('[diagnosticsStore] persist diagnosticRows failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1394 [diagnosticsStore] persist diagnosticRows failed ' + errLikeToLogString(e),
+      );
     }
   }, PERSIST_DEBOUNCE_MS);
 }
@@ -807,7 +817,8 @@ function migrateLegacyAutoTracerouteKeysOnce(): void {
     setAppSettingsRaw(JSON.stringify(next));
   } catch (e) {
     console.warn(
-      '[diagnosticsStore] migrateLegacyAutoTracerouteKeysOnce failed ' + errLikeToLogString(e),
+      'mcL1395 [diagnosticsStore] migrateLegacyAutoTracerouteKeysOnce failed ' +
+        errLikeToLogString(e),
     );
   }
 }
@@ -826,7 +837,7 @@ function saveMqttIgnoredNodes(nodes: Set<number>): void {
     console.debug('[diagnosticsStore] saveMqttIgnoredNodes');
     localStorage.setItem('mesh-client:mqttIgnoredNodes', JSON.stringify([...nodes]));
   } catch (e) {
-    console.warn('[diagnosticsStore] saveMqttIgnoredNodes failed ' + errLikeToLogString(e));
+    console.warn('mcL1396 [diagnosticsStore] saveMqttIgnoredNodes failed ' + errLikeToLogString(e));
   }
 }
 
@@ -900,7 +911,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         }
       })
       .catch((e: unknown) => {
-        console.warn('[diagnosticsStore] loadMeshcoreHopHistory failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL1397 [diagnosticsStore] loadMeshcoreHopHistory failed ' + errLikeToLogString(e),
+        );
       });
     dbApi
       .getMeshcoreTraceHistory(nodeId)
@@ -922,7 +935,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         }
       })
       .catch((e: unknown) => {
-        console.warn('[diagnosticsStore] loadMeshcoreTraceHistory failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL1398 [diagnosticsStore] loadMeshcoreTraceHistory failed ' + errLikeToLogString(e),
+        );
       });
   },
 
@@ -951,7 +966,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         return { meshcoreHopHistory: newMap };
       });
     } catch (e) {
-      console.warn('[diagnosticsStore] saveMeshcoreHopHistory failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1399 [diagnosticsStore] saveMeshcoreHopHistory failed ' + errLikeToLogString(e),
+      );
     }
   },
 
@@ -987,7 +1004,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         return { meshcoreTraceHistory: newMap };
       });
     } catch (e) {
-      console.warn('[diagnosticsStore] saveMeshcoreTraceHistory failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1400 [diagnosticsStore] saveMeshcoreTraceHistory failed ' + errLikeToLogString(e),
+      );
     }
   },
 
@@ -1006,7 +1025,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         return { meshcoreHopHistory: newHopMap, meshcoreTraceHistory: newTraceMap };
       });
     } catch (e) {
-      console.warn('[diagnosticsStore] pruneMeshcorePathHistory failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1401 [diagnosticsStore] pruneMeshcorePathHistory failed ' + errLikeToLogString(e),
+      );
     }
   },
 
@@ -1629,7 +1650,8 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           })
           .catch((err: unknown) => {
             console.warn(
-              '[diagnosticsStore] worker analyze batch failed; inline ' + errLikeToLogString(err),
+              'mcL1402 [diagnosticsStore] worker analyze batch failed; inline ' +
+                errLikeToLogString(err),
             );
             if (generation !== diagnosticsReanalysisGeneration) return;
             runChunkedRouting();

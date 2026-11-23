@@ -24,7 +24,7 @@ export function saveChatNotificationMode(mode: ChatNotificationMode): boolean {
     for (const listener of listeners) listener();
     return true;
   } catch (error) {
-    console.warn('[chatNotificationPolicy] save failed', error);
+    console.warn('mcL0790 [chatNotificationPolicy] save failed', error);
     return false;
   }
 }

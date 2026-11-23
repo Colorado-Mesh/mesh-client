@@ -70,7 +70,7 @@ export async function withMeshcoreFloodScopeOverride(
           await apply(restoreHashtag);
         } catch (restoreErr) {
           console.warn(
-            '[meshcoreFloodScopeSend] failed to restore flood scope after send:',
+            'mcL0906 [meshcoreFloodScopeSend] failed to restore flood scope after send:',
             restoreErr,
           );
         }

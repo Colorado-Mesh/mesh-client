@@ -51,7 +51,7 @@ function loadDisabledConversations(): Set<string> {
     }
     return out;
   } catch (err) {
-    console.warn('[wordFilterStore] load disabled conversations failed', err);
+    console.warn('mcL1490 [wordFilterStore] load disabled conversations failed', err);
     return new Set();
   }
 }
@@ -64,7 +64,7 @@ function saveDisabledConversations(keys: ReadonlySet<string>): void {
       JSON.stringify([...keys].slice(-MAX_DISABLED_CONVERSATIONS)),
     );
   } catch (err) {
-    console.warn('[wordFilterStore] save disabled conversations failed', err);
+    console.warn('mcL1491 [wordFilterStore] save disabled conversations failed', err);
   }
 }
 
@@ -76,7 +76,7 @@ function initialState() {
       settings = getWordFilterSettings();
     } catch (err) {
       // Tests often mock appSettingsStorage without this helper; stay import-safe.
-      console.warn('[wordFilterStore] load settings failed', err);
+      console.warn('mcL1492 [wordFilterStore] load settings failed', err);
       settings = fallback;
     }
   }

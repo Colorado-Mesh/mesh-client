@@ -16,7 +16,7 @@ export function getRadioCapabilities(protocol: MeshProtocol): ProtocolCapabiliti
   if (protocol === 'meshcom') return MESHCOM_CAPABILITIES;
   if (process.env.NODE_ENV === 'development') {
     console.warn(
-      `[getRadioCapabilities] Unknown protocol "${protocol}", falling back to Meshtastic capabilities`,
+      `mcL1003 [getRadioCapabilities] Unknown protocol "${protocol}", falling back to Meshtastic capabilities`,
     );
   }
   return MESHTASTIC_CAPABILITIES;

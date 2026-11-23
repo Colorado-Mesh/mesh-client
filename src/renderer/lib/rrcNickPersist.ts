@@ -30,6 +30,6 @@ export function persistRrcNick(hubHash: string, identityHash: string, nickname: 
       last_seen: Date.now(),
     })
     .catch((e: unknown) => {
-      console.warn('[rrcNickPersist] upsert failed ' + errLikeToLogString(e));
+      console.warn('mcL1106 [rrcNickPersist] upsert failed ' + errLikeToLogString(e));
     });
 }

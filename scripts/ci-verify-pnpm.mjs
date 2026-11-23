@@ -12,6 +12,16 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+/** pnpm spawn target that works with shell:false on Windows (.cmd shim). */
+export function pnpmExecutable() {
+  return process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+}
+
+/** corepack spawn target that works with shell:false on Windows (.cmd shim). */
+export function corepackExecutable() {
+  return process.platform === 'win32' ? 'corepack.cmd' : 'corepack';
+}
+
 /**
  * @param {string} text
  * @returns {string | null}
@@ -51,9 +61,9 @@ export function verifyPnpmVersion(opts = {}) {
   const spawnSyncFn = opts.spawnSyncFn ?? spawnSync;
   const log = opts.log ?? ((msg) => console.debug(msg));
   const pinned = readPinnedPnpmVersion(opts.packageJsonPath);
-  const result = spawnSyncFn('pnpm', ['--version'], {
+  const result = spawnSyncFn(pnpmExecutable(), ['--version'], {
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    shell: false,
   });
   if (result.error) {
     throw new Error(`[ci-verify-pnpm] failed to spawn pnpm: ${result.error.message}`, {

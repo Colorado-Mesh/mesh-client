@@ -308,8 +308,9 @@ export async function validateNrf52DfuPackage(
         manifest?: unknown;
       }
     ).manifest;
-  } catch {
-    // catch-no-log-ok invalid manifest surfaces as a typed validation error
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/flasher/deviceFirmwareImage] catch:', e);
+
     throw new DeviceFirmwareError('DFU_PACKAGE_INVALID', 'manifest.json');
   }
   if (manifest === null || typeof manifest !== 'object') {

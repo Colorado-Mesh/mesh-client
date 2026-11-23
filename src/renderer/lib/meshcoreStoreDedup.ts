@@ -652,7 +652,7 @@ export function syncMeshcoreDisplayReplyRepairs(
       .saveMeshcoreMessage(messageToDbRow(fixed, getConnection(identityId)?.myNodeNum))
       .catch((e: unknown) => {
         console.warn(
-          '[meshcoreStoreDedup] syncMeshcoreDisplayReplyRepairs save failed ' +
+          'mcL0940 [meshcoreStoreDedup] syncMeshcoreDisplayReplyRepairs save failed ' +
             errLikeToLogString(e),
         );
       });

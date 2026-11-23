@@ -1982,6 +1982,9 @@ export interface ElectronAPI {
     clear: () => Promise<void>;
     export: () => Promise<string | null>;
     onLine: (cb: (entry: LogEntry) => void) => () => void;
+    /** Whether debug/info/log are persisted (warn/error always are). */
+    isVerboseEnabled: () => Promise<boolean>;
+    onVerboseChanged: (cb: (enabled: boolean) => void) => () => void;
     /** Main-process log line: `[Connection] …` + runtime tag (sanitized in main). */
     logDeviceConnection: (detail: string) => Promise<void>;
   };

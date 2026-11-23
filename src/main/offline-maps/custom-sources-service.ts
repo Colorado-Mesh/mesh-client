@@ -108,7 +108,7 @@ export class CustomMapSourcesService implements CustomTileSources {
     } catch (e: unknown) {
       if (e instanceof MbtilesError) return { ok: false, code: e.code };
       console.warn(
-        '[offline-maps] mbtiles inspect failed:',
+        'mcL0264 [offline-maps] mbtiles inspect failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       return { ok: false, code: 'io' };
@@ -150,22 +150,21 @@ export class CustomMapSourcesService implements CustomTileSources {
         fileBytes: info.fileBytes,
       });
       if (!added.ok) {
-        await fs.unlink(dest).catch(() => {
-          // catch-no-log-ok cleanup
+        await fs.unlink(dest).catch((e: unknown) => {
+          console.debug(
+            '[main/offline-maps/custom-sources-service] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         });
         return added;
       }
       return { ok: true, source: toPublicInfo(added.value) };
     } catch (e: unknown) {
-      await fs.unlink(tmp).catch(() => {
-        // catch-no-log-ok cleanup
-      });
-      await fs.unlink(dest).catch(() => {
-        // catch-no-log-ok cleanup
-      });
+      await fs.unlink(tmp).catch(() => {});
+      await fs.unlink(dest).catch(() => {});
       if (e instanceof MbtilesError) return { ok: false, code: e.code };
       console.warn(
-        '[offline-maps] mbtiles import failed:',
+        'mcL0265 [offline-maps] mbtiles import failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       return { ok: false, code: 'io' };
@@ -186,7 +185,7 @@ export class CustomMapSourcesService implements CustomTileSources {
       }
     } catch (e: unknown) {
       console.warn(
-        '[offline-maps] custom source cleanup failed:',
+        'mcL0266 [offline-maps] custom source cleanup failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
     }

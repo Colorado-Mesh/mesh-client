@@ -33,8 +33,8 @@ export function useReticulumRawPacketPoll({
     const tick = async () => {
       try {
         await hydrateRef.current();
-      } catch {
-        // catch-no-log-ok: hydrate logs its own failures
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/reticulum/useReticulumRawPacketPoll] catch:', e);
       }
       if (!cancelled) {
         timeoutId = setTimeout(() => {

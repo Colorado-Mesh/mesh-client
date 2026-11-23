@@ -226,7 +226,7 @@ export function projectConversationMutes(protocol: MeshProtocol, legacy: Set<str
       }
     }
   } catch (error) {
-    console.warn('[conversationMuteStorage] read failed; preserving legacy mutes', error);
+    console.warn('mcL0810 [conversationMuteStorage] read failed; preserving legacy mutes', error);
   }
   return result;
 }
@@ -265,7 +265,7 @@ export function saveConversationMutes(
     if (changed) localStorage.setItem(CONVERSATION_MUTES_KEY, JSON.stringify(entries));
     return true;
   } catch (error) {
-    console.warn('[conversationMuteStorage] save failed', error);
+    console.warn('mcL0811 [conversationMuteStorage] save failed', error);
     return false;
   }
 }
@@ -301,7 +301,10 @@ export function migrateLegacyConversationMutes(protocol: MeshProtocol): boolean 
     localStorage.setItem(CONVERSATION_MUTES_KEY, JSON.stringify(entries));
     return true;
   } catch (error) {
-    console.warn('[conversationMuteStorage] migration deferred; preserving legacy mutes', error);
+    console.warn(
+      'mcL0812 [conversationMuteStorage] migration deferred; preserving legacy mutes',
+      error,
+    );
     return false;
   }
 }

@@ -602,7 +602,7 @@ function readLegacyIncidentCache(): IncidentSnapshot {
     return parseLegacyIncidentStorage(legacyCacheRaw);
   } catch (error) {
     legacyCacheReadable = false;
-    console.warn('[incidents] Could not read legacy incident cache:', error);
+    console.warn('mcL1410 [incidents] Could not read legacy incident cache:', error);
     return { incidents: {}, resolvedTombstones: {} };
   }
 }
@@ -620,7 +620,7 @@ function writeLegacyIncidentCache(): void {
       JSON.stringify({ state: incidentSnapshot(), version: INCIDENT_STORAGE_VERSION }),
     );
   } catch (error) {
-    console.warn('[incidents] Could not update recovery cache:', error);
+    console.warn('mcL1411 [incidents] Could not update recovery cache:', error);
   }
 }
 
@@ -634,7 +634,7 @@ function readPendingIncidentWrite(): PendingIncidentWrite | null {
       value: parseIncidentSnapshot(parsed?.value),
     };
   } catch (error) {
-    console.warn('[incidents] Could not read pending incident journal:', error);
+    console.warn('mcL1412 [incidents] Could not read pending incident journal:', error);
     return null;
   }
 }
@@ -644,7 +644,7 @@ function savePendingIncidentWrite(): void {
     if (pendingWrite) localStorage.setItem(INCIDENT_PENDING_KEY, JSON.stringify(pendingWrite));
     else localStorage.removeItem(INCIDENT_PENDING_KEY);
   } catch (error) {
-    console.warn('[incidents] Could not update pending incident journal:', error);
+    console.warn('mcL1413 [incidents] Could not update pending incident journal:', error);
   }
 }
 
@@ -770,7 +770,7 @@ function queueIncidentWrite(): Promise<void> {
         await save(write.value);
       } catch (error) {
         failed = true;
-        console.warn('[incidents] SQLite write failed; pending journal retained:', error);
+        console.warn('mcL1414 [incidents] SQLite write failed; pending journal retained:', error);
         break;
       }
       baseline = write.value;
@@ -839,7 +839,7 @@ export function hydrateIncidentStore(): Promise<void> {
       await queueIncidentWrite();
     } catch (error) {
       // Leave in-memory/cache data and queued mutations intact. A later action retries hydration.
-      console.warn('[incidents] SQLite hydration failed; using recovery cache:', error);
+      console.warn('mcL1415 [incidents] SQLite hydration failed; using recovery cache:', error);
     } finally {
       hydration = null;
     }

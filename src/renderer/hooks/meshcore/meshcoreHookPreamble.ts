@@ -259,8 +259,9 @@ export function serializeErrorLike(value: unknown): string {
     return (value as Record<string, unknown>).message as string;
   try {
     return JSON.stringify(value);
-  } catch {
-    // catch-no-log-ok stringify fallback for arbitrary error payloads
+  } catch (e: unknown) {
+    console.debug('[renderer/hooks/meshcore/meshcoreHookPreamble] catch:', e);
+
     return '[unserializable]';
   }
 }
@@ -269,8 +270,9 @@ export function serializeErrorLike(value: unknown): string {
 export function formatStructuredLogDetail(detail: Record<string, unknown>): string {
   try {
     return sanitizeLogMessage(JSON.stringify(detail));
-  } catch {
-    // catch-no-log-ok stringify fallback for circular / non-serializable log payloads
+  } catch (e: unknown) {
+    console.debug('[renderer/hooks/meshcore/meshcoreHookPreamble] catch:', e);
+
     return sanitizeLogMessage('{}');
   }
 }
@@ -372,8 +374,9 @@ export function meshcoreTraceRouteRejectReason(e: unknown): string {
   if (typeof e === 'number' || typeof e === 'boolean' || typeof e === 'bigint') return String(e);
   try {
     return JSON.stringify(e);
-  } catch {
-    // catch-no-log-ok JSON.stringify throws on circular/non-serializable values
+  } catch (e: unknown) {
+    console.debug('[renderer/hooks/meshcore/meshcoreHookPreamble] catch:', e);
+
     return 'unknown error';
   }
 }
@@ -964,7 +967,7 @@ export async function resolveMeshcoreNodePubKey(
     }
   } catch (e: unknown) {
     console.warn(
-      '[resolveMeshcoreNodePubKey] getMeshcoreContactById failed ' +
+      'mcL0706 [resolveMeshcoreNodePubKey] getMeshcoreContactById failed ' +
         (e instanceof Error ? e.message : String(e)),
     );
   }
@@ -989,7 +992,7 @@ export async function reloadMeshcorePubKeyIfNodeIdMismatch(
       return resolved;
     }
   } catch (e: unknown) {
-    console.warn(`[${logTag}] pubkey reload failed ` + errLikeToLogString(e));
+    console.warn(`mcL0707 [${logTag}] pubkey reload failed ` + errLikeToLogString(e));
   }
   throw new Error('Room key out of sync — reconnect or refresh contacts.');
 }
@@ -1220,7 +1223,7 @@ export async function persistMeshcoreMessageSenderRepairs(
       await window.electronAPI.db.updateMeshcoreMessageSender(m.id, m.sender_id, m.sender_name);
     } catch (e: unknown) {
       console.warn(
-        '[meshcoreHookPreamble] updateMeshcoreMessageSender failed ' +
+        'mcL0708 [meshcoreHookPreamble] updateMeshcoreMessageSender failed ' +
           (e instanceof Error ? e.message : String(e)),
       );
     }
@@ -1283,7 +1286,8 @@ export async function retryRadioRemoveDeletedContacts(
         continue;
       } catch (e) {
         console.warn(
-          '[meshcore] retry removeContact (tombstoned contact) failed ' + errLikeToLogString(e),
+          'mcL0709 [meshcore] retry removeContact (tombstoned contact) failed ' +
+            errLikeToLogString(e),
         );
       }
     }

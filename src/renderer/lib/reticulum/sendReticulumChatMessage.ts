@@ -105,13 +105,13 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): st
   const session = tryGetReticulumSession();
   const send = getReticulumSendMessage(session);
   if (!send || !session) {
-    console.warn('[sendReticulumChatMessage] Reticulum runtime not mounted');
+    console.warn('mcL1067 [sendReticulumChatMessage] Reticulum runtime not mounted');
     return null;
   }
   const destResolved = resolveReticulumChatDestHashDetailed(destination);
   if (destResolved.status === 'missing_lxmf') {
     console.warn(
-      '[sendReticulumChatMessage] destination is not lxmf.delivery (e.g. lxst.telephony)',
+      'mcL1068 [sendReticulumChatMessage] destination is not lxmf.delivery (e.g. lxst.telephony)',
       destination,
     );
     onMissingLxmfDelivery?.();
@@ -120,13 +120,16 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): st
   const destHash = destResolved.status === 'ok' ? destResolved.hash : null;
   const selfNodeId = session.selfNodeId;
   if (typeof selfNodeId !== 'number') {
-    console.warn('[sendReticulumChatMessage] Reticulum self node id not ready');
+    console.warn('mcL1069 [sendReticulumChatMessage] Reticulum self node id not ready');
     return null;
   }
   // Orphan / missing peer hash: keep a Blocked bubble so retries do not look like delivery ACK failure.
   // Return null so outbox skips assertReticulumSendAcked / auto-resend ACK waits.
   if (!destHash && destination != null && destination !== 0) {
-    console.warn('[sendReticulumChatMessage] no Reticulum destination hash for', destination);
+    console.warn(
+      'mcL1070 [sendReticulumChatMessage] no Reticulum destination hash for',
+      destination,
+    );
     const senderName = session.getFullNodeLabel(selfNodeId);
     const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
     const replyFields = buildReticulumReplyFields(identityId, replyTo);
@@ -187,7 +190,10 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): st
     return null;
   }
   if (!destHash) {
-    console.warn('[sendReticulumChatMessage] no Reticulum destination hash for', destination);
+    console.warn(
+      'mcL1071 [sendReticulumChatMessage] no Reticulum destination hash for',
+      destination,
+    );
     return null;
   }
   const receivedVia = resolveReticulumOutboundVia(destHash);
@@ -252,7 +258,7 @@ export function sendReticulumChatMessage(opts: SendReticulumChatMessageOpts): st
       if (err.includes('no_propagation_node')) {
         onNoPropagationNode();
       }
-      console.warn('[sendReticulumChatMessage] reticulum send failed ' + err);
+      console.warn('mcL1072 [sendReticulumChatMessage] reticulum send failed ' + err);
     },
   );
   return pendingId;

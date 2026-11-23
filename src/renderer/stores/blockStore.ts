@@ -57,7 +57,7 @@ export const useBlockStore = create<BlockStoreState>((set, get) => ({
         }));
         next = { identityId, hashes: new Set(entries.map((e) => e.hash)), entries, loaded: true };
       } catch (e) {
-        console.warn('[blockStore] load ' + errLikeToLogString(e));
+        console.warn('mcL1386 [blockStore] load ' + errLikeToLogString(e));
         next = { identityId, hashes: new Set(), entries: [], loaded: true };
       }
       // Mutations persist to the DB before updating state, so a re-read picks them up.
@@ -88,7 +88,7 @@ export const useBlockStore = create<BlockStoreState>((set, get) => ({
         return { byProtocol: { ...s.byProtocol, [protocol]: { ...base, hashes, entries } } };
       });
     } catch (e) {
-      console.warn('[blockStore] block ' + errLikeToLogString(e));
+      console.warn('mcL1387 [blockStore] block ' + errLikeToLogString(e));
       throw e;
     }
   },
@@ -115,7 +115,7 @@ export const useBlockStore = create<BlockStoreState>((set, get) => ({
         };
       });
     } catch (e) {
-      console.warn('[blockStore] unblock ' + errLikeToLogString(e));
+      console.warn('mcL1388 [blockStore] unblock ' + errLikeToLogString(e));
       throw e;
     }
   },

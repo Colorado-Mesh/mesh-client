@@ -99,7 +99,7 @@ export function findRenumberedMeshtasticNode(
   }
   if (oldLastHeardMs > nowMs - MESHTASTIC_RENUMBER_OLD_NODE_QUIET_MS) {
     console.warn(
-      `[meshtasticNodeRenumber] public key seen on !${nodeNum.toString(16)} while !${previous.toString(16)} is still active; not merging`,
+      `mcL0954 [meshtasticNodeRenumber] public key seen on !${nodeNum.toString(16)} while !${previous.toString(16)} is still active; not merging`,
     );
     return null;
   }
@@ -131,7 +131,7 @@ export async function migrateRenumberedMeshtasticNode(
     );
     return true;
   } catch (e: unknown) {
-    console.warn('[meshtasticNodeRenumber] migrate failed ' + errLikeToLogString(e));
+    console.warn('mcL0955 [meshtasticNodeRenumber] migrate failed ' + errLikeToLogString(e));
     return false;
   }
 }

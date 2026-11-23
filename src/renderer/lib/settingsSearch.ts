@@ -114,6 +114,6 @@ export function matchesSettingsSearchExemption(pattern: string, key: string): bo
     .split('*')
     .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
     .join('.*');
-  // eslint-disable-next-line security/detect-non-literal-regexp -- pattern is escaped above; sources are registry literals
-  return new RegExp(`^${escaped}$`).test(key);
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  return new RegExp(`^${escaped}$`).test(key); // eslint-disable-line security/detect-non-literal-regexp -- trusted/escaped pattern
 }

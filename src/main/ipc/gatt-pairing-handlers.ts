@@ -63,7 +63,7 @@ export function registerGattPairingIpcHandlers(deps: GattPairingIpcDeps): void {
     } catch (err) {
       const message = sanitizeLogMessage(err instanceof Error ? err.message : String(err));
       console.warn(
-        `[main] ${channel} failed: peripheral=${sanitizeLogMessage(peripheralId)} message=${message}`,
+        `mcL0156 [main] ${channel} failed: peripheral=${sanitizeLogMessage(peripheralId)} message=${message}`,
       );
       return failure(err instanceof BleScanBusyError ? 'scan_busy' : 'internal', message);
     }

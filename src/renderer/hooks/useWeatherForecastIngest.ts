@@ -68,7 +68,7 @@ export function useWeatherForecastIngest(): void {
     const runScan = () => {
       timer = null;
       ingestor.scan(buildForecastSnapshots()).catch((err: unknown) => {
-        console.warn('[useWeatherForecastIngest] scan failed ' + errLikeToLogString(err));
+        console.warn('mcL0777 [useWeatherForecastIngest] scan failed ' + errLikeToLogString(err));
       });
     };
     const schedule = () => {

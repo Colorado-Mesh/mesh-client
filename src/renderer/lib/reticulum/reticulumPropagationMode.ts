@@ -22,8 +22,8 @@ export function readReticulumPropagationMode(): ReticulumPropagationMode {
   try {
     const raw = localStorage.getItem(RETICULUM_PROPAGATION_MODE_KEY);
     if (isReticulumPropagationMode(raw)) return raw;
-  } catch {
-    // catch-no-log-ok localStorage unavailable in private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulum/reticulumPropagationMode] catch:', e);
   }
   return 'off';
 }
@@ -32,8 +32,8 @@ export function writeReticulumPropagationMode(mode: ReticulumPropagationMode): v
   if (!isReticulumPropagationMode(mode)) return;
   try {
     localStorage.setItem(RETICULUM_PROPAGATION_MODE_KEY, mode);
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulum/reticulumPropagationMode] catch:', e);
   }
 }
 

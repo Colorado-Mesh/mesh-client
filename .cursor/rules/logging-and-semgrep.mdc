@@ -1,0 +1,46 @@
+---
+description: Soft-catch helpers, log-injection, mcL IDs, executeJavaScript, Semgrep×ESLint, main bundle
+alwaysApply: true
+---
+
+# Logging, soft catches, Semgrep, and main bundle
+
+Always-on hard rules for logging/security edits. Full detail: AGENTS.md §1 / §3 / §5.
+
+## Soft catches
+
+- Prefer `logCaughtDebug(tag, err)` from `caughtErrorPolicy` (main or renderer). It sanitizes.
+- Soft catches must **not** rethrow. Use `// catch-no-log-ok <reason>` only when even debug is harmful.
+- Do **not** use raw `console.debug(tag, e)` in `src/main` — silent-catches passes, `check:log-injection` fails.
+
+## Log injection (main)
+
+- Applies to `console.debug` / `info` / `warn` / `error` under recursive `src/main/**`, not only `appendLine`.
+- Never pass raw `e` / `err` as a console arg; use `sanitizeLogMessage(...)` or catch helpers.
+
+## mcL#### log IDs
+
+- **Warn/error only.** Never add `mcL####` to debug/info.
+- When changing warn/error text or adding IDs, update matching `toHaveBeenCalledWith` / `index.contract.test.ts` / source-contract regexes in the **same change**.
+
+## Injected Chromium scripts
+
+- Do **not** rewrite catches, add `sanitizeLogMessage`, or add TypeScript types inside `webContents.executeJavaScript(\`...\`)` templates.
+- Keep browser-safe JS only; sanitize on the main side after return.
+
+## Semgrep × ESLint
+
+- Green Semgrep ≠ green lint. After Semgrep-driven edits, run `pnpm exec eslint --cache <touched>` and fix import-sort / format-string fallout before commit.
+
+## Main bundle budget
+
+- Over budget → sibling esbuild entry / externals / metafile first. **Never raise** `MAIN_BUNDLE_SIZE_BUDGET_BYTES` unless the developer explicitly asks.
+- Remediation recipe: `formatMainBundleOverBudgetMessage` in `scripts/esbuild-main-build.test.mjs`.
+
+## Before staging a large logging/security edit
+
+1. Prefer helpers over bulk sed on catches.
+2. `pnpm exec eslint --cache --fix <touched>`
+3. `pnpm run check:log-injection && pnpm run check:silent-catches && pnpm run check:log-ids`
+4. If `src/main/` or esbuild scripts touched: `pnpm run check:main-bundle`
+5. `pnpm exec vitest related <touched paths> --coverage.enabled=false` plus contract tests that grep changed log strings.

@@ -24,8 +24,8 @@ export async function forceEsp32DownloadMode(
   } finally {
     try {
       await transport.disconnect();
-    } catch {
-      // catch-no-log-ok port may already be closed
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/flasher/esp32BootloaderEntry] catch:', e);
     }
     await closeSerialPortIfOpen(serialPort);
   }

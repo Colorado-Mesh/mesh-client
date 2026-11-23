@@ -20,7 +20,7 @@ export function cacheTransportDisplayName(
       storageKey,
       JSON.stringify(Object.fromEntries(entries.slice(-MAX_TRANSPORT_DISPLAY_NAME_CACHE_ENTRIES))),
     );
-  } catch {
-    // catch-no-log-ok localStorage display-name cache is non-critical
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtastic/transportDisplayNameCache] catch:', e);
   }
 }

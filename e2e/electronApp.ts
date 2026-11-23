@@ -386,11 +386,15 @@ export function filterUnexpectedConsoleErrors(errors: string[]): string[] {
   return errors.filter((text) => !RENDERER_CONSOLE_ERROR_ALLOWLIST.some((re) => re.test(text)));
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /** Matches a nav item whose accessible name may carry a badge suffix ("Chat, 2 unread"). */
 export function navName(name: string): RegExp {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // eslint-disable-next-line security/detect-non-literal-regexp -- test-authored label, regex-escaped above
-  return new RegExp(`^${escaped}(,|$)`);
+  const pattern = `^${escapeRegExp(name)}(,|$)`;
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  return new RegExp(pattern); // eslint-disable-line security/detect-non-literal-regexp -- test label escaped above
 }
 
 /** Open a rail section by its `data-nav-section` id (v6 shell). */

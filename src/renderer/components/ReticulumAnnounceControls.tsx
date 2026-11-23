@@ -42,7 +42,7 @@ export function ReticulumAnnounceControls({
       );
       setAnnounceInterval(settings.announce_interval_sec);
     } catch (e) {
-      console.warn('[ReticulumAnnounceControls] load ' + errLikeToLogString(e));
+      console.warn('mcL0543 [ReticulumAnnounceControls] load ' + errLikeToLogString(e));
     }
   }, []);
 
@@ -78,7 +78,9 @@ export function ReticulumAnnounceControls({
       const message = t('reticulumIdentity.announceSaveFailed', {
         error: errLikeToLogString(e),
       });
-      console.warn('[ReticulumAnnounceControls] announce interval ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0544 [ReticulumAnnounceControls] announce interval ' + errLikeToLogString(e),
+      );
       setStatusMessage(message);
       addToast(message, 'error');
     } finally {
@@ -97,7 +99,7 @@ export function ReticulumAnnounceControls({
       await window.electronAPI.reticulum.proxyDelete('/api/v1/announces');
       addToast(t('reticulumIdentity.clearAnnouncesDone'), 'success');
     } catch (e) {
-      console.warn('[ReticulumAnnounceControls] clear announces ' + errLikeToLogString(e));
+      console.warn('mcL0545 [ReticulumAnnounceControls] clear announces ' + errLikeToLogString(e));
       addToast(t('reticulumIdentity.clearAnnouncesFailed'), 'error');
     } finally {
       setBusy(false);
@@ -132,7 +134,7 @@ export function ReticulumAnnounceControls({
       const message = t('reticulumIdentity.announceNowFailed', {
         error: errLikeToLogString(e),
       });
-      console.warn('[ReticulumAnnounceControls] announce now ' + errLikeToLogString(e));
+      console.warn('mcL0546 [ReticulumAnnounceControls] announce now ' + errLikeToLogString(e));
       setStatusMessage(message);
       addToast(message, 'error');
     } finally {

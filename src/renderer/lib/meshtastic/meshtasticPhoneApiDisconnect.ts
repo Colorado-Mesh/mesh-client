@@ -36,7 +36,6 @@ export async function sendMeshtasticPhoneApiDisconnect(device: MeshDevice): Prom
     });
     await Promise.race([write, timeout]);
   } catch (e) {
-    // catch-no-log-ok teardown: port may already be gone or write hung
     console.debug(
       '[meshtasticPhoneApiDisconnect] ToRadio.disconnect write failed ' + errLikeToLogString(e),
     );

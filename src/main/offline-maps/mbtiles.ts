@@ -8,6 +8,7 @@ import {
 } from '@/shared/offlineMaps/customMapSources';
 
 import { NodeSqliteDB } from '../db-compat';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 
 const SQLITE_MAGIC = Buffer.from('SQLite format 3\u0000', 'latin1');
 
@@ -138,8 +139,11 @@ export async function inspectMbtilesFile(filePath: string): Promise<MbtilesInspe
   } finally {
     try {
       db?.close();
-    } catch {
-      // catch-no-log-ok best-effort close of read-only handle
+    } catch (e: unknown) {
+      console.debug(
+        '[main/offline-maps/mbtiles] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
 }
@@ -173,8 +177,11 @@ export class MbtilesReaderPool {
     this.handles.delete(id);
     try {
       db.close();
-    } catch {
-      // catch-no-log-ok best-effort close
+    } catch (e: unknown) {
+      console.debug(
+        '[main/offline-maps/mbtiles] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
 

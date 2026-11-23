@@ -12,6 +12,9 @@ import {
   isCustomMapSourceId,
 } from '@/shared/offlineMaps/customMapSources';
 import { TILE_CACHE_MAX_BYTES } from '@/shared/offlineMaps/tileMath';
+import { joinUnderRoot } from '@/shared/pathUnderRoot';
+
+import { sanitizeLogMessage } from '../sanitize-log-message';
 
 export interface TileCacheCoords {
   basemapId: MapSourceId;
@@ -96,18 +99,14 @@ export class TileCache {
   ) {}
 
   private manifestPath(): string {
-    return path.join(this.rootDir, 'manifest.json');
+    return joinUnderRoot(this.rootDir, 'manifest.json');
   }
 
   private tilePath(c: TileCacheCoords): string {
-    return path.join(
-      this.rootDir,
-      c.basemapId,
-      ...(c.basemapId === 'dark' ? [DARK_BASEMAP_CACHE_REVISION] : []),
-      String(c.z),
-      String(c.x),
-      tileFileName(c.y, c.retina === true),
-    );
+    const segments: string[] = [c.basemapId];
+    if (c.basemapId === 'dark') segments.push(DARK_BASEMAP_CACHE_REVISION);
+    segments.push(String(c.z), String(c.x), tileFileName(c.y, c.retina === true));
+    return joinUnderRoot(this.rootDir, ...segments);
   }
 
   async ensureRoot(): Promise<void> {
@@ -141,8 +140,12 @@ export class TileCache {
       }
       if (!Array.isArray(parsed.regions)) parsed.regions = [];
       return parsed;
-    } catch {
-      // catch-no-log-ok missing/corrupt manifest → empty
+    } catch (e: unknown) {
+      console.debug(
+        '[main/offline-maps/tile-cache] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return emptyManifest();
     }
   }
@@ -160,14 +163,16 @@ export class TileCache {
     await this.ensureRoot();
     manifest.lastUpdated = Date.now();
     const dest = this.manifestPath();
-    const tmp = path.join(this.rootDir, `manifest.${process.pid}.${Date.now()}.tmp`);
+    const tmp = joinUnderRoot(this.rootDir, `manifest.${process.pid}.${Date.now()}.tmp`);
     try {
       await fs.writeFile(tmp, JSON.stringify(manifest, null, 2), 'utf8');
       await fs.rename(tmp, dest);
     } catch (e: unknown) {
-      await fs.unlink(tmp).catch(() => {
-        // catch-no-log-ok cleanup
-      });
+      console.debug(
+        '[main/offline-maps/tile-cache] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      await fs.unlink(tmp).catch(() => {});
       throw e;
     }
   }
@@ -226,8 +231,11 @@ export class TileCache {
     if (this.persistTimer != null) return;
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null;
-      void this.persistSourceStatsNow().catch(() => {
-        // catch-no-log-ok best-effort debounce flush
+      void this.persistSourceStatsNow().catch((e: unknown) => {
+        console.debug(
+          '[main/offline-maps/tile-cache] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       });
     }, MANIFEST_PERSIST_DEBOUNCE_MS);
   }
@@ -252,12 +260,19 @@ export class TileCache {
       const buf = await fs.readFile(this.tilePath(c));
       // Touch mtime for LRU
       const now = new Date();
-      await fs.utimes(this.tilePath(c), now, now).catch(() => {
-        // catch-no-log-ok utimes best-effort
+      await fs.utimes(this.tilePath(c), now, now).catch((e: unknown) => {
+        console.debug(
+          '[main/offline-maps/tile-cache] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       });
       return buf;
-    } catch {
-      // catch-no-log-ok cache miss
+    } catch (e: unknown) {
+      console.debug(
+        '[main/offline-maps/tile-cache] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return null;
     }
   }
@@ -270,8 +285,11 @@ export class TileCache {
     try {
       const st = await fs.stat(dest);
       replacedBytes = st.size;
-    } catch {
-      // catch-no-log-ok new file
+    } catch (e: unknown) {
+      console.debug(
+        '[main/offline-maps/tile-cache] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
     await fs.writeFile(dest, data);
     if (replacedBytes > 0) {
@@ -304,7 +322,7 @@ export class TileCache {
 
   async clearSource(basemapId: MapSourceId): Promise<void> {
     await this.ensureStats();
-    await fs.rm(path.join(this.rootDir, basemapId), { recursive: true, force: true });
+    await fs.rm(joinUnderRoot(this.rootDir, basemapId), { recursive: true, force: true });
     const removed = this.sourceStats.get(basemapId);
     if (removed) {
       this.totalBytes = Math.max(0, this.totalBytes - removed.diskBytes);
@@ -335,18 +353,26 @@ export class TileCache {
       let names: string[];
       try {
         names = await fs.readdir(dir);
-      } catch {
-        // catch-no-log-ok
+      } catch (e: unknown) {
+        console.debug(
+          '[main/offline-maps/tile-cache] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return;
       }
       for (const name of names) {
         if (name === 'manifest.json' || name.endsWith('.tmp')) continue;
-        const full = path.join(dir, name);
+        const full = joinUnderRoot(dir, name);
         let st;
         try {
           st = await fs.stat(full);
-        } catch {
-          // catch-no-log-ok race
+        } catch (e: unknown) {
+          console.debug(
+            '[main/offline-maps/tile-cache] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+
           continue;
         }
         if (st.isDirectory()) {
@@ -398,17 +424,25 @@ export class TileCache {
       let names: string[];
       try {
         names = await fs.readdir(dir);
-      } catch {
-        // catch-no-log-ok
+      } catch (e: unknown) {
+        console.debug(
+          '[main/offline-maps/tile-cache] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return;
       }
       for (const name of names) {
-        const full = path.join(dir, name);
+        const full = joinUnderRoot(dir, name);
         let st;
         try {
           st = await fs.stat(full);
-        } catch {
-          // catch-no-log-ok race
+        } catch (e: unknown) {
+          console.debug(
+            '[main/offline-maps/tile-cache] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+
           continue;
         }
         if (st.isDirectory()) await walk(full);
@@ -417,7 +451,7 @@ export class TileCache {
         }
       }
     };
-    await walk(path.join(this.rootDir, id));
+    await walk(joinUnderRoot(this.rootDir, id));
     entries.sort((a, b) => a.mtimeMs - b.mtimeMs);
     let removed = 0;
     for (const e of entries) {
@@ -426,8 +460,11 @@ export class TileCache {
         await fs.unlink(e.file);
         this.applySourceDelta(id, -1, -e.size);
         removed += 1;
-      } catch {
-        // catch-no-log-ok race
+      } catch (e: unknown) {
+        console.debug(
+          '[main/offline-maps/tile-cache] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }
     if (removed > 0) this.schedulePersistSourceStats();
@@ -450,18 +487,26 @@ export class TileCache {
       let names: string[];
       try {
         names = await fs.readdir(dir);
-      } catch {
-        // catch-no-log-ok
+      } catch (e: unknown) {
+        console.debug(
+          '[main/offline-maps/tile-cache] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return;
       }
       for (const name of names) {
         if (name === 'manifest.json' || name.endsWith('.tmp')) continue;
-        const full = path.join(dir, name);
+        const full = joinUnderRoot(dir, name);
         let st;
         try {
           st = await fs.stat(full);
-        } catch {
-          // catch-no-log-ok race
+        } catch (e: unknown) {
+          console.debug(
+            '[main/offline-maps/tile-cache] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+
           continue;
         }
         if (st.isDirectory()) {
@@ -482,8 +527,11 @@ export class TileCache {
         await fs.unlink(e.file);
         this.applySourceDelta(e.basemapId, -1, -e.size);
         removed += 1;
-      } catch {
-        // catch-no-log-ok race
+      } catch (e: unknown) {
+        console.debug(
+          '[main/offline-maps/tile-cache] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }
     if (removed > 0) {
@@ -497,5 +545,5 @@ export function createTileCache(
   maxBytes?: number,
   customSourceMaxBytes?: number,
 ): TileCache {
-  return new TileCache(path.join(userDataPath, 'tile-cache'), maxBytes, customSourceMaxBytes);
+  return new TileCache(joinUnderRoot(userDataPath, 'tile-cache'), maxBytes, customSourceMaxBytes);
 }

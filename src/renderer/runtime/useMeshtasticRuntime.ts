@@ -397,7 +397,7 @@ function persistMeshtasticMessage(message: ChatMessage): void {
   void window.electronAPI.db
     .saveMessage(withMeshtasticChannelIdentity(message))
     .catch((e: unknown) => {
-      console.warn('[useMeshtasticRuntime] saveMessage failed ' + errLikeToLogString(e));
+      console.warn('mcL1331 [useMeshtasticRuntime] saveMessage failed ' + errLikeToLogString(e));
     });
 }
 
@@ -810,7 +810,7 @@ export function useMeshtasticRuntime() {
       })
       .catch((e: unknown) => {
         console.warn(
-          '[useMeshtasticRuntime] mqtt.updateChannelKeys failed ' + errLikeToLogString(e),
+          'mcL1332 [useMeshtasticRuntime] mqtt.updateChannelKeys failed ' + errLikeToLogString(e),
         );
       });
   }, []);
@@ -879,7 +879,9 @@ export function useMeshtasticRuntime() {
     if (overlay === appSettings.topicPrefix.trim()) return;
 
     void window.electronAPI.mqtt.updateTopicPrefix({ topicPrefix: overlay }).catch((e: unknown) => {
-      console.warn('[useMeshtasticRuntime] mqtt.updateTopicPrefix failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1333 [useMeshtasticRuntime] mqtt.updateTopicPrefix failed ' + errLikeToLogString(e),
+      );
     });
   }, [moduleConfigs, state.status]);
 
@@ -1093,7 +1095,7 @@ export function useMeshtasticRuntime() {
         if (getStoredMeshProtocol() !== 'meshtastic') return;
         refreshOurPositionRef.current().catch((err: unknown) => {
           console.error(
-            '[useMeshtasticRuntime] GPS interval refresh error: ' + errLikeToLogString(err),
+            'mcL1334 [useMeshtasticRuntime] GPS interval refresh error: ' + errLikeToLogString(err),
           );
         });
       }, intervalSecs * 1000);
@@ -1131,7 +1133,7 @@ export function useMeshtasticRuntime() {
       stopGpsInterval();
 
       console.warn(
-        `[useMeshtasticRuntime] post-commit reboot recovery scheduled (${source}) — ` +
+        `mcL1335 [useMeshtasticRuntime] post-commit reboot recovery scheduled (${source}) — ` +
           `transport reset in ${MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS}ms`,
       );
 
@@ -1162,7 +1164,7 @@ export function useMeshtasticRuntime() {
       if (elapsed > dead) {
         const linkStats = formatMeshtasticLinkStats(deviceRef.current?.transport);
         console.warn(
-          `[useMeshtasticRuntime] watchdog: ${transport} dead for ${elapsed}ms, triggering reconnect${linkStats}`,
+          `mcL1336 [useMeshtasticRuntime] watchdog: ${transport} dead for ${elapsed}ms, triggering reconnect${linkStats}`,
         );
         if (transport === 'serial') {
           noteSerialDeliveryFailure({ reason: 'watchdog-dead', connectionType: 'serial' });
@@ -1178,7 +1180,7 @@ export function useMeshtasticRuntime() {
       } else if (elapsed > stale) {
         const linkStats = formatMeshtasticLinkStats(deviceRef.current?.transport);
         console.warn(
-          `[useMeshtasticRuntime] watchdog: ${transport} stale for ${elapsed}ms${linkStats}`,
+          `mcL1337 [useMeshtasticRuntime] watchdog: ${transport} stale for ${elapsed}ms${linkStats}`,
         );
         setState((s) => {
           if (s.status === 'configured' || s.status === 'connected') {
@@ -1244,7 +1246,7 @@ export function useMeshtasticRuntime() {
     if (mqttStatusRef.current === 'connected' || mqttStatusRef.current === 'connecting') return;
     void window.electronAPI.mqtt.connect(settings).catch((e: unknown) => {
       console.warn(
-        '[useMeshtasticRuntime] MQTT proxy gateway connect failed ' + errLikeToLogString(e),
+        'mcL1338 [useMeshtasticRuntime] MQTT proxy gateway connect failed ' + errLikeToLogString(e),
       );
     });
   }, [moduleConfigs, state.status]);
@@ -1304,7 +1306,8 @@ export function useMeshtasticRuntime() {
       })
       .catch((e: unknown) => {
         console.warn(
-          '[useMeshtasticRuntime] hydrate remote admin keys failed ' + errLikeToLogString(e),
+          'mcL1339 [useMeshtasticRuntime] hydrate remote admin keys failed ' +
+            errLikeToLogString(e),
         );
       });
   }, [state.status]);
@@ -1334,7 +1337,7 @@ export function useMeshtasticRuntime() {
     const api = window.electronAPI;
     if (!api?.mqtt) {
       console.error(
-        '[useMeshtasticRuntime] electronAPI.mqtt unavailable — preload not loaded; MQTT subscriptions skipped',
+        'mcL1340 [useMeshtasticRuntime] electronAPI.mqtt unavailable — preload not loaded; MQTT subscriptions skipped',
       );
       return;
     }
@@ -1480,7 +1483,8 @@ export function useMeshtasticRuntime() {
             })
             .catch((e: unknown) => {
               console.warn(
-                '[useMeshtasticRuntime] MQTT presence publish failed ' + errLikeToLogString(e),
+                'mcL1341 [useMeshtasticRuntime] MQTT presence publish failed ' +
+                  errLikeToLogString(e),
               );
             });
         };
@@ -2093,7 +2097,6 @@ export function useMeshtasticRuntime() {
             `[useMeshtasticRuntime] Store & Forward SharedContact pushed for 0x${serverNodeId.toString(16)}`,
           );
         } catch (e: unknown) {
-          // catch-no-log-ok continue with history; radio may already hold the key
           console.debug(
             '[useMeshtasticRuntime] Store & Forward SharedContact push failed ' +
               errLikeToLogString(e),
@@ -2134,7 +2137,8 @@ export function useMeshtasticRuntime() {
           releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
         }
         console.error(
-          '[useMeshtasticRuntime] Store & Forward history request failed ' + errLikeToLogString(e),
+          'mcL1342 [useMeshtasticRuntime] Store & Forward history request failed ' +
+            errLikeToLogString(e),
         );
         return { ok: false, code: 'send_failed' };
       }
@@ -2350,7 +2354,7 @@ export function useMeshtasticRuntime() {
           '[useMeshtasticRuntime] Noble BLE yield released — initiating Meshtastic reconnect',
         );
       } else {
-        console.warn('[useMeshtasticRuntime] Connection lost — initiating reconnect');
+        console.warn('mcL1343 [useMeshtasticRuntime] Connection lost — initiating reconnect');
       }
       isReconnectingRef.current = true;
     } else if (afterNobleYieldRelease) {
@@ -2359,7 +2363,7 @@ export function useMeshtasticRuntime() {
       );
     } else {
       console.warn(
-        '[useMeshtasticRuntime] Connection lost during reconnect — restarting reconnect cycle',
+        'mcL1344 [useMeshtasticRuntime] Connection lost during reconnect — restarting reconnect cycle',
       );
     }
 
@@ -2413,7 +2417,9 @@ export function useMeshtasticRuntime() {
       }
       scheduleMeshtasticReconnectAttemptRef.current();
     })().catch((e: unknown) => {
-      console.warn('[useMeshtasticRuntime] handleConnectionLost async ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1345 [useMeshtasticRuntime] handleConnectionLost async ' + errLikeToLogString(e),
+      );
     });
   }, [
     clearConfigureTimeout,
@@ -2657,7 +2663,7 @@ export function useMeshtasticRuntime() {
         // the now-abandoned device until something else happens to tear them down.
         cleanupSubscriptions();
         console.warn(
-          `[useMeshtasticRuntime] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
+          `mcL1346 [useMeshtasticRuntime] Reconnect attempt ${reconnectAttemptRef.current} failed:` +
             ' ' +
             errLikeToLogString(err),
         );
@@ -2759,7 +2765,7 @@ export function useMeshtasticRuntime() {
         );
         return;
       }
-      console.warn('[useMeshtasticRuntime] Noble BLE disconnected');
+      console.warn('mcL1347 [useMeshtasticRuntime] Noble BLE disconnected');
       handleConnectionLostRef.current();
     });
   }, []);
@@ -2998,7 +3004,7 @@ export function useMeshtasticRuntime() {
           applyMeshtasticNodesToUi(driverIdentityId, cachedNodes);
         } catch (e) {
           console.warn(
-            '[useMeshtasticRuntime] attachRfSession db cache hydrate failed ' +
+            'mcL1348 [useMeshtasticRuntime] attachRfSession db cache hydrate failed ' +
               errLikeToLogString(e),
           );
         }
@@ -3022,7 +3028,7 @@ export function useMeshtasticRuntime() {
           await hydrateMeshtasticMessagesFromDb(driverIdentityId);
         } catch (e) {
           console.warn(
-            '[useMeshtasticRuntime] attachRfSession message cache hydrate failed ' +
+            'mcL1349 [useMeshtasticRuntime] attachRfSession message cache hydrate failed ' +
               errLikeToLogString(e),
           );
         }
@@ -3061,7 +3067,7 @@ export function useMeshtasticRuntime() {
         console.debug('[useMeshtasticRuntime] Connect cancelled at the device chooser');
       } else {
         console.error(
-          '[useMeshtasticRuntime] Connection failed: ' +
+          'mcL1350 [useMeshtasticRuntime] Connection failed: ' +
             errLikeToLogString(reason ?? new Error('unknown connection failure')),
         );
       }
@@ -3397,7 +3403,7 @@ export function useMeshtasticRuntime() {
             .then(() => window.electronAPI.db.updateMessageStatus(resolvedPid, 'acked'))
             .catch((err: unknown) => {
               console.error(
-                '[useMeshtasticRuntime] device ack DB update failed:',
+                'mcL1351 [useMeshtasticRuntime] device ack DB update failed:',
                 err instanceof Error ? err.message : String(err),
               );
             });
@@ -3427,7 +3433,8 @@ export function useMeshtasticRuntime() {
             .updateMessageStatus(tempId, 'failed', error)
             .catch((e: unknown) => {
               console.warn(
-                '[useMeshtasticRuntime] updateMessageStatus failed ' + errLikeToLogString(e),
+                'mcL1352 [useMeshtasticRuntime] updateMessageStatus failed ' +
+                  errLikeToLogString(e),
               );
             });
         }
@@ -3444,7 +3451,7 @@ export function useMeshtasticRuntime() {
               .updateMessageStatus(rowPacketId, deviceStatus, existing.error, status)
               .catch((e: unknown) => {
                 console.warn(
-                  '[useMeshtasticRuntime] updateMessageStatus (mqtt) failed ' +
+                  'mcL1353 [useMeshtasticRuntime] updateMessageStatus (mqtt) failed ' +
                     errLikeToLogString(e),
                 );
               });
@@ -3579,7 +3586,7 @@ export function useMeshtasticRuntime() {
       } catch (e) {
         const msg = normalizeRemoteAdminError(e);
         console.warn(
-          '[useMeshtasticRuntime] setRemoteAdminKeyForNode failed ' + errLikeToLogString(e),
+          'mcL1354 [useMeshtasticRuntime] setRemoteAdminKeyForNode failed ' + errLikeToLogString(e),
         );
         throw new Error(msg);
       }
@@ -3762,7 +3769,7 @@ export function useMeshtasticRuntime() {
                     setRemoteConfigChannelsTailStatus('partial');
                   }
                   console.warn(
-                    '[useMeshtasticRuntime] remote config background fetch failed ' +
+                    'mcL1355 [useMeshtasticRuntime] remote config background fetch failed ' +
                       errLikeToLogString(e),
                   );
                 } finally {
@@ -3783,7 +3790,7 @@ export function useMeshtasticRuntime() {
               setRemoteConfigChannelsTailStatus('partial');
             }
             console.warn(
-              '[useMeshtasticRuntime] remote config background fetch failed ' +
+              'mcL1356 [useMeshtasticRuntime] remote config background fetch failed ' +
                 errLikeToLogString(e),
             );
             return;
@@ -3792,7 +3799,7 @@ export function useMeshtasticRuntime() {
           setRemoteAdminStatus('error');
           setRemoteAdminError(msg);
           console.warn(
-            '[useMeshtasticRuntime] remote config fetch failed ' + errLikeToLogString(e),
+            'mcL1357 [useMeshtasticRuntime] remote config fetch failed ' + errLikeToLogString(e),
           );
         } finally {
           setRemoteAdminReadsActive(false);
@@ -3809,7 +3816,8 @@ export function useMeshtasticRuntime() {
     if (state.status !== 'configured') return;
     void refreshRemoteConfigSnapshot(configureTargetNodeNum, 'radio').catch((e: unknown) => {
       console.warn(
-        '[useMeshtasticRuntime] refreshRemoteConfigSnapshot effect failed ' + errLikeToLogString(e),
+        'mcL1358 [useMeshtasticRuntime] refreshRemoteConfigSnapshot effect failed ' +
+          errLikeToLogString(e),
       );
     });
   }, [configureTargetNodeNum, state.status, refreshRemoteConfigSnapshot]);
@@ -3824,7 +3832,7 @@ export function useMeshtasticRuntime() {
           setRemoteAdminStatus('error');
           setRemoteAdminError(msg);
           console.warn(
-            '[useMeshtasticRuntime] remote admin operation failed ' + errLikeToLogString(e),
+            'mcL1359 [useMeshtasticRuntime] remote admin operation failed ' + errLikeToLogString(e),
           );
           throw e;
         }
@@ -3835,7 +3843,8 @@ export function useMeshtasticRuntime() {
             try {
               resolve(await run());
             } catch (e) {
-              // catch-no-log-ok reject propagates to caller; run() already logged the failure
+              console.debug('[renderer/runtime/useMeshtasticRuntime] catch:', e);
+
               reject(e instanceof Error ? e : new Error(String(e)));
             }
           });
@@ -3871,7 +3880,7 @@ export function useMeshtasticRuntime() {
       .set('meshtasticConfigureTargetNodeNum', persistValue)
       .catch((e: unknown) => {
         console.warn(
-          '[useMeshtasticRuntime] meshtasticConfigureTargetNodeNum persist failed ' +
+          'mcL1360 [useMeshtasticRuntime] meshtasticConfigureTargetNodeNum persist failed ' +
             errLikeToLogString(e),
         );
       });
@@ -3933,8 +3942,8 @@ export function useMeshtasticRuntime() {
         );
         void window.electronAPI.appSettings
           .set('meshtasticConfigureTargetNodeNum', '')
-          .catch(() => {
-            // catch-no-log-ok best-effort clear persisted remote target on startup
+          .catch((e: unknown) => {
+            console.debug('[renderer/runtime/useMeshtasticRuntime] catch:', e);
           });
       }
       console.debug('[useMeshtasticRuntime] configure target defaulted to local radio on startup');
@@ -4508,7 +4517,9 @@ export function useMeshtasticRuntime() {
         }
       })
       .catch((err: unknown) => {
-        console.error('[useMeshtasticRuntime] Failed to refresh nodes: ' + errLikeToLogString(err));
+        console.error(
+          'mcL1361 [useMeshtasticRuntime] Failed to refresh nodes: ' + errLikeToLogString(err),
+        );
       });
   }, []);
 
@@ -4533,7 +4544,7 @@ export function useMeshtasticRuntime() {
               opts?.replaceFromDb ? 'replace' : 'upsert',
             ).catch((err: unknown) => {
               console.warn(
-                '[useMeshtasticRuntime] refreshMessagesFromDb identity hydrate failed ' +
+                'mcL1362 [useMeshtasticRuntime] refreshMessagesFromDb identity hydrate failed ' +
                   errLikeToLogString(err),
               );
             });
@@ -4541,7 +4552,7 @@ export function useMeshtasticRuntime() {
         })
         .catch((err: unknown) => {
           console.error(
-            '[useMeshtasticRuntime] Failed to refresh messages: ' + errLikeToLogString(err),
+            'mcL1363 [useMeshtasticRuntime] Failed to refresh messages: ' + errLikeToLogString(err),
           );
         });
     },
@@ -4703,7 +4714,8 @@ export function useMeshtasticRuntime() {
         gpsIntervalRef.current = setInterval(() => {
           refreshOurPositionRef.current().catch((err: unknown) => {
             console.error(
-              '[useMeshtasticRuntime] GPS interval refresh error: ' + errLikeToLogString(err),
+              'mcL1364 [useMeshtasticRuntime] GPS interval refresh error: ' +
+                errLikeToLogString(err),
             );
           });
         }, secs * 1000);
@@ -4823,7 +4835,8 @@ export function useMeshtasticRuntime() {
           .then(() => {})
           .catch((e: unknown) => {
             console.warn(
-              '[useMeshtasticRuntime] sendReaction device sendText failed ' + errLikeToLogString(e),
+              'mcL1365 [useMeshtasticRuntime] sendReaction device sendText failed ' +
+                errLikeToLogString(e),
             );
           });
       } else if (hasMqtt) {

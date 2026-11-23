@@ -117,7 +117,7 @@ export function ReticulumAttachControl({
           onFailure: toastFailure,
         });
       } catch (e: unknown) {
-        console.warn('[ReticulumAttachControl] prepare/send failed:', e);
+        console.warn('mcL0630 [ReticulumAttachControl] prepare/send failed:', e);
         toastFailure('send_failed');
       } finally {
         setPreparing(false);

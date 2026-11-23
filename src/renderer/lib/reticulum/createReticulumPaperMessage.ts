@@ -62,7 +62,7 @@ export async function createReticulumPaperMessage(opts: {
 
     return { ok: true, uri: res.uri, messageHash };
   } catch (err) {
-    console.error('[createReticulumPaperMessage] failed: ' + errLikeToLogString(err));
+    console.error('mcL1018 [createReticulumPaperMessage] failed: ' + errLikeToLogString(err));
     return { ok: false, errorKey: 'chatPanel.shareAsPaperFailed' };
   }
 }

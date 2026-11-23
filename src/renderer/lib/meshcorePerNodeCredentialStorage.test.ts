@@ -97,6 +97,22 @@ describe('parseLegacyCredentialRaw', () => {
     expect(parseLegacyCredentialRaw({ secret: 'obj' }, mappers)).toEqual({ secret: 'obj' });
   });
 
+  it('does not log legacy plain-string secrets when JSON.parse fails', () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const secret = 'remote-admin-password-xyz';
+    const mappers = {
+      fromPlainString: (value: string) => ({ secret: value }),
+      fromObject: (o: Record<string, unknown>) =>
+        typeof o.secret === 'string' ? { secret: o.secret } : undefined,
+    };
+    expect(parseLegacyCredentialRaw(secret, mappers)).toEqual({ secret });
+    expect(debug).toHaveBeenCalled();
+    for (const args of debug.mock.calls) {
+      expect(args.map(String).join(' ')).not.toContain(secret);
+    }
+    debug.mockRestore();
+  });
+
   it('propagates mapper failures instead of treating them as plain strings', () => {
     const mappers = {
       fromPlainString: (value: string) => ({ secret: value }),

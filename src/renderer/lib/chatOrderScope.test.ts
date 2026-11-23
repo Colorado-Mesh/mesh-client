@@ -35,17 +35,22 @@ describe('migrateLegacyChatOrderScope', () => {
   });
 
   it('keeps legacy key when destination write fails', () => {
-    localStorage.setItem('mesh-client:chatOrder:meshcore:0:dms', JSON.stringify(['9', '8']));
-    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key) => {
-      if (key.includes(':7:dms')) {
+    const fromKey = 'mesh-client:chatOrder:meshcore:0:dms';
+    const toKey = 'mesh-client:chatOrder:meshcore:7:dms';
+    localStorage.setItem(fromKey, JSON.stringify(['9', '8']));
+    // Spy the instance method — jsdom's localStorage.setItem is not always routed via
+    // Storage.prototype, so a prototype-only spy would miss and the migration would succeed.
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key === toKey) {
         throw new Error('quota');
       }
+      originalSetItem(key, value);
     });
     try {
       migrateLegacyChatOrderScope('meshcore', '7');
-      expect(localStorage.getItem('mesh-client:chatOrder:meshcore:0:dms')).toBe(
-        JSON.stringify(['9', '8']),
-      );
+      expect(localStorage.getItem(fromKey)).toBe(JSON.stringify(['9', '8']));
+      expect(localStorage.getItem(toKey)).toBeNull();
     } finally {
       setItem.mockRestore();
     }

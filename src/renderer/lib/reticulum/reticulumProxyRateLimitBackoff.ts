@@ -73,7 +73,7 @@ export function noteReticulumProxyRateLimitHit(
   const delay = Math.min(MAX_BACKOFF_MS, Math.max(DEFAULT_BACKOFF_MS, applyJitter(base)));
   state.backoffUntilMs = Math.max(state.backoffUntilMs, now + delay);
   console.warn(
-    `[reticulumProxyRateLimit] bucket=${bucket} backoff ${delay}ms hits=${state.consecutiveHits} until=${new Date(state.backoffUntilMs).toISOString()}`,
+    `mcL1043 [reticulumProxyRateLimit] bucket=${bucket} backoff ${delay}ms hits=${state.consecutiveHits} until=${new Date(state.backoffUntilMs).toISOString()}`,
   );
   return delay;
 }

@@ -88,8 +88,9 @@ export function installBeaconPreviewBridge(): () => void {
       let message: unknown;
       try {
         message = JSON.parse(event.data);
-      } catch {
-        // catch-no-log-ok malformed local preview data is ignored
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/map/beaconPreviewBridge] catch:', e);
+
         return;
       }
       if (!isRecord(message)) return;

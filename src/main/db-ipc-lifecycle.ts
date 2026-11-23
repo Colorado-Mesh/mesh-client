@@ -6,7 +6,7 @@ import { sanitizeLogMessage } from './sanitize-log-message';
 export function getDbForIpc(channel: string): NodeSqliteDB | null {
   const db = getDatabaseIfOpen();
   if (!db) {
-    console.debug(`[IPC] ${channel}: skipped (database closed)`);
+    console.debug('[IPC]', channel, ': skipped (database closed)');
     return null;
   }
   return db;
@@ -16,17 +16,17 @@ export function getDbForIpc(channel: string): NodeSqliteDB | null {
 export function finishDbIpcHandler(channel: string, err: unknown): void {
   const message = err instanceof Error ? err.message : String(err);
   if (isDatabaseClosed() || message === DATABASE_CLOSED_MESSAGE) {
-    console.debug(`[IPC] ${channel}: skipped (database closed)`);
+    console.debug('[IPC]', channel, ': skipped (database closed)');
     return;
   }
-  console.error(`[IPC] ${channel} failed:`, sanitizeLogMessage(message));
+  console.error('mcL0023 [IPC]', channel, 'failed:', sanitizeLogMessage(message));
   throw err;
 }
 
 export function finishDbIpcReadHandler<T>(channel: string, err: unknown, fallback: T): T {
   const message = err instanceof Error ? err.message : String(err);
   if (isDatabaseClosed() || message === DATABASE_CLOSED_MESSAGE) {
-    console.debug(`[IPC] ${channel}: skipped (database closed)`);
+    console.debug('[IPC]', channel, ': skipped (database closed)');
     return fallback;
   }
   finishDbIpcHandler(channel, err);

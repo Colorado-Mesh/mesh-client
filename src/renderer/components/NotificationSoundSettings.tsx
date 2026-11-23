@@ -99,7 +99,7 @@ export default function NotificationSoundSettings() {
       await saveNotificationSoundSetting(event, setting);
       if (mounted.current) setSettings(getNotificationSoundSettings());
     } catch (failure) {
-      console.warn('[notificationSounds] setting failed', failure);
+      console.warn('mcL0504 [notificationSounds] setting failed', failure);
       if (mounted.current) setSettings(getNotificationSoundSettings());
       if (mounted.current)
         setError(t(choose ? 'notificationSounds.importFailed' : 'notificationSounds.saveFailed'));
@@ -124,7 +124,7 @@ export default function NotificationSoundSettings() {
     try {
       await previewNotificationSound(event, settings[event]);
     } catch (failure) {
-      console.warn('[notificationSounds] preview failed', failure);
+      console.warn('mcL0505 [notificationSounds] preview failed', failure);
       if (mounted.current && sequence === previewSequence.current)
         setError(t('notificationSounds.previewFailed'));
     } finally {

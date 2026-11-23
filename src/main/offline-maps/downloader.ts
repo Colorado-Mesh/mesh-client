@@ -238,7 +238,7 @@ export class OfflineMapsDownloader {
       });
     } catch (e: unknown) {
       const message = sanitizeLogMessage(e instanceof Error ? e.message : String(e));
-      console.warn('[offline-maps] job failed:', message);
+      console.warn('mcL0269 [offline-maps] job failed:', message);
       this.deps.onError({ jobId: job.id, message });
     } finally {
       if (job.resumeTimer) clearTimeout(job.resumeTimer);

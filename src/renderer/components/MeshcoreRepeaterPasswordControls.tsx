@@ -54,7 +54,8 @@ export function MeshcoreRepeaterPasswordControls({
               })
               .catch((e: unknown) => {
                 console.warn(
-                  '[MeshcoreRepeaterPasswordControls] prompt password ' + errLikeToLogString(e),
+                  'mcL0461 [MeshcoreRepeaterPasswordControls] prompt password ' +
+                    errLikeToLogString(e),
                 );
               });
           }}
@@ -80,7 +81,8 @@ export function MeshcoreRepeaterPasswordControls({
                 })
                 .catch((e: unknown) => {
                   console.warn(
-                    '[MeshcoreRepeaterPasswordControls] forget password ' + errLikeToLogString(e),
+                    'mcL0462 [MeshcoreRepeaterPasswordControls] forget password ' +
+                      errLikeToLogString(e),
                   );
                 });
             }}

@@ -116,7 +116,7 @@ export default function MicronPageEditor({
     try {
       const res = await putServingPage(path, content);
       if (!res.ok) {
-        console.warn('[MicronPageEditor] save failed:', res.error);
+        console.warn('mcL0465 [MicronPageEditor] save failed:', res.error);
         // Keep the editor open with the draft intact so the user can retry.
         setError(humanizeNomadPageError(res.error, t) || t('nomadNetwork.serving.saveError'));
         return;
@@ -134,7 +134,7 @@ export default function MicronPageEditor({
     try {
       const res = await deleteServingPage(path);
       if (!res.ok) {
-        console.warn('[MicronPageEditor] delete failed:', res.error);
+        console.warn('mcL0466 [MicronPageEditor] delete failed:', res.error);
         setError(humanizeNomadPageError(res.error, t) || t('nomadNetwork.serving.deleteError'));
         return;
       }

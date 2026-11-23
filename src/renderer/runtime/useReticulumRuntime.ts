@@ -554,8 +554,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
               return [];
             }),
             window.electronAPI.reticulum.getStatus(),
-            window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings').catch(() => {
-              // catch-no-log-ok optional stack settings
+            window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings').catch((e: unknown) => {
+              console.debug('[renderer/runtime/useReticulumRuntime] catch:', e);
               return null;
             }),
           ]);
@@ -610,8 +610,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const scheduleFullPeerRefresh = useCallback(() => {
     const peerCount = useReticulumPeerStore.getState().peers.size;
     const onRefresh = () => {
-      void refreshContactsFromSidecar().catch(() => {
-        // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+      void refreshContactsFromSidecar().catch((e: unknown) => {
+        console.debug('[renderer/runtime/useReticulumRuntime] catch:', e);
       });
       void syncDiagnosticsFromSidecar();
     };
@@ -818,13 +818,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
             pushAppToast(rncpReceiveDestShareSavedToastMessage(peer), 'success');
           } else if (share.reason !== 'no_share') {
             console.warn(
-              '[useReticulumRuntime] rncp receive-dest share failed reason=' + share.reason,
+              'mcL1366 [useReticulumRuntime] rncp receive-dest share failed reason=' + share.reason,
             );
             pushAppToast(i18n.t('reticulumRemote.transfer.receiveDestShareFailed'), 'error');
           }
         }
       })().catch((e: unknown) => {
-        console.warn('[useReticulumRuntime] ingestLxmfPayload failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL1367 [useReticulumRuntime] ingestLxmfPayload failed ' + errLikeToLogString(e),
+        );
       });
     },
     [identityId, selfLxmfHash],
@@ -873,7 +875,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           replaceMessageRecordsForIdentity(identityId, records);
         }
       } catch (e) {
-        console.warn('[useReticulumRuntime] refresh messages ' + errLikeToLogString(e));
+        console.warn('mcL1368 [useReticulumRuntime] refresh messages ' + errLikeToLogString(e));
       }
     },
     [identityId],
@@ -927,11 +929,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
           setReticulumAnnounceBusPressureActive(true);
         }
         console.warn(
-          `[useReticulumRuntime] sidecar WS lagged skipped=${skipped ?? '?'} — catching up inbound LXMF`,
+          `mcL1369 [useReticulumRuntime] sidecar WS lagged skipped=${skipped ?? '?'} — catching up inbound LXMF`,
         );
         void catchUpRecentInboundLxmf({ reason: 'events_lagged' }).catch((e: unknown) => {
           console.warn(
-            '[useReticulumRuntime] catch-up after events_lagged failed ' + errLikeToLogString(e),
+            'mcL1370 [useReticulumRuntime] catch-up after events_lagged failed ' +
+              errLikeToLogString(e),
           );
         });
         void scheduleRrcSessionStatusReconcile('events_lagged');
@@ -942,7 +945,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
           console.debug('[useReticulumRuntime] sidecar WS reconnected — catching up inbound LXMF');
           void catchUpRecentInboundLxmf({ reason: 'ws_reconnect' }).catch((e: unknown) => {
             console.warn(
-              '[useReticulumRuntime] catch-up after ws_reconnect failed ' + errLikeToLogString(e),
+              'mcL1371 [useReticulumRuntime] catch-up after ws_reconnect failed ' +
+                errLikeToLogString(e),
             );
           });
           void scheduleRrcSessionStatusReconcile('ws_reconnect');
@@ -998,7 +1002,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
             })
             .catch((e: unknown) => {
               console.warn(
-                '[useReticulumRuntime] propagation_sync catch-up failed ' + errLikeToLogString(e),
+                'mcL1372 [useReticulumRuntime] propagation_sync catch-up failed ' +
+                  errLikeToLogString(e),
               );
             });
         }
@@ -1456,7 +1461,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               localNickname: session.nickname,
               timestampMs: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
             }).catch((err: unknown) => {
-              console.warn('[useReticulumRuntime] RRC MECP inbound failed', err);
+              console.warn('mcL1373 [useReticulumRuntime] RRC MECP inbound failed', err);
             });
           }
         }
@@ -1628,7 +1633,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
             ? ' dest=' + sanitizeLogMessage(p.destination_hash.trim().slice(0, 32))
             : '';
         console.warn(
-          `[useReticulumRuntime] rncp.failed${errPart ? ' ' + errPart : ''}${reasonPart}${destPart}`,
+          `mcL1374 [useReticulumRuntime] rncp.failed${errPart ? ' ' + errPart : ''}${reasonPart}${destPart}`,
         );
         useRncpTransferStore.getState().applyFailed(p);
       }
@@ -1665,8 +1670,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 detail: { transfer_id: p.transfer_id, file_name: p.file_name },
               }),
             );
-          } catch {
-            // catch-no-log-ok CustomEvent may fail in non-DOM test envs
+          } catch (e: unknown) {
+            console.debug('[renderer/runtime/useReticulumRuntime] catch:', e);
           }
         }
       }
@@ -1679,7 +1684,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'stack_restart_requested') {
         void restartStackRef.current?.().catch((e: unknown) => {
           console.error(
-            '[useReticulumRuntime] stack_restart_requested failed ' + errLikeToLogString(e),
+            'mcL1375 [useReticulumRuntime] stack_restart_requested failed ' + errLikeToLogString(e),
           );
         });
       }
@@ -1950,7 +1955,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         if (!suppressReconnectRef.current && isReticulumAutostartEnabled()) {
           void connectRef.current?.().catch((e: unknown) => {
             console.warn(
-              '[useReticulumRuntime] autostart reconnect failed ' + errLikeToLogString(e),
+              'mcL1376 [useReticulumRuntime] autostart reconnect failed ' + errLikeToLogString(e),
             );
           });
         }
@@ -1978,7 +1983,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       // Dev HMR remounts App without an explicit disconnect — keep the sidecar alive.
       if (!import.meta.env.DEV) {
         void window.electronAPI.reticulum.stop().catch((e: unknown) => {
-          console.warn('[useReticulumRuntime] unmount stop failed ' + errLikeToLogString(e));
+          console.warn(
+            'mcL1377 [useReticulumRuntime] unmount stop failed ' + errLikeToLogString(e),
+          );
         });
       }
     };
@@ -2074,7 +2081,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       try {
         await flight;
       } catch (e) {
-        console.error('[useReticulumRuntime] connect failed ' + errLikeToLogString(e));
+        console.error('mcL1378 [useReticulumRuntime] connect failed ' + errLikeToLogString(e));
         setState(INITIAL_STATE);
         syncConnectionStore(INITIAL_STATE);
         throw e instanceof Error ? e : new Error(String(e));
@@ -2120,7 +2127,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     try {
       await window.electronAPI.reticulum.stop();
     } catch (e) {
-      console.warn('[useReticulumRuntime] disconnect stop failed ' + errLikeToLogString(e));
+      console.warn('mcL1379 [useReticulumRuntime] disconnect stop failed ' + errLikeToLogString(e));
     }
     localInterfacesRef.current = [];
     queueRefreshGenerationRef.current += 1;
@@ -2158,7 +2165,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
     if (resumeGenerationRef.current !== generation) return;
     connectInFlightRef.current = true;
-    console.warn('[useReticulumRuntime] soft-restarting live RNS (HTTP + LoRa GATT preserved)');
+    console.warn(
+      'mcL1380 [useReticulumRuntime] soft-restarting live RNS (HTTP + LoRa GATT preserved)',
+    );
     const priorSuppress = suppressReconnectRef.current;
     suppressReconnectRef.current = true;
     const flight = (async () => {
@@ -2210,7 +2219,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       await flight;
     } catch (e) {
       if (resumeGenerationRef.current !== generation) return;
-      console.error('[useReticulumRuntime] stack restart failed ' + errLikeToLogString(e));
+      console.error('mcL1381 [useReticulumRuntime] stack restart failed ' + errLikeToLogString(e));
       // Soft restart failed with process still up — do not tearDownFromSidecarStop
       // (that assumes a hard stop). Leave disconnected for a manual Start.
       setState((s) => ({ ...s, status: 'disconnected', connectionType: null }));
@@ -2265,8 +2274,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       return;
     }
     if (shouldRunReticulumExpensiveBackgroundWork()) {
-      void refreshContactsFromSidecar().catch(() => {
-        // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+      void refreshContactsFromSidecar().catch((e: unknown) => {
+        console.debug('[renderer/runtime/useReticulumRuntime] catch:', e);
       });
       void refreshSelfNodeDisplayNameFromSidecar();
     }
@@ -2297,8 +2306,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         }
         void refreshContactsFromSidecar({
           skipNomad: count > LARGE_MESH_NODE_THRESHOLD,
-        }).catch(() => {
-          // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+        }).catch((e: unknown) => {
+          console.debug('[renderer/runtime/useReticulumRuntime] catch:', e);
         });
         void refreshSelfNodeDisplayNameFromSidecar();
         scheduleNext();
@@ -2327,7 +2336,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
           reason: 'periodic',
         }).catch((e: unknown) => {
           console.warn(
-            '[useReticulumRuntime] periodic inbound LXMF catch-up failed ' + errLikeToLogString(e),
+            'mcL1382 [useReticulumRuntime] periodic inbound LXMF catch-up failed ' +
+              errLikeToLogString(e),
           );
         });
         scheduleNext();
@@ -2472,8 +2482,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
           if (!shouldRunReticulumExpensiveBackgroundWork()) return;
           void (async () => {
             await Promise.all([
-              refreshContactsFromSidecar().catch(() => {
-                // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+              refreshContactsFromSidecar().catch((e: unknown) => {
+                console.debug('[renderer/runtime/useReticulumRuntime] catch:', e);
               }),
               syncDiagnosticsFromSidecar(),
             ]);
@@ -2628,7 +2638,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useEffect(() => {
     sendMessageRef.current = (text, to, replyToHash, pendingId) => {
       void sendMessage(text, to, replyToHash, pendingId).catch((e: unknown) => {
-        console.warn('[useReticulumRuntime] auto-resend send failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL1383 [useReticulumRuntime] auto-resend send failed ' + errLikeToLogString(e),
+        );
       });
     };
   }, [sendMessage]);
@@ -2758,7 +2770,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
     const forceFresh = powerSuspendHadBleRnodeRef.current;
     powerSuspendHadBleRnodeRef.current = false;
     void connect({ reuseIfRunning: !forceFresh }).catch((e: unknown) => {
-      console.warn('[useReticulumRuntime] power resume reconnect failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1384 [useReticulumRuntime] power resume reconnect failed ' + errLikeToLogString(e),
+      );
     });
   }, [connect]);
 

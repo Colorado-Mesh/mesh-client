@@ -146,7 +146,8 @@ function persistMeshcoreContactRfTransport(
         lastPersistedRfTransportByNodeId.delete(nodeId);
       }
       console.warn(
-        '[meshcoreRfRxRuntime] updateMeshcoreContactRfTransport error ' + errLikeToLogString(e),
+        'mcL0901 [meshcoreRfRxRuntime] updateMeshcoreContactRfTransport error ' +
+          errLikeToLogString(e),
       );
     });
 }
@@ -162,7 +163,7 @@ function persistMeshcoreContactLastRf(
     .updateMeshcoreContactLastRf(nodeId, snr, rssi, hopsAway, nowSec)
     .catch((e: unknown) => {
       console.warn(
-        '[meshcoreRfRxRuntime] updateMeshcoreContactLastRf error ' + errLikeToLogString(e),
+        'mcL0902 [meshcoreRfRxRuntime] updateMeshcoreContactLastRf error ' + errLikeToLogString(e),
       );
     });
 }
@@ -186,7 +187,9 @@ function persistMeshcoreRfHopHistory(
     .getState()
     .saveMeshcoreHopHistory(nodeId, now, hopsAway, snr, rssi)
     .catch((e: unknown) => {
-      console.warn('[meshcoreRfRxRuntime] saveMeshcoreHopHistory error ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0903 [meshcoreRfRxRuntime] saveMeshcoreHopHistory error ' + errLikeToLogString(e),
+      );
     });
 }
 
@@ -799,7 +802,7 @@ function publishMeshcoreRfMqttPacketLog(
       if (t - deps.lastPacketLogPublishFailureLogAtRef.current >= 30_000) {
         deps.lastPacketLogPublishFailureLogAtRef.current = t;
         console.warn(
-          '[meshcoreRfRxRuntime] MQTT packet-log publish failed ' + errLikeToLogString(e),
+          'mcL0904 [meshcoreRfRxRuntime] MQTT packet-log publish failed ' + errLikeToLogString(e),
         );
       }
     });

@@ -720,8 +720,18 @@ if ! pnpm run check:console-log; then
   exit 1
 fi
 
+if ! pnpm run check:log-ids; then
+  print_error "Log message ID check failed."
+  exit 1
+fi
+
 if ! pnpm run check:silent-catches; then
   print_error "Silent catch policy check failed."
+  exit 1
+fi
+
+if ! pnpm run check:semgrep; then
+  print_error "Semgrep check failed (auto + .semgrep.yml). Research findings before dismissing; update .semgrep.yml if a rule is wrong for this repo."
   exit 1
 fi
 

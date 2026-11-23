@@ -51,7 +51,7 @@ describe('MeshcoreFloodAdvertHeaderButton zero-hop (#1100)', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Zero-hop Advert' }));
     expect(await screen.findByText('Advert failed: radio offline')).toBeInTheDocument();
     expect(warn).toHaveBeenCalledWith(
-      '[MeshcoreFloodAdvertHeaderButton] zero-hop send failed radio offline',
+      'mcL0456 [MeshcoreFloodAdvertHeaderButton] zero-hop send failed radio offline',
     );
     warn.mockRestore();
   });
@@ -138,7 +138,7 @@ describe('MeshcoreFloodAdvertHeaderButton', () => {
     expect(await screen.findByText('Advert failed: radio offline')).toBeInTheDocument();
     expect(button).not.toBeDisabled();
     expect(warn).toHaveBeenCalledWith(
-      '[MeshcoreFloodAdvertHeaderButton] send failed radio offline',
+      'mcL0456 [MeshcoreFloodAdvertHeaderButton] send failed radio offline',
     );
     warn.mockRestore();
   });

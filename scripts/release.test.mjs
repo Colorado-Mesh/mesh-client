@@ -25,6 +25,8 @@ const REQUIRED_PNPM_CHECKS = [
   'check:reticulum-decommissioned-hubs',
   'check:console-log',
   'check:silent-catches',
+  'check:log-ids',
+  'check:semgrep',
   'check:url-hostname-sanitization',
   'check:xss-patterns',
   'check:protocol-string-gates',

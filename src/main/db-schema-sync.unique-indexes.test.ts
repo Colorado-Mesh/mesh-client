@@ -10,9 +10,9 @@
  */
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import { NodeSqliteDB } from './db-compat';
 import { INDEX_DDLS, runSchemaUpgrade } from './db-schema-sync';
 
@@ -57,8 +57,8 @@ describe(
     });
 
     function openFreshUpgradedDb(name: string): NodeSqliteDB {
-      dir = mkdtempSync(join(tmpdir(), 'mesh-uniq-test-'));
-      const dbPath = join(dir, name);
+      dir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-uniq-test-'));
+      const dbPath = joinUnderRoot(dir, name);
       const db = new NodeSqliteDB(dbPath);
       runSchemaUpgrade(db);
       return db;

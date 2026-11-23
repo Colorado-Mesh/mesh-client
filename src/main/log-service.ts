@@ -71,10 +71,38 @@ const recentEntries: LogEntry[] = [];
 
 export type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
 
+/** `app_settings` key: `'1'` includes debug/info/log on disk + Log panel; default off. */
+export const VERBOSE_LOGGING_SETTING_KEY = 'verboseLogging';
+
 let logFilePath: string | null = null;
 let mainWindowRef: BrowserWindow | null = null;
 const pendingBuffer: string[] = [];
 let appendChain: Promise<void> = Promise.resolve();
+/** When false, debug/info/log are not persisted or broadcast (warn/error always are). */
+let verboseLoggingEnabled = process.env.MESH_CLIENT_VERBOSE_LOG === '1';
+
+export function isVerboseLoggingEnabled(): boolean {
+  return verboseLoggingEnabled;
+}
+
+/** Apply verbose gate and notify the renderer Log panel. */
+export function setVerboseLoggingEnabled(enabled: boolean): void {
+  verboseLoggingEnabled = enabled;
+  const win = mainWindowRef;
+  if (!win || win.isDestroyed()) return;
+  try {
+    win.webContents.send('log:verboseChanged', { enabled });
+  } catch (e: unknown) {
+    console.debug(
+      '[main/log-service] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  }
+}
+
+function isVerboseOnlyLevel(level: LogLevel): boolean {
+  return level === 'debug' || level === 'info' || level === 'log';
+}
 
 function getLogFilePath(): string {
   if (!logFilePath) {
@@ -88,8 +116,12 @@ function getLogFilePath(): string {
  * rename it to {@link LOG_BACKUP_FILENAME} first so restart-then-export still keeps
  * the hung/prior session (size rotation alone only kicks in at {@link LOG_MAX_BYTES}).
  * Call from app.whenReady before other heavy init.
+ * Env `MESH_CLIENT_VERBOSE_LOG=1` enables debug/info/log persistence for this process.
  */
 export function initLogFile(): void {
+  if (process.env.MESH_CLIENT_VERBOSE_LOG === '1') {
+    verboseLoggingEnabled = true;
+  }
   recentEntries.length = 0;
   const p = getLogFilePath();
   const backup = path.join(path.dirname(p), LOG_BACKUP_FILENAME);
@@ -207,6 +239,7 @@ export function getRecentLines(): LogEntry[] {
  * Append one log line to the on-disk log and to the renderer. Every message is passed through
  * {@link sanitizeLogMessage} first so renderer IPC, stdout/stderr hooks, and main console
  * all persist single-line, control-char-free entries (GitHub/CodeQL untrusted-to-file guidance).
+ * Debug/info/log are dropped when verbose logging is off (warn/error always persist).
  */
 export function appendLine(
   level: LogLevel,
@@ -214,6 +247,9 @@ export function appendLine(
   message: string,
   protocol?: MeshProtocol,
 ): void {
+  if (isVerboseOnlyLevel(level) && !verboseLoggingEnabled) {
+    return;
+  }
   message = sanitizeLogMessage(message);
   // Source is embedded in the log line; sanitize so the whole line is control-char-free.
   source = sanitizeLogMessage(source);
@@ -256,8 +292,11 @@ async function rotateLogIfNeeded(): Promise<void> {
       const backup = path.join(path.dirname(p), LOG_BACKUP_FILENAME);
       await fs.promises.rename(p, backup);
     }
-  } catch {
-    // catch-no-log-ok: stat throws when the file doesn't exist yet; rotation skipped
+  } catch (e: unknown) {
+    console.debug(
+      '[main/log-service] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 }
 

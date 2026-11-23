@@ -129,8 +129,9 @@ export function useMeshcoreRepeaterRemoteAuth() {
         try {
           await setAdminPassword(nodeId, hwModel, trimmed, { persist: rememberPassword });
           saved = rememberPassword;
-        } catch {
-          // catch-no-log-ok credential storage already logs persist failures
+        } catch (e: unknown) {
+          console.debug('[renderer/hooks/useMeshcoreRepeaterRemoteAuth] catch:', e);
+
           if (rememberPassword) {
             addToast(t('repeatersPanel.rememberPasswordSaveFailed'), 'error');
           }

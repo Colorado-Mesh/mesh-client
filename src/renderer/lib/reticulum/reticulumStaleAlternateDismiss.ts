@@ -52,7 +52,9 @@ function persistKeys(keys: Set<string>): void {
   try {
     localStorage.setItem(RETICULUM_STALE_ALTERNATE_DISMISS_STORAGE_KEY, JSON.stringify(ordered));
   } catch (e) {
-    console.warn('[reticulumStaleAlternateDismiss] persist failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL1051 [reticulumStaleAlternateDismiss] persist failed ' + errLikeToLogString(e),
+    );
   }
   notify();
 }
@@ -110,8 +112,8 @@ export function resetReticulumStaleAlternateDismissForTests(): void {
   snapshotVersion = 0;
   try {
     localStorage.removeItem(RETICULUM_STALE_ALTERNATE_DISMISS_STORAGE_KEY);
-  } catch {
-    // catch-no-log-ok test cleanup
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulum/reticulumStaleAlternateDismiss] catch:', e);
   }
   notify();
 }

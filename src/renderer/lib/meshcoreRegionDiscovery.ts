@@ -333,7 +333,7 @@ export async function discoverMeshcoreRegions(
       const reason = classifyRegionDiscoveryError(error);
       failed.push({ nodeId: candidate.nodeId, reason });
       console.warn(
-        `[meshcoreRegionDiscovery] node=${candidate.nodeId} reason=${reason}` +
+        `mcL0916 [meshcoreRegionDiscovery] node=${candidate.nodeId} reason=${reason}` +
           (candidate.name ? ` name=${sanitizeLogMessage(candidate.name)}` : ''),
       );
     }

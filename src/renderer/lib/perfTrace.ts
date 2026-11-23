@@ -15,8 +15,9 @@ export const PERF_TRACE_ENABLED = (() => {
   try {
     const storage = globalThis.localStorage;
     return storage.getItem('mesh-client:perf') === '1';
-  } catch {
-    // catch-no-log-ok: tracing must never break startup on blocked storage
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/perfTrace] catch:', e);
+
     return false;
   }
 })();

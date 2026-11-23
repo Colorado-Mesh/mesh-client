@@ -12,7 +12,7 @@ export function registerGpsIpcHandlers(): void {
       return await getGpsFix();
     } catch (err) {
       console.error(
-        '[gps] getGpsFix threw:',
+        'mcL0158 [gps] getGpsFix threw:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       return {

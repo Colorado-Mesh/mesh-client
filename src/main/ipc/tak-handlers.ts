@@ -163,7 +163,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
       await m.start(settings);
     } catch (err) {
       console.error(
-        '[IPC] tak:start failed:',
+        'mcL0206 [IPC] tak:start failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -199,7 +199,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
       await m.generateDataPackage();
     } catch (err) {
       console.error(
-        '[IPC] tak:generateDataPackage failed:',
+        'mcL0207 [IPC] tak:generateDataPackage failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -214,7 +214,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
       await m.regenerateCertificates();
     } catch (err) {
       console.error(
-        '[IPC] tak:regenerateCertificates failed:',
+        'mcL0208 [IPC] tak:regenerateCertificates failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
@@ -373,7 +373,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
       getTakServerManager()?.setStyleSettings(parsed);
       return parsed;
     } catch (err) {
-      console.error('[IPC] tak:setStyleSettings failed:', errorMessage(err));
+      console.error('mcL0209 [IPC] tak:setStyleSettings failed:', errorMessage(err));
       throw err;
     }
   });
@@ -388,7 +388,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
       const m = await ensureTakServerManager();
       await m.startRemote(settings);
     } catch (err) {
-      console.error('[IPC] tak:remoteStart failed:', errorMessage(err));
+      console.error('mcL0210 [IPC] tak:remoteStart failed:', errorMessage(err));
       throw err;
     }
   });
@@ -409,7 +409,10 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     try {
       return loadTakRemoteSettings();
     } catch (err) {
-      console.warn('[IPC] tak:remoteGetSettings: saved settings unreadable:', errorMessage(err));
+      console.warn(
+        'mcL0211 [IPC] tak:remoteGetSettings: saved settings unreadable:',
+        errorMessage(err),
+      );
       return null;
     }
   });
@@ -419,7 +422,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     try {
       return summarizeTakRemoteCredentials(await loadTakRemoteCredentials());
     } catch (err) {
-      console.error('[IPC] tak:remoteGetCredentials failed:', errorMessage(err));
+      console.error('mcL0212 [IPC] tak:remoteGetCredentials failed:', errorMessage(err));
       throw err;
     }
   });
@@ -464,7 +467,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
       );
       return summarizeTakRemoteCredentials(await loadTakRemoteCredentials());
     } catch (err) {
-      console.error('[IPC] tak:remoteImportCredentials failed:', errorMessage(err));
+      console.error('mcL0213 [IPC] tak:remoteImportCredentials failed:', errorMessage(err));
       throw err;
     } finally {
       choosingCredentials = false;
@@ -505,7 +508,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
       await getTakServerManager()?.restartRemote();
       return summarizeTakRemoteCredentials(await loadTakRemoteCredentials());
     } catch (err) {
-      console.error('[IPC] tak:remoteEnroll failed:', errorMessage(err));
+      console.error('mcL0214 [IPC] tak:remoteEnroll failed:', errorMessage(err));
       throw err;
     } finally {
       enrolling = false;

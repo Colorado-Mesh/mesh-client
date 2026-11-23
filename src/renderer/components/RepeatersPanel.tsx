@@ -297,7 +297,7 @@ async function runRepeaterAdminAction(
   try {
     await action();
   } catch (e) {
-    console.warn(`[RepeatersPanel] ${logTag} ` + errLikeToLogString(e));
+    console.warn(`mcL0535 [RepeatersPanel] ${logTag} ` + errLikeToLogString(e));
     addToast(t(toastKey, { message: meshcoreRepeaterAdminErrorMessage(t, e) }), 'error');
   }
 }
@@ -536,8 +536,8 @@ export default function RepeatersPanel({
         }
         setMeshcoreContactsDb(m);
       })
-      .catch(() => {
-        // catch-no-log-ok database error - contacts will show as unavailable
+      .catch((e: unknown) => {
+        console.debug('[renderer/components/RepeatersPanel] catch:', e);
       });
   }, []);
 
@@ -682,7 +682,9 @@ export default function RepeatersPanel({
       refreshStoredSecrets();
       addToast(t('repeatersPanel.passwordForgotten'), 'success');
     } catch (e) {
-      console.warn('[RepeatersPanel] forget saved password failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0536 [RepeatersPanel] forget saved password failed ' + errLikeToLogString(e),
+      );
     }
   };
 
@@ -712,7 +714,7 @@ export default function RepeatersPanel({
         addToast(t('repeatersPanel.pingFailedToast', { message }), 'error');
       }
     } catch (e) {
-      console.warn('[RepeatersPanel] ping error ' + errLikeToLogString(e));
+      console.warn('mcL0537 [RepeatersPanel] ping error ' + errLikeToLogString(e));
       addToast(
         t('repeatersPanel.pingFailedToast', {
           message: meshcoreRepeaterAdminErrorMessage(t, e),
@@ -732,7 +734,10 @@ export default function RepeatersPanel({
     try {
       await onDeleteRepeater(nodeId);
     } catch (e) {
-      console.warn('[RepeatersPanel] deleteRepeater failed:', e instanceof Error ? e.message : e);
+      console.warn(
+        'mcL0538 [RepeatersPanel] deleteRepeater failed:',
+        e instanceof Error ? e.message : e,
+      );
       addToast(
         t('repeatersPanel.removeFailedToast', {
           message: meshcoreRepeaterAdminErrorMessage(t, e),
@@ -855,7 +860,7 @@ export default function RepeatersPanel({
       try {
         await awaitMeshcoreCliReplyHoldClear();
       } catch (e) {
-        console.warn('[RepeatersPanel] CLI auto-ping wait failed ' + errLikeToLogString(e));
+        console.warn('mcL0539 [RepeatersPanel] CLI auto-ping wait failed ' + errLikeToLogString(e));
         addToast(t('repeatersPanel.cliAutoPingAdvisory'), 'info');
         return;
       }
@@ -867,7 +872,7 @@ export default function RepeatersPanel({
         addToast(t('repeatersPanel.cliAutoPingAdvisory'), 'info');
       }
     } catch (e) {
-      console.warn('[RepeatersPanel] CLI auto-ping failed ' + errLikeToLogString(e));
+      console.warn('mcL0540 [RepeatersPanel] CLI auto-ping failed ' + errLikeToLogString(e));
       addToast(
         t(
           meshcoreTraceCancelledForCliPreempt(e)
@@ -931,7 +936,7 @@ export default function RepeatersPanel({
         );
       }
     } catch (e) {
-      console.warn('[RepeatersPanel] CLI command error ' + errLikeToLogString(e));
+      console.warn('mcL0541 [RepeatersPanel] CLI command error ' + errLikeToLogString(e));
       addToast(meshcoreRepeaterAdminErrorMessage(t, e), 'error');
     }
   };

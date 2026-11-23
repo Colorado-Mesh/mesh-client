@@ -201,7 +201,9 @@ export function createScheduledBroadcastScheduler(
         if (mode !== 'skip-missed' || row.nextDueAt > now) continue;
         const next = advancePastDue(rule, row.nextDueAt, now);
         if (next == null) {
-          console.warn(`[scheduledBroadcasts] slot=${row.slot} has no valid next occurrence`);
+          console.warn(
+            `mcL1110 [scheduledBroadcasts] slot=${row.slot} has no valid next occurrence`,
+          );
           continue;
         }
         const { claimed } = await deps.claimDue(row.slot, row.nextDueAt, next, now);
@@ -220,7 +222,8 @@ export function createScheduledBroadcastScheduler(
         logRun(row.slot, 'missed', row.text.length);
       } catch (e: unknown) {
         console.warn(
-          `[scheduledBroadcasts] reconcile slot=${row.slot} failed ` + errLikeToLogString(e),
+          `mcL1111 [scheduledBroadcasts] reconcile slot=${row.slot} failed ` +
+            errLikeToLogString(e),
         );
       }
     }
@@ -235,7 +238,9 @@ export function createScheduledBroadcastScheduler(
     try {
       result = await deps.deliver(row);
     } catch (e: unknown) {
-      console.warn(`[scheduledBroadcasts] slot=${row.slot} deliver threw ` + errLikeToLogString(e));
+      console.warn(
+        `mcL1112 [scheduledBroadcasts] slot=${row.slot} deliver threw ` + errLikeToLogString(e),
+      );
       result = { outcome: 'failed', targets: [] };
     }
     const attemptedAt = deps.now();
@@ -248,7 +253,7 @@ export function createScheduledBroadcastScheduler(
       await deps.setResult(row.slot, attemptedAt, lastResult);
     } catch (e: unknown) {
       console.warn(
-        `[scheduledBroadcasts] slot=${row.slot} setResult failed ` + errLikeToLogString(e),
+        `mcL1113 [scheduledBroadcasts] slot=${row.slot} setResult failed ` + errLikeToLogString(e),
       );
     }
     // Already-started send keeps the claimed text and targets. A save during
@@ -278,14 +283,16 @@ export function createScheduledBroadcastScheduler(
     const now = deps.now();
     const next = computeNextDue(ruleOf(row), Math.max(now, due));
     if (next == null) {
-      console.warn(`[scheduledBroadcasts] slot=${row.slot} has no valid next occurrence`);
+      console.warn(`mcL1114 [scheduledBroadcasts] slot=${row.slot} has no valid next occurrence`);
       return false;
     }
     let claimed: boolean;
     try {
       claimed = (await deps.claimDue(row.slot, due, next, now)).claimed;
     } catch (e: unknown) {
-      console.warn(`[scheduledBroadcasts] slot=${row.slot} claim failed ` + errLikeToLogString(e));
+      console.warn(
+        `mcL1115 [scheduledBroadcasts] slot=${row.slot} claim failed ` + errLikeToLogString(e),
+      );
       return false;
     }
     if (!claimed) return false;
@@ -354,7 +361,7 @@ export function createScheduledBroadcastScheduler(
         await fireDueSlot(row);
       }
     } catch (e: unknown) {
-      console.warn('[scheduledBroadcasts] tick failed ' + errLikeToLogString(e));
+      console.warn('mcL1116 [scheduledBroadcasts] tick failed ' + errLikeToLogString(e));
     } finally {
       await finishRun();
     }

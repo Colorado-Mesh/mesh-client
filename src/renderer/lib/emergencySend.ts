@@ -103,7 +103,7 @@ export async function sendTextWithOutboxFallback(
     return 'sent';
   } catch (err: unknown) {
     console.warn(
-      `[emergencySend] live send failed; queueing ${priority} outbox row: ` +
+      `mcL0832 [emergencySend] live send failed; queueing ${priority} outbox row: ` +
         errLikeToLogString(err),
     );
     return enqueue();

@@ -82,8 +82,8 @@ export const useBotSendersStore = create<BotSendersState>()(
               }
             }
             return { state: { senders }, version: parsed.version ?? 0 };
-          } catch {
-            // catch-no-log-ok: invalid persisted data, fall back to defaults
+          } catch (e: unknown) {
+            console.debug('[renderer/stores/botSendersStore] catch:', e);
           }
           return null;
         },

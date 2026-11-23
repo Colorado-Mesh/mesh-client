@@ -82,7 +82,9 @@ export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}
       waiter.resolve(data);
     };
     next.onerror = (event) => {
-      console.warn('[analysisWorkerPool] worker error ' + errLikeToLogString(event.message));
+      console.warn(
+        'mcL1173 [analysisWorkerPool] worker error ' + errLikeToLogString(event.message),
+      );
       rejectAllPending(new Error(event.message || 'analysis worker error'));
       disposeWorker();
     };
@@ -138,7 +140,8 @@ export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}
           try {
             resolve(runAnalysisJob(request));
           } catch (inlineErr) {
-            // catch-no-log-ok already logged postMessage failure; surface inline failure to caller
+            console.debug('[renderer/lib/workers/analysisWorkerPool] catch:', inlineErr);
+
             reject(inlineErr instanceof Error ? inlineErr : new Error(String(inlineErr)));
           }
         }

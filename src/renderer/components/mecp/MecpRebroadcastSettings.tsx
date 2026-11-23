@@ -26,8 +26,9 @@ export function MecpRebroadcastSettings() {
       if (!raw) return createEmptyMecpRebroadcastRules();
       const parsed = JSON.parse(raw) as Record<string, unknown>;
       return parseMecpRebroadcastRules(parsed[MECP_REBROADCAST_SETTINGS_KEY]);
-    } catch {
-      // catch-no-log-ok
+    } catch (e: unknown) {
+      console.debug('[renderer/components/mecp/MecpRebroadcastSettings] catch:', e);
+
       return createEmptyMecpRebroadcastRules();
     }
   });

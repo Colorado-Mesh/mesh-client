@@ -104,7 +104,9 @@ export default function MeshcoreCompanionCliSection({
       setEdits({});
       setFieldErrors({});
     } catch (e) {
-      console.warn('[MeshcoreCompanionCliSection] read settings failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0448 [MeshcoreCompanionCliSection] read settings failed ' + errLikeToLogString(e),
+      );
       setLoadError(t('meshcoreCompanionCli.loadFailed'));
     } finally {
       setLoading(false);
@@ -156,7 +158,7 @@ export default function MeshcoreCompanionCliSection({
           needsReboot ||= res.rebootRequired;
         } catch (e) {
           console.warn(
-            `[MeshcoreCompanionCliSection] apply ${key} failed ` + errLikeToLogString(e),
+            `mcL0449 [MeshcoreCompanionCliSection] apply ${key} failed ` + errLikeToLogString(e),
           );
           failed.push(key);
           errors[key] = t('meshcoreCompanionCli.applyFailed');
@@ -179,7 +181,9 @@ export default function MeshcoreCompanionCliSection({
         const snap = await readAllMeshcoreCompanionSettings(cli.run);
         setSnapshot(snap);
       } catch (e) {
-        console.warn('[MeshcoreCompanionCliSection] re-read failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL0450 [MeshcoreCompanionCliSection] re-read failed ' + errLikeToLogString(e),
+        );
       }
       setEdits(kept);
     } finally {
@@ -201,7 +205,9 @@ export default function MeshcoreCompanionCliSection({
           setSnapshot((prev) => (prev ? { ...prev, values: { ...prev.values, [key]: v } } : prev));
         }
       } catch (e) {
-        console.warn('[MeshcoreCompanionCliSection] reveal failed ' + errLikeToLogString(e));
+        console.warn(
+          'mcL0451 [MeshcoreCompanionCliSection] reveal failed ' + errLikeToLogString(e),
+        );
         onToast?.(t('meshcoreCompanionCli.revealFailed'), 'error');
         return;
       }
@@ -247,7 +253,9 @@ export default function MeshcoreCompanionCliSection({
       const message = isMeshcoreCompanionSensitiveCommand(command)
         ? t('meshcoreCompanionCli.actionFailed')
         : translateMeshcoreUserMessage(t, raw);
-      console.warn('[MeshcoreCompanionCliSection] console command failed ' + errLikeToLogString(e));
+      console.warn(
+        'mcL0452 [MeshcoreCompanionCliSection] console command failed ' + errLikeToLogString(e),
+      );
       pushConsole('error', message);
     } finally {
       setConsoleBusy(false);
@@ -274,7 +282,9 @@ export default function MeshcoreCompanionCliSection({
         await load();
       }
     } catch (e) {
-      console.warn(`[MeshcoreCompanionCliSection] ${action} failed ` + errLikeToLogString(e));
+      console.warn(
+        `mcL0453 [MeshcoreCompanionCliSection] ${action} failed ` + errLikeToLogString(e),
+      );
       onToast?.(t('meshcoreCompanionCli.actionFailed'), 'error');
     }
   };
@@ -284,7 +294,7 @@ export default function MeshcoreCompanionCliSection({
       await writeClipboardText(ip);
       onToast?.(t('meshcoreCompanionCli.ipCopied'), 'success');
     } catch (e) {
-      console.warn('[MeshcoreCompanionCliSection] copy IP failed ' + errLikeToLogString(e));
+      console.warn('mcL0454 [MeshcoreCompanionCliSection] copy IP failed ' + errLikeToLogString(e));
       onToast?.(t('common.copyFailed'), 'error');
     }
   };

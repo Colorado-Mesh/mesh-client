@@ -183,7 +183,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           });
         })
         .catch((e: unknown) => {
-          console.warn('[useMeshcomRuntime] ingest attach failed ' + errLikeToLogString(e));
+          console.warn('mcL1178 [useMeshcomRuntime] ingest attach failed ' + errLikeToLogString(e));
         });
       telemetryDetachRef.current = attachTypedPacketListener(identityId, 'telemetry', (payload) => {
         const my = getConnection(identityId)?.myNodeNum ?? 0;
@@ -324,7 +324,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       const result = await sendMeshcomDeviceCommand(handle, buildMeshcomSettimeCommand());
       console.debug('[useMeshcomRuntime] auto settime ' + result.command);
     } catch (e) {
-      console.warn('[useMeshcomRuntime] auto settime failed ' + errLikeToLogString(e));
+      console.warn('mcL1179 [useMeshcomRuntime] auto settime failed ' + errLikeToLogString(e));
     }
   }, []);
 
@@ -435,7 +435,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         const deadMs = serialDeadThresholdMs(isSerialPostWakeUntrusted());
         if (elapsed > deadMs) {
           console.warn(
-            `[useMeshcomRuntime] watchdog: serial dead for ${elapsed}ms, triggering reconnect`,
+            `mcL1180 [useMeshcomRuntime] watchdog: serial dead for ${elapsed}ms, triggering reconnect`,
           );
           noteSerialDeliveryFailure({
             reason: 'watchdog-dead',
@@ -444,7 +444,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           });
           handleConnectionLostRef.current();
         } else if (elapsed > SERIAL_STALE_THRESHOLD_MS) {
-          console.warn(`[useMeshcomRuntime] watchdog: serial stale for ${elapsed}ms`);
+          console.warn(`mcL1181 [useMeshcomRuntime] watchdog: serial stale for ${elapsed}ms`);
           setState((s) => {
             if (s.status === 'configured' || s.status === 'connected') {
               return { ...s, status: 'stale' };
@@ -482,12 +482,12 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
       void hydrateIdentityStoresFromDb('meshcom', driverIdentityId).catch((e: unknown) => {
-        console.warn('[useMeshcomRuntime] hydrate after attach ' + errLikeToLogString(e));
+        console.warn('mcL1182 [useMeshcomRuntime] hydrate after attach ' + errLikeToLogString(e));
       });
       if (type === 'serial' || type === 'ble') {
         // `--info`/`{HELLO}` + `--wx` land battery/weather into Telemetry via onDeviceSettings.
         void refreshSettingsRef.current().catch((e: unknown) => {
-          console.warn('[useMeshcomRuntime] settings refresh ' + errLikeToLogString(e));
+          console.warn('mcL1183 [useMeshcomRuntime] settings refresh ' + errLikeToLogString(e));
         });
       }
       if (type === 'serial') {
@@ -559,7 +559,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         };
         await attachRfSession(opened.driverIdentityId, type);
       } catch (err) {
-        console.warn('[useMeshcomRuntime] connect failed ' + errLikeToLogString(err));
+        console.warn('mcL1184 [useMeshcomRuntime] connect failed ' + errLikeToLogString(err));
         await handleRfConnectFailure(type, opened?.driverIdentityId);
         throw err;
       }
@@ -624,7 +624,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           }
         } catch (err) {
           console.warn(
-            `[useMeshcomRuntime] reconnect attempt=${attempt} ${errLikeToLogString(err)}`,
+            `mcL1185 [useMeshcomRuntime] reconnect attempt=${attempt} ${errLikeToLogString(err)}`,
           );
           const settled = rfReconnectRef.current.endAttempt({ keepReconnecting: attempt < 8 });
           if (settled.shouldSchedule) {
@@ -803,7 +803,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         if (existing) {
           syncMeshcomFavoriteBuckets(nodeId, favorited, existing, syncIdentityIds);
         }
-        console.warn(`[useMeshcomRuntime] setNodeFavorited: no callsign for node ${nodeId}`);
+        console.warn(
+          `mcL1186 [useMeshcomRuntime] setNodeFavorited: no callsign for node ${nodeId}`,
+        );
         return;
       }
       registerMeshcomCallsign(callsign);
@@ -823,7 +825,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           });
         }
       } catch (e) {
-        console.warn('[useMeshcomRuntime] setNodeFavorited ' + errLikeToLogString(e));
+        console.warn('mcL1187 [useMeshcomRuntime] setNodeFavorited ' + errLikeToLogString(e));
         syncMeshcomFavoriteBuckets(nodeId, prevFav, existing, syncIdentityIds, callsign);
       }
     },
@@ -839,7 +841,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         meshcomCallForNodeId(nodeId) ||
         normalizeMeshcomCallsign(existing?.shortName ?? '');
       if (!callsign) {
-        console.warn(`[useMeshcomRuntime] deleteNode: no callsign for node ${nodeId}`);
+        console.warn(`mcL1188 [useMeshcomRuntime] deleteNode: no callsign for node ${nodeId}`);
         return;
       }
       // Tombstone first so concurrent MHEARD/ingest cannot resurrect during awaits.
@@ -852,7 +854,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           await window.electronAPI.db.deleteMeshcomContact(id, callsign);
         }
       } catch (e: unknown) {
-        console.warn('[useMeshcomRuntime] deleteMeshcomContact ' + errLikeToLogString(e));
+        console.warn('mcL1189 [useMeshcomRuntime] deleteMeshcomContact ' + errLikeToLogString(e));
       }
     },
     [resolveIdentityId],

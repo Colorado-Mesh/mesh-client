@@ -20,6 +20,8 @@ import { spawnSync } from 'child_process';
 import { dirname, relative, resolve, sep } from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Tier 1 — build dists, test output, caches. Safe to remove with deps + sidecar intact. */
@@ -85,7 +87,7 @@ export function resolvePaths(rootDir, entries) {
   const resolved = entries.map(({ name, tier }) => ({
     name,
     tier,
-    abs: resolve(rootDir, ...name.split('/')),
+    abs: joinUnderRoot(rootDir, ...name.split('/')),
   }));
   for (const entry of resolved) {
     const rel = relative(rootDir, entry.abs);
@@ -98,7 +100,7 @@ export function resolvePaths(rootDir, entries) {
     const parts = entry.name.split('/');
     let current = rootDir;
     for (let i = 0; i < parts.length - 1; i++) {
-      current = resolve(current, parts[i]);
+      current = joinUnderRoot(current, parts[i]);
       if (lstatIsSymbolicLink(current)) {
         throw new Error(
           `clean-build: refusing to follow symlink ancestor '${current}' (entry '${entry.name}')`,

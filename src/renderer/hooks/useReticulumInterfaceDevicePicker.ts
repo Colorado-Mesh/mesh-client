@@ -64,7 +64,7 @@ async function resumeReticulumBleInterfaces(ids: readonly string[]): Promise<voi
     try {
       await window.electronAPI.reticulum.proxyPost(`/api/v1/interfaces/${id}/enable`, {});
     } catch (err) {
-      console.warn('[Reticulum] failed to re-enable BLE interface after scan:', err);
+      console.warn('mcL0767 [Reticulum] failed to re-enable BLE interface after scan:', err);
     }
   }
   if (ids.length > 0) {
@@ -145,7 +145,7 @@ export function useReticulumInterfaceDevicePicker() {
       }
       setDevices(body.devices ?? []);
     } catch (err) {
-      console.warn('[Reticulum] BLE scan failed:', err);
+      console.warn('mcL0768 [Reticulum] BLE scan failed:', err);
       setScanError(err instanceof Error ? err.message : String(err));
     } finally {
       await resumeReticulumBleInterfaces(pausedInterfaceIds);

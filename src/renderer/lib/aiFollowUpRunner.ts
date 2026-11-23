@@ -120,8 +120,8 @@ export async function runAskFollowUp(
     controller.signal.addEventListener('abort', rejectAbort, { once: true });
     if (controller.signal.aborted) rejectAbort();
   });
-  void aborted.catch(() => {
-    /* catch-no-log-ok cancellation is handled by the turn state */
+  void aborted.catch((e: unknown) => {
+    console.debug('[renderer/lib/aiFollowUpRunner] catch:', e);
   });
 
   try {
@@ -196,7 +196,8 @@ export async function runAskFollowUp(
     else if (current && !current.error && limited)
       deps.patchFollowUp(key, turnId, { truncated: true });
   } catch (error) {
-    // catch-no-log-ok never retain error details containing conversation content
+    console.debug('[renderer/lib/aiFollowUpRunner] catch:', error);
+
     if (before === deps.getRevision())
       deps.patchFollowUp(key, turnId, {
         streaming: false,

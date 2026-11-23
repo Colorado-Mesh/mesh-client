@@ -41,7 +41,9 @@ export function parseLegacyCredentialRaw<T>(
     try {
       parsed = JSON.parse(raw) as unknown;
     } catch {
-      // catch-no-log-ok legacy plain-string credential is not JSON
+      // Expected for legacy plain-string secrets. Never log `e` — SyntaxError.message
+      // embeds the input and would persist the password into verbose/support logs.
+      console.debug('[meshcorePerNodeCredentialStorage] legacy plain-string credential (non-JSON)');
       return mappers.fromPlainString(raw);
     }
     return parseLegacyCredentialRaw(parsed, mappers);
@@ -78,7 +80,7 @@ export function createMeshcorePerNodeCredentialStorage<T>(
       if (cred == null) await removeSecureSecret(secureKey);
       else await setSecureSecret(secureKey, config.serialize(cred));
     } catch (e: unknown) {
-      console.warn(`[${config.logTag}] secure store failed ` + errLikeToLogString(e));
+      console.warn(`mcL0912 [${config.logTag}] secure store failed ` + errLikeToLogString(e));
       throw e instanceof Error ? e : new Error(String(e));
     }
   };

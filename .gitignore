@@ -7,7 +7,11 @@
 .DS_Store
 .aider*
 .claude/
-.cursor/
+# Keep Cursor debug logs / local state out of git; share always-on agent rules.
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+.cursor/rules/use-i18n-no-hardcoded-english.mdc
 .claudeignore
 .cursorignore
 .cursorrules

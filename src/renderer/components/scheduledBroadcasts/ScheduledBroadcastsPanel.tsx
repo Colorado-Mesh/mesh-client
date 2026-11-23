@@ -35,8 +35,9 @@ function formatNextDue(ms: number | null | undefined, neverLabel: string): strin
   if (ms == null) return neverLabel;
   try {
     return new Date(ms).toLocaleString();
-  } catch {
-    // catch-no-log-ok Invalid Date / locale formatting edge cases
+  } catch (e: unknown) {
+    console.debug('[renderer/components/scheduledBroadcasts/ScheduledBroadcastsPanel] catch:', e);
+
     return neverLabel;
   }
 }
@@ -60,7 +61,7 @@ export default function ScheduledBroadcastsPanel() {
       .set(SCHEDULED_BROADCASTS_ENABLED_SETTING, checked ? 'true' : 'false')
       .catch((err: unknown) => {
         console.warn(
-          '[ScheduledBroadcasts] persist master switch failed ' + errLikeToLogString(err),
+          'mcL0683 [ScheduledBroadcasts] persist master switch failed ' + errLikeToLogString(err),
         );
       });
   }, []);
@@ -83,11 +84,12 @@ export default function ScheduledBroadcastsPanel() {
     try {
       const result = await getScheduledBroadcastScheduler().sendNow(slot);
       if (result.status === 'busy') {
-        console.warn(`[ScheduledBroadcasts] sendNow busy slot=${String(slot)}`);
+        console.warn(`mcL0684 [ScheduledBroadcasts] sendNow busy slot=${String(slot)}`);
       }
     } catch (err: unknown) {
       console.warn(
-        `[ScheduledBroadcasts] sendNow failed slot=${String(slot)} ` + errLikeToLogString(err),
+        `mcL0685 [ScheduledBroadcasts] sendNow failed slot=${String(slot)} ` +
+          errLikeToLogString(err),
       );
     } finally {
       setBusySlot(null);
@@ -100,7 +102,8 @@ export default function ScheduledBroadcastsPanel() {
       await remove(slot);
     } catch (err: unknown) {
       console.warn(
-        `[ScheduledBroadcasts] delete failed slot=${String(slot)} ` + errLikeToLogString(err),
+        `mcL0686 [ScheduledBroadcasts] delete failed slot=${String(slot)} ` +
+          errLikeToLogString(err),
       );
     }
   };

@@ -9,9 +9,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const COMPONENTS_DIR = path.join(ROOT, 'src', 'renderer', 'components');
+const COMPONENTS_DIR = joinUnderRoot(ROOT, 'src', 'renderer', 'components');
 
 const PATTERNS = [/protocol\s*===\s*['"]meshcore['"]/, /protocol\s*===\s*['"]reticulum['"]/];
 
@@ -33,7 +35,7 @@ const ALLOWLIST = new Set([
 function collectTsx(dir) {
   const out = [];
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, ent.name);
+    const full = joinUnderRoot(dir, ent.name);
     if (ent.isDirectory()) out.push(...collectTsx(full));
     else if (ent.isFile() && ent.name.endsWith('.tsx') && !ent.name.endsWith('.test.tsx')) {
       out.push(full);

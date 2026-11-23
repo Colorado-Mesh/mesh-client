@@ -19,6 +19,7 @@ import { isAllowedReticulumReceivedVia } from '../../shared/reticulumMessageTran
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { buildFtsMatchQuery, isMessageFtsReady } from '../messageFts';
 import { sanitizeReticulumAttachmentPathForDb } from '../reticulum-attachment-path';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { assertIpcSender } from '../validate-ipc-sender';
 
 export { isAllowedReticulumReceivedVia };
@@ -55,8 +56,12 @@ export function sanitizeAttachmentsJsonForDb(raw: unknown): string | null {
   if (!trimmed || trimmed.length > RETICULUM_ATTACHMENTS_JSON_MAX_CHARS) return null;
   try {
     JSON.parse(trimmed);
-  } catch {
-    // catch-no-log-ok: invalid attachments_json is rejected as null for DB write
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ipc/reticulum-db-handlers] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
   return trimmed;
@@ -209,7 +214,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         attachmentsJson === null
       ) {
         console.warn(
-          `[reticulum-db] dropped attachments_json on message upsert (len=${m.attachments_json.length}, max=${RETICULUM_ATTACHMENTS_JSON_MAX_CHARS})`,
+          `mcL0170 [reticulum-db] dropped attachments_json on message upsert (len=${m.attachments_json.length}, max=${RETICULUM_ATTACHMENTS_JSON_MAX_CHARS})`,
         );
       }
       const audioMode =

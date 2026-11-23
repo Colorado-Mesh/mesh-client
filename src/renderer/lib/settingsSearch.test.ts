@@ -28,7 +28,9 @@ function lookupEn(key: string): unknown {
   let node: unknown = en;
   for (const part of key.split('.')) {
     if (typeof node !== 'object' || node === null) return undefined;
-    node = (node as Record<string, unknown>)[part];
+    if (!Object.hasOwn(node, part)) return undefined;
+    // Own-property read only — avoids prototype-chain walks on dynamic keys.
+    node = Object.getOwnPropertyDescriptor(node, part)?.value;
   }
   return node;
 }

@@ -186,8 +186,8 @@ function mutateSecret<T>(key: string, operation: () => Promise<T>): Promise<T> {
   // Existing synchronous readers consume the optimistic cache on the first save.
   const next = previous
     ? previous
-        .catch(() => {
-          /* catch-no-log-ok the original caller receives the error */
+        .catch((e: unknown) => {
+          console.debug('[renderer/lib/secureSecretStorage] catch:', e);
         })
         .then(operation)
     : operation();
@@ -301,7 +301,7 @@ async function writeSecureSecret(
           await clearCompatibilityCredential(key);
         } catch (error) {
           console.warn(
-            '[secureSecretStorage] compatibility cleanup deferred',
+            'mcL1117 [secureSecretStorage] compatibility cleanup deferred',
             errLikeToLogString(error),
           );
         }
@@ -818,7 +818,9 @@ export async function initializeSecureSecretsFailClosed(
   try {
     await initializeSecureSecrets(preferences);
   } catch (error) {
-    console.warn('[secureSecretStorage] initialization failed ' + errLikeToLogString(error));
+    console.warn(
+      'mcL1118 [secureSecretStorage] initialization failed ' + errLikeToLogString(error),
+    );
     throw error;
   }
 }

@@ -38,7 +38,7 @@ export function ReticulumBlockedContactsSection({
         addToast(t('appPanel.reticulumBlocklist.exportOk', { count: hashes.length }), 'success');
       }
     } catch (err) {
-      console.warn('[ReticulumBlockedContacts] export failed ' + errLikeToLogString(err));
+      console.warn('mcL0547 [ReticulumBlockedContacts] export failed ' + errLikeToLogString(err));
       addToast(t('appPanel.reticulumBlocklist.exportFailed'), 'error');
     }
   };
@@ -67,7 +67,7 @@ export function ReticulumBlockedContactsSection({
         'success',
       );
     } catch (err) {
-      console.warn('[ReticulumBlockedContacts] import failed ' + errLikeToLogString(err));
+      console.warn('mcL0548 [ReticulumBlockedContacts] import failed ' + errLikeToLogString(err));
       addToast(t('appPanel.reticulumBlocklist.importFailed'), 'error');
     }
   };
@@ -119,7 +119,8 @@ export function ReticulumBlockedContactsSection({
                       await unblock('reticulum', identityId, entry.hash);
                     } catch (err) {
                       console.warn(
-                        '[ReticulumBlockedContacts] unblock failed ' + errLikeToLogString(err),
+                        'mcL0549 [ReticulumBlockedContacts] unblock failed ' +
+                          errLikeToLogString(err),
                       );
                       addToast(t('appPanel.reticulumBlocklist.unblockFailed'), 'error');
                     }

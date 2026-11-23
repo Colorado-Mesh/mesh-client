@@ -202,7 +202,7 @@ export default function QrIngestControl({
         }
         emitDecoded(text);
       } catch (err) {
-        console.warn('[QrIngestControl] file decode failed: ' + errLikeToLogString(err));
+        console.warn('mcL0507 [QrIngestControl] file decode failed: ' + errLikeToLogString(err));
         setStatus(t('qrIngest.decodeFailed'));
       }
     },
@@ -227,7 +227,9 @@ export default function QrIngestControl({
               }
               emitDecoded(text);
             } catch (err) {
-              console.warn('[QrIngestControl] paste decode failed: ' + errLikeToLogString(err));
+              console.warn(
+                'mcL0508 [QrIngestControl] paste decode failed: ' + errLikeToLogString(err),
+              );
               setStatus(t('qrIngest.decodeFailed'));
             }
           })();
@@ -370,7 +372,7 @@ export default function QrIngestControl({
       if (generation !== startGenerationRef.current || !mountedRef.current) {
         return;
       }
-      console.warn('[QrIngestControl] camera start failed: ' + errLikeToLogString(err));
+      console.warn('mcL0509 [QrIngestControl] camera start failed: ' + errLikeToLogString(err));
       stopCamera();
       setStatus(t('qrIngest.cameraUnavailable'));
     }

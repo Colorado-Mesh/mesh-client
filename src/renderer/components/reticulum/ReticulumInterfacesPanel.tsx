@@ -273,14 +273,18 @@ export function ReticulumInterfacesPanel({
       .then((body) => {
         setPresets(parseRnodePresetWire(body));
       })
-      .catch(() => {}); // catch-no-log-ok optional RNode presets prefetch; empty presets is safe default
+      .catch((e: unknown) => {
+        console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
+      });
     void window.electronAPI.reticulum
       .proxyGet('/api/v1/ble/availability')
       .then((body) => {
         const ble = body as { available?: boolean };
         setBleAvailable(Boolean(ble.available));
       })
-      .catch(() => {}); // catch-no-log-ok optional BLE availability probe; false default is safe
+      .catch((e: unknown) => {
+        console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
+      });
   }, [sidecarApiReady]);
 
   const refreshAuditIssues = useCallback(async () => {
@@ -298,8 +302,8 @@ export function ReticulumInterfacesPanel({
         map.set(issue.interface_id, list);
       }
       setAuditByInterfaceId(map);
-    } catch {
-      // catch-no-log-ok audit is optional UI enrichment on Connection tab
+    } catch (e: unknown) {
+      console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
     }
   }, [sidecarApiReady]);
 
@@ -359,7 +363,8 @@ export function ReticulumInterfacesPanel({
         setRestartStackHint(true);
         await onRefresh();
       } catch (e) {
-        // catch-no-log-ok set-primary failure surfaced via interfaceError toast area
+        console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
+
         setInterfaceError(
           humanizeReticulumInterfaceApiError(
             errLikeToLogString(e),
@@ -577,7 +582,8 @@ export function ReticulumInterfacesPanel({
         setAddFlowControl(true);
       }
     } catch (e) {
-      // catch-no-log-ok: interface add failure shown via interfaceError
+      console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
+
       setInterfaceError(
         humanizeReticulumInterfaceApiError(
           errLikeToLogString(e),
@@ -693,7 +699,8 @@ export function ReticulumInterfacesPanel({
       }
       return true;
     } catch (e) {
-      // catch-no-log-ok: interface toggle failure shown via interfaceError
+      console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
+
       setInterfaceError(
         humanizeReticulumInterfaceApiError(
           errLikeToLogString(e),
@@ -752,7 +759,8 @@ export function ReticulumInterfacesPanel({
       await onRefresh();
       await restartStackForInterfaceChange();
     } catch (e) {
-      // catch-no-log-ok: delete failure shown via interfaceError
+      console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
+
       setInterfaceError(
         humanizeReticulumInterfaceApiError(
           errLikeToLogString(e),
@@ -795,8 +803,9 @@ export function ReticulumInterfacesPanel({
           if (editingInterface?.id === id) {
             setEditingInterface(null);
           }
-        } catch {
-          // catch-no-log-ok: bulk delete partial failure shown via interfaceError
+        } catch (e: unknown) {
+          console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
+
           failed += 1;
         }
       }
@@ -812,7 +821,8 @@ export function ReticulumInterfacesPanel({
           await onRefresh();
           await restartStackForInterfaceChange();
         } catch (e) {
-          // catch-no-log-ok: post-delete refresh/restart failure shown via interfaceError
+          console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
+
           setInterfaceError(
             humanizeReticulumInterfaceApiError(
               errLikeToLogString(e),
@@ -880,7 +890,8 @@ export function ReticulumInterfacesPanel({
         await restartStackForInterfaceChange();
       }
     } catch (e) {
-      // catch-no-log-ok: edit failure shown via interfaceError
+      console.debug('[renderer/components/reticulum/ReticulumInterfacesPanel] catch:', e);
+
       setInterfaceError(
         humanizeReticulumInterfaceApiError(
           errLikeToLogString(e),
@@ -905,7 +916,6 @@ export function ReticulumInterfacesPanel({
           try {
             await onRefresh();
           } catch (e) {
-            // catch-no-log-ok refresh failure must not mask successful RMAP sync
             console.debug('[ReticulumInterfacesPanel] rmap sync refresh ' + errLikeToLogString(e));
           }
           setShowRmapRestartConfirm(true);
@@ -945,7 +955,6 @@ export function ReticulumInterfacesPanel({
         try {
           await onRefresh();
         } catch (e) {
-          // catch-no-log-ok refresh failure must not mask successful RMAP toggle
           console.debug('[ReticulumInterfacesPanel] rmap toggle refresh ' + errLikeToLogString(e));
         }
         setShowRmapRestartConfirm(true);
@@ -972,7 +981,7 @@ export function ReticulumInterfacesPanel({
           }),
           'error',
         );
-        console.warn('[ReticulumInterfacesPanel] rmap toggle ' + errLikeToLogString(e));
+        console.warn('mcL0675 [ReticulumInterfacesPanel] rmap toggle ' + errLikeToLogString(e));
       } finally {
         setRmapToggleBusyId(null);
       }

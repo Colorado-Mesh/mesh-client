@@ -537,7 +537,10 @@
     "dangerZoneEnvironmentHistoryDesc": "すべてのプロトコルとアイデンティティについて、保存されている温度・湿度・気圧・空気品質の測定値を削除します。",
     "clearAllRooms": "すべてのルームをクリア",
     "clearAllRoomsConfirm": "これにより、お気に入り登録されていないMeshCoreルームサーバーがすべて、接続されている無線およびローカルデータベースから削除されます。ルームは、再度アドバタイズされると再表示されます。この操作は元に戻せません。",
-    "meshcomWatchlistHeading": "MeshComコールサインウォッチリスト"
+    "meshcomWatchlistHeading": "MeshComコールサインウォッチリスト",
+    "verboseLogging": "ログにデバッグと情報を追加する",
+    "verboseLoggingDesc": "デフォルトではオフになっているため、エクスポートのサイズは小さくなります。オンにして問題を再現し、GitHub用にエクスポートします。問題を報告する際は、ログからmcL####コードを引用してください。",
+    "verboseLoggingSupportHint": "再現が難しいバグの場合は、[アプリ] → [ログ]パネルで[デバッグと情報をログファイルに書き込む]をオンにし、問題を再現してから[エクスポート]します。サポートのエクスポートには、常にディスク上のログ全体が含まれます。問題を報告する際は、mcL####コードを記載してください。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -2703,6 +2706,14 @@
       "gps": {
         "label": "IPロケーション検索に失敗しました",
         "recommendation": "IPベースのロケーションフォールバックに失敗しました。インターネットの到達可能性を確認します。無線GPSと手動で設定された静的位置は、このIPルックアップとは分離されています。"
+      },
+      "caught-serious-error": {
+        "label": "重大なエラーを検出",
+        "recommendation": "重大なエラーが検出されましたが、クラッシュは発生しませんでした。mcL####コードを引用し、必要に応じて詳細ログを有効にして再現し、GitHub用にエクスポートしてバグを報告してください。"
+      },
+      "path-containment": {
+        "label": "パスの封じ込め",
+        "recommendation": "パスが許可されたルート（jail）から逸脱しました。これが予期せぬことであった場合は、GitHub用にエクスポートして報告してください。ログ内のmcL####コードを引用してください。"
       }
     },
     "recommendationGroups": {
@@ -2735,7 +2746,8 @@
     "warnError": "警告/エラー",
     "narrowLogPanel": "狭い丸太パネル",
     "widenLogPanel": "ログパネルを広げる",
-    "clearFailed": "ログをクリアできませんでした"
+    "clearFailed": "ログをクリアできませんでした",
+    "verboseLoggingOn": "詳細ログが有効 — デバッグと情報が記録されています。"
   },
   "mapPanel": {
     "locationUnavailable": "場所が利用できません。",

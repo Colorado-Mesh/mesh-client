@@ -9,6 +9,7 @@ import type {
 } from '@/shared/weather/types';
 import { WEATHER_JSON_MAX_BYTES } from '@/shared/weather/validation';
 
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import {
   fetchBounded,
   WEATHER_JSON_TIMEOUT_MS,
@@ -188,8 +189,12 @@ export async function fetchPointForecast(
   let parsed: unknown;
   try {
     parsed = JSON.parse(result.body.toString('utf8'));
-  } catch {
-    // catch-no-log-ok invalid JSON → treat as provider miss
+  } catch (e: unknown) {
+    console.debug(
+      '[main/weather/openMeteo] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
   const obj: unknown = Array.isArray(parsed) ? (parsed as unknown[])[0] : parsed;
@@ -256,8 +261,12 @@ export async function fetchGrid(
   let parsed: unknown;
   try {
     parsed = JSON.parse(result.body.toString('utf8'));
-  } catch {
-    // catch-no-log-ok invalid JSON → treat as provider miss
+  } catch (e: unknown) {
+    console.debug(
+      '[main/weather/openMeteo] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
   const list: Record<string, unknown>[] = Array.isArray(parsed)

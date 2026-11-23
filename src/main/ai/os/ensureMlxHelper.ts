@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import type { AiMlxHelperReason } from '../../../shared/ai-types';
+import { sanitizeLogMessage } from '../../sanitize-log-message';
 import { isAppleSiliconMac } from '../local/modelManifest';
 import { classifyXcodeDeveloperDir, discoverXcodeDeveloperDir } from './discoverXcodeDeveloperDir';
 import {
@@ -97,7 +98,7 @@ function commandOutputText(error: unknown): string {
 
 function logEnsureFailure(reason: AiMlxHelperReason, detail?: string): void {
   console.warn(
-    '[ensureMlxHelper] Metal helper unavailable',
+    'mcL0004 [ensureMlxHelper] Metal helper unavailable',
     reason,
     detail?.trim() ? detail.trim().slice(0, 500) : '',
   );
@@ -133,7 +134,11 @@ async function probeMetalToolchain(
     });
     return 'ok';
   } catch (error) {
-    // catch-no-log-ok classified into return value; ensureMlxHelper logs the final reason
+    console.debug(
+      '[main/ai/os/ensureMlxHelper] catch:',
+      sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+    );
+
     const text = commandOutputText(error);
     if (isMetalToolchainMissingOutput(text)) return 'metalToolchainMissing';
     // Non-zero exit without the missing-toolchain signature: still attempt swift build.
@@ -159,8 +164,12 @@ export async function ensureMlxHelper(paths: EnsureMlxHelperPaths): Promise<Ensu
     if (existing !== paths.userBinary) {
       try {
         stageMlxHelperBinary(existing, paths.userBinary);
-      } catch {
-        // catch-no-log-ok keep using bundled path if userData copy fails
+      } catch (e: unknown) {
+        console.debug(
+          '[main/ai/os/ensureMlxHelper] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return { available: true, reason: 'ready', binaryPath: existing };
       }
       return { available: true, reason: 'ready', binaryPath: paths.userBinary };
@@ -171,7 +180,7 @@ export async function ensureMlxHelper(paths: EnsureMlxHelperPaths): Promise<Ensu
   // Binary without metallib bundles: treat as incomplete and rebuild/restage when possible.
   if (existsSync(paths.userBinary) && !isMlxHelperInstallComplete(paths.userBinary)) {
     console.warn(
-      '[ensureMlxHelper] mesh-ai-mlx present but mlx-swift_Cmlx.bundle missing; restaging',
+      'mcL0005 [ensureMlxHelper] mesh-ai-mlx present but mlx-swift_Cmlx.bundle missing; restaging',
     );
   }
 
@@ -215,7 +224,11 @@ export async function ensureMlxHelper(paths: EnsureMlxHelperPaths): Promise<Ensu
       try {
         packageMlxCmlxMetallibBundle(built, paths.mlxPackageRoot, env);
       } catch (error) {
-        // catch-no-log-ok logged via logEnsureFailure
+        console.debug(
+          '[main/ai/os/ensureMlxHelper] catch:',
+          sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+        );
+
         logEnsureFailure('buildFailed', commandOutputText(error));
         return { available: false, reason: 'buildFailed', binaryPath: null };
       }
@@ -227,7 +240,11 @@ export async function ensureMlxHelper(paths: EnsureMlxHelperPaths): Promise<Ensu
     stageMlxHelperBinary(built, paths.userBinary);
     return { available: true, reason: 'ready', binaryPath: paths.userBinary };
   } catch (error) {
-    // catch-no-log-ok logged via logEnsureFailure (scanner requires console.* or this marker)
+    console.debug(
+      '[main/ai/os/ensureMlxHelper] catch:',
+      sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+    );
+
     const text = commandOutputText(error);
     if (isMetalToolchainMissingOutput(text)) {
       logEnsureFailure('metalToolchainMissing', text);

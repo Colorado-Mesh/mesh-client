@@ -17,8 +17,9 @@ function readRaw(): number[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     cached = parseMeshcomGrcIdList(raw ?? '');
-  } catch {
-    // catch-no-log-ok localStorage unavailable (private mode / SSR)
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcom/meshcomGrcLocalChannels] catch:', e);
+
     cached = [];
   }
   return cached;
@@ -33,7 +34,7 @@ function write(ids: number[]): void {
       localStorage.setItem(STORAGE_KEY, ids.join(';'));
     }
   } catch (e) {
-    console.warn('[meshcomGrcLocalChannels] persist failed', e);
+    console.warn('mcL0877 [meshcomGrcLocalChannels] persist failed', e);
   }
   for (const listener of listeners) listener();
 }

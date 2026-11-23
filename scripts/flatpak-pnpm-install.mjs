@@ -19,6 +19,7 @@ import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { cleanJsrTempDirs } from './clean-jsr-temp-dirs.mjs';
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 import {
   stripNpmrcStoreDirLines,
   stripPnpmWorkspaceStoreDirLines,
@@ -68,8 +69,8 @@ function readUtf8IfPresent(filePath) {
 }
 
 export function sanitizeFlatpakPnpmStoreDirConfig(root = projectRoot) {
-  const workspacePath = path.join(root, 'pnpm-workspace.yaml');
-  const npmrcPath = path.join(root, '.npmrc');
+  const workspacePath = joinUnderRoot(root, 'pnpm-workspace.yaml');
+  const npmrcPath = joinUnderRoot(root, '.npmrc');
   let workspaceRemoved = 0;
   let npmrcRemoved = 0;
 
@@ -114,7 +115,7 @@ export function runFlatpakPnpmInstall() {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     if (attempt > 1) {
-      cleanJsrTempDirs(path.join(projectRoot, 'node_modules'));
+      cleanJsrTempDirs(joinUnderRoot(projectRoot, 'node_modules'));
     }
 
     const result = spawnSync('pnpm', FLATPAK_PNPM_INSTALL_ARGS, {

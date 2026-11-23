@@ -102,7 +102,7 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
         setContactCount(null);
       }
       console.warn(
-        '[useMeshcoreContactCapacity] getMeshcoreContactCount error:',
+        'mcL0756 [useMeshcoreContactCapacity] getMeshcoreContactCount error:',
         e instanceof Error ? e.message : String(e),
       );
       return null;
@@ -164,7 +164,7 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
             }
             refreshFailed = true;
             console.warn(
-              '[useMeshcoreContactCapacity] refreshContacts after offload failed:',
+              'mcL0757 [useMeshcoreContactCapacity] refreshContacts after offload failed:',
               e instanceof Error ? e.message : String(e),
             );
           }
@@ -188,7 +188,7 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
               await refreshContacts();
             } catch (refreshErr) {
               console.warn(
-                '[useMeshcoreContactCapacity] refreshContacts after offload cancel failed:',
+                'mcL0758 [useMeshcoreContactCapacity] refreshContacts after offload cancel failed:',
                 refreshErr instanceof Error ? refreshErr.message : String(refreshErr),
               );
             }

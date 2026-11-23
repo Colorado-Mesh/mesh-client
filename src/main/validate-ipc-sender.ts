@@ -2,6 +2,8 @@ import { app, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } fro
 
 import { RENDERER_HOST, RENDERER_SCHEME } from '@/shared/rendererOrigin';
 
+import { sanitizeLogMessage } from './sanitize-log-message';
+
 const suspendedSenders = new WeakSet<WebContents>();
 
 /** Fence queued renderer writes while explicit data reset unloads the old document. */
@@ -44,8 +46,12 @@ export function validateIpcSender(event: IpcMainInvokeEvent | IpcMainEvent): boo
       );
     }
     return url.protocol === 'file:' || isRendererOrigin;
-  } catch {
-    // catch-no-log-ok invalid URL in frame is expected; treat as untrusted
+  } catch (e: unknown) {
+    console.debug(
+      '[main/validate-ipc-sender] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return false;
   }
 }

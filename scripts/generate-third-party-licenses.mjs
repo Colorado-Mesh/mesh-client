@@ -13,6 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { collectRustPackages, isCargoAvailable, runCargoMetadata } from './check-rust-licenses.mjs';
+import { pnpmExecutable } from './ci-verify-pnpm.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const THIRD_PARTY_LICENSES_PATH = path.join(ROOT, 'docs', 'third-party-licenses.md');
@@ -24,9 +25,10 @@ export const LICENSE_REPORT_VERSION = '6.8.5';
  * @param {{ stdio?: 'inherit' | 'pipe', encoding?: string }} [opts]
  */
 function run(cmd, args, opts = {}) {
-  const result = spawnSync(cmd, args, {
+  const executable = cmd === 'pnpm' ? pnpmExecutable() : cmd;
+  const result = spawnSync(executable, args, {
     cwd: ROOT,
-    shell: process.platform === 'win32',
+    shell: false,
     encoding: 'utf8',
     ...opts,
   });

@@ -21,6 +21,8 @@ import {
 } from 'fs';
 import { tmpdir } from 'os';
 import path, { resolve } from 'path';
+
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 import { fileURLToPath } from 'url';
 import {
   assertBundledReticulumSidecarInBundle,
@@ -34,7 +36,19 @@ export { EM_AARCH64, EM_X86_64, readElfMachine, readElfMachineFromHeader } from 
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const releaseDir = path.join(projectRoot, 'release');
+const releaseDir = joinUnderRoot(projectRoot, 'release');
+
+const SPAWN_CMD_ALLOWLIST = new Set(['unsquashfs']);
+
+/**
+ * @param {string} cmd
+ * @returns {string}
+ */
+function assertSpawnExecutable(cmd) {
+  if (path.isAbsolute(cmd)) return cmd;
+  if (SPAWN_CMD_ALLOWLIST.has(cmd)) return cmd;
+  fail(`refusing to spawn non-absolute command: ${cmd}`);
+}
 
 /** @param {string} msg */
 function fail(msg) {
@@ -208,7 +222,7 @@ export function readDesktopAppImageVersion(desktopPath) {
  * @param {string} label
  */
 export function assertAppImageEmbeddedVersion(payloadRoot, expectedVersion, label) {
-  const asarPath = path.join(payloadRoot, 'resources', 'app.asar');
+  const asarPath = joinUnderRoot(payloadRoot, 'resources', 'app.asar');
   if (!existsSync(asarPath)) {
     fail(`${label}: missing resources/app.asar under ${payloadRoot}`);
   }
@@ -230,7 +244,7 @@ export function assertAppImageEmbeddedVersion(payloadRoot, expectedVersion, labe
   if (!desktopName) {
     fail(`${label}: missing .desktop entry under ${payloadRoot}`);
   }
-  const desktopVersion = readDesktopAppImageVersion(path.join(payloadRoot, desktopName));
+  const desktopVersion = readDesktopAppImageVersion(joinUnderRoot(payloadRoot, desktopName));
   if (desktopVersion !== expectedVersion) {
     fail(
       `${label}: X-AppImage-Version is ${desktopVersion ?? '(missing)'}, expected ${expectedVersion}`,
@@ -252,9 +266,11 @@ function extractAppImageWithUnsquashfs(appImagePath, extractDir) {
   if (offset === null) {
     fail(`Could not find squashfs payload in AppImage: ${appImagePath}`);
   }
-  const payloadRoot = path.join(extractDir, 'squashfs-root');
+  const payloadRoot = joinUnderRoot(extractDir, 'squashfs-root');
+  const unsquashfs = assertSpawnExecutable('unsquashfs');
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- unsquashfs validated absolute by assertSpawnExecutable.
   const result = spawnSync(
-    'unsquashfs',
+    unsquashfs,
     ['-f', '-o', String(offset), '-d', payloadRoot, appImagePath],
     {
       stdio: 'inherit',
@@ -281,7 +297,9 @@ function extractAppImage(appImagePath, extractDir) {
   }
   // Artifact downloads may drop +x on AppImages.
   chmodSync(appImagePath, 0o755);
-  const result = spawnSync(appImagePath, ['--appimage-extract'], {
+  const executable = assertSpawnExecutable(appImagePath);
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- AppImage path validated absolute by assertSpawnExecutable.
+  const result = spawnSync(executable, ['--appimage-extract'], {
     cwd: extractDir,
     stdio: 'inherit',
     env: process.env,
@@ -292,7 +310,7 @@ function extractAppImage(appImagePath, extractDir) {
   if ((result.status ?? 1) !== 0) {
     fail(`AppImage extract exited ${result.status ?? 'null'} for ${appImagePath}`);
   }
-  const payloadRoot = path.join(extractDir, 'squashfs-root');
+  const payloadRoot = joinUnderRoot(extractDir, 'squashfs-root');
   if (!existsSync(payloadRoot)) {
     fail(`AppImage extract did not create squashfs-root under ${extractDir}`);
   }
@@ -306,7 +324,7 @@ function extractAppImage(appImagePath, extractDir) {
  * @param {{ smokeHttp?: boolean }} [opts]
  */
 async function assertSidecarInAppImage(arch, appImagePath, expectedVersion, opts = {}) {
-  const extractDir = mkdtempSync(path.join(tmpdir(), `mesh-client-appimage-${arch}-`));
+  const extractDir = mkdtempSync(joinUnderRoot(tmpdir(), `mesh-client-appimage-${arch}-`));
   try {
     const payloadRoot = extractAppImage(appImagePath, extractDir);
     assertBundledReticulumSidecarInBundle({
@@ -380,14 +398,16 @@ async function main() {
     );
   }
 
-  const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;
+  const version = JSON.parse(
+    readFileSync(joinUnderRoot(projectRoot, 'package.json'), 'utf-8'),
+  ).version;
   const hostArch = process.arch === 'arm64' ? 'arm64' : process.arch === 'x64' ? 'x64' : null;
 
   for (const [arch, name] of [
     ['x64', x64Images[0]],
     ['arm64', arm64Images[0]],
   ]) {
-    const appImagePath = path.join(releaseDir, name);
+    const appImagePath = joinUnderRoot(releaseDir, name);
     const size = statSync(appImagePath).size;
     if (size < 50 * 1024 * 1024) {
       fail(`AppImage too small (${size} bytes): ${appImagePath}`);

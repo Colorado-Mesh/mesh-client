@@ -22,7 +22,7 @@ describe('logRendererUnhandledRejection', () => {
 
     logRendererUnhandledRejection(error);
 
-    expect(spy).toHaveBeenCalledWith('[renderer] Unhandled rejection:', error.stack);
+    expect(spy).toHaveBeenCalledWith('mcL1014 [renderer] Unhandled rejection:', error.stack);
   });
 
   it('logs a non-Error reason using String conversion', () => {
@@ -30,7 +30,7 @@ describe('logRendererUnhandledRejection', () => {
 
     logRendererUnhandledRejection({ code: 42 });
 
-    expect(spy).toHaveBeenCalledWith('[renderer] Unhandled rejection:', '[object Object]');
+    expect(spy).toHaveBeenCalledWith('mcL1014 [renderer] Unhandled rejection:', '[object Object]');
   });
 });
 
@@ -60,7 +60,7 @@ describe('installRendererUnhandledRejectionLogger', () => {
     dispatchUnhandledRejection('boom');
     uninstall();
 
-    expect(spy).toHaveBeenCalledWith('[renderer] Unhandled rejection:', 'boom');
+    expect(spy).toHaveBeenCalledWith('mcL1014 [renderer] Unhandled rejection:', 'boom');
   });
 
   it('stops logging after the returned cleanup runs', () => {
@@ -92,7 +92,7 @@ describe('installRendererUnhandledRejectionLogger', () => {
 
     expect(event.defaultPrevented).toBe(false);
     expect(errorSpy).toHaveBeenCalledWith(
-      '[renderer] Unhandled rejection:',
+      'mcL1014 [renderer] Unhandled rejection:',
       expect.stringContaining('Packet does not exist'),
     );
   });
@@ -107,7 +107,7 @@ describe('installRendererUnhandledRejectionLogger', () => {
     // No whole-session swallow anymore: a real mid-session anomaly stays visible.
     expect(event.defaultPrevented).toBe(false);
     expect(errorSpy).toHaveBeenCalledWith(
-      '[renderer] Unhandled rejection:',
+      'mcL1014 [renderer] Unhandled rejection:',
       expect.stringContaining('Packet does not exist'),
     );
   });

@@ -315,7 +315,7 @@ describe('useSendMessage', () => {
     result.current('hello', 0);
 
     expect(warn).toHaveBeenCalledWith(
-      '[useSendMessage] Meshtastic runtime not mounted and no RF handle',
+      'mcL1124 [useSendMessage] Meshtastic runtime not mounted and no RF handle',
     );
     warn.mockRestore();
   });

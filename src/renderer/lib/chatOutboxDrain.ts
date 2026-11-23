@@ -77,7 +77,7 @@ export function notifyChatOutboxRowsChanged(protocol: MeshProtocol): void {
     try {
       listener();
     } catch (e) {
-      console.warn('[chatOutboxDrain] rows-changed listener failed', e);
+      console.warn('mcL0799 [chatOutboxDrain] rows-changed listener failed', e);
     }
   }
 }
@@ -91,7 +91,7 @@ function notifyAwaitingAckListeners(): void {
     try {
       listener();
     } catch (e) {
-      console.warn('[chatOutboxDrain] awaiting-ack listener failed', e);
+      console.warn('mcL0800 [chatOutboxDrain] awaiting-ack listener failed', e);
     }
   }
 }
@@ -148,7 +148,7 @@ export function requestChatOutboxDrain(protocol: MeshProtocol): void {
     try {
       listener();
     } catch (e) {
-      console.warn('[chatOutboxDrain] listener failed', e);
+      console.warn('mcL0801 [chatOutboxDrain] listener failed', e);
     }
   }
 }

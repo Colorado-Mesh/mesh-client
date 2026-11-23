@@ -146,7 +146,7 @@ export function registerOfflineMapsIpcHandlers(
       return { jobId };
     } catch (e: unknown) {
       const message = sanitizeLogMessage(e instanceof Error ? e.message : String(e));
-      console.warn('[offline-maps] download start failed:', message);
+      console.warn('mcL0169 [offline-maps] download start failed:', message);
       throw new Error(message);
     }
   });

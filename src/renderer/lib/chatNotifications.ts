@@ -20,8 +20,9 @@ function getSharedAudioContext(): AudioContext | null {
       defaultSinkBound = false;
     }
     return sharedAudioContext;
-  } catch {
-    // catch-no-log-ok: AudioContext unavailable in test/headless environments
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/chatNotifications] catch:', e);
+
     return null;
   }
 }
@@ -29,8 +30,9 @@ function getSharedAudioContext(): AudioContext | null {
 function usesNativeNotificationPlayback(): boolean {
   try {
     return window.electronAPI.getPlatform() === 'win32';
-  } catch {
-    // catch-no-log-ok: preload bridge unavailable in unit tests without the mock
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/chatNotifications] catch:', e);
+
     return false;
   }
 }
@@ -44,8 +46,9 @@ async function ensureAudioContextReady(ctx: AudioContext): Promise<void> {
     defaultSinkBound = true;
     try {
       await withSink.setSinkId('');
-    } catch {
-      // catch-no-log-ok: setSinkId may be unsupported or denied on some builds
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/chatNotifications] catch:', e);
+
       defaultSinkBound = false;
     }
   }
@@ -488,8 +491,8 @@ function loadCustomSound(
   });
   const entry = { id, buffer, retryAt: Infinity };
   audioBuffers.set(event, entry);
-  void buffer.catch(() => {
-    // catch-no-log-ok: callers handle fallback/errors; retry failures at most once per minute.
+  void buffer.catch((e: unknown) => {
+    console.debug('[renderer/lib/chatNotifications] catch:', e);
     entry.retryAt = Date.now() + MS_PER_MINUTE;
   });
   return buffer;
@@ -551,8 +554,9 @@ async function loadOptionalCustomSound(
   if (typeof setting.sound !== 'object') return undefined;
   try {
     return await loadCustomSound(ctx, event, setting.sound.id);
-  } catch {
-    // catch-no-log-ok: a missing/invalid saved sound falls back to the event's built-in tone.
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/chatNotifications] catch:', e);
+
     return undefined;
   }
 }
@@ -575,7 +579,7 @@ export function playMessageNotification(type: ChatNotificationType = 'channel'):
       if (requestGen !== alertPlaybackGeneration) return;
       await playNativeNotificationSound(type, setting, buffer, requestGen);
     })().catch((error: unknown) => {
-      console.warn('[notificationSounds] playback failed', error);
+      console.warn('mcL0791 [notificationSounds] playback failed', error);
     });
     return;
   }
@@ -594,6 +598,7 @@ export function playMessageNotification(type: ChatNotificationType = 'channel'):
   };
   void run().catch((error: unknown) => {
     console.warn(
+      'mcL0792',
       error instanceof Error && error.message === 'Audio is unavailable'
         ? '[notificationSounds] resume failed'
         : '[notificationSounds] playback failed',

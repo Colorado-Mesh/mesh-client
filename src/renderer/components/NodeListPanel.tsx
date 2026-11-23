@@ -356,7 +356,7 @@ function NodeListPanel({
           setDbDmPeers((prev) => (prev.length === 0 && next.length === 0 ? prev : next));
         }
       } catch (e) {
-        console.warn('[NodeListPanel] listDmPeers ' + errLikeToLogString(e));
+        console.warn('mcL0488 [NodeListPanel] listDmPeers ' + errLikeToLogString(e));
         if (!cancelled) {
           setDbDmPeers((prev) => (prev.length === 0 ? prev : []));
         }
@@ -432,7 +432,7 @@ function NodeListPanel({
       await onRefreshContacts();
       addToast(t('nodeListPanel.contactsRefreshed'), 'success');
     } catch (e) {
-      console.warn('[NodeListPanel] refresh failed:', e instanceof Error ? e.message : e);
+      console.warn('mcL0489 [NodeListPanel] refresh failed:', e instanceof Error ? e.message : e);
       addToast(
         t('nodeListPanel.refreshFailed', { message: e instanceof Error ? e.message : String(e) }),
         'error',
@@ -463,7 +463,7 @@ function NodeListPanel({
             : t('nodeListPanel.importResultSuccess', { count: result.imported });
       addToast(msg, result.errors.length > 0 ? 'error' : 'success');
     } catch (e) {
-      console.warn('[NodeListPanel] import failed:', e instanceof Error ? e.message : e);
+      console.warn('mcL0490 [NodeListPanel] import failed:', e instanceof Error ? e.message : e);
       addToast(
         t('nodeListPanel.importFailed', { message: e instanceof Error ? e.message : String(e) }),
         'error',
@@ -510,7 +510,10 @@ function NodeListPanel({
         );
         return;
       }
-      console.warn('[NodeListPanel] offload contacts failed:', e instanceof Error ? e.message : e);
+      console.warn(
+        'mcL0491 [NodeListPanel] offload contacts failed:',
+        e instanceof Error ? e.message : e,
+      );
       addToast(t('radioPanel.failedOffloadContacts'), 'error');
     }
   };

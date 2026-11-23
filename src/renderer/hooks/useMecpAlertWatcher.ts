@@ -140,8 +140,9 @@ function loadRules() {
     if (!raw) return parseMecpRebroadcastRules([]);
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     return parseMecpRebroadcastRules(parsed[MECP_REBROADCAST_SETTINGS_KEY]);
-  } catch {
-    // catch-no-log-ok corrupt settings
+  } catch (e: unknown) {
+    console.debug('[renderer/hooks/useMecpAlertWatcher] catch:', e);
+
     return parseMecpRebroadcastRules([]);
   }
 }
@@ -275,7 +276,7 @@ async function processNewMessages(
         ...(blocked ? { blocked: true } : {}),
       });
     } catch (e) {
-      console.warn('[useMecpAlertWatcher] appendReceived failed', e);
+      console.warn('mcL0752 [useMecpAlertWatcher] appendReceived failed', e);
       // Drop claim so a later store update can retry the audit (alert already fired once).
       inFlight.delete(key);
       continue;
@@ -322,7 +323,7 @@ async function processNewMessages(
               messageId: msg.id,
             });
           } catch (e) {
-            console.warn('[useMecpAlertWatcher] rebroadcast audit failed', e);
+            console.warn('mcL0753 [useMecpAlertWatcher] rebroadcast audit failed', e);
           }
         },
       );

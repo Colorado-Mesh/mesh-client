@@ -100,7 +100,7 @@ export function resetMeshcoreLocallyDeletedContactsForTests(): void {
   hydratedFromStorage = false;
   try {
     localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // catch-no-log-ok jsdom localStorage may be unavailable in some harnesses
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcoreLocallyDeletedContacts] catch:', e);
   }
 }

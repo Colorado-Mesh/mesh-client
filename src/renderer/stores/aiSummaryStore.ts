@@ -300,8 +300,9 @@ export function initializeAi(): void {
   try {
     const cached = parseStoredJson<{ aiEnabled?: unknown }>(getAppSettingsRaw(), 'AI settings');
     useAiSummaryStore.setState({ cachedEnabled: cached?.aiEnabled === true });
-  } catch {
-    // catch-no-log-ok unavailable preferences cannot establish opt-in
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/aiSummaryStore] catch:', e);
+
     useAiSummaryStore.setState({ cachedEnabled: false });
   }
   const before = revision;
@@ -329,7 +330,9 @@ export function initializeAi(): void {
           (error instanceof DOMException && error.name === 'AbortError')
         )
           return;
-        console.warn('[ai] Startup status unavailable; setup remains available for saved opt-in.');
+        console.warn(
+          'mcL1385 [ai] Startup status unavailable; setup remains available for saved opt-in.',
+        );
       })
       .finally(() => {
         inFlight = false;
@@ -377,8 +380,8 @@ export function cancelSummary(key: string): void {
     if (turn.streaming) cancelFollowUp(key, turn.id);
   }
   patch(key, entry.requestId, { streaming: false, error: 'cancelled' });
-  void window.electronAPI.ai.cancel(entry.requestId).catch(() => {
-    // catch-no-log-ok local cancellation already invalidated the result
+  void window.electronAPI.ai.cancel(entry.requestId).catch((e: unknown) => {
+    console.debug('[renderer/stores/aiSummaryStore] catch:', e);
   });
 }
 export function dismissSummary(key: string): void {
@@ -407,8 +410,8 @@ export function cancelFollowUp(key: string, id: string): void {
     phase: undefined,
     error: 'cancelled',
   });
-  void window.electronAPI.ai.cancel(id).catch(() => {
-    // catch-no-log-ok local state already reflects cancellation
+  void window.electronAPI.ai.cancel(id).catch((e: unknown) => {
+    console.debug('[renderer/stores/aiSummaryStore] catch:', e);
   });
 }
 /** Map thrown/abort failures to `AiSummaryErrorReason` without retaining conversation text. */
@@ -536,12 +539,12 @@ export async function runSummary(
   const onAbort = () => {
     patch(key, id, { streaming: false, error: abortReason(), progress: null });
     for (const passId of activePassIds) {
-      void window.electronAPI.ai.cancel(passId).catch(() => {
-        // catch-no-log-ok local state already reflects cancellation
+      void window.electronAPI.ai.cancel(passId).catch((e: unknown) => {
+        console.debug('[renderer/stores/aiSummaryStore] catch:', e);
       });
     }
-    void window.electronAPI.ai.cancel(id).catch(() => {
-      // catch-no-log-ok local state already reflects cancellation
+    void window.electronAPI.ai.cancel(id).catch((e: unknown) => {
+      console.debug('[renderer/stores/aiSummaryStore] catch:', e);
     });
   };
   signal.addEventListener('abort', onAbort, { once: true });
@@ -557,8 +560,8 @@ export async function runSummary(
     signal.addEventListener('abort', rejectAbort, { once: true });
     if (signal.aborted) rejectAbort();
   });
-  void aborted.catch(() => {
-    /* catch-no-log-ok multi-pass cancellation is awaited through each pass */
+  void aborted.catch((e: unknown) => {
+    console.debug('[renderer/stores/aiSummaryStore] catch:', e);
   });
   try {
     if (previous) await Promise.race([previous, aborted]);
@@ -739,7 +742,8 @@ export async function runSummary(
         });
     }
   } catch (error) {
-    // catch-no-log-ok never retain runtime error details containing conversation content
+    console.debug('[renderer/stores/aiSummaryStore] catch:', error);
+
     if (before === revision)
       patch(key, id, {
         streaming: false,

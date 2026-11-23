@@ -35,8 +35,8 @@ export const useWatchedNodesStore = create<WatchedNodesState>()(
             if (Array.isArray(ids)) {
               return { ...parsed, state: { watchedNodeIds: new Set<number>(ids) } };
             }
-          } catch {
-            // catch-no-log-ok: invalid persisted data, fall through to null
+          } catch (e: unknown) {
+            console.debug('[renderer/stores/watchedNodesStore] catch:', e);
           }
           return null;
         },

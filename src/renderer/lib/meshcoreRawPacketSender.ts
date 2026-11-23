@@ -288,8 +288,9 @@ export function meshcoreRawPacketLogFromBytesFallback(
       pathHashSizeBytes: hashSizeBytes,
       fromNodeId,
     };
-  } catch {
-    // catch-no-log-ok buffer is not a MeshCore path-prefix frame — fallback unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcoreRawPacketSender] catch:', e);
+
     return null;
   }
 }

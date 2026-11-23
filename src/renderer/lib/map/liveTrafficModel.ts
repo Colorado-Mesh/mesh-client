@@ -316,8 +316,9 @@ function meshtasticPacketMetadata(
       };
     }
     return { packetIdentity: identity, senderLabel };
-  } catch {
-    // catch-no-log-ok Corrupt captures remain distinct traffic observations without guessed content.
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/map/liveTrafficModel] catch:', e);
+
     return {};
   }
 }

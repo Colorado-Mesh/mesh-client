@@ -76,7 +76,8 @@ export async function clearMeshcoreRooms(
         } catch (e: unknown) {
           radioRemoveFailures += 1;
           console.warn(
-            '[meshcoreClearRooms] removeContact error ' + meshcoreRemoveContactErrorMessage(e),
+            'mcL0882 [meshcoreClearRooms] removeContact error ' +
+              meshcoreRemoveContactErrorMessage(e),
           );
         }
         if (keep(id)) {
@@ -87,7 +88,7 @@ export async function clearMeshcoreRooms(
       }
     } catch (e: unknown) {
       radioRemoveFailures += 1;
-      console.warn('[meshcoreClearRooms] getContacts error ' + errLikeToLogString(e));
+      console.warn('mcL0883 [meshcoreClearRooms] getContacts error ' + errLikeToLogString(e));
     }
   }
 
@@ -99,7 +100,9 @@ export async function clearMeshcoreRooms(
   try {
     await clearDbRooms();
   } catch (e: unknown) {
-    console.warn('[meshcoreClearRooms] clearMeshcoreRooms DB error ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0884 [meshcoreClearRooms] clearMeshcoreRooms DB error ' + errLikeToLogString(e),
+    );
     throw e instanceof Error ? e : new Error(String(e));
   }
 

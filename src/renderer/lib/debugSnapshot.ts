@@ -715,19 +715,23 @@ export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
     const map = await window.electronAPI.mqtt.getChannelNameToIndex();
     setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: map });
   } catch (e: unknown) {
-    console.warn('[debugSnapshot] mqtt.getChannelNameToIndex failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0817 [debugSnapshot] mqtt.getChannelNameToIndex failed ' + errLikeToLogString(e),
+    );
   }
   let mainLiveness: RendererLivenessSnapshot | null = null;
   try {
     mainLiveness = await window.electronAPI.app.getRendererLiveness();
   } catch (e: unknown) {
-    console.warn('[debugSnapshot] getRendererLiveness failed ' + errLikeToLogString(e));
+    console.warn('mcL0818 [debugSnapshot] getRendererLiveness failed ' + errLikeToLogString(e));
   }
   let rendererMemoryDurable: DebugSnapshot['rendererMemoryDurable'] = null;
   try {
     rendererMemoryDurable = await window.electronAPI.db.getRendererMemorySampleSummary();
   } catch (e: unknown) {
-    console.warn('[debugSnapshot] getRendererMemorySampleSummary failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0819 [debugSnapshot] getRendererMemorySampleSummary failed ' + errLikeToLogString(e),
+    );
   }
   const base = buildDebugSnapshotBase(reticulumSidecar);
   const meshcoreContactPathDiagnostics = await fetchMeshcoreContactPathDiagnostics();

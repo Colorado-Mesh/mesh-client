@@ -78,7 +78,7 @@ async function flushPendingActivity(): Promise<void> {
       }
     }
   } catch (e) {
-    console.warn('[reticulumIdentityActivityStore] batch upsert ' + errLikeToLogString(e));
+    console.warn('mcL1441 [reticulumIdentityActivityStore] batch upsert ' + errLikeToLogString(e));
   }
 }
 

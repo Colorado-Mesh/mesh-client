@@ -173,8 +173,11 @@ async function readResponseTextUpTo(res: Response, maxBytes: number): Promise<st
   } finally {
     try {
       await reader.cancel();
-    } catch {
-      // catch-no-log-ok: stream may already be closed/aborted by this point
+    } catch (e: unknown) {
+      console.debug(
+        '[main/reticulum-sidecar-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
   const merged = new Uint8Array(total);
@@ -241,7 +244,11 @@ async function pollSidecarHealth(
         lastError = `unexpected status field: ${body.status}`;
       }
     } catch (err) {
-      // catch-no-log-ok: health poll retries until deadline; lastError surfaces on timeout
+      console.debug(
+        '[main/reticulum-sidecar-manager] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
       lastError =
         err instanceof Error && err.message === 'fetch failed'
           ? fetchErrorDetail(err)
@@ -563,8 +570,11 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (this.startPromise && this.startAbortRequested) {
       try {
         await this.startPromise;
-      } catch {
-        // catch-no-log-ok: previous start aborted or failed; continue with a new start
+      } catch (e: unknown) {
+        console.debug(
+          '[main/reticulum-sidecar-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
     }
     if (this.startPromise) {
@@ -604,8 +614,12 @@ export class ReticulumSidecarManager extends EventEmitter {
       try {
         await pollSidecarHealth(this._status.port, this.requireAuthToken());
         healthy = true;
-      } catch {
-        // catch-no-log-ok: reuseIfRunning health failed — stop stale process and start fresh
+      } catch (e: unknown) {
+        console.debug(
+          '[main/reticulum-sidecar-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         await this.stopProc();
       }
       this.throwIfStartAborted(generation);
@@ -691,8 +705,11 @@ export class ReticulumSidecarManager extends EventEmitter {
       proc.kill('SIGKILL');
       throw new Error('Reticulum sidecar authentication pipe is unavailable');
     }
-    proc.stdin.on('error', () => {
-      // catch-no-log-ok: an early child exit may close stdin before end() flushes.
+    proc.stdin.on('error', (e: Error) => {
+      console.debug(
+        '[main/reticulum-sidecar-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
     proc.stdin.end(
       `${JSON.stringify({ auth_token: authToken, capability_issuer_token: capabilityIssuerToken, capability_session_id: capabilitySessionId })}\n`,
@@ -724,7 +741,7 @@ export class ReticulumSidecarManager extends EventEmitter {
           this.stderrDedupe,
           {
             warn: (message) => {
-              console.warn('[ReticulumSidecar]', message);
+              console.warn('mcL0279 [ReticulumSidecar]', message);
             },
             debug: (message) => {
               console.debug('[ReticulumSidecar]', message);
@@ -745,7 +762,7 @@ export class ReticulumSidecarManager extends EventEmitter {
         console.info('[ReticulumSidecar]', decision.message);
         return;
       }
-      console.warn('[ReticulumSidecar]', decision.message);
+      console.warn('mcL0280 [ReticulumSidecar]', decision.message);
     };
     const finalizeChildExit = (): void => {
       if (exitFinalized || !pendingExit || !stdoutEnded || !stderrEnded) return;
@@ -758,7 +775,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       if (abnormal) {
         const tail = this.formatRecentSidecarOutput();
         console.warn(
-          '[ReticulumSidecar]',
+          'mcL0281 [ReticulumSidecar]',
           tail ? `${exitSummary}; last output: ${tail}` : exitSummary,
         );
       } else {
@@ -951,13 +968,19 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.startLiveAbort?.abort();
     if (this.startPromise && !this.proc) {
       // Pre-spawn: do not await cargo — startOnce throws at next checkpoint.
-      void this.startPromise.catch(() => {
-        // catch-no-log-ok: aborted/failed start; stop continues without blocking UI
+      void this.startPromise.catch((e: unknown) => {
+        console.debug(
+          '[main/reticulum-sidecar-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       });
     } else if (this.startPromise) {
       // Process already spawned (e.g. health poll): kill via stopProc; do not wait on health.
-      void this.startPromise.catch(() => {
-        // catch-no-log-ok: start fails when proc is killed mid-health-poll
+      void this.startPromise.catch((e: unknown) => {
+        console.debug(
+          '[main/reticulum-sidecar-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       });
     }
     if (this.stopPromise) {
@@ -996,8 +1019,11 @@ export class ReticulumSidecarManager extends EventEmitter {
       const forceKill = (): void => {
         try {
           proc.kill('SIGKILL');
-        } catch {
-          // catch-no-log-ok: process may already be gone during forced shutdown
+        } catch (e: unknown) {
+          console.debug(
+            '[main/reticulum-sidecar-manager] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         }
         resolve();
       };
@@ -1017,8 +1043,12 @@ export class ReticulumSidecarManager extends EventEmitter {
 
       try {
         proc.kill('SIGTERM');
-      } catch {
-        // catch-no-log-ok: process may already be gone when sending SIGTERM
+      } catch (e: unknown) {
+        console.debug(
+          '[main/reticulum-sidecar-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         clearTimeout(killTimer);
         resolve();
       }
@@ -1061,7 +1091,8 @@ export class ReticulumSidecarManager extends EventEmitter {
       }
     } catch (e: unknown) {
       console.debug(
-        `[ReticulumSidecar] ${operation} failed — continuing with SIGTERM:`,
+        '[ReticulumSidecar] %s failed — continuing with SIGTERM: %s',
+        operation,
         timedOut
           ? `Timed out after ${timeoutMs}ms`
           : sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
@@ -1092,8 +1123,12 @@ export class ReticulumSidecarManager extends EventEmitter {
       if (!text) return { ok: true };
       try {
         return JSON.parse(text) as unknown;
-      } catch {
-        // catch-no-log-ok non-JSON GET body returned as plain text wrapper
+      } catch (e: unknown) {
+        console.debug(
+          '[main/reticulum-sidecar-manager] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         return { ok: true, body: text };
       }
     }
@@ -1266,8 +1301,12 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!text) return { ok: true };
     try {
       return JSON.parse(text) as unknown;
-    } catch {
-      // catch-no-log-ok: empty or non-JSON DELETE body is treated as success
+    } catch (e: unknown) {
+      console.debug(
+        '[main/reticulum-sidecar-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return { ok: true };
     }
   }
@@ -1296,7 +1335,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       socket.on('message', (data: Buffer) => {
         if (data.length > RETICULUM_WS_MAX_MESSAGE_BYTES) {
           console.warn(
-            `[ReticulumSidecar] ws message exceeded ${RETICULUM_WS_MAX_MESSAGE_BYTES} byte cap, dropping`,
+            `mcL0282 [ReticulumSidecar] ws message exceeded ${RETICULUM_WS_MAX_MESSAGE_BYTES} byte cap, dropping`,
           );
           return;
         }
@@ -1309,13 +1348,17 @@ export class ReticulumSidecarManager extends EventEmitter {
             type: parsed.type ?? 'message',
             payload: parsed.payload ?? parsed,
           });
-        } catch {
-          // catch-no-log-ok: non-JSON ws payloads are forwarded as raw text events
+        } catch (e: unknown) {
+          console.debug(
+            '[main/reticulum-sidecar-manager] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+
           this.emit('event', { type: 'message', payload: text });
         }
       });
       socket.on('error', (err: Error) => {
-        console.warn('[ReticulumSidecar] ws error:', sanitizeLogMessage(err.message));
+        console.warn('mcL0283 [ReticulumSidecar] ws error:', sanitizeLogMessage(err.message));
       });
       socket.on('close', () => {
         if (this.wsPort === port) {
@@ -1328,18 +1371,19 @@ export class ReticulumSidecarManager extends EventEmitter {
           try {
             socket.removeAllListeners();
             // ws abortHandshake emits 'error' on nextTick when closed while CONNECTING
-            socket.on('error', () => {
-              // catch-no-log-ok: intentional teardown; CONNECTING abort is expected
-            });
+            socket.on('error', () => {});
             socket.close();
-          } catch {
-            // catch-no-log-ok: socket may already be closed
+          } catch (e: unknown) {
+            console.debug(
+              '[main/reticulum-sidecar-manager] catch:',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+            );
           }
         },
       };
     } catch (err) {
       console.warn(
-        '[ReticulumSidecar] ws bridge unavailable:',
+        'mcL0284 [ReticulumSidecar] ws bridge unavailable:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       this.scheduleWsReconnect();
@@ -1364,7 +1408,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       socket.on('message', (data: Buffer) => {
         if (data.length > RETICULUM_WS_MAX_MESSAGE_BYTES) {
           console.warn(
-            `[ReticulumSidecar] voice ws message exceeded ${RETICULUM_WS_MAX_MESSAGE_BYTES} byte cap, dropping`,
+            `mcL0285 [ReticulumSidecar] voice ws message exceeded ${RETICULUM_WS_MAX_MESSAGE_BYTES} byte cap, dropping`,
           );
           return;
         }
@@ -1376,12 +1420,15 @@ export class ReticulumSidecarManager extends EventEmitter {
             type: 'voice.audio',
             payload: parsed.payload ?? parsed,
           });
-        } catch {
-          // catch-no-log-ok: ignore non-JSON on the voice audio socket
+        } catch (e: unknown) {
+          console.debug(
+            '[main/reticulum-sidecar-manager] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         }
       });
       socket.on('error', (err: Error) => {
-        console.warn('[ReticulumSidecar] voice ws error:', sanitizeLogMessage(err.message));
+        console.warn('mcL0286 [ReticulumSidecar] voice ws error:', sanitizeLogMessage(err.message));
       });
       socket.on('close', () => {
         if (this.wsPort === port) {
@@ -1393,18 +1440,19 @@ export class ReticulumSidecarManager extends EventEmitter {
         close: () => {
           try {
             socket.removeAllListeners();
-            socket.on('error', () => {
-              // catch-no-log-ok: intentional teardown; CONNECTING abort is expected
-            });
+            socket.on('error', () => {});
             socket.close();
-          } catch {
-            // catch-no-log-ok: socket may already be closed
+          } catch (e: unknown) {
+            console.debug(
+              '[main/reticulum-sidecar-manager] catch:',
+              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+            );
           }
         },
       };
     } catch (err) {
       console.warn(
-        '[ReticulumSidecar] voice ws bridge unavailable:',
+        'mcL0287 [ReticulumSidecar] voice ws bridge unavailable:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       this.scheduleVoiceWsReconnect();

@@ -70,8 +70,9 @@ export function parseOwnNodeNumsByPublicKeyRaw(raw: unknown): OwnNodeNumsByPubli
   if (typeof raw === 'string') {
     try {
       value = JSON.parse(raw) as unknown;
-    } catch {
-      // catch-no-log-ok corrupt history is treated as empty
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/meshtasticMqttIdentity] catch:', e);
+
       return {};
     }
   }
@@ -163,8 +164,8 @@ export function recordOwnMeshtasticNodeNum(
   notifyOwnNodeHistoryChanged();
   void window.electronAPI.appSettings
     .set(MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY, serialized)
-    .catch(() => {
-      // catch-no-log-ok SQLite persist is best-effort; localStorage already updated
+    .catch((e: unknown) => {
+      console.debug('[renderer/lib/meshtasticMqttIdentity] catch:', e);
     });
 }
 
@@ -179,8 +180,8 @@ export function persistLastRfSelfNodeId(nodeNum: number): void {
   );
   void window.electronAPI.appSettings
     .set(MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY, String(normalized))
-    .catch(() => {
-      // catch-no-log-ok SQLite persist is best-effort; localStorage already updated
+    .catch((e: unknown) => {
+      console.debug('[renderer/lib/meshtasticMqttIdentity] catch:', e);
     });
 }
 
@@ -233,8 +234,8 @@ export async function hydrateLastRfSelfNodeIdFromAppSettings(): Promise<number> 
       );
       notifyOwnNodeHistoryChanged();
     }
-  } catch {
-    // catch-no-log-ok IPC unavailable during tests or early boot — localStorage may still have value
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtasticMqttIdentity] catch:', e);
   }
   return loadPersistedLastRfSelfNodeId();
 }

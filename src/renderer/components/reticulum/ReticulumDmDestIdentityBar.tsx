@@ -50,7 +50,7 @@ export function ReticulumDmDestIdentityBar({
         setCopied((prev) => (prev === kind ? null : prev));
       }, 1500);
     } catch (e: unknown) {
-      console.warn('[ReticulumDmDestIdentityBar] copy ' + errLikeToLogString(e));
+      console.warn('mcL0674 [ReticulumDmDestIdentityBar] copy ' + errLikeToLogString(e));
     }
   }, []);
 

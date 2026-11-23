@@ -111,7 +111,7 @@ describe('startNetworkDiscovery', () => {
 
     expect([...traced].sort((a, b) => a - b)).toEqual([1, 3]);
     expect(warnSpy).toHaveBeenCalledWith(
-      '[networkDiscovery] traceroute failed for node',
+      'mcL0984 [networkDiscovery] traceroute failed for node',
       2,
       'timeout',
     );

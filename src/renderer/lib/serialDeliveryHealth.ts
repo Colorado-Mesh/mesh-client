@@ -81,7 +81,7 @@ function maybeNudge(
   const now = Date.now();
   if (now - state.lastNudgeAt < NUDGE_COOLDOWN_MS) return;
   state.lastNudgeAt = now;
-  console.warn(`[serialDeliveryHealth] nudge reason=${reason}`);
+  console.warn(`mcL1130 [serialDeliveryHealth] nudge reason=${reason}`);
   // Lazy i18n: avoid pulling the locale graph into ACK/runtime import cycles (jsdom tests).
   void import('./i18n')
     .then((mod) => {
@@ -105,7 +105,7 @@ export function noteSerialTransportLoss(opts?: {
   const state = getSerialHealthState(opts?.identityId);
   state.lastTransportLossAt = Date.now();
   state.deliveryFailCountSinceLoss = 0;
-  console.warn('[serialDeliveryHealth] transport-loss');
+  console.warn('mcL1131 [serialDeliveryHealth] transport-loss');
 }
 
 /**
@@ -131,7 +131,7 @@ export function noteSerialDeliveryFailure(opts: {
     return;
   }
 
-  console.warn(`[serialDeliveryHealth] delivery-failure reason=${opts.reason}`);
+  console.warn(`mcL1132 [serialDeliveryHealth] delivery-failure reason=${opts.reason}`);
 
   if (opts.reason === 'probe-failed' || opts.reason === 'watchdog-dead') {
     maybeNudge(opts.reason, opts.identityId, state);
@@ -162,7 +162,7 @@ export function noteSerialDeliveryFailure(opts: {
 export function noteSerialPostWakeUntrusted(windowMs: number): void {
   postWakeSerialUntrusted = true;
   postWakeGeneration += 1;
-  console.warn(`[serialDeliveryHealth] post-wake-untrusted windowMs=${windowMs}`);
+  console.warn(`mcL1133 [serialDeliveryHealth] post-wake-untrusted windowMs=${windowMs}`);
 }
 
 export function clearSerialPostWakeUntrusted(): void {

@@ -87,8 +87,9 @@ export async function awaitReticulumBleCoexistenceClear(
       if (!yieldPending && state.scanOwner !== 'reticulum') {
         return;
       }
-    } catch {
-      // catch-no-log-ok: bleCoexistence IPC can fail during teardown; do not block RF forever
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulum/reticulumStartupAutostartGate] catch:', e);
+
       return;
     }
     await sleep(250);

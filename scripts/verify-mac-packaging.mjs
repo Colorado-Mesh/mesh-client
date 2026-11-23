@@ -27,6 +27,8 @@ import {
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import path from 'path';
+
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 import { assertUpdateYmlArtifacts } from './assert-update-yml-artifacts.mjs';
 import {
   assertBundledReticulumSidecarInBundle,
@@ -39,19 +41,32 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const releaseDir = path.join(projectRoot, 'release');
+const releaseDir = joinUnderRoot(projectRoot, 'release');
 
 const APP_NAME = 'Mesh-client';
-const MACOS_LAUNCHER = path.join('Contents', 'MacOS', APP_NAME);
-const ELECTRON_FRAMEWORK_BINARY = path.join(
-  'Contents',
-  'Frameworks',
-  'Electron Framework.framework',
-  'Versions',
-  'A',
-  'Electron Framework',
-);
-const ELECTRON_FRAMEWORK_ROOT = path.join('Contents', 'Frameworks', 'Electron Framework.framework');
+
+/** @param {string} bundleRoot */
+function macLauncherPath(bundleRoot) {
+  return joinUnderRoot(bundleRoot, 'Contents', 'MacOS', APP_NAME);
+}
+
+/** @param {string} bundleRoot */
+function electronFrameworkBinaryPath(bundleRoot) {
+  return joinUnderRoot(
+    bundleRoot,
+    'Contents',
+    'Frameworks',
+    'Electron Framework.framework',
+    'Versions',
+    'A',
+    'Electron Framework',
+  );
+}
+
+/** @param {string} bundleRoot */
+function electronFrameworkRootPath(bundleRoot) {
+  return joinUnderRoot(bundleRoot, 'Contents', 'Frameworks', 'Electron Framework.framework');
+}
 
 /** Electron sibling frameworks required at launch (auto-update stack). */
 const SIBLING_FRAMEWORKS = [
@@ -97,7 +112,7 @@ function collectAppBundles(dir, found) {
     return;
   }
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
+    const full = joinUnderRoot(dir, entry.name);
     if (entry.isDirectory()) {
       if (entry.name.endsWith('.app')) {
         found.push(full);
@@ -125,7 +140,7 @@ function collectArchives(dir, ext) {
       return;
     }
     for (const entry of readdirSync(scanDir, { withFileTypes: true })) {
-      const full = path.join(scanDir, entry.name);
+      const full = joinUnderRoot(scanDir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
       } else if (entry.isFile() && entry.name.endsWith(ext)) {
@@ -256,8 +271,8 @@ function readLipoArchs(binaryPath) {
  * @param {ExpectedMacArch} expectedArch
  */
 function assertBundleMatchesExpectedArch(bundleRoot, label, expectedArch) {
-  const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
-  const frameworkPath = path.join(bundleRoot, ELECTRON_FRAMEWORK_BINARY);
+  const launcherPath = macLauncherPath(bundleRoot);
+  const frameworkPath = electronFrameworkBinaryPath(bundleRoot);
   assertLipoArchsMatch(label, 'launcher', readLipoArchs(launcherPath), expectedArch);
   assertLipoArchsMatch(label, 'Electron Framework', readLipoArchs(frameworkPath), expectedArch);
 }
@@ -287,9 +302,9 @@ function assertDualArchMacArchives(archives, formatLabel = 'archives') {
 
 /** @param {string} bundleRoot @param {string} label */
 function assertFrameworkSymlinks(bundleRoot, label) {
-  const frameworkRoot = path.join(bundleRoot, ELECTRON_FRAMEWORK_ROOT);
-  const currentLink = path.join(frameworkRoot, 'Versions', 'Current');
-  const rootBinaryLink = path.join(frameworkRoot, 'Electron Framework');
+  const frameworkRoot = electronFrameworkRootPath(bundleRoot);
+  const currentLink = joinUnderRoot(frameworkRoot, 'Versions', 'Current');
+  const rootBinaryLink = joinUnderRoot(frameworkRoot, 'Electron Framework');
 
   for (const linkPath of [currentLink, rootBinaryLink]) {
     if (!existsSync(linkPath)) {
@@ -309,10 +324,10 @@ function assertFrameworkSymlinks(bundleRoot, label) {
  * @param {{ dir: string, binary: string, minBytes: number }} framework
  */
 function assertSiblingFrameworkSymlinks(bundleRoot, label, framework) {
-  const frameworkRoot = path.join(bundleRoot, 'Contents', 'Frameworks', framework.dir);
-  const currentLink = path.join(frameworkRoot, 'Versions', 'Current');
-  const rootBinaryLink = path.join(frameworkRoot, framework.binary);
-  const versionBinary = path.join(frameworkRoot, 'Versions', 'A', framework.binary);
+  const frameworkRoot = joinUnderRoot(bundleRoot, 'Contents', 'Frameworks', framework.dir);
+  const currentLink = joinUnderRoot(frameworkRoot, 'Versions', 'Current');
+  const rootBinaryLink = joinUnderRoot(frameworkRoot, framework.binary);
+  const versionBinary = joinUnderRoot(frameworkRoot, 'Versions', 'A', framework.binary);
 
   for (const linkPath of [currentLink, rootBinaryLink]) {
     if (!existsSync(linkPath)) {
@@ -335,7 +350,7 @@ function assertSiblingFrameworkSymlinks(bundleRoot, label, framework) {
  * @param {string} mountRoot
  */
 function assertApplicationsSymlink(mountRoot) {
-  const applicationsLink = path.join(mountRoot, 'Applications');
+  const applicationsLink = joinUnderRoot(mountRoot, 'Applications');
   let st;
   try {
     st = lstatSync(applicationsLink);
@@ -353,7 +368,7 @@ function assertApplicationsSymlink(mountRoot) {
 
 /** @param {string} mountRoot */
 function assertDmgInstallNotice(mountRoot) {
-  const noticePath = path.join(mountRoot, MACOS_DMG_NOTICE_NAME);
+  const noticePath = joinUnderRoot(mountRoot, MACOS_DMG_NOTICE_NAME);
   if (!existsSync(noticePath) || !statSync(noticePath).isFile()) {
     fail(`Missing DMG install notice: ${noticePath}`);
   }
@@ -400,7 +415,7 @@ function compareDottedVersions(left, right) {
  * @param {string} label
  */
 function assertMacMinimumSystemVersion(bundleRoot, label) {
-  const infoPlistPath = path.join(bundleRoot, 'Contents', 'Info.plist');
+  const infoPlistPath = joinUnderRoot(bundleRoot, 'Contents', 'Info.plist');
   if (!existsSync(infoPlistPath)) {
     fail(`Missing ${label} Info.plist: ${infoPlistPath}`);
   }
@@ -604,11 +619,11 @@ function assertMacCodeSignature(bundleRoot, label, options, deps = {}) {
 function validateAppBundle(bundleRoot, sourceLabel, expectedArch, signatureOptions) {
   const bundleName = path.basename(bundleRoot);
   const label = `${sourceLabel} ${bundleName}`;
-  const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
-  const frameworkPath = path.join(bundleRoot, ELECTRON_FRAMEWORK_BINARY);
+  const launcherPath = macLauncherPath(bundleRoot);
+  const frameworkPath = electronFrameworkBinaryPath(bundleRoot);
 
   if (!existsSync(launcherPath) || !existsSync(frameworkPath)) {
-    fail(`No ${MACOS_LAUNCHER} + ${ELECTRON_FRAMEWORK_BINARY} in ${label} at ${bundleRoot}`);
+    fail(`No Contents/MacOS/${APP_NAME} + Electron Framework binary in ${label} at ${bundleRoot}`);
   }
 
   assertFrameworkSymlinks(bundleRoot, label);
@@ -631,8 +646,8 @@ function validateAppBundle(bundleRoot, sourceLabel, expectedArch, signatureOptio
 
 /** @param {string} bundleRoot @returns {boolean} */
 function isCompleteAppBundle(bundleRoot) {
-  const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
-  const frameworkPath = path.join(bundleRoot, ELECTRON_FRAMEWORK_BINARY);
+  const launcherPath = macLauncherPath(bundleRoot);
+  const frameworkPath = electronFrameworkBinaryPath(bundleRoot);
   return existsSync(launcherPath) && existsSync(frameworkPath);
 }
 
@@ -762,8 +777,8 @@ function main() {
       assertMinSize(`zip ${path.basename(zipPath)}`, zipPath, MIN_ZIP_BYTES);
     }
 
-    zipExtractDir = mkdtempSync(path.join(tmpdir(), 'mesh-verify-mac-zip-'));
-    dmgMountDir = mkdtempSync(path.join(tmpdir(), 'mesh-verify-mac-dmg-'));
+    zipExtractDir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-verify-mac-zip-'));
+    dmgMountDir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-verify-mac-dmg-'));
 
     /** @type {string[]} */
     const validatedSources = [];
@@ -820,7 +835,7 @@ function main() {
 /** @returns {string} */
 function readPackageVersion() {
   try {
-    const raw = readFileSync(path.join(projectRoot, 'package.json'), 'utf-8');
+    const raw = readFileSync(joinUnderRoot(projectRoot, 'package.json'), 'utf-8');
     const parsed = JSON.parse(raw);
     return typeof parsed.version === 'string' ? parsed.version : 'unknown';
   } catch {

@@ -66,8 +66,8 @@ export function RemoteXtermView({
     fitRef.current = fit;
     try {
       fit.fit();
-    } catch {
-      // catch-no-log-ok container may have zero size while hidden on first mount
+    } catch (e: unknown) {
+      console.debug('[renderer/components/remote/RemoteXtermView] catch:', e);
     }
 
     const dataDisposable = term.onData((data) => {
@@ -95,8 +95,8 @@ export function RemoteXtermView({
   const fitNow = () => {
     try {
       fitRef.current?.fit();
-    } catch {
-      // catch-no-log-ok layout not yet settled (e.g. tab still hidden)
+    } catch (e: unknown) {
+      console.debug('[renderer/components/remote/RemoteXtermView] catch:', e);
     }
   };
 

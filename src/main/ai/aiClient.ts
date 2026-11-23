@@ -5,6 +5,7 @@ import { Agent } from 'undici';
 
 import type { AiWireFormat } from '../../shared/ai-types';
 import { AI_MAX_RESPONSE_BYTES, AI_REQUEST_TIMEOUT_MS } from '../../shared/ai-types';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { type AdapterInput, buildRequest, modelsUrl, parseDelta, parseModels } from './adapters';
 import { AiFailure } from './errors';
 import { literalAddressIsGlobal, validateAiEndpointUrl } from './urlPolicy';
@@ -52,8 +53,12 @@ export class AiClient {
     if (literalGlobal == null) {
       try {
         address = await this.resolveHost(host);
-      } catch {
-        // catch-no-log-ok DNS failure is reported as a generic endpoint error
+      } catch (e: unknown) {
+        console.debug(
+          '[main/ai/aiClient] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         throw new AiFailure('error');
       }
     }
@@ -72,8 +77,11 @@ export class AiClient {
     const close = (): Promise<void> =>
       agent.close().then(
         () => undefined,
-        () => {
-          // catch-no-log-ok agent may already be closed after abort
+        (e: unknown) => {
+          console.debug(
+            '[main/ai/aiClient] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         },
       );
     try {
@@ -83,8 +91,11 @@ export class AiClient {
         dispatcher: agent,
       } as RequestInit);
       if (!response.ok || !response.body) {
-        await response.body?.cancel().catch(() => {
-          // catch-no-log-ok cleanup errors must not expose private provider details
+        await response.body?.cancel().catch((e: unknown) => {
+          console.debug(
+            '[main/ai/aiClient] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         });
         await close();
         throw new AiFailure('httpError');
@@ -210,8 +221,12 @@ export class AiClient {
     }
     try {
       return parseModels(JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown);
-    } catch {
-      // catch-no-log-ok invalid model list is safe to report
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ai/aiClient] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       throw new AiFailure('invalidResponse');
     }
   }

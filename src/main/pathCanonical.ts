@@ -1,17 +1,32 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { joinUnderRoot, PathEscapesRootError } from '../shared/pathUnderRoot';
+import { sanitizeLogMessage } from './sanitize-log-message';
+
+/**
+ * Normalize a native picker / dialog absolute path when realpath is not yet possible.
+ * Not for root-relative joins — use `joinUnderRoot` / `resolveUnderRoot` instead.
+ */
+export function resolveAbsoluteFsPath(p: string): string {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+  return path.resolve(p);
+}
+
 /**
  * Resolve a filesystem path to its canonical realpath, walking up parents when
  * the leaf (or intermediate) path does not exist yet (e.g. a fetch save target
  * under a picked directory). Returns null when no existing ancestor can be resolved.
  */
 export function canonicalizePath(candidate: string): string | null {
-  const resolved = path.resolve(candidate);
+  const resolved = resolveAbsoluteFsPath(candidate);
   try {
     return fs.realpathSync.native(resolved);
-  } catch {
-    // catch-no-log-ok: missing path — walk ancestors
+  } catch (e: unknown) {
+    console.debug(
+      '[main/pathCanonical] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 
   const suffix: string[] = [];
@@ -22,9 +37,15 @@ export function canonicalizePath(candidate: string): string | null {
     if (parent === current) return null;
     try {
       const realParent = fs.realpathSync.native(parent);
-      return path.join(realParent, ...suffix);
-    } catch {
-      // catch-no-log-ok: keep walking toward filesystem root
+      // Ancestor + basename segments are from path.basename of an already-resolved path.
+      return joinUnderRoot(realParent, ...suffix);
+    } catch (err) {
+      console.debug(
+        '[main/pathCanonical] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+
+      if (err instanceof PathEscapesRootError) throw err;
       current = parent;
     }
   }

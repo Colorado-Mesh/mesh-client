@@ -24,7 +24,7 @@ export function requestMeshcoreWaitingMessagesFollowUp(): void {
   if (!processWaitingMessagesInFlight) return;
   if (silentFollowUpChainCount >= MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX) {
     console.warn(
-      `[meshcoreWaitingMessagesSyncState] silent follow-up chain capped at ${MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX}`,
+      `mcL0710 [meshcoreWaitingMessagesSyncState] silent follow-up chain capped at ${MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX}`,
     );
     return;
   }

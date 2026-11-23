@@ -76,8 +76,9 @@ export function loadRemoteSettings(): RemoteSettings {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_REMOTE_SETTINGS };
     return sanitize(JSON.parse(raw));
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable or contain malformed JSON
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/remoteSettingsStorage] catch:', e);
+
     return { ...DEFAULT_REMOTE_SETTINGS };
   }
 }
@@ -85,8 +86,8 @@ export function loadRemoteSettings(): RemoteSettings {
 export function saveRemoteSettings(settings: RemoteSettings): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitize(settings)));
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/remoteSettingsStorage] catch:', e);
   }
 }
 

@@ -64,7 +64,7 @@ export function ReticulumPathTableMaintenance({
                 );
               } catch (err) {
                 console.warn(
-                  '[ReticulumPathTableMaintenance] clear failed ' + errLikeToLogString(err),
+                  'mcL0562 [ReticulumPathTableMaintenance] clear failed ' + errLikeToLogString(err),
                 );
                 addToast(t('networkPanel.reticulumPathTable.clearFailed'), 'error');
               } finally {

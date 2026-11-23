@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_DM_MESSAGE_CHANNEL } from '../shared/meshcoreMessageChannel';
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import { pruneMeshcoreMessagesByCountOn } from './database';
 import { NodeSqliteDB } from './db-compat';
 import { runSchemaUpgrade } from './db-schema-sync';
@@ -88,8 +88,8 @@ describe('MeshCore message retention', () => {
   });
 
   function openDb(prefix: string): NodeSqliteDB {
-    dir = mkdtempSync(join(tmpdir(), prefix));
-    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    dir = mkdtempSync(joinUnderRoot(tmpdir(), prefix));
+    const db = new NodeSqliteDB(joinUnderRoot(dir, 'test.db'));
     db.pragma('journal_mode = WAL');
     runSchemaUpgrade(db);
     const insert = db.prepareOnce(

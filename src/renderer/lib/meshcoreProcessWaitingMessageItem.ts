@@ -74,7 +74,7 @@ export function processMeshcoreWaitingMessageItem(
       }
     } else if (senderId === 0) {
       console.warn(
-        '[meshcoreProcessWaitingMessageItem] unknown pubKeyPrefix in queued DM, skipping ingest',
+        'mcL0913 [meshcoreProcessWaitingMessageItem] unknown pubKeyPrefix in queued DM, skipping ingest',
         prefix,
       );
       if (isMeshcoreTransportStatusChatLine(d.text)) {
@@ -120,13 +120,13 @@ export function processMeshcoreWaitingMessageItem(
           roomDispatched = true;
           void setMeshcoreRoomLastPostAt(senderId, postTs).catch((e: unknown) => {
             console.warn(
-              '[meshcoreProcessWaitingMessageItem] setMeshcoreRoomLastPostAt failed ' +
+              'mcL0914 [meshcoreProcessWaitingMessageItem] setMeshcoreRoomLastPostAt failed ' +
                 errLikeToLogString(e),
             );
           });
         } else {
           console.warn(
-            '[meshcoreProcessWaitingMessageItem] room post skipped (no identityId)',
+            'mcL0915 [meshcoreProcessWaitingMessageItem] room post skipped (no identityId)',
             senderId,
           );
         }

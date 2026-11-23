@@ -402,7 +402,8 @@ export default function MeshcoreContactSettingsSection({
                 })
                 .catch((e: unknown) => {
                   console.warn(
-                    '[MeshcoreContactSettingsSection] clear all failed ' + errLikeToLogString(e),
+                    'mcL0455 [MeshcoreContactSettingsSection] clear all failed ' +
+                      errLikeToLogString(e),
                   );
                   addToast(
                     e instanceof Error

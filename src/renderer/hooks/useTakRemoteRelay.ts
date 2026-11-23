@@ -31,7 +31,7 @@ export function useTakRemoteStatus(): TAKRemoteStatus {
         if (!superseded) setStatus(s);
       })
       .catch((e: unknown) => {
-        console.warn('[TakRemote] remoteGetStatus failed: ' + takIpcErrorMessage(e));
+        console.warn('mcL0775 [TakRemote] remoteGetStatus failed: ' + takIpcErrorMessage(e));
       });
     return () => {
       superseded = true;

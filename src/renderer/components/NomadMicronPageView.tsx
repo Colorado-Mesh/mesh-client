@@ -240,7 +240,7 @@ export default function NomadMicronPageView({
             });
           } catch (e) {
             if (e instanceof DOMException && e.name === 'AbortError') throw e;
-            console.warn('[NomadMicronPageView] partial fetch failed', e);
+            console.warn('mcL0492 [NomadMicronPageView] partial fetch failed', e);
             throw e;
           }
         },

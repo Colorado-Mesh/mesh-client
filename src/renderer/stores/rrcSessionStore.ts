@@ -565,8 +565,8 @@ function loadInitialRrcNickname(): string {
   try {
     const nick = localStorage.getItem(RRC_NICKNAME_STORAGE_KEY)?.trim();
     if (nick) return nick;
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable (tests / SSR)
+  } catch (e: unknown) {
+    console.debug('[renderer/stores/rrcSessionStore] catch:', e);
   }
   return 'mesh-client';
 }

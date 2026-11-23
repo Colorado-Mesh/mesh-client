@@ -69,8 +69,8 @@ function ReticulumAttachmentItem({
         setFetchedFor(fetchKey);
         setImageFailed(false);
       })
-      .catch(() => {
-        // catch-no-log-ok: fall back to label-only when read fails
+      .catch((e: unknown) => {
+        console.debug('[renderer/components/ReticulumAttachmentLine] catch:', e);
         if (cancelled) return;
         setImageDataUrl(null);
         setFetchedFor(fetchKey);
@@ -108,8 +108,8 @@ function ReticulumAttachmentItem({
         dataBase64,
         promptSave: true,
       });
-    } catch {
-      // catch-no-log-ok: save dialog cancel / read failure
+    } catch (e: unknown) {
+      console.debug('[renderer/components/ReticulumAttachmentLine] catch:', e);
     } finally {
       setBusy(false);
     }
@@ -119,8 +119,8 @@ function ReticulumAttachmentItem({
     if (!attachmentPath) return;
     try {
       await window.electronAPI.chat.showItemInFolder(attachmentPath);
-    } catch {
-      // catch-no-log-ok: reveal unavailable
+    } catch (e: unknown) {
+      console.debug('[renderer/components/ReticulumAttachmentLine] catch:', e);
     }
   };
 

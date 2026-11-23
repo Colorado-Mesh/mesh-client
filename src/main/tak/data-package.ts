@@ -99,8 +99,11 @@ export async function generateDataPackage(
   } catch (e) {
     try {
       fs.rmSync(tmpPath, { force: true });
-    } catch {
-      // catch-no-log-ok best-effort cleanup
+    } catch (e: unknown) {
+      console.debug(
+        '[main/tak/data-package] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
     throw new Error(
       `Failed to write TAK data package: ${e instanceof Error ? e.message : String(e)}`,
@@ -111,7 +114,7 @@ export async function generateDataPackage(
     shell.showItemInFolder(outputPath);
   } catch (e) {
     console.warn(
-      '[TAK] show data package in folder failed:',
+      'mcL0294 [TAK] show data package in folder failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }

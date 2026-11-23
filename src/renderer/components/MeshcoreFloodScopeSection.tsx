@@ -165,7 +165,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
         setStatus(t('radioPanel.floodScopeApplySuccess'));
       } catch (e: unknown) {
         console.warn(
-          '[MeshcoreFloodScopeSection] apply failed ' +
+          'mcL0457 [MeshcoreFloodScopeSection] apply failed ' +
             (e instanceof Error ? e.message : String(e)),
         );
         setStatus(
@@ -227,7 +227,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
         }
       } catch (e: unknown) {
         console.warn(
-          '[MeshcoreFloodScopeSection] discover failed ' +
+          'mcL0458 [MeshcoreFloodScopeSection] discover failed ' +
             (e instanceof Error ? e.message : String(e)),
         );
         setDiscoverError(t('radioPanel.floodScopeDiscoverError'));

@@ -44,7 +44,7 @@ export async function importMapOverlayFromPath(filePath: string): Promise<MapOve
     fh = await fs.open(filePath, 'r');
   } catch (e: unknown) {
     console.warn(
-      '[map-overlays] open failed ' +
+      'mcL0226 [map-overlays] open failed ' +
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     return { ok: false, code: 'io' };
@@ -87,13 +87,16 @@ export async function importMapOverlayFromPath(filePath: string): Promise<MapOve
       return { ok: false, code: e.code };
     }
     console.warn(
-      '[map-overlays] import failed ' +
+      'mcL0227 [map-overlays] import failed ' +
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     return { ok: false, code: 'io' };
   } finally {
-    await fh.close().catch(() => {
-      // catch-no-log-ok close after successful/failed import
+    await fh.close().catch((e: unknown) => {
+      console.debug(
+        '[main/map-overlays/importOverlay] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
   }
 }

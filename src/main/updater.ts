@@ -80,7 +80,7 @@ function reportCheckFailure(send: SendFn, err: unknown, warnPrefix: string): voi
     emitOffline(send, safe);
     return;
   }
-  console.warn(warnPrefix, safe);
+  console.warn('mcL0313 %s %s', warnPrefix, safe);
   send('update:error', { message: safe });
 }
 
@@ -90,7 +90,7 @@ async function openAppReleasePage(send: SendFn): Promise<void> {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     const safe = sanitizeLogMessage(msg);
-    console.warn('[updater] open release page failed:', safe);
+    console.warn('mcL0314 [updater] open release page failed:', safe);
     send('update:error', { message: safe });
   }
 }
@@ -136,7 +136,7 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
         return;
       }
       console.warn(
-        '[updater] GitHub API fetch failed:',
+        'mcL0315 [updater] GitHub API fetch failed:',
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       send('update:error', { message: 'Update check failed — check network connection' });
@@ -185,7 +185,7 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
     updater = (require('electron-updater') as { autoUpdater: AppUpdater }).autoUpdater;
   } catch (e) {
     console.error(
-      '[updater] electron-updater not available:',
+      'mcL0316 [updater] electron-updater not available:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     return false;
@@ -245,7 +245,7 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
       emitOffline(send, err.message);
       return;
     }
-    console.error('[updater] error:', sanitizeLogMessage(err.message));
+    console.error('mcL0317 [updater] error:', sanitizeLogMessage(err.message));
     send('update:error', { message: sanitizeLogMessage(err.message) });
   });
 
@@ -269,12 +269,20 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
         try {
           await download;
         } catch (e: unknown) {
-          // catch-no-log-ok reportCheckFailure logs warn/debug
+          console.debug(
+            '[main/updater] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
+
           reportCheckFailure(send, e, '[updater] auto-download failed:');
         }
       }
     } catch (e: unknown) {
-      // catch-no-log-ok reportCheckFailure logs warn/debug
+      console.debug(
+        '[main/updater] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       reportCheckFailure(send, e, '[updater] checkForUpdates failed:');
     }
   };
@@ -298,7 +306,11 @@ function registerElectronUpdaterHandlers(send: SendFn): boolean {
     try {
       await updater.downloadUpdate();
     } catch (e: unknown) {
-      // catch-no-log-ok reportCheckFailure logs warn/debug
+      console.debug(
+        '[main/updater] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       reportCheckFailure(send, e, '[updater] update:download failed:');
     }
   });
@@ -320,7 +332,7 @@ export function initUpdater(win: BrowserWindow): void {
   if (app.isPackaged) {
     const ok = registerElectronUpdaterHandlers(send);
     if (!ok) {
-      console.warn('[updater] falling back to GitHub Releases API (packaged build)');
+      console.warn('mcL0318 [updater] falling back to GitHub Releases API (packaged build)');
       registerGithubReleaseApiHandlers(send, true);
     }
   } else {
@@ -340,8 +352,11 @@ export function initUpdater(win: BrowserWindow): void {
       let parsedUrl: URL | null = null;
       try {
         if (typeof url === 'string') parsedUrl = new URL(url);
-      } catch {
-        // catch-no-log-ok — invalid URL falls through to RELEASES_URL
+      } catch (e: unknown) {
+        console.debug(
+          '[main/updater] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
       }
       const target =
         parsedUrl?.hostname === 'github.com' && parsedUrl.protocol === 'https:'
@@ -350,7 +365,7 @@ export function initUpdater(win: BrowserWindow): void {
       await shell.openExternal(target);
     } catch (err) {
       console.error(
-        '[IPC] update:open-releases failed:',
+        'mcL0319 [IPC] update:open-releases failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;

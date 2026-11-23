@@ -33,6 +33,8 @@ import {
 } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
+
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 import { fileURLToPath } from 'url';
 import { findAppArchive } from './find-nsis-app-archive.mjs';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
@@ -48,7 +50,7 @@ import { findWinSetupInstaller } from './win-setup-installer-names.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const releaseDir = path.join(projectRoot, 'release');
+const releaseDir = joinUnderRoot(projectRoot, 'release');
 
 const APP_EXE = 'Mesh-client.exe';
 const MIN_EXE_BYTES = 50 * 1024 * 1024;
@@ -65,7 +67,7 @@ function runnerTempRoot() {
     return process.env.RUNNER_TEMP;
   }
   if (!localDiagnosticsRoot) {
-    localDiagnosticsRoot = mkdtempSync(path.join(tmpdir(), 'mesh-client-win-smoke-'));
+    localDiagnosticsRoot = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-client-win-smoke-'));
   }
   return localDiagnosticsRoot;
 }
@@ -77,7 +79,7 @@ function runnerTempRoot() {
  */
 function persistInstallLog(arch, sourcePath) {
   if (!existsSync(sourcePath)) return;
-  const dest = path.join(runnerTempRoot(), `mesh-client-install-${arch}.log`);
+  const dest = joinUnderRoot(runnerTempRoot(), `mesh-client-install-${arch}.log`);
   try {
     copyFileSync(sourcePath, dest);
   } catch (e) {
@@ -93,14 +95,14 @@ function persistInstallLog(arch, sourcePath) {
  * @param {string} message
  */
 function writeLaunchDiagnostics(arch, userDataDir, message) {
-  const outDir = path.join(runnerTempRoot(), `mesh-client-win-${arch}-launch-diagnostics`);
+  const outDir = joinUnderRoot(runnerTempRoot(), `mesh-client-win-${arch}-launch-diagnostics`);
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(path.join(outDir, 'launch-error.txt'), message, 'utf-8');
-  const logPath = path.join(userDataDir, LOG_FILENAME);
+  writeFileSync(joinUnderRoot(outDir, 'launch-error.txt'), message, 'utf-8');
+  const logPath = joinUnderRoot(userDataDir, LOG_FILENAME);
   if (existsSync(logPath)) {
     try {
       const text = readFileSync(logPath, 'utf-8');
-      writeFileSync(path.join(outDir, LOG_FILENAME), tailText(text, 64 * 1024), 'utf-8');
+      writeFileSync(joinUnderRoot(outDir, LOG_FILENAME), tailText(text, 64 * 1024), 'utf-8');
     } catch {
       // catch-no-log-ok best-effort diagnostics
     }
@@ -117,7 +119,7 @@ function fail(msg) {
 }
 
 function readVersion() {
-  const packageJson = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8'));
+  const packageJson = JSON.parse(readFileSync(joinUnderRoot(projectRoot, 'package.json'), 'utf-8'));
   return packageJson.version;
 }
 
@@ -132,9 +134,21 @@ function assertExe(label, filePath) {
   }
 }
 
+/**
+ * CI smoke subprocesses must be absolute paths (installer, 7z) — no PATH lookup.
+ * @param {string} cmd
+ * @returns {string}
+ */
+function assertSpawnExecutable(cmd) {
+  if (path.isAbsolute(cmd)) return cmd;
+  fail(`refusing to spawn non-absolute command: ${cmd}`);
+}
+
 /** @param {string} cmd @param {string[]} args */
 function run(cmd, args) {
-  const result = spawnSync(cmd, args, {
+  const executable = assertSpawnExecutable(cmd);
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- cmd validated absolute by assertSpawnExecutable.
+  const result = spawnSync(executable, args, {
     stdio: 'inherit',
     shell: false,
     windowsHide: true,
@@ -157,7 +171,7 @@ function dumpDir(logLabel, dirPath, maxDepth = 1) {
   function list(dir, indent, depth) {
     try {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const full = path.join(dir, entry.name);
+        const full = joinUnderRoot(dir, entry.name);
         if (entry.isDirectory()) {
           console.error(`${indent}${entry.name}/`);
           if (depth < maxDepth) {
@@ -200,7 +214,7 @@ function probe7zExtract(installerPath, outDir, arch) {
     fail('No app*.7z or app*.zip found inside installer after 7z extract');
   }
 
-  const archiveDir = path.join(outDir, 'app-payload');
+  const archiveDir = joinUnderRoot(outDir, 'app-payload');
   mkdirSync(archiveDir, { recursive: true });
   const appArchiveName = path.basename(appArchivePath);
   const extractArchive = run(sevenZ, ['x', `-o${archiveDir}`, appArchivePath, '-y']);
@@ -208,7 +222,7 @@ function probe7zExtract(installerPath, outDir, arch) {
     fail(`7z extract from ${appArchiveName} failed (exit ${extractArchive})`);
   }
 
-  const exePath = path.join(archiveDir, APP_EXE);
+  const exePath = joinUnderRoot(archiveDir, APP_EXE);
   assertExe(`7z probe ${APP_EXE}`, exePath);
   assertBundledReticulumSidecarInBundle({
     label: `7z probe ${arch} Reticulum sidecar`,
@@ -245,19 +259,19 @@ async function main(arch, probe7z, launch) {
     dumpDir('release dir (installer missing)', releaseDir, 2);
     fail(e instanceof Error ? e.message : String(e));
   }
-  const installerPath = path.join(releaseDir, installer);
+  const installerPath = joinUnderRoot(releaseDir, installer);
 
   if (probe7z) {
-    const probeDir = mkdtempSync(path.join(tmpdir(), 'mesh-client-7z-probe-'));
+    const probeDir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-client-7z-probe-'));
     try {
       probe7zExtract(installerPath, probeDir, arch);
     } catch (e) {
       // Best-effort: fixed relative layout under runnerTempRoot for CI upload.
       try {
-        const probeUploadDir = path.join(runnerTempRoot(), 'mesh-client-7z-probe');
+        const probeUploadDir = joinUnderRoot(runnerTempRoot(), 'mesh-client-7z-probe');
         mkdirSync(probeUploadDir, { recursive: true });
         writeFileSync(
-          path.join(probeUploadDir, 'probe-error.txt'),
+          joinUnderRoot(probeUploadDir, 'probe-error.txt'),
           e instanceof Error ? e.message : String(e),
           'utf-8',
         );
@@ -274,11 +288,11 @@ async function main(arch, probe7z, launch) {
   if (!localAppData) {
     fail('LOCALAPPDATA is not set');
   }
-  const instDir = path.join(localAppData, 'Programs', 'Mesh-client');
-  const workDir = mkdtempSync(path.join(tmpdir(), 'mesh-client-install-'));
+  const instDir = joinUnderRoot(localAppData, 'Programs', 'Mesh-client');
+  const workDir = mkdtempSync(joinUnderRoot(tmpdir(), 'mesh-client-install-'));
   const installLogName = `mesh-client-install-${arch}.log`;
   try {
-    const logPath = path.join(workDir, installLogName);
+    const logPath = joinUnderRoot(workDir, installLogName);
 
     rmSync(instDir, { recursive: true, force: true });
 
@@ -296,7 +310,7 @@ async function main(arch, probe7z, launch) {
       fail(`Installer exited ${installStatus}`);
     }
 
-    const exePath = path.join(instDir, APP_EXE);
+    const exePath = joinUnderRoot(instDir, APP_EXE);
     if (!existsSync(exePath)) {
       if (existsSync(logPath)) {
         console.error('[test-win-nsis-install] --- NSIS install log ---');
@@ -319,7 +333,7 @@ async function main(arch, probe7z, launch) {
     );
 
     if (launch) {
-      const userDataDir = mkdtempSync(path.join(tmpdir(), `mesh-client-userdata-win-${arch}-`));
+      const userDataDir = mkdtempSync(joinUnderRoot(tmpdir(), `mesh-client-userdata-win-${arch}-`));
       try {
         try {
           await launchAndAssert({

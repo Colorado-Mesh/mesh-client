@@ -76,6 +76,9 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
         title={t('appPanel.supportSection')}
         description={t('appPanel.supportSectionDesc')}
       >
+        <p className="text-muted mb-3 text-xs" role="note">
+          {t('appPanel.verboseLoggingSupportHint')}
+        </p>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div data-setting-anchor="app.support.exportForGitHub" className="space-y-2">
             <button

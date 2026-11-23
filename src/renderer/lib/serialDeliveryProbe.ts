@@ -34,19 +34,19 @@ export async function runSerialDeliveryProbe(
   try {
     await withTimeout(Promise.resolve(probe()), timeoutMs, `serialDeliveryProbe:${label}`);
     if (!stillCurrent()) {
-      console.warn(`[serialDeliveryProbe] STALE OK label=${label}`);
+      console.warn(`mcL1134 [serialDeliveryProbe] STALE OK label=${label}`);
       return 'stale';
     }
-    console.warn(`[serialDeliveryProbe] OK label=${label}`);
+    console.warn(`mcL1135 [serialDeliveryProbe] OK label=${label}`);
     clearSerialPostWakeUntrusted();
     return 'healthy';
   } catch (err: unknown) {
     if (!stillCurrent()) {
-      console.warn(`[serialDeliveryProbe] STALE FAILED label=${label}`);
+      console.warn(`mcL1136 [serialDeliveryProbe] STALE FAILED label=${label}`);
       return 'stale';
     }
     const detail = err instanceof Error ? err.message : String(err);
-    console.warn(`[serialDeliveryProbe] FAILED label=${label} detail=${detail}`);
+    console.warn(`mcL1137 [serialDeliveryProbe] FAILED label=${label} detail=${detail}`);
     noteSerialDeliveryFailure({ reason: 'probe-failed', connectionType: 'serial' });
     return 'failed';
   }

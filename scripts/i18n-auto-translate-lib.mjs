@@ -75,8 +75,8 @@ function buildProtectedTermRe(terms) {
     .sort((a, b) => b.length - a.length)
     .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .join('|');
-  // eslint-disable-next-line security/detect-non-literal-regexp -- Terms are checked-in brand/protocol lists, regex-escaped above.
-  return new RegExp(`(?<![\\w-])(?:${alternation})(?![\\w-])`, 'g');
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  return new RegExp(`(?<![\\w-])(?:${alternation})(?![\\w-])`, 'g'); // eslint-disable-line security/detect-non-literal-regexp -- terms escaped above
 }
 
 /**

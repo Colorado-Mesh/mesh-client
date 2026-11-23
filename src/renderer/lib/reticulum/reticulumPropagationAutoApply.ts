@@ -164,7 +164,7 @@ async function runLocalSettle(
       await useReticulumPropagationStore.getState().refreshFromSidecar();
       nodes = useReticulumPropagationStore.getState().nodes;
     } catch (e) {
-      console.warn('[reticulumPropagationAutoApply] refreshFromSidecar failed', e);
+      console.warn('mcL1041 [reticulumPropagationAutoApply] refreshFromSidecar failed', e);
       // Keep the nodes already read from the store and continue the enabled check.
     }
   }
@@ -220,7 +220,7 @@ export async function fetchHasEnabledReticulumInterfaces(): Promise<boolean> {
     const rows = body.interfaces ?? [];
     return rows.some((row) => row.enabled === true);
   } catch (e) {
-    console.warn('[reticulumPropagationAutoApply] interfaces read failed', e);
+    console.warn('mcL1042 [reticulumPropagationAutoApply] interfaces read failed', e);
     return false;
   }
 }

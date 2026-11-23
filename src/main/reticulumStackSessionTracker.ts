@@ -1,9 +1,9 @@
 /** Tracks Reticulum stack starts so frequent client/stack restarts can surface hub fast-flap. */
-
 import fs from 'fs';
 import path from 'path';
 
 import { MS_PER_HOUR } from '../shared/timeConstants';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /** Same count as Reticulum 1.4.0 BackboneInterface `fast_flapping_grace`. */
 export const RETICULUM_STACK_FAST_FLAP_THRESHOLD = 5;
@@ -118,8 +118,12 @@ export class ReticulumStackSessionTracker {
     try {
       const raw = fs.readFileSync(this.persistPath, 'utf8');
       return parsePersistedSessions(JSON.parse(raw) as unknown);
-    } catch {
-      // catch-no-log-ok missing or corrupt session file — start empty
+    } catch (e: unknown) {
+      console.debug(
+        '[main/reticulumStackSessionTracker] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       return [];
     }
   }
@@ -138,7 +142,7 @@ export class ReticulumStackSessionTracker {
       if (code === 'ENOENT') {
         console.debug('[ReticulumSidecar] stack session persist path missing:', message);
       } else {
-        console.warn('[ReticulumSidecar] failed to persist stack sessions:', message);
+        console.warn('mcL0291 [ReticulumSidecar] failed to persist stack sessions:', message);
       }
     }
   }

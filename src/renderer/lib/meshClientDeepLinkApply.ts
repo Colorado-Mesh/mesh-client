@@ -40,12 +40,12 @@ export async function applyLxmaContactImport(opts: {
       last_heard: Math.floor(Date.now() / 1000),
       is_contact: true,
     });
-    void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch(() => {
-      // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+    void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch((e: unknown) => {
+      console.debug('[renderer/lib/meshClientDeepLinkApply] catch:', e);
     });
     return { ok: true, kind: 'lxmaContact' };
   } catch (err) {
-    console.error('[applyLxmaContactImport] upsert failed: ' + errLikeToLogString(err));
+    console.error('mcL0870 [applyLxmaContactImport] upsert failed: ' + errLikeToLogString(err));
     return { ok: false, errorKey: 'qrIngest.contactImportFailed' };
   }
 }
@@ -63,12 +63,12 @@ export async function applyLxmContactImport(opts: {
       last_heard: Math.floor(Date.now() / 1000),
       ...(opts.asSavedContact ? { is_contact: true } : {}),
     });
-    void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch(() => {
-      // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
+    void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch((e: unknown) => {
+      console.debug('[renderer/lib/meshClientDeepLinkApply] catch:', e);
     });
     return { ok: true, kind: 'lxmContact' };
   } catch (err) {
-    console.error('[applyLxmContactImport] upsert failed: ' + errLikeToLogString(err));
+    console.error('mcL0871 [applyLxmContactImport] upsert failed: ' + errLikeToLogString(err));
     return { ok: false, errorKey: 'qrIngest.contactImportFailed' };
   }
 }
@@ -111,7 +111,7 @@ export async function applyMeshcoreContactAdd(
     if (!ok) return { ok: false, errorKey: 'qrIngest.meshcoreContactImportFailed' };
     return { ok: true, kind: 'meshcoreContactAdd' };
   } catch (err) {
-    console.error('[applyMeshcoreContactAdd] failed: ' + errLikeToLogString(err));
+    console.error('mcL0872 [applyMeshcoreContactAdd] failed: ' + errLikeToLogString(err));
     return { ok: false, errorKey: 'qrIngest.meshcoreContactImportFailed' };
   }
 }
@@ -144,7 +144,7 @@ export async function applyMeshcoreChannelAdd(
     }
     return { ok: true, kind: 'meshcoreChannelAdd' };
   } catch (err) {
-    console.error('[applyMeshcoreChannelAdd] failed: ' + errLikeToLogString(err));
+    console.error('mcL0873 [applyMeshcoreChannelAdd] failed: ' + errLikeToLogString(err));
     return { ok: false, errorKey: 'qrIngest.meshcoreChannelImportFailed' };
   }
 }
@@ -175,7 +175,7 @@ export async function applyLxmPaperIngest(opts: { uri: string }): Promise<DeepLi
       detail: code || undefined,
     };
   } catch (err) {
-    console.error('[applyLxmPaperIngest] failed: ' + errLikeToLogString(err));
+    console.error('mcL0874 [applyLxmPaperIngest] failed: ' + errLikeToLogString(err));
     return { ok: false, errorKey: 'qrIngest.paperIngestFailed' };
   }
 }

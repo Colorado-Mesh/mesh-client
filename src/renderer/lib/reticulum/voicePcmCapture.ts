@@ -76,18 +76,18 @@ export async function attachVoicePcmCapture(
           try {
             node.port.onmessage = null;
             node.disconnect();
-          } catch {
-            // catch-no-log-ok
+          } catch (e: unknown) {
+            console.debug('[renderer/lib/reticulum/voicePcmCapture] catch:', e);
           }
           try {
             source.disconnect();
-          } catch {
-            // catch-no-log-ok
+          } catch (e: unknown) {
+            console.debug('[renderer/lib/reticulum/voicePcmCapture] catch:', e);
           }
           try {
             silentGain.disconnect();
-          } catch {
-            // catch-no-log-ok
+          } catch (e: unknown) {
+            console.debug('[renderer/lib/reticulum/voicePcmCapture] catch:', e);
           }
         },
       };
@@ -117,18 +117,18 @@ export async function attachVoicePcmCapture(
         // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor
         processor.onaudioprocess = null;
         processor.disconnect();
-      } catch {
-        // catch-no-log-ok
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/reticulum/voicePcmCapture] catch:', e);
       }
       try {
         source.disconnect();
-      } catch {
-        // catch-no-log-ok
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/reticulum/voicePcmCapture] catch:', e);
       }
       try {
         silentGain.disconnect();
-      } catch {
-        // catch-no-log-ok
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/reticulum/voicePcmCapture] catch:', e);
       }
     },
   };

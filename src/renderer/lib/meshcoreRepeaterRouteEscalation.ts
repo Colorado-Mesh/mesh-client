@@ -122,19 +122,19 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
     const last = lastEscalationByNode.get(cooldownKey);
     if (last != null && now() - last < cooldownMs) {
       console.warn(
-        `[meshcoreRepeaterRouteEscalation] cooldown active node=${normalizedId}; not flooding`,
+        `mcL0918 [meshcoreRepeaterRouteEscalation] cooldown active node=${normalizedId}; not flooding`,
       );
       throw firstErr;
     }
     console.warn(
-      `[meshcoreRepeaterRouteEscalation] timeout node=${normalizedId} route=${routeKind}; resetting path for flood retry`,
+      `mcL0919 [meshcoreRepeaterRouteEscalation] timeout node=${normalizedId} route=${routeKind}; resetting path for flood retry`,
     );
     let resetOk: boolean;
     try {
       resetOk = await deps.resetContactPath(normalizedId);
     } catch (resetErr) {
       console.warn(
-        `[meshcoreRepeaterRouteEscalation] resetContactPath failed node=${normalizedId} ` +
+        `mcL0920 [meshcoreRepeaterRouteEscalation] resetContactPath failed node=${normalizedId} ` +
           errLikeToLogString(resetErr),
       );
       throw firstErr;
@@ -146,7 +146,7 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
     }
     if (!resetOk) {
       console.warn(
-        `[meshcoreRepeaterRouteEscalation] resetContactPath returned false node=${normalizedId}; not retrying`,
+        `mcL0921 [meshcoreRepeaterRouteEscalation] resetContactPath returned false node=${normalizedId}; not retrying`,
       );
       throw firstErr;
     }
@@ -193,7 +193,7 @@ export async function withMeshcoreRepeaterLoginFallback<T>(
       throw err;
     }
     console.warn(
-      `[meshcoreRepeaterRouteEscalation] timeout node=${normalizedId}; logging in before one more attempt`,
+      `mcL0922 [meshcoreRepeaterRouteEscalation] timeout node=${normalizedId}; logging in before one more attempt`,
     );
     await loginOnce();
     return fn({ escalated: false, loggedIn: state.loggedIn });

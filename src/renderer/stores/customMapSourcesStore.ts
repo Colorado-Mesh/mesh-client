@@ -22,7 +22,7 @@ export const useCustomMapSourcesStore = create<CustomMapSourcesState>((set, get)
       const sources = await window.electronAPI.offlineMaps.custom.list();
       set({ sources, loadError: false });
     } catch (e: unknown) {
-      console.warn('[customMapSourcesStore] list failed ' + errLikeToLogString(e));
+      console.warn('mcL1389 [customMapSourcesStore] list failed ' + errLikeToLogString(e));
       set({ loadError: true });
     }
   },

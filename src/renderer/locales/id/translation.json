@@ -537,7 +537,10 @@
     "dangerZoneEnvironmentHistoryDesc": "Hapus semua pembacaan suhu, kelembapan, tekanan, dan kualitas udara yang tersimpan untuk setiap protokol dan identitas.",
     "clearAllRooms": "Hapus Semua Ruangan",
     "clearAllRoomsConfirm": "Ini akan menghapus semua server ruang MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Ruangan akan muncul kembali saat diiklankan lagi. Tindakan ini tidak dapat dibatalkan.",
-    "meshcomWatchlistHeading": "Daftar pantau nama panggilan MeshCom"
+    "meshcomWatchlistHeading": "Daftar pantau nama panggilan MeshCom",
+    "verboseLogging": "Sertakan debug dan info dalam log",
+    "verboseLoggingDesc": "Nonaktif secara default agar ekspor tetap berukuran kecil. Aktifkan, reproduksi masalah, lalu Ekspor untuk GitHub. Sebutkan kode mcL#### apa pun dari log saat melaporkan masalah.",
+    "verboseLoggingSupportHint": "Untuk bug yang sulit direproduksi, aktifkan Tulis debug dan info ke file log di panel Aplikasi → Log, reproduksi masalahnya, lalu Ekspor. Ekspor dukungan selalu menyertakan log lengkap di disk. Sebutkan kode mcL#### saat melaporkan masalah."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -2703,6 +2706,14 @@
       "gps": {
         "label": "Pencarian lokasi IP gagal",
         "recommendation": "Penurunan lokasi berbasis IP gagal. Periksa jangkauan internet; GPS radio dan lokasi statis yang ditetapkan secara manual terpisah dari pencarian IP ini."
+      },
+      "caught-serious-error": {
+        "label": "Menemukan Kesalahan Serius",
+        "recommendation": "Kesalahan serius terdeteksi tanpa menyebabkan crash. Sebutkan kode mcL#### apa pun, aktifkan pencatatan terperinci jika perlu, reproduksi, lalu Ekspor untuk GitHub dan laporkan bug."
+      },
+      "path-containment": {
+        "label": "Pembatasan Jalur",
+        "recommendation": "Sebuah jalur keluar dari root yang diizinkan (jail). Jika ini tidak terduga, Ekspor untuk GitHub dan laporkan; sebutkan kode mcL#### apa pun di log."
       }
     },
     "recommendationGroups": {
@@ -2735,7 +2746,8 @@
     "deviceSource": "Perangkat ({{count}})",
     "narrowLogPanel": "Panel log sempit",
     "widenLogPanel": "Perluas panel log",
-    "clearFailed": "Tidak dapat menghapus log"
+    "clearFailed": "Tidak dapat menghapus log",
+    "verboseLoggingOn": "Pencatatan terperinci diaktifkan — debug dan info sedang dicatat."
   },
   "mapPanel": {
     "locationUnavailable": "Lokasi tidak tersedia.",

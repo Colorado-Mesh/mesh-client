@@ -1,6 +1,7 @@
 import { normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import type { NodeSqliteDB } from './db-compat';
 import { meshtasticNodePublicKeyHexOrNull } from './meshtasticNodeRenumber';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /**
  * Shared nodes upsert SQL for `db:saveNode` and `db:saveNodes`.
@@ -150,8 +151,12 @@ export function saveNodesBatchOn(
       try {
         stmt.run(n);
       } catch (err) {
+        console.debug(
+          '[main/nodeUpsert] catch:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
         if (isSqliteOperationalWriteError(err)) throw err;
-        // catch-no-log-ok: drop-not-abort so one bad row cannot lose a 1000-node dump
+
         dropped++;
       }
     }

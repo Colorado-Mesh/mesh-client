@@ -109,7 +109,9 @@ async function defaultSaveMeshcoreContact(opts: {
     });
     return true;
   } catch (err) {
-    console.error('[meshcoreQrIngest] saveMeshcoreContact failed: ' + errLikeToLogString(err));
+    console.error(
+      'mcL0899 [meshcoreQrIngest] saveMeshcoreContact failed: ' + errLikeToLogString(err),
+    );
     return false;
   }
 }
@@ -302,7 +304,7 @@ export async function importMeshcoreQr(
       publicKey: bytes,
     };
   } catch (err) {
-    console.error('[meshcoreQrIngest] importMeshcoreQr failed: ' + errLikeToLogString(err));
+    console.error('mcL0900 [meshcoreQrIngest] importMeshcoreQr failed: ' + errLikeToLogString(err));
     if (
       storeId != null &&
       nodeId != null &&

@@ -62,8 +62,12 @@ export function parseMeshWeatherUrl(urlString: string): ParsedWeatherTile | null
   let url: URL;
   try {
     url = new URL(urlString);
-  } catch {
-    // catch-no-log-ok invalid mesh-weather URL
+  } catch (e: unknown) {
+    console.debug(
+      '[main/weather/weather-protocol] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
   if (url.protocol !== 'mesh-weather:') return null;
@@ -222,7 +226,11 @@ export function createWeatherProtocolHandler(
         state.tileCache.set(cacheKey, result.body, deps.now?.(), result.body.byteLength);
         return { ok: true as const, body: result.body };
       } catch (err) {
-        // catch-no-log-ok rate-limited via logFailOnce
+        console.debug(
+          '[main/weather/weather-protocol] catch:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+
         logFailOnce(
           state,
           cacheKey,
@@ -303,5 +311,5 @@ function logFailOnce(
   const last = state.lastFailLogMs.get(key) ?? 0;
   if (nowMs - last < 5 * MS_PER_MINUTE) return;
   state.lastFailLogMs.set(key, nowMs);
-  console.warn('[weather] tile ' + sanitizeLogMessage(message.slice(0, 200)));
+  console.warn('mcL0326 [weather] tile ' + sanitizeLogMessage(message.slice(0, 200)));
 }

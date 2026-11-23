@@ -196,7 +196,9 @@ afterEach(() => {
 function fixture() {
   const root = mkdtempSync(path.join(os.tmpdir(), 'mesh-sidecar-archive-'));
   fixtures.push(root);
-  for (const dir of ['scripts', '.rsstack', '.sidecar-artifacts']) mkdirSync(path.join(root, dir));
+  for (const dir of ['scripts', 'scripts/lib', '.rsstack', '.sidecar-artifacts']) {
+    mkdirSync(path.join(root, dir));
+  }
   for (const file of [
     'verify-reticulum-sidecar-staged.mjs',
     'reticulum-sidecar-staging.mjs',
@@ -206,6 +208,10 @@ function fixture() {
   ]) {
     copyFileSync(new URL(file, import.meta.url), path.join(root, 'scripts', file));
   }
+  copyFileSync(
+    new URL('./lib/path-under-root.mjs', import.meta.url),
+    path.join(root, 'scripts/lib/path-under-root.mjs'),
+  );
   writeFileSync(path.join(root, '.rsstack/RESOLVED_SHAS.txt'), 'rsNomad abc123\n');
   return root;
 }

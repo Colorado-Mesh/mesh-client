@@ -2,7 +2,6 @@
  * KMZ → temporary directory extract with zip-bomb / path-traversal guards.
  * Always uses `fs.mkdtempSync` under `os.tmpdir()` — never predictable temp paths.
  */
-
 import fs, { promises as fsp } from 'fs';
 import JSZip from 'jszip';
 import os from 'os';
@@ -13,6 +12,9 @@ import {
   MAP_OVERLAY_KMZ_MAX_UNCOMPRESSED_BYTES,
   MAP_OVERLAY_MAX_BYTES,
 } from '@/shared/mapOverlays/types';
+import { joinUnderRoot, resolveUnderRoot } from '@/shared/pathUnderRoot';
+
+import { sanitizeLogMessage } from '../sanitize-log-message';
 
 export class KmzExtractError extends Error {
   readonly code: 'too_large' | 'unsafe_zip' | 'empty' | 'io';
@@ -35,28 +37,30 @@ export function assertSafeZipEntryName(name: string, destRoot: string): string {
   if (normalizedPosix.split('/').some((seg) => seg === '..')) {
     throw new KmzExtractError('unsafe_zip', 'Zip path traversal is not allowed');
   }
-  const dest = path.resolve(destRoot, normalizedPosix);
-  const rootWithSep = destRoot.endsWith(path.sep) ? destRoot : destRoot + path.sep;
-  if (dest !== destRoot && !dest.startsWith(rootWithSep)) {
+  try {
+    return resolveUnderRoot(destRoot, normalizedPosix);
+  } catch {
     throw new KmzExtractError('unsafe_zip', 'Zip entry escapes extract directory');
   }
-  return dest;
 }
 
 async function findKmlFile(dir: string): Promise<string> {
-  const preferred = path.join(dir, 'doc.kml');
+  const preferred = joinUnderRoot(dir, 'doc.kml');
   try {
     await fsp.access(preferred);
     return preferred;
-  } catch {
-    // catch-no-log-ok fall through to recursive search
+  } catch (e: unknown) {
+    console.debug(
+      '[main/map-overlays/kmzExtract] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
 
   async function walk(current: string): Promise<string | null> {
     const entries = await fsp.readdir(current, { withFileTypes: true });
     const files: string[] = [];
     for (const entry of entries) {
-      const full = path.join(current, entry.name);
+      const full = joinUnderRoot(current, entry.name);
       if (entry.isDirectory()) {
         const nested = await walk(full);
         if (nested) return nested;
@@ -162,8 +166,11 @@ export async function extractKmlTextFromKmz(kmzBytes: Buffer): Promise<string> {
     }
     return kmlText;
   } finally {
-    await fsp.rm(dir, { recursive: true, force: true }).catch(() => {
-      // catch-no-log-ok best-effort cleanup
+    await fsp.rm(dir, { recursive: true, force: true }).catch((e: unknown) => {
+      console.debug(
+        '[main/map-overlays/kmzExtract] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
   }
 }

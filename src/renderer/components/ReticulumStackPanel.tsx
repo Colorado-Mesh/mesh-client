@@ -375,7 +375,7 @@ export function ReticulumStackPanel({
                     await refreshSidecarStatus();
                   })().catch((e: unknown) => {
                     console.warn(
-                      '[ReticulumStackPanel] stop stack failed ' +
+                      'mcL0604 [ReticulumStackPanel] stop stack failed ' +
                         (e instanceof Error ? e.message : String(e)),
                     );
                   });

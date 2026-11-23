@@ -11,11 +11,8 @@ import type {
   TranslationProgress,
 } from '../../shared/translation-types';
 import { sanitizeLogMessage } from '../sanitize-log-message';
-import {
-  TRANSLATION_MANIFEST,
-  type TranslationAsset,
-  type TranslationManifestPack,
-} from './translationManifest';
+import { getTranslationManifest } from './loadTranslationManifest';
+import type { TranslationAsset, TranslationManifestPack } from './translationManifest';
 
 interface InstallJob {
   abort: AbortController;
@@ -39,7 +36,7 @@ export class TranslationPackManager {
   private readonly verified = new Map<string, { signature: string; valid: boolean }>();
 
   constructor(private readonly deps: PackManagerDependencies) {
-    this.manifest = deps.manifest ?? TRANSLATION_MANIFEST;
+    this.manifest = deps.manifest ?? getTranslationManifest();
   }
 
   pack(id: string): TranslationManifestPack {
@@ -91,7 +88,11 @@ export class TranslationPackManager {
       this.verified.set(id, { signature, valid });
       return valid;
     } catch (error) {
-      // catch-no-log-ok absent/unreadable packs are reported as not installed, never loaded
+      console.debug(
+        '[main/translation/packManager] catch:',
+        sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+      );
+
       if (!(error instanceof Error)) throw error;
       return false;
     }
@@ -136,8 +137,11 @@ export class TranslationPackManager {
     job.promise = this.tail
       .then(() => this.runInstall(pack, job))
       .finally(() => this.jobs.delete(id));
-    this.tail = job.promise.catch(() => {
-      /* catch-no-log-ok install caller receives cleanup failure */
+    this.tail = job.promise.catch((e: unknown) => {
+      console.debug(
+        '[main/translation/packManager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
     this.jobs.set(id, job);
     this.emit(job);
@@ -166,8 +170,11 @@ export class TranslationPackManager {
       await fs.rm(path.join(this.deps.directory(), id), { recursive: true, force: true });
       this.verified.delete(id);
     });
-    this.tail = operation.catch(() => {
-      /* catch-no-log-ok caller receives destructive operation failure */
+    this.tail = operation.catch((e: unknown) => {
+      console.debug(
+        '[main/translation/packManager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
     await operation;
   }
@@ -178,8 +185,11 @@ export class TranslationPackManager {
       await fs.rm(this.deps.directory(), { recursive: true, force: true });
       this.verified.clear();
     });
-    this.tail = operation.catch(() => {
-      /* catch-no-log-ok caller receives destructive operation failure */
+    this.tail = operation.catch((e: unknown) => {
+      console.debug(
+        '[main/translation/packManager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
     await operation;
   }
@@ -222,7 +232,7 @@ export class TranslationPackManager {
       this.emit(job);
       if (!cancelled)
         console.warn(
-          '[translation] Download failed:',
+          'mcL0312 [translation] Download failed:',
           sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
         );
       return { ok: false, reason: cancelled ? 'cancelled' : 'downloadFailed' };

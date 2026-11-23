@@ -56,7 +56,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
 
   const session = tryGetReticulumSession();
   if (!session) {
-    console.warn('[sendReticulumVoiceMemo] Reticulum runtime not mounted');
+    console.warn('mcL1073 [sendReticulumVoiceMemo] Reticulum runtime not mounted');
     useReticulumVoiceMemoStore.getState().reset();
     return false;
   }
@@ -64,7 +64,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
   const destResolved = resolveReticulumChatDestHashDetailed(destination);
   if (destResolved.status === 'missing_lxmf') {
     console.warn(
-      '[sendReticulumVoiceMemo] destination is not lxmf.delivery (e.g. lxst.telephony)',
+      'mcL1074 [sendReticulumVoiceMemo] destination is not lxmf.delivery (e.g. lxst.telephony)',
       destination,
     );
     onMissingLxmfDelivery?.();
@@ -73,14 +73,14 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
   }
   const destHash = destResolved.status === 'ok' ? destResolved.hash : null;
   if (!destHash) {
-    console.warn('[sendReticulumVoiceMemo] no destination hash');
+    console.warn('mcL1075 [sendReticulumVoiceMemo] no destination hash');
     useReticulumVoiceMemoStore.getState().reset();
     return false;
   }
 
   const selfNodeId = session.selfNodeId;
   if (typeof selfNodeId !== 'number') {
-    console.warn('[sendReticulumVoiceMemo] self node id not ready');
+    console.warn('mcL1076 [sendReticulumVoiceMemo] self node id not ready');
     useReticulumVoiceMemoStore.getState().reset();
     return false;
   }
@@ -119,7 +119,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
           sizeBytes: res.size_bytes ?? 0,
         });
       } catch (e) {
-        console.warn('[sendReticulumVoiceMemo] stop failed:', errLikeToLogString(e));
+        console.warn('mcL1077 [sendReticulumVoiceMemo] stop failed:', errLikeToLogString(e));
         useReticulumVoiceMemoStore.getState().setError('stop_failed');
         return;
       }
@@ -127,7 +127,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
 
     const rawBytes = Math.round((oggBase64.length * 3) / 4);
     if (rawBytes > VOICE_MEMO_MAX_OGG_BYTES) {
-      console.warn('[sendReticulumVoiceMemo] Ogg too large:', rawBytes, 'bytes');
+      console.warn('mcL1078 [sendReticulumVoiceMemo] Ogg too large:', rawBytes, 'bytes');
       onOversize();
       useReticulumVoiceMemoStore.getState().reset();
       return;
@@ -137,7 +137,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
       fileNamePrefix: 'voice-memo-out',
     });
     if (!attachmentPath) {
-      console.warn('[sendReticulumVoiceMemo] local Ogg cache failed — aborting send');
+      console.warn('mcL1079 [sendReticulumVoiceMemo] local Ogg cache failed — aborting send');
       useReticulumVoiceMemoStore.getState().setError('cache_failed');
       return;
     }
@@ -260,7 +260,7 @@ export function sendReticulumVoiceMemo(opts: SendReticulumVoiceMemoOpts): boolea
       }
     } catch (e) {
       const errMsg = errLikeToLogString(e);
-      console.warn('[sendReticulumVoiceMemo] send failed:', errMsg);
+      console.warn('mcL1080 [sendReticulumVoiceMemo] send failed:', errMsg);
       if (errMsg.includes('no_propagation_node')) {
         onNoPropagationNode();
       }

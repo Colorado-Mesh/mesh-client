@@ -330,7 +330,7 @@ export default function ReticulumPropagationSection({
       })
       .catch((err: unknown) => {
         setSyncStarting(false);
-        console.warn('[ReticulumPropagationSection] sync cascade rejected', err);
+        console.warn('mcL0586 [ReticulumPropagationSection] sync cascade rejected', err);
         addToast(t('reticulumPropagation.syncFailed'), 'error');
       });
   };
@@ -346,11 +346,11 @@ export default function ReticulumPropagationSection({
     void setModeOnSidecar(next)
       .then((ok) => {
         if (!ok) {
-          console.warn('[ReticulumPropagationSection] setModeOnSidecar failed', next);
+          console.warn('mcL0587 [ReticulumPropagationSection] setModeOnSidecar failed', next);
         }
       })
       .catch((err: unknown) => {
-        console.warn('[ReticulumPropagationSection] setModeOnSidecar rejected', err);
+        console.warn('mcL0588 [ReticulumPropagationSection] setModeOnSidecar rejected', err);
       });
     if (next !== 'auto') return;
     // Auto: kick discovered hash sync → configured → local (no Add, no Preferred).
@@ -376,7 +376,7 @@ export default function ReticulumPropagationSection({
       })
       .catch((err: unknown) => {
         setIgnoreBusy(false);
-        console.warn('[ReticulumPropagationSection] ignoreForAuto rejected', err);
+        console.warn('mcL0589 [ReticulumPropagationSection] ignoreForAuto rejected', err);
         addToast(t('reticulumPropagation.ignoreForAutoFailed'), 'error');
       });
   };
@@ -391,7 +391,7 @@ export default function ReticulumPropagationSection({
       })
       .catch((err: unknown) => {
         setIgnoreBusy(false);
-        console.warn('[ReticulumPropagationSection] allowForAuto rejected', err);
+        console.warn('mcL0590 [ReticulumPropagationSection] allowForAuto rejected', err);
         addToast(t('reticulumPropagation.allowForAutoFailed'), 'error');
       });
   };
@@ -430,7 +430,7 @@ export default function ReticulumPropagationSection({
       })
       .catch((err: unknown) => {
         setAdding(false);
-        console.warn('[ReticulumPropagationSection] addFromDiscovered rejected', err);
+        console.warn('mcL0591 [ReticulumPropagationSection] addFromDiscovered rejected', err);
         addToast(t('reticulumPropagation.addFailed'), 'error');
       });
   };
@@ -553,7 +553,8 @@ export default function ReticulumPropagationSection({
                           })
                           .catch((e: unknown) => {
                             console.warn(
-                              '[ReticulumPropagationSection] rename ' + errLikeToLogString(e),
+                              'mcL0592 [ReticulumPropagationSection] rename ' +
+                                errLikeToLogString(e),
                             );
                             addToast(t('reticulumPropagation.renameFailed'), 'error');
                           });
@@ -607,7 +608,10 @@ export default function ReticulumPropagationSection({
                         }
                       })
                       .catch((err: unknown) => {
-                        console.warn('[ReticulumPropagationSection] setPreferred rejected', err);
+                        console.warn(
+                          'mcL0593 [ReticulumPropagationSection] setPreferred rejected',
+                          err,
+                        );
                         addToast(t('reticulumPropagation.setPreferredFailed'), 'error');
                       });
                   }}
@@ -645,7 +649,7 @@ export default function ReticulumPropagationSection({
                       .then(handleRefresh)
                       .catch((err: unknown) => {
                         console.warn(
-                          '[ReticulumPropagationSection] enable/disable proxyPost rejected',
+                          'mcL0594 [ReticulumPropagationSection] enable/disable proxyPost rejected',
                           err,
                         );
                         addToast(
@@ -767,14 +771,14 @@ export default function ReticulumPropagationSection({
               .then((ok) => {
                 if (!ok) {
                   console.warn(
-                    '[ReticulumPropagationSection] setAutoSyncIntervalOnSidecar failed',
+                    'mcL0595 [ReticulumPropagationSection] setAutoSyncIntervalOnSidecar failed',
                     sec,
                   );
                 }
               })
               .catch((err: unknown) => {
                 console.warn(
-                  '[ReticulumPropagationSection] setAutoSyncIntervalOnSidecar rejected',
+                  'mcL0596 [ReticulumPropagationSection] setAutoSyncIntervalOnSidecar rejected',
                   err,
                 );
               });
@@ -885,7 +889,10 @@ export default function ReticulumPropagationSection({
               })
               .catch((err: unknown) => {
                 setAdding(false);
-                console.warn('[ReticulumPropagationSection] addPropagationNode rejected', err);
+                console.warn(
+                  'mcL0597 [ReticulumPropagationSection] addPropagationNode rejected',
+                  err,
+                );
                 addToast(t('reticulumPropagation.addFailed'), 'error');
               });
           }}
@@ -910,7 +917,9 @@ export default function ReticulumPropagationSection({
                 }
               })
               .catch((e: unknown) => {
-                console.warn('[ReticulumPropagationSection] remove ' + errLikeToLogString(e));
+                console.warn(
+                  'mcL0598 [ReticulumPropagationSection] remove ' + errLikeToLogString(e),
+                );
                 addToast(t('reticulumPropagation.deleteFailed'), 'error');
               });
           }}
@@ -932,7 +941,7 @@ export default function ReticulumPropagationSection({
               .then(handleRefresh)
               .catch((err: unknown) => {
                 console.warn(
-                  '[ReticulumPropagationSection] local-prop enable proxyPost rejected',
+                  'mcL0599 [ReticulumPropagationSection] local-prop enable proxyPost rejected',
                   err,
                 );
                 addToast(t('reticulumPropagation.enableFailed'), 'error');

@@ -543,39 +543,43 @@ export function persistRmapUiPrefs(prefs: {
       String(clampRmapAnnounceIntervalMin(prefs.announceIntervalMin)),
     )
     .catch((e: unknown) => {
-      console.warn('[reticulumRmapDiscovery] persist announceInterval ' + errLikeToLogString(e));
+      console.warn(
+        'mcL1044 [reticulumRmapDiscovery] persist announceInterval ' + errLikeToLogString(e),
+      );
     });
   void window.electronAPI.appSettings
     .set(RMAP_SETTINGS_KEYS.reachableOn, prefs.reachableOn.trim())
     .catch((e: unknown) => {
-      console.warn('[reticulumRmapDiscovery] persist reachableOn ' + errLikeToLogString(e));
+      console.warn('mcL1045 [reticulumRmapDiscovery] persist reachableOn ' + errLikeToLogString(e));
     });
   if (height) {
     void window.electronAPI.appSettings
       .set(RMAP_SETTINGS_KEYS.heightMeters, height)
       .catch((e: unknown) => {
-        console.warn('[reticulumRmapDiscovery] persist heightMeters ' + errLikeToLogString(e));
+        console.warn(
+          'mcL1046 [reticulumRmapDiscovery] persist heightMeters ' + errLikeToLogString(e),
+        );
       });
   }
   void window.electronAPI.appSettings
     .set(RMAP_SETTINGS_KEYS.discoveryLxmfAddress, lxmf)
     .catch((e: unknown) => {
-      console.warn('[reticulumRmapDiscovery] persist lxmfAddress ' + errLikeToLogString(e));
+      console.warn('mcL1047 [reticulumRmapDiscovery] persist lxmfAddress ' + errLikeToLogString(e));
     });
   void window.electronAPI.appSettings
     .set(RMAP_SETTINGS_KEYS.discoveryStampValue, String(stamp))
     .catch((e: unknown) => {
-      console.warn('[reticulumRmapDiscovery] persist stampValue ' + errLikeToLogString(e));
+      console.warn('mcL1048 [reticulumRmapDiscovery] persist stampValue ' + errLikeToLogString(e));
     });
   void window.electronAPI.appSettings
     .set(RMAP_SETTINGS_KEYS.discoveryEncrypt, prefs.discoveryEncrypt === true ? 'true' : 'false')
     .catch((e: unknown) => {
-      console.warn('[reticulumRmapDiscovery] persist encrypt ' + errLikeToLogString(e));
+      console.warn('mcL1049 [reticulumRmapDiscovery] persist encrypt ' + errLikeToLogString(e));
     });
   void window.electronAPI.appSettings
     .set(RMAP_SETTINGS_KEYS.publishIfac, prefs.publishIfac === true ? 'true' : 'false')
     .catch((e: unknown) => {
-      console.warn('[reticulumRmapDiscovery] persist publishIfac ' + errLikeToLogString(e));
+      console.warn('mcL1050 [reticulumRmapDiscovery] persist publishIfac ' + errLikeToLogString(e));
     });
 }
 
@@ -679,7 +683,8 @@ export async function applyReticulumRmapDiscovery(
         enable_transport: true,
       });
     } catch (e) {
-      // catch-no-log-ok partial apply — surfaced via RmapBatchApplyResult.errors
+      console.debug('[renderer/lib/reticulum/reticulumRmapDiscovery] catch:', e);
+
       errors.push(errLikeToLogString(e));
     }
   }
@@ -701,7 +706,8 @@ export async function applyReticulumRmapDiscovery(
       await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${row.id}`, patch);
       applied++;
     } catch (e) {
-      // catch-no-log-ok partial apply — surfaced via RmapBatchApplyResult.errors
+      console.debug('[renderer/lib/reticulum/reticulumRmapDiscovery] catch:', e);
+
       errors.push(errLikeToLogString(e));
     }
   }
@@ -710,7 +716,8 @@ export async function applyReticulumRmapDiscovery(
     try {
       await ensureRmapWorldHubEnabled(args.interfaces);
     } catch (e) {
-      // catch-no-log-ok partial apply — surfaced via RmapBatchApplyResult.errors
+      console.debug('[renderer/lib/reticulum/reticulumRmapDiscovery] catch:', e);
+
       errors.push(errLikeToLogString(e));
     }
   }
@@ -818,7 +825,8 @@ export async function disableReticulumRmapDiscovery(
       }
       applied++;
     } catch (e) {
-      // catch-no-log-ok partial disable — surfaced via RmapBatchApplyResult.errors
+      console.debug('[renderer/lib/reticulum/reticulumRmapDiscovery] catch:', e);
+
       errors.push(errLikeToLogString(e));
     }
   }

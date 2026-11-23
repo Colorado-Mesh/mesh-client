@@ -674,6 +674,20 @@ describe('dedupeRecommendations', () => {
   });
 });
 
+describe('caught-serious-error and path-containment', () => {
+  it('matches caught serious error lines', () => {
+    const entries: LogEntry[] = [makeEntry('[main] Caught serious error (unit): boom', 'error')];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.some((c) => c.id === 'caught-serious-error')).toBe(true);
+  });
+
+  it('matches path containment warnings', () => {
+    const entries: LogEntry[] = [makeEntry('PATH_ESCAPES_ROOT: bad segment', 'warn')];
+    const result = analyzeLogs(entries, 'meshtastic');
+    expect(result.categories.some((c) => c.id === 'path-containment')).toBe(true);
+  });
+});
+
 describe('formatTimeRange', () => {
   it('formats same-day range', () => {
     const now = Date.now();

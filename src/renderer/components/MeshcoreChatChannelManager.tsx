@@ -171,7 +171,7 @@ export default function MeshcoreChatChannelManager({
       finishAdd(message);
     } catch (error) {
       const message = errLikeToLogString(error);
-      console.warn('[MeshcoreChatChannelManager] add failed ' + message);
+      console.warn('mcL0447 [MeshcoreChatChannelManager] add failed ' + message);
       const feedbackMessage = t('radioPanel.channelSaveFailed', { message });
       setFeedback({ message: feedbackMessage, type: 'error' });
       addToast(feedbackMessage, 'error');

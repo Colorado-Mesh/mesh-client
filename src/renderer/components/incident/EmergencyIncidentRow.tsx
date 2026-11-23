@@ -119,7 +119,7 @@ export function useIncidentAckOutboxRows(): {
           if (!cancelled) setRows(listed);
         })
         .catch((err: unknown) => {
-          console.warn('[IncidentPanel] list ACK outbox failed', err);
+          console.warn('mcL0650 [IncidentPanel] list ACK outbox failed', err);
         });
     };
     load();
@@ -140,7 +140,7 @@ export function useIncidentAckOutboxRows(): {
       await window.electronAPI.chat.outbox.remove(row.id);
       if (isMeshProtocol(row.protocol)) notifyChatOutboxRowsChanged(row.protocol);
     } catch (err: unknown) {
-      console.warn('[IncidentPanel] cancel ACK outbox failed', err);
+      console.warn('mcL0651 [IncidentPanel] cancel ACK outbox failed', err);
     }
   }, []);
 

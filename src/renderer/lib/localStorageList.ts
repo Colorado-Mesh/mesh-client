@@ -10,8 +10,9 @@ export function readRawStringList(key: string): string[] {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed.filter((x): x is string => typeof x === 'string');
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/localStorageList] catch:', e);
+
     return [];
   }
 }
@@ -19,8 +20,8 @@ export function readRawStringList(key: string): string[] {
 export function writeStringList(key: string, items: string[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(items));
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/localStorageList] catch:', e);
   }
 }
 
@@ -35,8 +36,8 @@ export function loadCanonicalStringList(
     if (raw !== JSON.stringify(items)) {
       writeStringList(key, items);
     }
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/localStorageList] catch:', e);
   }
   return items;
 }

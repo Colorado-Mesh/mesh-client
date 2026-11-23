@@ -15,8 +15,8 @@ export function setFlasherSessionPortId(portId: string): void {
   try {
     setRendererStorageItem(FLASHER_LAST_PORT_KEY, portId);
     setRendererStorageItem(LAST_SERIAL_PORT_KEY, portId);
-  } catch {
-    // catch-no-log-ok localStorage quota or private mode — session still holds portId
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/flasher/flasherSessionPort] catch:', e);
   }
 }
 
@@ -26,8 +26,9 @@ export function getFlasherSessionPortId(): string | null {
   }
   try {
     return localStorage.getItem(FLASHER_LAST_PORT_KEY);
-  } catch {
-    // catch-no-log-ok localStorage read failure
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/flasher/flasherSessionPort] catch:', e);
+
     return null;
   }
 }

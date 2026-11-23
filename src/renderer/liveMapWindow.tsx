@@ -47,7 +47,7 @@ async function start(): Promise<void> {
 
 start().catch((cause: unknown) => {
   console.error(
-    '[live-map] window boot failed:',
+    'mcL1174 [live-map] window boot failed:',
     cause instanceof Error ? (cause.stack ?? cause.message) : String(cause),
   );
 });

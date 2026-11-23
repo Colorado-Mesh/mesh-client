@@ -1,11 +1,16 @@
 // @vitest-environment node
 import { readdirSync, readFileSync } from 'fs';
-import { dirname, join, normalize } from 'path';
+import path, { dirname, join, normalize } from 'path';
 import { describe, expect, it } from 'vitest';
 
-const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
-const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf-8');
-const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
+import { assertPathInsideRoot, joinUnderRoot, resolveUnderRoot } from '../shared/pathUnderRoot';
+
+const INDEX_SOURCE = readFileSync(joinUnderRoot(__dirname, 'index.ts'), 'utf-8');
+const PRELOAD_SOURCE = readFileSync(
+  joinUnderRoot(dirname(__dirname), 'preload', 'index.ts'),
+  'utf-8',
+);
+const TCP_BRIDGE_SOURCE = readFileSync(joinUnderRoot(__dirname, 'ipc', 'tcp-bridge.ts'), 'utf-8');
 
 describe('renderer origin cutover (source contract)', () => {
   it('registers the secure renderer protocol before creating a window', () => {
@@ -167,7 +172,7 @@ describe('GATT BLE disconnect handling (source contract)', () => {
     expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'no-socket'");
     expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'reject'");
     expect(TCP_BRIDGE_SOURCE).toMatch(
-      /writeMissing === 'no-socket'[\s\S]{0,200}console\.debug\(`\[IPC\] \$\{writeChannel\}: no active socket`\)[\s\S]{0,80}return 'no-socket'/,
+      /writeMissing === 'no-socket'[\s\S]{0,200}console\.debug\('\[IPC]', writeChannel \+ ': no active socket'\)[\s\S]{0,80}return 'no-socket'/,
     );
     expect(TCP_BRIDGE_SOURCE).toContain('meshtasticTcpWriteErrorIsNoSocket');
     expect(TCP_BRIDGE_SOURCE).toMatch(/sock\.destroyed \|\| sock\.writableEnded/);
@@ -247,15 +252,16 @@ describe('MQTT forwarder dropped-event logs (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /mqtt:clientId dropped \(mainWindow not ready\)',\s*sanitizeLogMessage\(id\)/,
     );
-    // MeshCore / MeshCom share attachMqttAdapterUiEvents — protocol is interpolated.
+    // MeshCore / MeshCom share attachMqttAdapterUiEvents — protocol is a %s arg
+    // (literal format string; avoids unsafe-formatstring).
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:status \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(s\)/,
+      /mqtt:status \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}protocol[\s\S]{0,40}sanitizeLogMessage\(s\)/,
     );
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:error \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(msg\)/,
+      /mqtt:error \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}protocol[\s\S]{0,40}sanitizeLogMessage\(msg\)/,
     );
     expect(INDEX_SOURCE).toMatch(
-      /mqtt:clientId \(\$\{protocol\}\) dropped \(mainWindow not ready\)`[\s\S]{0,40}sanitizeLogMessage\(id\)/,
+      /mqtt:clientId \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}protocol[\s\S]{0,40}sanitizeLogMessage\(id\)/,
     );
     expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcoreMqttAdapter,\s*'meshcore'\)/);
     expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcomMqttAdapter,\s*'meshcom'\)/);
@@ -331,13 +337,13 @@ describe('MeshCore DB IPC (source contract)', () => {
   });
 });
 
-const RENDERER_ROOT = join(__dirname, '../renderer');
-const SRC_ROOT = join(__dirname, '..');
+const SRC_ROOT = dirname(__dirname);
+const RENDERER_ROOT = joinUnderRoot(SRC_ROOT, 'renderer');
 
 function listRendererSources(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
+    const full = joinUnderRoot(dir, entry.name);
     if (entry.isDirectory()) {
       out.push(...listRendererSources(full));
       continue;
@@ -535,18 +541,42 @@ function localInitializers(source: string, name: string): string[] {
   return out;
 }
 
+function resolveModuleBase(fromFile: string, spec: string): string | null {
+  if (spec.startsWith('@/')) {
+    return resolveUnderRoot(SRC_ROOT, spec.slice(2));
+  }
+  if (!spec.startsWith('.')) return null;
+  const normalized = spec.replace(/\\/g, '/');
+  if (!normalized.includes('..')) {
+    const relative = normalized.replace(/^\.\//, '');
+    return resolveUnderRoot(dirname(fromFile), relative);
+  }
+  const parts = dirname(fromFile).split(/[/\\]/);
+  for (const segment of normalized.split('/')) {
+    if (segment === '' || segment === '.') continue;
+    if (segment === '..') {
+      if (parts.length === 0) return null;
+      parts.pop();
+      continue;
+    }
+    parts.push(segment);
+  }
+  const resolved = parts.join(path.sep);
+  try {
+    return assertPathInsideRoot(SRC_ROOT, resolved);
+  } catch {
+    return null;
+  }
+}
+
 function resolveModule(
   fromFile: string,
   spec: string,
   sources: ReadonlyMap<string, string>,
 ): string | null {
-  const base = spec.startsWith('@/')
-    ? join(SRC_ROOT, spec.slice(2))
-    : spec.startsWith('.')
-      ? join(dirname(fromFile), spec)
-      : null;
+  const base = resolveModuleBase(fromFile, spec);
   if (!base) return null;
-  for (const candidate of [base, `${base}.ts`, `${base}.tsx`, join(base, 'index.ts')]) {
+  for (const candidate of [base, `${base}.ts`, `${base}.tsx`, joinUnderRoot(base, 'index.ts')]) {
     const normalized = normalize(candidate);
     if (sources.has(normalized)) return normalized;
   }
@@ -652,6 +682,7 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain("'reticulumLastSelfLxmfHash'");
     expect(INDEX_SOURCE).toContain("'use24HourTime'");
     expect(INDEX_SOURCE).toContain("'meshcomCallsignWatchlist'");
+    expect(INDEX_SOURCE).toContain('VERBOSE_LOGGING_SETTING_KEY');
     expect(INDEX_SOURCE).toContain('MESHCOM_CALLSIGN_WATCHLIST_MAX_VALUE_LENGTH');
     expect(INDEX_SOURCE).toContain('MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX');
     expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_SYNC_SETTING_PREFIX');
@@ -762,7 +793,7 @@ describe('External link routing (source contract)', () => {
 
   it('logs rejected external link opens instead of leaving unhandled rejections', () => {
     expect(INDEX_SOURCE).toContain('shell.openExternal(target.toString()).catch((e: unknown) => {');
-    expect(INDEX_SOURCE).toContain("'[main] external link open failed'");
+    expect(INDEX_SOURCE).toContain("'mcL0060 [main] external link open failed'");
     expect(INDEX_SOURCE).toContain(
       'sanitizeLogMessage(e instanceof Error ? e.message : String(e))',
     );
@@ -786,11 +817,11 @@ describe('About dialog crash guard (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /function applyAboutPanelOptions\(\): void \{[\s\S]*?if \(process\.platform === 'win32'\) \{\s*return;\s*\}/,
     );
-    expect(INDEX_SOURCE).toContain("'[main] about dialog failed'");
+    expect(INDEX_SOURCE).toContain("'mcL0056 [main] about dialog failed'");
     expect(INDEX_SOURCE).toContain(
       'dialog.showErrorBox(`About ${appName}`, `${appName}\\nVersion ${version}`);',
     );
-    expect(INDEX_SOURCE).toContain("'[main] about dialog fallback failed'");
+    expect(INDEX_SOURCE).toContain("'mcL0057 [main] about dialog fallback failed'");
     expect(INDEX_SOURCE).not.toContain('showMessageBox(`About ${appName}`');
   });
 
@@ -798,7 +829,7 @@ describe('About dialog crash guard (source contract)', () => {
     expect(INDEX_SOURCE).toContain('function openHelpExternalLink(');
     expect(INDEX_SOURCE).toContain('function buildHelpMenuExternalLinkItems(');
     expect(INDEX_SOURCE).toContain('[main] help link: openExternal url=');
-    expect(INDEX_SOURCE).toContain('[main] help link: openExternal failed');
+    expect(INDEX_SOURCE).toContain('mcL0053 [main] help link: openExternal failed');
     expect(INDEX_SOURCE).toContain(
       'void shell.openExternal(target.toString() /* parseHttpOrHttpsUrl */).catch((e: unknown) => {',
     );
@@ -1046,7 +1077,7 @@ describe('Native crash observability (source contract)', () => {
     );
     expect(INDEX_SOURCE).toContain('crashReporter.start({ uploadToServer: false })');
     expect(INDEX_SOURCE).toContain("'[main] crashDumps path:'");
-    expect(INDEX_SOURCE).toContain("'[main] child-process-gone:'");
+    expect(INDEX_SOURCE).toContain("'mcL0138 [main] child-process-gone:'");
   });
 
   it('registers mesh-tiles as a privileged scheme before ready and handles it', () => {
@@ -1108,21 +1139,21 @@ describe('Unread app badge wiring (source contract)', () => {
   it('reapplies the latest unread count on focus and before best-effort tray updates', () => {
     expect(INDEX_SOURCE).toMatch(/win\.on\('focus', \(\) => \{[^}]*refreshUnreadAppBadge\(\)/);
     expect(INDEX_SOURCE).toMatch(/lastTrayUnreadCount = n;\s*refreshUnreadAppBadge\(\);/);
-    expect(INDEX_SOURCE).toContain("'[main] app unread badge update failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0068 [main] app unread badge update failed:'");
   });
 });
 
 describe('Native Electron call guards (source contract)', () => {
   it('keeps tray, badge, and power-save native calls best-effort', () => {
-    expect(INDEX_SOURCE).toContain("'[main] tray icon load failed:'");
-    expect(INDEX_SOURCE).toContain("'[main] tray unread icon overlay failed:'");
-    expect(INDEX_SOURCE).toContain("'[main] tray setup failed:'");
-    expect(INDEX_SOURCE).toContain("'[main] tray unread update failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0048 [main] tray icon load failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0049 [main] tray unread icon overlay failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0050 [main] tray setup failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0070 [main] tray unread update failed:'");
     expect(INDEX_SOURCE).toContain('loadPaintTrayUnreadDot()(');
     expect(INDEX_SOURCE).toContain('function startPowerSaveBlocker(): void');
     expect(INDEX_SOURCE).toContain('function stopPowerSaveBlocker(): void');
-    expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker start failed:'");
-    expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker stop failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0071 [main] powerSaveBlocker start failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0072 [main] powerSaveBlocker stop failed:'");
     expect(INDEX_SOURCE).toContain('shouldHoldPowerSaveBlocker(');
     expect(INDEX_SOURCE).toContain('meshtasticConnectionType');
     expect(INDEX_SOURCE).toContain('meshcoreConnectionType');
@@ -1136,13 +1167,13 @@ describe('Native Electron call guards (source contract)', () => {
   });
 
   it('logs native IPC helper failures locally before fallback or rejection', () => {
-    expect(INDEX_SOURCE).toContain("'[IPC] notify:message failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0106 [IPC] notify:message failed:'");
     expect(INDEX_SOURCE).toContain('const secureSecretStore = new SecureSecretStore(getDatabase)');
     expect(INDEX_SOURCE).not.toContain("ipcMain.handle('storage:decrypt'");
-    expect(INDEX_SOURCE).toContain("'[IPC] app:getLoginItem failed:'");
-    expect(INDEX_SOURCE).toContain("'[IPC] app:setLoginItem failed:'");
-    expect(INDEX_SOURCE).toContain("'[IPC] app:showEmojiPanel failed:'");
-    expect(INDEX_SOURCE).toContain("'[IPC] meshcore:openJsonFile failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0108 [IPC] app:getLoginItem failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0109 [IPC] app:setLoginItem failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0112 [IPC] app:showEmojiPanel failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL0132 [IPC] meshcore:openJsonFile failed:'");
   });
 
   it('guards fatal startup error dialog fallback', () => {

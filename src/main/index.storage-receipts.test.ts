@@ -36,6 +36,8 @@ function receiptIpcHarness() {
       ...rendererOrigin,
       ...rendererStorageIntent,
       PREVENT_SLEEP_SETTING_KEY,
+      VERBOSE_LOGGING_SETTING_KEY: 'verboseLogging',
+      setVerboseLoggingEnabled: () => {},
       syncPowerSaveBlocker: () => {},
       writeRendererStorageDeletionState,
       ipcMain: {

@@ -755,10 +755,10 @@ function AppContent() {
 
   useEffect(() => {
     void loadNotificationSoundSettings().catch((error: unknown) => {
-      console.warn('[App] notification sounds hydrate failed ' + errLikeToLogString(error));
+      console.warn('mcL0330 [App] notification sounds hydrate failed ' + errLikeToLogString(error));
     });
     void loadMeshcomCallsignWatchlist().catch((error: unknown) => {
-      console.warn('[App] MeshCom watchlist hydrate failed ' + errLikeToLogString(error));
+      console.warn('mcL0331 [App] MeshCom watchlist hydrate failed ' + errLikeToLogString(error));
     });
   }, []);
 
@@ -901,8 +901,9 @@ function AppContent() {
   const [meshcoreContactsShowPublicKeys, setMeshcoreContactsShowPublicKeysState] = useState(() => {
     try {
       return localStorage.getItem(MESHCORE_CONTACTS_SHOW_KEYS_KEY) === 'true';
-    } catch {
-      // catch-no-log-ok localStorage read unavailable
+    } catch (e: unknown) {
+      console.debug('[renderer/App] catch:', e);
+
       return false;
     }
   });
@@ -910,8 +911,9 @@ function AppContent() {
     () => {
       try {
         return localStorage.getItem(MESHCORE_CONTACTS_SHOW_REFRESH_KEY) === 'true';
-      } catch {
-        // catch-no-log-ok localStorage read unavailable
+      } catch (e: unknown) {
+        console.debug('[renderer/App] catch:', e);
+
         return false;
       }
     },
@@ -923,16 +925,16 @@ function AppContent() {
     setMeshcoreContactsShowPublicKeysState(value);
     try {
       localStorage.setItem(MESHCORE_CONTACTS_SHOW_KEYS_KEY, String(value));
-    } catch {
-      // catch-no-log-ok localStorage
+    } catch (e: unknown) {
+      console.debug('[renderer/App] catch:', e);
     }
   }, []);
   const onMeshcoreContactsShowRefreshControlChange = useCallback((value: boolean) => {
     setMeshcoreContactsShowRefreshControlState(value);
     try {
       localStorage.setItem(MESHCORE_CONTACTS_SHOW_REFRESH_KEY, String(value));
-    } catch {
-      // catch-no-log-ok localStorage
+    } catch (e: unknown) {
+      console.debug('[renderer/App] catch:', e);
     }
   }, []);
   const onMeshcoreAutoOffloadWhenFullChange = useCallback((value: boolean) => {
@@ -1439,7 +1441,7 @@ function AppContent() {
         return true;
       } catch (e: unknown) {
         hydratedProtocolsRef.current.delete(p);
-        console.warn(`[App] startup hydrate ${p} failed ` + errLikeToLogString(e));
+        console.warn(`mcL0332 [App] startup hydrate ${p} failed ` + errLikeToLogString(e));
         return false;
       }
     };
@@ -2375,7 +2377,7 @@ function AppContent() {
           );
         })
         .catch((e: unknown) => {
-          console.warn('[App] incident ACK send failed: ' + errLikeToLogString(e));
+          console.warn('mcL0333 [App] incident ACK send failed: ' + errLikeToLogString(e));
           addToast(t('incidentPanel.ackFailed'), 'error');
         });
     },
@@ -2426,7 +2428,7 @@ function AppContent() {
           }
         })
         .catch((e: unknown) => {
-          console.warn('[App] beacon cancel failed: ' + errLikeToLogString(e));
+          console.warn('mcL0334 [App] beacon cancel failed: ' + errLikeToLogString(e));
           addToast(t('incidentPanel.beaconCancelFailed'), 'error');
         });
     },
@@ -2717,7 +2719,7 @@ function AppContent() {
         if (!cancelled) setSettingSearchEntries(entries);
       },
       (err: unknown) => {
-        if (!cancelled) console.warn('[App] settings search registry failed to load', err);
+        if (!cancelled) console.warn('mcL0335 [App] settings search registry failed to load', err);
       },
     );
     return () => {
@@ -3211,14 +3213,16 @@ function AppContent() {
         console.debug('[App] disconnecting meshcore MQTT: disabled in App → Protocols');
         void window.electronAPI.mqtt.disconnect('meshcore').catch((e: unknown) => {
           console.warn(
-            '[App] MQTT disconnect of disabled meshcore failed ' + errLikeToLogString(e),
+            'mcL0336 [App] MQTT disconnect of disabled meshcore failed ' + errLikeToLogString(e),
           );
         });
       }
       if (hidden === 'meshcom') {
         console.debug('[App] disconnecting meshcom MQTT: disabled in App → Protocols');
         void window.electronAPI.mqtt.disconnect('meshcom').catch((e: unknown) => {
-          console.warn('[App] MQTT disconnect of disabled meshcom failed ' + errLikeToLogString(e));
+          console.warn(
+            'mcL0337 [App] MQTT disconnect of disabled meshcom failed ' + errLikeToLogString(e),
+          );
         });
       }
       if (
@@ -3228,7 +3232,7 @@ function AppContent() {
         console.debug(`[App] disconnecting ${hidden} MQTT: disabled in App → Protocols`);
         void window.electronAPI.mqtt.disconnect('meshtastic').catch((e: unknown) => {
           console.warn(
-            `[App] MQTT disconnect of disabled ${hidden} failed ` + errLikeToLogString(e),
+            `mcL0338 [App] MQTT disconnect of disabled ${hidden} failed ` + errLikeToLogString(e),
           );
         });
       }
@@ -3236,7 +3240,9 @@ function AppContent() {
       if (actions.state.status === 'disconnected') continue;
       console.debug(`[App] disconnecting ${hidden}: disabled in App → Protocols`);
       void actions.disconnect().catch((e: unknown) => {
-        console.warn(`[App] disconnect of disabled ${hidden} failed ` + errLikeToLogString(e));
+        console.warn(
+          `mcL0339 [App] disconnect of disabled ${hidden} failed ` + errLikeToLogString(e),
+        );
       });
     }
   }, [hiddenProtocols, capabilitiesByProtocol, meshtasticConnectionView.mqttStatus]);
@@ -3981,7 +3987,7 @@ function AppContent() {
       text: string;
     }): boolean => {
       if (!selectByProtocol(chatSendAvailableByProtocol, args.protocol)) {
-        console.warn('[App] team roster send unavailable for protocol', args.protocol);
+        console.warn('mcL0340 [App] team roster send unavailable for protocol', args.protocol);
         return false;
       }
       let destination = args.destination;
@@ -3990,7 +3996,7 @@ function AppContent() {
           destination = openReticulumDmFromHash(args.reticulumHash);
         } catch (err) {
           console.warn(
-            '[App] team roster Reticulum DM failed ' +
+            'mcL0341 [App] team roster Reticulum DM failed ' +
               (err instanceof Error ? err.message : String(err)),
           );
           return false;
@@ -4000,13 +4006,18 @@ function AppContent() {
         const send = selectByProtocol(autoResendSendByProtocol, args.protocol);
         const storeId = send(args.text, 0, destination);
         if (storeId == null) {
-          console.warn('[App] team roster send returned no store id', args.protocol, destination);
+          console.warn(
+            'mcL0342 [App] team roster send returned no store id',
+            args.protocol,
+            destination,
+          );
           return false;
         }
         return true;
       } catch (err) {
         console.warn(
-          '[App] team roster send threw ' + (err instanceof Error ? err.message : String(err)),
+          'mcL0343 [App] team roster send threw ' +
+            (err instanceof Error ? err.message : String(err)),
         );
         return false;
       }
@@ -4153,7 +4164,7 @@ function AppContent() {
     try {
       await syncWaitingMessages();
     } catch (err: unknown) {
-      console.warn('[App] syncWaitingMessages failed ' + errLikeToLogString(err));
+      console.warn('mcL0344 [App] syncWaitingMessages failed ' + errLikeToLogString(err));
       addToast(
         t('chatPanel.waitingMessagesSyncFailed', {
           message: err instanceof Error ? err.message : t('appPanel.unknownError'),
@@ -4205,7 +4216,7 @@ function AppContent() {
         try {
           dmPeer = openReticulumDmFromHash(hit.reticulumPeerHash);
         } catch (err) {
-          console.warn('[App] global search open Reticulum DM failed', err);
+          console.warn('mcL0345 [App] global search open Reticulum DM failed', err);
           dmPeer = null;
         }
       }
@@ -4327,7 +4338,7 @@ function AppContent() {
     if (selectByProtocol(capabilitiesByProtocol, prev).hasMqttHybrid) return;
     if (meshtasticConnectionView.mqttStatus !== 'disconnected') return;
     void tryAutoLaunchMqtt('meshtastic').catch((e: unknown) => {
-      console.warn('[App] MQTT auto-launch on tab switch failed ' + errLikeToLogString(e));
+      console.warn('mcL0346 [App] MQTT auto-launch on tab switch failed ' + errLikeToLogString(e));
     });
   }, [
     protocol,
@@ -4354,7 +4365,7 @@ function AppContent() {
         continue;
       }
       void tryAutoLaunchMqtt(prot).catch((e: unknown) => {
-        console.warn('[App] MQTT auto-launch connect failed ' + errLikeToLogString(e));
+        console.warn('mcL0347 [App] MQTT auto-launch connect failed ' + errLikeToLogString(e));
       });
     }
   }, []);
@@ -4366,13 +4377,13 @@ function AppContent() {
         try {
           const identity = await readMeshcoreIdentityAsync();
           if (!identity?.private_key || !identity?.public_key) {
-            console.warn('[App] token refresh requested but no identity available');
+            console.warn('mcL0348 [App] token refresh requested but no identity available');
             return;
           }
           const { token, expiresAt } = await generateLetsMeshAuthToken(identity, serverHost);
           await window.electronAPI.mqtt.updateMeshcoreToken(token, expiresAt);
         } catch (e) {
-          console.warn('[App] token refresh failed ' + errLikeToLogString(e));
+          console.warn('mcL0349 [App] token refresh failed ' + errLikeToLogString(e));
         }
       };
       void doRefresh();
@@ -4432,8 +4443,8 @@ function AppContent() {
   useEffect(() => {
     try {
       localStorage.removeItem(LEGACY_UPDATE_SETTINGS_KEY);
-    } catch {
-      // catch-no-log-ok quota / private mode
+    } catch (e: unknown) {
+      console.debug('[renderer/App] catch:', e);
     }
   }, []);
 
@@ -4455,7 +4466,7 @@ function AppContent() {
       void window.electronAPI.update
         .check()
         .catch((e: unknown) => {
-          console.warn('[App] update check failed ' + errLikeToLogString(e));
+          console.warn('mcL0350 [App] update check failed ' + errLikeToLogString(e));
           setUpdateState((s) => ({ ...s, phase: 'error' }));
         })
         .finally(() => {
@@ -4721,7 +4732,7 @@ function AppContent() {
           ? meshcorePanelActions.sendZeroHopAdvert
           : meshcorePanelActions.sendAdvert;
       void action().catch((e: unknown) => {
-        console.warn('[App] auto flood advert failed', e instanceof Error ? e.message : e);
+        console.warn('mcL0351 [App] auto flood advert failed', e instanceof Error ? e.message : e);
       });
     };
 
@@ -4853,11 +4864,10 @@ function AppContent() {
         handleMessageNode(nodeId);
       } catch (e) {
         if (e instanceof ReticulumChatMissingLxmfError) {
-          // catch-no-log-ok expected missing-lxmf; surface via toast
           addToast(t('chatPanel.reticulumChatNeedsLxmfDelivery'), 'error');
           return;
         }
-        console.warn('[App] open Reticulum DM by hash failed ' + errLikeToLogString(e));
+        console.warn('mcL0352 [App] open Reticulum DM by hash failed ' + errLikeToLogString(e));
         addToast(t('chatPanel.dmAddressInvalid'), 'error');
       }
     },
@@ -4964,7 +4974,7 @@ function AppContent() {
           void window.electronAPI.reticulum.rrc
             .join({ hub_dest_hash: hub, room })
             .catch((err: unknown) => {
-              console.warn('[App] room macro RRC join failed:', err);
+              console.warn('mcL0353 [App] room macro RRC join failed:', err);
             });
         }
       }
@@ -6069,7 +6079,7 @@ function AppContent() {
                                               })
                                               .catch((e: unknown) => {
                                                 console.warn(
-                                                  '[App] startReticulumVoiceMemo rejected:',
+                                                  'mcL0354 [App] startReticulumVoiceMemo rejected:',
                                                   errLikeToLogString(e),
                                                 );
                                                 useReticulumVoiceMemoStore.getState().reset();
@@ -7715,13 +7725,13 @@ function AppContent() {
               updateState={updateState}
               onCheck={() => {
                 void window.electronAPI.update.check().catch((e: unknown) => {
-                  console.warn('[App] update check failed ' + errLikeToLogString(e));
+                  console.warn('mcL0355 [App] update check failed ' + errLikeToLogString(e));
                   setUpdateState((s) => ({ ...s, phase: 'error' }));
                 });
               }}
               onDownload={() => {
                 void window.electronAPI.update.download().catch((e: unknown) => {
-                  console.warn('[App] update download failed ' + errLikeToLogString(e));
+                  console.warn('mcL0356 [App] update download failed ' + errLikeToLogString(e));
                   setUpdateState((s) => ({
                     ...s,
                     phase: 'error',
@@ -7740,7 +7750,7 @@ function AppContent() {
                 void window.electronAPI.update
                   .openReleases(updateState.releaseUrl)
                   .catch((e: unknown) => {
-                    console.warn('[App] open release failed ' + errLikeToLogString(e));
+                    console.warn('mcL0357 [App] open release failed ' + errLikeToLogString(e));
                     setUpdateState((s) => ({
                       ...s,
                       phase: 'error',

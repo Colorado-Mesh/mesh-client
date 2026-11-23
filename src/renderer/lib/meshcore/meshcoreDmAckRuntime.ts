@@ -58,14 +58,14 @@ export function armMeshcoreDmAckPending(
       usePathHistoryStore.getState().recordOutcome(destNodeId, sendPathHash, false);
     }
     console.warn(
-      `[meshcoreDmAck] TIMEOUT packetId=${ackKeyU32} dest=${destNodeId ?? '?'} detail=hop-ack-timeout`,
+      `mcL0890 [meshcoreDmAck] TIMEOUT packetId=${ackKeyU32} dest=${destNodeId ?? '?'} detail=hop-ack-timeout`,
     );
     syncMeshcoreDmAckToMessageStore(identityId, ackKeyU32, deps.getSelfNodeId(), 'failed');
     void window.electronAPI.db
       .updateMeshcoreMessageStatus(ackKeyU32, 'failed')
       .catch((e: unknown) => {
         console.warn(
-          '[meshcoreDmAckRuntime] updateMeshcoreMessageStatus (DM ack timeout) error ' +
+          'mcL0891 [meshcoreDmAckRuntime] updateMeshcoreMessageStatus (DM ack timeout) error ' +
             errLikeToLogString(e),
         );
       });

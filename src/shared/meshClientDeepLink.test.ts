@@ -17,8 +17,7 @@ import {
 /* eslint-disable no-secrets/no-secrets -- documented public example URIs */
 const MESHCORE_DOC_CONTACT =
   'meshcore://contact/add?name=Example+Contact&public_key=9cd8fcf22a47333b591d96a2b848b73f457b1bb1a3ea2453a885f9e5787765b1&type=1';
-const MESHCORE_DOC_CHANNEL =
-  'meshcore://channel/add?name=Public&secret=8b3387e9c5cdea6ac9e5edbaa115cd72';
+const MESHCORE_DOC_CHANNEL = `meshcore://channel/add?name=Public&secret=${'0'.repeat(32)}`;
 /* eslint-enable no-secrets/no-secrets */
 const LXMA_DEST = 'a'.repeat(32);
 const LXMA_PUBKEY = 'b'.repeat(128);

@@ -7,6 +7,8 @@
 import { execFileSync } from 'node:child_process';
 import { release as nodeOsRelease } from 'node:os';
 
+import { sanitizeLogMessage } from './sanitize-log-message';
+
 interface OsReleaseObservation {
   tag: string;
   /** Windows UBR from the same registry read used to build `tag`, when available. */
@@ -44,8 +46,12 @@ export function readWindowsUpdateBuildRevision(
     if (!decimal?.[1]) return null;
     const n = Number.parseInt(decimal[1], 10);
     return Number.isFinite(n) && n >= 0 && n <= 65_535 ? n : null;
-  } catch {
-    // catch-no-log-ok registry query optional for triage tags
+  } catch (e: unknown) {
+    console.debug(
+      '[main/osReleaseTag] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 }

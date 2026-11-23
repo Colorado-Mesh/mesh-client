@@ -13,6 +13,8 @@ import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { cleanJsrTempDirs } from './clean-jsr-temp-dirs.mjs';
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+import { pnpmExecutable } from './ci-verify-pnpm.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -41,13 +43,13 @@ export function runDedupeDist(opts = {}) {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     if (attempt > 1) {
-      cleanTemps(path.join(cwd, 'node_modules'));
+      cleanTemps(joinUnderRoot(cwd, 'node_modules'));
     }
 
-    const result = spawnPnpm('pnpm', DEDUPE_DIST_ARGS, {
+    const result = spawnPnpm(pnpmExecutable(), DEDUPE_DIST_ARGS, {
       cwd,
       stdio: 'inherit',
-      shell: process.platform === 'win32',
+      shell: false,
     });
     if (result.error) {
       console.error('[dedupe-dist] failed to spawn pnpm:', result.error);

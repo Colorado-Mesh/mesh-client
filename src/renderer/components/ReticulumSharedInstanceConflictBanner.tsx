@@ -66,7 +66,7 @@ export function ReticulumSharedInstanceConflictBanner({
       await fn();
     } catch (e) {
       console.error(
-        `[ReticulumSharedInstanceConflictBanner] action failed ${errLikeToLogString(e)}`,
+        `mcL0602 [ReticulumSharedInstanceConflictBanner] action failed ${errLikeToLogString(e)}`,
       );
       setActionError(errLikeToLogString(e));
     } finally {

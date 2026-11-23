@@ -5,7 +5,8 @@
  * leave ENOENT/ENOTEMPTY on retry (Windows packaging, Flatpak offline install).
  */
 import { existsSync, readdirSync, rmSync } from 'fs';
-import path from 'path';
+
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 
 /** @param {string} rootDir */
 export function cleanJsrTempDirs(rootDir) {
@@ -13,11 +14,11 @@ export function cleanJsrTempDirs(rootDir) {
 
   for (const ent of readdirSync(rootDir, { withFileTypes: true })) {
     if (!ent.isDirectory()) continue;
-    const full = path.join(rootDir, ent.name);
+    const full = joinUnderRoot(rootDir, ent.name);
     if (ent.name === '@jsr') {
       for (const child of readdirSync(full, { withFileTypes: true })) {
         if (child.isDirectory() && child.name.startsWith('_tmp_')) {
-          rmSync(path.join(full, child.name), { recursive: true, force: true });
+          rmSync(joinUnderRoot(full, child.name), { recursive: true, force: true });
         }
       }
     }

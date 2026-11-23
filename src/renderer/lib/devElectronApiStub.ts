@@ -532,6 +532,8 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       clear: noopAsync,
       export: async () => null,
       onLine: noopUnsub,
+      isVerboseEnabled: async () => false,
+      onVerboseChanged: noopUnsub,
       logDeviceConnection: noopAsync,
     },
     tak: {

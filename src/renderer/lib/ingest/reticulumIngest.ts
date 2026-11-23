@@ -274,7 +274,7 @@ export async function persistReticulumMessageToDb(
       ...(p.audio?.mode != null ? { audio_mode: p.audio.mode } : {}),
     });
   } catch (e) {
-    console.warn('[reticulumIngest] save message ' + errLikeToLogString(e));
+    console.warn('mcL0852 [reticulumIngest] save message ' + errLikeToLogString(e));
   }
 }
 
@@ -316,7 +316,7 @@ export async function persistReticulumHistoryFromPayload(
       last_heard: lastHeard,
     });
   } catch (e) {
-    console.warn('[reticulumIngest] upsert history ' + errLikeToLogString(e));
+    console.warn('mcL0853 [reticulumIngest] upsert history ' + errLikeToLogString(e));
     return;
   }
 
@@ -359,7 +359,7 @@ export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload
       is_contact: true,
     });
   } catch (e) {
-    console.warn('[reticulumIngest] upsert contact ' + errLikeToLogString(e));
+    console.warn('mcL0854 [reticulumIngest] upsert contact ' + errLikeToLogString(e));
   }
 }
 
@@ -378,7 +378,7 @@ export async function persistReticulumIconFromPayload(p: ReticulumLxmfPayload): 
     });
     useReticulumPeerStore.getState().patchPeerAppearance(p.sender_hash, appearance);
   } catch (e) {
-    console.warn('[reticulumIngest] upsert icon ' + errLikeToLogString(e));
+    console.warn('mcL0855 [reticulumIngest] upsert icon ' + errLikeToLogString(e));
   }
 }
 
@@ -476,7 +476,7 @@ export function persistReticulumOutboundRecord(
         : {}),
     })
     .catch((e: unknown) => {
-      console.warn('[reticulumIngest] save outbound ' + errLikeToLogString(e));
+      console.warn('mcL0856 [reticulumIngest] save outbound ' + errLikeToLogString(e));
     });
 }
 

@@ -96,7 +96,7 @@ export function enqueueNodeWrite(
     if (!capWarned) {
       capWarned = true;
       console.warn(
-        `[coalescedNodeWrites] pending cap ${MAX_PENDING_NODE_WRITES} exceeded; forcing flush`,
+        `mcL0848 [coalescedNodeWrites] pending cap ${MAX_PENDING_NODE_WRITES} exceeded; forcing flush`,
       );
     }
     clearTimer();
@@ -229,7 +229,7 @@ async function persistChunk(
       if (dropped > 0 && !persistDropWarned) {
         persistDropWarned = true;
         console.warn(
-          `[coalescedNodeWrites] ${label}: saveNodes dropped ${dropped} row(s); queueing retry`,
+          `mcL0849 [coalescedNodeWrites] ${label}: saveNodes dropped ${dropped} row(s); queueing retry`,
         );
       }
       throw new Error(
@@ -240,8 +240,9 @@ async function persistChunk(
   if (typeof saveNodes === 'function') {
     try {
       await persistBatch();
-    } catch {
-      // catch-no-log-ok: persistDbWrite queues retry / degraded warn
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/ingest/coalescedNodeWrites] catch:', e);
+
       persistDbWrite(label, persistBatch);
     }
     return;

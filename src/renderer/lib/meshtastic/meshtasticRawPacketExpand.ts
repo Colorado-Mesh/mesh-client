@@ -68,8 +68,9 @@ export function parseMeshtasticRawPacketExpand(
       hopsAway,
       payloadCase: meshPacketPayloadCase(packet.payloadVariant),
     };
-  } catch {
-    // catch-no-log-ok corrupt MeshPacket bytes; Sniffer falls back to hex-only expanded row
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtastic/meshtasticRawPacketExpand] catch:', e);
+
     return { ok: false };
   }
 }

@@ -31,6 +31,6 @@ export async function hydrateRrcHubNicks(hubHash: string): Promise<void> {
     if (nicks.length > 0) useRrcSessionStore.getState().hydrateHubNicks(hub, nicks);
   } catch (e: unknown) {
     hydratedHubs.delete(hub);
-    console.warn('[rrcNickCacheHydrate] load failed ' + errLikeToLogString(e));
+    console.warn('mcL1105 [rrcNickCacheHydrate] load failed ' + errLikeToLogString(e));
   }
 }

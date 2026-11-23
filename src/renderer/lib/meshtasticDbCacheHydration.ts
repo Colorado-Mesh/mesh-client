@@ -44,8 +44,9 @@ function parseNodePath(path: unknown): number[] | undefined {
     const parsed: unknown = JSON.parse(path);
     if (!Array.isArray(parsed)) return undefined;
     return parsed.every((v) => typeof v === 'number') ? parsed : undefined;
-  } catch {
-    // catch-no-log-ok corrupt path JSON from SQLite is ignored
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshtasticDbCacheHydration] catch:', e);
+
     return undefined;
   }
 }

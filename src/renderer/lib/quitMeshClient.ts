@@ -21,7 +21,7 @@ export async function gatherQuitRisks(linkUp: boolean): Promise<QuitRisks> {
       pendingEmergencyMessages += rows.filter((row) => row.priority === 'emergency').length;
     } catch (err) {
       console.warn(
-        '[quitMeshClient] outbox.list before quit failed:',
+        'mcL0999 [quitMeshClient] outbox.list before quit failed:',
         err instanceof Error ? err.message : String(err),
       );
     }
@@ -66,13 +66,13 @@ export async function quitMeshClient(disconnectMqtt: boolean): Promise<void> {
       markMqttUserDisconnect();
       void window.electronAPI.mqtt.disconnect().catch((err: unknown) => {
         console.warn(
-          '[quitMeshClient] mqtt.disconnect before quit failed:',
+          'mcL1000 [quitMeshClient] mqtt.disconnect before quit failed:',
           err instanceof Error ? err.message : String(err),
         );
       });
     } catch (err) {
       console.warn(
-        '[quitMeshClient] mqtt.disconnect before quit failed:',
+        'mcL1001 [quitMeshClient] mqtt.disconnect before quit failed:',
         err instanceof Error ? err.message : String(err),
       );
     }
@@ -81,7 +81,7 @@ export async function quitMeshClient(disconnectMqtt: boolean): Promise<void> {
     await window.electronAPI.quitApp();
   } catch (err) {
     console.error(
-      '[quitMeshClient] quitApp failed:',
+      'mcL1002 [quitMeshClient] quitApp failed:',
       err instanceof Error ? err.message : String(err),
     );
   }

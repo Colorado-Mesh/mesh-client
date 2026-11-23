@@ -19,7 +19,7 @@ export function normalizeMeshtasticMqttChatMessage(
   raw: unknown,
 ): (MeshtasticMqttChatWire & { from_mqtt: true }) | null {
   if (typeof raw !== 'object' || raw === null) {
-    console.warn('[meshtasticMqttChatNormalize] dropped non-object MQTT chat payload');
+    console.warn('mcL0946 [meshtasticMqttChatNormalize] dropped non-object MQTT chat payload');
     return null;
   }
   const wire = raw as Record<string, unknown>;
@@ -27,15 +27,15 @@ export function normalizeMeshtasticMqttChatMessage(
   const timestamp = wire.timestamp;
   const payload = wire.payload;
   if (typeof senderId !== 'number' || !Number.isFinite(senderId) || senderId <= 0) {
-    console.warn('[meshtasticMqttChatNormalize] dropped MQTT chat: invalid sender_id');
+    console.warn('mcL0947 [meshtasticMqttChatNormalize] dropped MQTT chat: invalid sender_id');
     return null;
   }
   if (typeof timestamp !== 'number' || !Number.isFinite(timestamp)) {
-    console.warn('[meshtasticMqttChatNormalize] dropped MQTT chat: invalid timestamp');
+    console.warn('mcL0948 [meshtasticMqttChatNormalize] dropped MQTT chat: invalid timestamp');
     return null;
   }
   if (typeof payload !== 'string') {
-    console.warn('[meshtasticMqttChatNormalize] dropped MQTT chat: invalid payload');
+    console.warn('mcL0949 [meshtasticMqttChatNormalize] dropped MQTT chat: invalid payload');
     return null;
   }
 

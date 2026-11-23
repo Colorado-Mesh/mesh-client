@@ -74,7 +74,7 @@ export function useMeshcoreCompanionCli(
           ? '[redacted]'
           : errLikeToLogString(e);
         console.warn(
-          '[useMeshcoreCompanionCli] ' +
+          'mcL0711 [useMeshcoreCompanionCli] ' +
             formatMeshcoreCompanionCliForLog(command) +
             ' failed: ' +
             sanitizeLogMessage(detail),
@@ -98,7 +98,9 @@ export function useMeshcoreCompanionCli(
           throw new Error('poweroff requires companion CLI (firmware v1.18+)');
         }
       } catch (e) {
-        console.warn(`[useMeshcoreCompanionCli] ${command} send error ` + errLikeToLogString(e));
+        console.warn(
+          `mcL0712 [useMeshcoreCompanionCli] ${command} send error ` + errLikeToLogString(e),
+        );
         throw e;
       }
     },
@@ -110,8 +112,8 @@ export function useMeshcoreCompanionCli(
     plannedRebootRef.current = true;
     try {
       await sendNoReply('reboot');
-    } catch {
-      // catch-no-log-ok logged in sendNoReply; the link may already be gone, reconnect anyway
+    } catch (e: unknown) {
+      console.debug('[renderer/hooks/meshcore/useMeshcoreCompanionCli] catch:', e);
     }
     await sleep(MESHCORE_PLANNED_REBOOT_FLUSH_MS);
     if (!connectionLostRef.current()) plannedRebootRef.current = false;

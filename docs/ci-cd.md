@@ -35,7 +35,7 @@ Runs on every push, pull request, and merge-queue `merge_group` for `main` (and 
 - **Typecheck:** `pnpm run typecheck`
 - **Application build:** `pnpm run build`
 - **Flatpak checks:** only when Flatpak inputs change; runs `check:flatpak`, `check:flatpak-offline-pnpm`, `desktop-file-validate`, and `appstreamcli validate`
-- **Policy scanners:** cheap always-on `check:*` set from pre-commit/release (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap scanners) so `--no-verify` and GitHub-only edits cannot skip them
+- **Policy scanners:** cheap always-on `check:*` set from pre-commit/release (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, `check:semgrep`, and the matching cheap scanners) so `--no-verify` and GitHub-only edits cannot skip them
 
 Each Node lane uses the same pinned Node 22/pnpm setup action and frozen install. Actionlint is downloaded from a fixed release URL and verified against a reviewed per-platform SHA-256 digest before extraction. Yamllint and its transitive dependencies install from exact wheel hashes in `scripts/requirements-yamllint.txt`. The final `Build & Test` job aggregates every lane so the existing required check name remains stable. Superseded runs for the same pull request or ref are cancelled.
 
@@ -100,8 +100,9 @@ to Vitest's import-based related selection. The test builds the production minif
 checks worker/license artifacts and enforces the strict `MAIN_BUNDLE_SIZE_BUDGET_BYTES` budget
 defined in that test. Locally and in pre-commit, the same suite runs via `pnpm run check:main-bundle`
 when `src/main/` or the esbuild main-build scripts are staged. An over-budget failure prints
-AI-friendly remediation (prefer sibling esbuild entries / externals / metafile analysis; raise
-the budget only as a last resort).
+AI-friendly remediation (prefer sibling esbuild entries / externals / metafile analysis).
+Agents must **not** raise `MAIN_BUNDLE_SIZE_BUDGET_BYTES` unless the developer explicitly asks —
+see [AGENTS.md](../AGENTS.md) Bundle CI.
 An oversized bundle or missing test suite fails; the job writes no coverage/blob/JUnit reports.
 The default checkout validates the PR merge ref, with credentials disabled and a read-only token;
 it uses no repository secrets or privileged `pull_request_target` execution.
@@ -450,7 +451,7 @@ Privileged workflows are additionally restricted by protected environments: `rel
 All PRs (and merge-queue groups) for `main` must pass the **required check names** listed above. Those jobs cover:
 
 - Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
-- Cheap always-on policy scanners (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap `check:*` set)
+- Cheap always-on policy scanners (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, `check:semgrep`, and the matching cheap `check:*` set)
 - Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
 - Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on `merge_group`, `main`, and manual runs
 

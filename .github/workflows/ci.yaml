@@ -223,8 +223,11 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
+      - name: Install Semgrep
+        run: pip install --user semgrep
       - name: Always-on policy scanners
         run: |
+          export PATH="${HOME}/.local/bin:${PATH}"
           pnpm run check:electron-security
           pnpm run check:log-injection
           pnpm run check:log-service-sinks
@@ -233,6 +236,8 @@ jobs:
           pnpm run check:ipc-contract
           pnpm run check:console-log
           pnpm run check:silent-catches
+          pnpm run check:log-ids
+          pnpm run check:semgrep
           pnpm run check:url-hostname-sanitization
           pnpm run check:xss-patterns
           pnpm run check:protocol-string-gates

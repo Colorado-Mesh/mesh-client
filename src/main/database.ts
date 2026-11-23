@@ -178,7 +178,7 @@ export function initDatabase(): void {
       throw error;
     }
     console.error(
-      '[db] Database init failed:',
+      'mcL0012 [db] Database init failed:',
       sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
     );
     throw error;
@@ -625,7 +625,7 @@ function createBaseTables(): void {
     db!.execScript(CANONICAL_CREATE_ALL_DDL);
   } catch (error) {
     console.error(
-      '[db] createBaseTables failed',
+      'mcL0013 [db] createBaseTables failed',
       sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
     );
     throw new Error(
@@ -659,7 +659,7 @@ export function mergeDatabase(sourcePath: string) {
     }
   } catch (err) {
     console.error(
-      '[db] mergeDatabase failed:',
+      'mcL0014 [db] mergeDatabase failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     if (isMergeSourceInvalidError(err)) throw err;
@@ -714,7 +714,7 @@ export function mergeDatabase(sourcePath: string) {
           const nodeId = Number((node as { node_id?: unknown }).node_id);
           if (!Number.isFinite(nodeId)) {
             console.warn(
-              '[db] mergeDatabase: skipping node row with invalid node_id:',
+              'mcL0015 [db] mergeDatabase: skipping node row with invalid node_id:',
               sanitizeLogMessage(String((node as { node_id?: unknown }).node_id)),
             );
             continue;
@@ -722,7 +722,7 @@ export function mergeDatabase(sourcePath: string) {
           if (insertNode.run(node).changes > 0) nodesAdded++;
         } catch (e) {
           console.warn(
-            '[db] mergeDatabase: skipping node row due to error:',
+            'mcL0016 [db] mergeDatabase: skipping node row due to error:',
             sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
           );
         }
@@ -735,7 +735,7 @@ export function mergeDatabase(sourcePath: string) {
           const payload = (msg as { payload?: unknown }).payload;
           if (!Number.isFinite(Number(timestamp)) || typeof payload !== 'string') {
             console.warn(
-              '[db] mergeDatabase: skipping message row with invalid timestamp/payload:',
+              'mcL0017 [db] mergeDatabase: skipping message row with invalid timestamp/payload:',
               sanitizeLogMessage(JSON.stringify({ senderId, timestamp })),
             );
             continue;
@@ -746,7 +746,7 @@ export function mergeDatabase(sourcePath: string) {
           }
         } catch (e) {
           console.warn(
-            '[db] mergeDatabase: skipping message row due to error:',
+            'mcL0018 [db] mergeDatabase: skipping message row due to error:',
             sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
           );
         }
@@ -756,7 +756,7 @@ export function mergeDatabase(sourcePath: string) {
     })();
   } catch (err) {
     console.error(
-      '[db] Merge failed:',
+      'mcL0019 [db] Merge failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -896,7 +896,7 @@ export function closeDatabase(): void {
       db.close();
     } catch (err) {
       console.error(
-        '[db] Error closing database:',
+        'mcL0020 [db] Error closing database:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
     } finally {
@@ -1118,7 +1118,7 @@ export function getMeshcorePathHistory(nodeId: number): MeshcorePathHistoryRow[]
     .all(nodeId, MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT) as MeshcorePathHistoryRow[];
   if (rows.length >= MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT) {
     console.warn(
-      '[database] getMeshcorePathHistory: row limit reached (results may be truncated)',
+      'mcL0021 [database] getMeshcorePathHistory: row limit reached (results may be truncated)',
       { nodeId, limit: MESHCORE_PATH_HISTORY_PER_NODE_ROW_LIMIT },
     );
   }
@@ -1132,7 +1132,7 @@ export function getAllMeshcorePathHistory(): MeshcorePathHistoryRow[] {
     .all(MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT) as MeshcorePathHistoryRow[];
   if (rows.length >= MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT) {
     console.warn(
-      '[database] getAllMeshcorePathHistory: row limit reached; path history is truncated',
+      'mcL0022 [database] getAllMeshcorePathHistory: row limit reached; path history is truncated',
       { limit: MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT },
     );
   }

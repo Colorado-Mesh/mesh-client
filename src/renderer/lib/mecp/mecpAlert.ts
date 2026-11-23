@@ -34,8 +34,9 @@ export function resetMecpAlertDedupeForTests(): void {
 function isGloballyMuted(): boolean {
   try {
     return localStorage.getItem(CHAT_NOTIF_MUTED_STORAGE_KEY) === '1';
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable in tests
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/mecp/mecpAlert] catch:', e);
+
     return false;
   }
 }
@@ -118,8 +119,8 @@ export function triggerMecpAlert(ctx: MecpAlertContext): void {
           silent: true,
         });
       }
-    } catch {
-      // catch-no-log-ok Notification may be blocked
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/mecp/mecpAlert] catch:', e);
     }
   }
 }

@@ -79,14 +79,14 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
       .getState()
       .refreshFromSidecar()
       .catch((err: unknown) => {
-        console.warn('[useReticulumPropagationAutoSync] refreshFromSidecar rejected', err);
+        console.warn('mcL1081 [useReticulumPropagationAutoSync] refreshFromSidecar rejected', err);
       });
     // Re-push the mode so a restarted sidecar gates its outbound PN cascade the same way.
     void useReticulumPropagationStore
       .getState()
       .setModeOnSidecar(readReticulumPropagationMode())
       .catch((err: unknown) => {
-        console.warn('[useReticulumPropagationAutoSync] setModeOnSidecar rejected', err);
+        console.warn('mcL1082 [useReticulumPropagationAutoSync] setModeOnSidecar rejected', err);
       });
 
     const cascadeCandidate = (mode: ReticulumPropagationMode): boolean => {
@@ -134,7 +134,7 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
 
     const runTick = () => {
       void tick().catch((err: unknown) => {
-        console.warn('[useReticulumPropagationAutoSync] tick rejected', err);
+        console.warn('mcL1083 [useReticulumPropagationAutoSync] tick rejected', err);
       });
     };
     runTick();

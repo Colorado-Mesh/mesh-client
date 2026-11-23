@@ -17,6 +17,7 @@ import {
 } from '../../shared/scheduledBroadcastTypes';
 import { getDatabase } from '../database';
 import type { NodeSqliteDB } from '../db-compat';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { assertIpcSender } from '../validate-ipc-sender';
 
 const TARGETS_JSON_MAX = 16 * 1024;
@@ -87,8 +88,12 @@ function parseTargetsJson(raw: string): ScheduledBroadcastTarget[] {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(isValidTargetStored) as ScheduledBroadcastTarget[];
-  } catch {
-    // catch-no-log-ok malformed targets_json from legacy/corrupt rows → empty list
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ipc/scheduled-broadcast-handlers] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return [];
   }
 }
@@ -117,8 +122,12 @@ function parseLastResult(raw: string | null): ScheduledBroadcastLastResult | nul
       outcome: o.outcome as ScheduledBroadcastRunOutcome,
       targets: o.targets as ScheduledBroadcastLastResult['targets'],
     };
-  } catch {
-    // catch-no-log-ok malformed last_result_json → treat as no result
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ipc/scheduled-broadcast-handlers] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 }

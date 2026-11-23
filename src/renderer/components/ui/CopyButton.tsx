@@ -60,7 +60,7 @@ export function CopyButton({
         showResult('copied');
       })
       .catch((e: unknown) => {
-        console.warn('[CopyButton] copy failed ' + errLikeToLogString(e));
+        console.warn('mcL0698 [CopyButton] copy failed ' + errLikeToLogString(e));
         showResult('failed');
       });
   };

@@ -1,22 +1,26 @@
 import { dialog } from 'electron';
 import fs from 'fs';
 import os from 'os';
-import path from 'path';
 
-import { canonicalizePath, isSameCanonicalPath } from './pathCanonical';
+import { joinUnderRoot } from '../shared/pathUnderRoot';
+import { canonicalizePath, isSameCanonicalPath, resolveAbsoluteFsPath } from './pathCanonical';
 import { readUtf8FileBounded } from './reticulum-config-read';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /** Platform-default rnsd config file paths (first existing wins). */
 export function defaultReticulumConfigPaths(): string[] {
   const home = os.homedir();
   if (process.platform === 'win32') {
-    const appData = process.env.APPDATA ?? path.join(home, 'AppData', 'Roaming');
-    return [path.join(appData, 'Reticulum', 'config'), path.join(appData, 'rsReticulum', 'config')];
+    const appData = process.env.APPDATA ?? joinUnderRoot(home, 'AppData', 'Roaming');
+    return [
+      joinUnderRoot(appData, 'Reticulum', 'config'),
+      joinUnderRoot(appData, 'rsReticulum', 'config'),
+    ];
   }
   return [
-    path.join(home, '.reticulum', 'config'),
-    path.join(home, '.config', 'rsReticulum', 'config'),
-    path.join(home, '.rsReticulum', 'config'),
+    joinUnderRoot(home, '.reticulum', 'config'),
+    joinUnderRoot(home, '.config', 'rsReticulum', 'config'),
+    joinUnderRoot(home, '.rsReticulum', 'config'),
   ];
 }
 
@@ -26,8 +30,11 @@ export function readFirstExistingConfig(): { path: string | null; content: strin
       if (fs.existsSync(candidate)) {
         return { path: candidate, content: readUtf8FileBounded(candidate) };
       }
-    } catch {
-      // catch-no-log-ok: try next default path
+    } catch (e: unknown) {
+      console.debug(
+        '[main/reticulum-config-paths] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     }
   }
   return { path: null, content: null };
@@ -47,8 +54,12 @@ export async function showReticulumConfigImportDialog(): Promise<{
   const filePath = result.filePaths[0];
   try {
     return { path: filePath, content: readUtf8FileBounded(filePath) };
-  } catch {
-    // catch-no-log-ok: dialog file read failed; caller shows empty content
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-config-paths] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return { path: filePath, content: null };
   }
 }
@@ -65,7 +76,8 @@ export async function showNomadContentSourceDialog(): Promise<{
   if (result.canceled || result.filePaths.length === 0) {
     return { canceled: true, path: null };
   }
-  const picked = canonicalizePath(result.filePaths[0]) ?? path.resolve(result.filePaths[0]);
+  const picked =
+    canonicalizePath(result.filePaths[0]) ?? resolveAbsoluteFsPath(result.filePaths[0]);
   rememberNomadContentSourcePick(picked);
   return { canceled: false, path: picked };
 }
@@ -75,7 +87,7 @@ let lastPickedNomadContentSource: string | null = null;
 
 /** Record a picker result so {@link isAllowedNomadContentSourcePath} can authorize apply. */
 export function rememberNomadContentSourcePick(pickedPath: string): void {
-  lastPickedNomadContentSource = canonicalizePath(pickedPath) ?? path.resolve(pickedPath);
+  lastPickedNomadContentSource = canonicalizePath(pickedPath) ?? resolveAbsoluteFsPath(pickedPath);
 }
 
 /** Clear the picker allowlist (tests / logout). */

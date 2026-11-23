@@ -337,7 +337,8 @@ function applyMeshcoreMessagesFromSnapshot(
   );
   void Promise.resolve(persistMeshcoreMessageSenderRepairs(dbMsgs, mapped)).catch((e: unknown) => {
     console.warn(
-      '[hydrateMeshcoreMessagesFromDb] sender repair persist failed ' + errLikeToLogString(e),
+      'mcL0843 [hydrateMeshcoreMessagesFromDb] sender repair persist failed ' +
+        errLikeToLogString(e),
     );
   });
   const trimmed = trimMeshcoreChatMessages(mapped);
@@ -447,7 +448,7 @@ function applyReticulumDestinationRows(
     // keeps one bad SQLite row from failing the whole hydration pass.
     const destinationHash = canonicalizeReticulumDestinationHash(row.destination_hash);
     if (!destinationHash) {
-      console.warn('[hydrateReticulumIdentity] skipped destination row with invalid hash');
+      console.warn('mcL0844 [hydrateReticulumIdentity] skipped destination row with invalid hash');
       continue;
     }
     const nodeId = reticulumHashToNodeId(destinationHash);
@@ -486,7 +487,9 @@ function hydrateReticulumIdentity(
             }[];
             applyReticulumDestinationRows(identityId, rows, isCurrent);
           } catch (e) {
-            console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
+            console.warn(
+              'mcL0845 [hydrateReticulumIdentity] destinations ' + errLikeToLogString(e),
+            );
           }
         })(),
       );
@@ -508,7 +511,7 @@ function hydrateReticulumIdentity(
               rows.map((row) => reticulumDbRowToMessageRecord(row)),
             );
           } catch (e) {
-            console.warn('[hydrateReticulumIdentity] messages ' + errLikeToLogString(e));
+            console.warn('mcL0846 [hydrateReticulumIdentity] messages ' + errLikeToLogString(e));
           }
         })(),
       );
@@ -553,7 +556,9 @@ export async function hydrateIdentityStoresFromDb(
     bumpDbHydrationRevision();
   } catch (e) {
     if (!isCurrent()) return;
-    console.warn(`[hydrateIdentityStoresFromDb] ${protocol} failed ` + errLikeToLogString(e));
+    console.warn(
+      `mcL0847 [hydrateIdentityStoresFromDb] ${protocol} failed ` + errLikeToLogString(e),
+    );
   }
 }
 

@@ -114,8 +114,9 @@ function decodedPayload(packet: Record<string, unknown>): Record<string, unknown
   if (!json) return null;
   try {
     return record(JSON.parse(json));
-  } catch {
-    // catch-no-log-ok Malformed public feed metadata is ignored, never executed or displayed raw.
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/map/coreScopeTrafficModel] catch:', e);
+
     return null;
   }
 }
@@ -126,8 +127,9 @@ function observationPath(value: unknown): string[] | null {
   let path: unknown;
   try {
     path = JSON.parse(json);
-  } catch {
-    // catch-no-log-ok Invalid observation paths remain unlocated rather than reusing transmission geometry.
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/map/coreScopeTrafficModel] catch:', e);
+
     return null;
   }
   if (!Array.isArray(path) || path.length > 63) return null;

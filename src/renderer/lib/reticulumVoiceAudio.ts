@@ -35,8 +35,9 @@ export function decodeF32LeBase64(samplesB64: string): Float32Array {
   let binary: string;
   try {
     binary = atob(samplesB64);
-  } catch {
-    // catch-no-log-ok malformed base64 from sidecar
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/reticulumVoiceAudio] catch:', e);
+
     return new Float32Array(0);
   }
   if (binary.length % 4 !== 0) return new Float32Array(0);

@@ -50,7 +50,7 @@ export default function LanguageSelector() {
           if (ok) await i18n.changeLanguage(dbLocale);
         }
       } catch (e: unknown) {
-        console.warn('[LanguageSelector] locale reconcile failed ' + errLikeToLogString(e));
+        console.warn('mcL0429 [LanguageSelector] locale reconcile failed ' + errLikeToLogString(e));
       }
     })();
   }, []);
@@ -103,7 +103,7 @@ export default function LanguageSelector() {
       await i18n.changeLanguage(code);
       mergeAppSetting('locale', code, 'LanguageSelector');
       void window.electronAPI.appSettings.set('locale', code).catch((e: unknown) => {
-        console.warn('[LanguageSelector] persist locale failed ' + errLikeToLogString(e));
+        console.warn('mcL0430 [LanguageSelector] persist locale failed ' + errLikeToLogString(e));
       });
       closeMenu();
     })();

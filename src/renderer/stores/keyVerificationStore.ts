@@ -210,7 +210,7 @@ async function sendOrFail(request: KeyVerificationAdminRequest): Promise<boolean
     await sendMeshtasticKeyVerificationAdmin(request);
     return true;
   } catch (err) {
-    console.warn('[keyVerificationStore] admin send failed ' + errLikeToLogString(err));
+    console.warn('mcL1416 [keyVerificationStore] admin send failed ' + errLikeToLogString(err));
     patchSession({ phase: 'error', errorCode: 'send_failed' });
     return false;
   }

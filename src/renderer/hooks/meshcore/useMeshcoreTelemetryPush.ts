@@ -96,7 +96,7 @@ export function useMeshcoreTelemetryPush(
       registry.scheduleResubscribe(nodeId, delayMs, () => {
         subscribeRef.current(nodeId, options).catch((e: unknown) => {
           console.warn(
-            `[useMeshcoreTelemetryPush] re-subscribe node=0x${nodeId.toString(16)} failed ` +
+            `mcL0714 [useMeshcoreTelemetryPush] re-subscribe node=0x${nodeId.toString(16)} failed ` +
               errLikeToLogString(e),
           );
         });
@@ -174,7 +174,7 @@ export function useMeshcoreTelemetryPush(
       } catch (e) {
         // The sensor drops the subscription at its timeout anyway; pushes for the tag are ignored.
         console.warn(
-          `[useMeshcoreTelemetryPush] unsubscribe node=0x${nodeId.toString(16)} failed ` +
+          `mcL0715 [useMeshcoreTelemetryPush] unsubscribe node=0x${nodeId.toString(16)} failed ` +
             errLikeToLogString(e),
         );
       }

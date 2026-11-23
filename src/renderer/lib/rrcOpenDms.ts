@@ -44,8 +44,9 @@ export function loadRrcOpenDms(hubHash: string): RrcDmPeer[] {
       });
     }
     return canonicalize(items);
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcOpenDms] catch:', e);
+
     return [];
   }
 }
@@ -53,8 +54,8 @@ export function loadRrcOpenDms(hubHash: string): RrcDmPeer[] {
 export function saveRrcOpenDms(hubHash: string, dms: RrcDmPeer[]): void {
   try {
     localStorage.setItem(storageKey(hubHash), JSON.stringify(canonicalize(dms)));
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcOpenDms] catch:', e);
   }
 }
 
@@ -82,7 +83,7 @@ export function removeRrcOpenDm(hubHash: string, identityHash: string): RrcDmPee
 export function clearRrcOpenDms(hubHash: string): void {
   try {
     localStorage.removeItem(storageKey(hubHash));
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/rrcOpenDms] catch:', e);
   }
 }

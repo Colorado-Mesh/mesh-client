@@ -7,6 +7,7 @@ import {
 
 import { BEACON_STATUS_PUBLIC_HTTPS_REJECTED } from '../../shared/beacon';
 import { BeaconFeedClient, parseBeaconConnectRequest } from '../beacon-feed';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { assertIpcSender } from '../validate-ipc-sender';
 
 /** Each renderer owns one opt-in feed, disposed on navigation, destruction, or disconnect. */
@@ -50,8 +51,12 @@ export function registerBeaconIpcHandlers(): void {
       sender.on('render-process-gone', onDestroyed);
       await client.connect(request);
       return { ok: true };
-    } catch {
-      // catch-no-log-ok Fixed UI error avoids logging user URLs or remote response contents.
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ipc/beacon-handlers] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       if (currentClient && clients.get(sender.id)?.client === currentClient) disconnect(sender);
       return { ok: false, error: BEACON_STATUS_PUBLIC_HTTPS_REJECTED };
     }

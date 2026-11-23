@@ -89,7 +89,7 @@ function RegionalConnectionForm({
             })
             .catch((cause: unknown) => {
               if (request === attempt.current) setActionError(true);
-              console.warn('[regional-feed] connect failed', cause);
+              console.warn('mcL0652 [regional-feed] connect failed', cause);
             });
         }}
       >
@@ -181,7 +181,7 @@ function RegionalConnectionForm({
               .disconnect()
               .catch((cause: unknown) => {
                 if (request === attempt.current) setActionError(true);
-                console.warn('[regional-feed] disconnect failed', cause);
+                console.warn('mcL0653 [regional-feed] disconnect failed', cause);
               })
               .finally(() => {
                 if (request === attempt.current) setStopping(false);

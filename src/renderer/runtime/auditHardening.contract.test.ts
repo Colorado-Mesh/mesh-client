@@ -83,7 +83,7 @@ describe('audit hardening source contracts', () => {
 
   it('TAK server error path sanitizes before log/emit', () => {
     expect(TAK_SERVER).toMatch(
-      /this\.server\.on\('error'[\s\S]*?sanitizeLogMessage\(msg\)[\s\S]*?console\.error\('\[TakServer\]', safe\)/,
+      /this\.server\.on\('error'[\s\S]*?sanitizeLogMessage\(msg\)[\s\S]*?console\.error\('mcL0302 \[TakServer\]', safe\)/,
     );
   });
 });

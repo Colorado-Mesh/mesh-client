@@ -148,7 +148,7 @@ export function LocateMeControl({
       setLocatedPos(coords);
       map.flyTo(coords, 16);
     } catch (e) {
-      console.error('[LocateMeControl] getGpsFix failed: ' + errLikeToLogString(e));
+      console.error('mcL0665 [LocateMeControl] getGpsFix failed: ' + errLikeToLogString(e));
       addToast(t('mapPanel.locationRequestFailed'), 'error');
     } finally {
       setLoading(false);

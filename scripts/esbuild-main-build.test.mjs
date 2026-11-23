@@ -33,6 +33,7 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Windows notification SoundPlayer (#1487) ships as sibling
  * `notification-sound-play-wav.js`; index.js keeps Chromium audio-service flags plus a
  * thin sync loader (~+1 KiB).
+ * Mozilla translation CDN pins ship as sibling `translation-manifest.js` (not in index.js).
  * Coalesced `db:saveNodes` / shared nodes upsert SQL ships as sibling `node-upsert.js`
  * (not in index.js).
  * Transient MQTT errno codes `EADDRNOTAVAIL` / `EHOSTDOWN` (macOS interface address loss)
@@ -49,12 +50,15 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Windows Update Build Revision (UBR) OS tag for support-bundle manifests / runtime logs
  * tipped the minified main past 818 KiB (~+0.6 KiB); budget +1 KiB (sibling loader would
  * cost more than the helper).
+ * Shared `pathUnderRoot` containment helpers stay in index.js (sibling chunk costs more);
+ * keep that module compact so the budget remains 819 KiB — do not raise without an
+ * explicit developer ask (see AGENTS.md Bundle CI).
  */
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 819 * 1024;
 
 /**
  * AI / contributor remediation when measured `index.js` exceeds the budget.
- * Prefer sibling chunks and externals; raise the budget only as a last resort.
+ * Prefer sibling chunks and externals; never raise the budget unless the developer asks.
  * @param {number} size
  * @returns {string}
  */
@@ -69,16 +73,16 @@ export function formatMainBundleOverBudgetMessage(size) {
     '   (existing pattern: ai-summary-prompt.js, identity-hydration.js, tray-unread-dot.js,',
     '   scheduled-broadcasts-interval-rebuild.js, team-roster-handlers.js,',
     '   environment-telemetry-handlers.js, notification-sound-play-wav.js, node-upsert.js,',
-    '   meshcom-db-handlers.js, udp-bridge.js) so it is NOT counted',
+    '   translation-manifest.js, meshcom-db-handlers.js, udp-bridge.js) so it is NOT counted',
     '   in the measured dist-electron/main/index.js budget.',
     '2. Prefer marking large deps as external in scripts/esbuild-main-externals.mjs when safe',
     '   (same pattern as undici/ws).',
     '3. Analyze composition: pnpm run build:main:minify-meta then inspect dist-electron/main/meta.json',
     '   (upload to https://esbuild.github.io/analyze/).',
-    '4. ONLY if there is absolutely no other way after exhausting (1)-(3), raise',
-    '   MAIN_BUNDLE_SIZE_BUDGET_BYTES in scripts/esbuild-main-build.test.mjs and document the KiB',
-    '   delta + reason in the comment block above that constant and in the PR body.',
-    '   Never raise the budget for convenience.',
+    '4. Do NOT raise MAIN_BUNDLE_SIZE_BUDGET_BYTES unless the human developer explicitly',
+    '   asks you to. Agents must stop and prompt — never bump the budget on their own,',
+    '   even after exhausting (1)-(3). If raised by request: document the KiB delta + reason',
+    '   in the comment block above that constant and in the PR body.',
   ].join('\n');
 }
 
@@ -150,8 +154,8 @@ describe('esbuild-main-build', () => {
     expect(message).toContain('sibling esbuild entry');
     expect(message).toContain('esbuild-main-externals.mjs');
     expect(message).toContain('build:main:minify-meta');
-    expect(message).toContain('ONLY if there is absolutely no other way');
-    expect(message).toContain('Never raise the budget for convenience');
+    expect(message).toContain('unless the human developer explicitly');
+    expect(message).toContain('never bump the budget on their own');
   });
 
   it('uses the esbuild JS API instead of spawning bin/esbuild (Windows shim)', () => {
@@ -291,6 +295,15 @@ describe('esbuild-main-build', () => {
       expect(nodeUpsertBytes.toString('utf8')).toContain(
         "nodes.source = 'mqtt' AND excluded.source = 'rf'",
       );
+      // Mozilla translation CDN pins live in the sibling chunk, not measured index.js.
+      const translationManifestBytes = fs.readFileSync(
+        path.join(tempDir, 'translation-manifest.js'),
+      );
+      expect(translationManifestBytes.length).toBeGreaterThan(10_000);
+      expect(translationManifestBytes.toString('utf8')).toContain(
+        'https://firefox-settings-attachments',
+      );
+      expect(indexSource).not.toContain('https://firefox-settings-attachments');
       expect(indexSource).not.toContain('qwen2.5-1.5b-instruct-q4_k_m.gguf');
       expect(indexSource).not.toContain('Missing Metal Toolchain');
       expect(indexSource).not.toContain('discoverXcodeDeveloperDir');

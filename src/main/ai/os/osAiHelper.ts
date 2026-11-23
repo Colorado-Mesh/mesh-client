@@ -5,6 +5,7 @@ import { createInterface } from 'node:readline';
 import type { AiOsAiStatus } from '../../../shared/ai-types';
 import { AI_MAX_RESPONSE_BYTES, AI_REQUEST_TIMEOUT_MS } from '../../../shared/ai-types';
 import { MS_PER_SECOND } from '../../../shared/timeConstants';
+import { sanitizeLogMessage } from '../../sanitize-log-message';
 import { AiFailure } from '../errors';
 
 interface Reply {
@@ -53,8 +54,12 @@ export class OsAiHelper {
         const reply: unknown = JSON.parse(line);
         if (reply && typeof reply === 'object' && 'type' in reply && typeof reply.type === 'string')
           for (const listener of this.listeners) listener(reply as Reply);
-      } catch {
-        // catch-no-log-ok malformed native output is a fixed failure
+      } catch (e: unknown) {
+        console.debug(
+          '[main/ai/os/osAiHelper] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         this.kill();
       }
     });
@@ -105,8 +110,12 @@ export class OsAiHelper {
       };
       this.scheduleIdle();
       return this.cached;
-    } catch {
-      // catch-no-log-ok unavailable helpers are an expected platform condition
+    } catch (e: unknown) {
+      console.debug(
+        '[main/ai/os/osAiHelper] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       if (this.process) this.scheduleIdle();
       return {
         available: false,
@@ -145,7 +154,11 @@ export class OsAiHelper {
           try {
             onDelta(reply.text);
           } catch (error) {
-            // catch-no-log-ok fail the request without native output
+            console.debug(
+              '[main/ai/os/osAiHelper] catch:',
+              sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+            );
+
             finish(error instanceof AiFailure ? error : new AiFailure('error'));
             this.kill();
             return;

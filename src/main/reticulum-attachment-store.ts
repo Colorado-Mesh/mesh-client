@@ -1,6 +1,7 @@
+import { randomBytes } from 'crypto';
 import fs from 'fs';
-import path from 'path';
 
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import {
   planReticulumAttachmentStore,
   RETICULUM_QUARANTINE_DIRNAME,
@@ -30,21 +31,16 @@ export async function writeReticulumAttachmentCacheFile(
 ): Promise<ReticulumAttachmentWriteResult> {
   const plan = planReticulumAttachmentStore(rawFileName);
   const dir = plan.subdir
-    ? path.join(attachmentsDir, RETICULUM_QUARANTINE_DIRNAME)
+    ? joinUnderRoot(attachmentsDir, RETICULUM_QUARANTINE_DIRNAME)
     : attachmentsDir;
   await fs.promises.mkdir(dir, { recursive: true, mode: 0o700 });
-  const targetPath = path.join(dir, `${now}-${plan.fileName}`);
-  const resolved = path.resolve(targetPath);
-  const root = path.resolve(attachmentsDir);
-  if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
-    throw new Error('attachment path escaped attachments directory');
-  }
+  const resolved = joinUnderRoot(dir, `${now}-${plan.fileName}`);
   try {
     await fs.promises.writeFile(resolved, data, { flag: 'wx', mode: 0o600 });
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
-    // Same-millisecond twin: disambiguate rather than clobber.
-    const alt = path.join(dir, `${now}-${Math.random().toString(36).slice(2, 8)}-${plan.fileName}`);
+    // Same-millisecond twin: disambiguate rather than clobber (crypto random, not Math.random).
+    const alt = joinUnderRoot(dir, `${now}-${randomBytes(4).toString('hex')}-${plan.fileName}`);
     await fs.promises.writeFile(alt, data, { flag: 'wx', mode: 0o600 });
     return { path: alt, quarantined: plan.quarantined };
   }

@@ -69,7 +69,7 @@ function persistMeshcoreOutboundRow(
   void window.electronAPI.db
     .saveMeshcoreMessage(messageToDbRow(chat, myNodeNum))
     .catch((e: unknown) => {
-      console.warn('[useSendMessage] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+      console.warn('mcL1119 [useSendMessage] saveMeshcoreMessage failed ' + errLikeToLogString(e));
     });
 }
 
@@ -113,7 +113,7 @@ function persistMeshcomOutboundRow(
       received_at: record.receivedAt ?? Date.now(),
     })
     .catch((e: unknown) => {
-      console.warn('[useSendMessage] saveMeshcomMessage failed ' + errLikeToLogString(e));
+      console.warn('mcL1120 [useSendMessage] saveMeshcomMessage failed ' + errLikeToLogString(e));
     });
 }
 
@@ -152,7 +152,7 @@ function settleMeshcoreOutboundAfterCompanionAccept(opts: {
     });
     if (!scheduled) {
       console.warn(
-        '[useSendMessage] MeshCore DM hop-ACK tracker is not registered; message stays pending',
+        'mcL1121 [useSendMessage] MeshCore DM hop-ACK tracker is not registered; message stays pending',
       );
     }
     return true;
@@ -181,7 +181,7 @@ function trySendViaMeshtasticSession(
   const mqttStatus = getConnection(identityId)?.mqttStatus ?? 'disconnected';
   const hasMqtt = mqttStatus === 'connected';
   if (!handle && !hasMqtt) {
-    console.warn('[useSendMessage] no handle and MQTT disconnected for', identityId);
+    console.warn('mcL1122 [useSendMessage] no handle and MQTT disconnected for', identityId);
     return { handled: true };
   }
   const replyIdNum = replyTo != null && replyTo !== '' ? Number.parseInt(replyTo, 10) : undefined;
@@ -248,7 +248,7 @@ export function sendChatOnIdentity(
   // A lookup by id can miss (identity removed mid-send), whatever the record type says.
   const identity = useIdentityStore.getState().identities[identityId] as IdentityRecord | undefined;
   if (!identity) {
-    console.warn('[useSendMessage] no identity for', identityId);
+    console.warn('mcL1123 [useSendMessage] no identity for', identityId);
     return;
   }
   // Reticulum: sidecar LXMF send (no ConnectionDriver handle).
@@ -287,7 +287,7 @@ export function sendChatOnIdentity(
       return viaSession.messageId;
     }
     if (!handle) {
-      console.warn('[useSendMessage] Meshtastic runtime not mounted and no RF handle');
+      console.warn('mcL1124 [useSendMessage] Meshtastic runtime not mounted and no RF handle');
       return;
     }
   }
@@ -295,7 +295,7 @@ export function sendChatOnIdentity(
   if (!handle) {
     // OpenHop dead bridge may still send via quiet reopen (handle recreated on open).
     if (!(identity.protocol.type === 'meshcore' && isMeshcoreTcpOpenHopDeadAccepted())) {
-      console.warn('[useSendMessage] no handle for', identityId);
+      console.warn('mcL1125 [useSendMessage] no handle for', identityId);
       return;
     }
   }
@@ -392,7 +392,7 @@ export function sendChatOnIdentity(
   const wireText = resolvedOutbound.wireText;
 
   const failMeshcoreDmNoKey = (): void => {
-    console.warn('[useSendMessage] send blocked ' + CHAT_SEND_ERROR_DEST_KEY_KEY);
+    console.warn('mcL1126 [useSendMessage] send blocked ' + CHAT_SEND_ERROR_DEST_KEY_KEY);
     markOutboundBlocked(identityId, provisionalId, CHAT_SEND_ERROR_DEST_KEY_KEY);
     persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'blocked');
     abandonMeshcoreHeardRepeat();
@@ -517,7 +517,7 @@ export function sendChatOnIdentity(
           applyOpenHopSendResult(res);
         } catch (e: unknown) {
           const errMsg = errLikeToLogString(e);
-          console.warn('[useSendMessage] OpenHop live reopen failed ' + errMsg);
+          console.warn('mcL1127 [useSendMessage] OpenHop live reopen failed ' + errMsg);
           updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
           persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');
           abandonMeshcoreHeardRepeat();
@@ -529,7 +529,7 @@ export function sendChatOnIdentity(
     // Prefer a fresh driver handle so an async DM key lookup cannot reuse a stale capture.
     const liveHandle = connectionDriver.getHandle(identityId) ?? handle;
     if (!liveHandle) {
-      console.warn('[useSendMessage] no handle for', identityId);
+      console.warn('mcL1128 [useSendMessage] no handle for', identityId);
       abandonMeshcoreHeardRepeat();
       return;
     }
@@ -627,7 +627,7 @@ export function sendChatOnIdentity(
       },
       (e: unknown) => {
         const errMsg = errLikeToLogString(e);
-        console.warn('[useSendMessage] send failed ' + errMsg);
+        console.warn('mcL1129 [useSendMessage] send failed ' + errMsg);
         updateMessageStatus(identityId, provisionalId, 'failed', errMsg);
         if (identity.protocol.type === 'meshcore') {
           persistMeshcoreOutboundRow(record, myNodeNum, meshcoreSenderName, 'failed');

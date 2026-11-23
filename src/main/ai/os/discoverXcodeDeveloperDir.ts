@@ -1,6 +1,8 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
+import { sanitizeLogMessage } from '../../sanitize-log-message';
+
 /** Same discovery rules as `scripts/lib/discover-xcode-developer-dir.mjs` (keep in sync). */
 
 export type XcodeDiscoveryClass = 'ready' | 'xcodeNotFound' | 'xcodeIncomplete';
@@ -22,8 +24,11 @@ export function discoverXcodeDeveloperDir(applicationsDir = '/Applications'): st
       if (!/^Xcode.*\.app$/i.test(entry) || entry === 'Xcode.app') continue;
       candidates.push(path.join(applicationsDir, entry, 'Contents', 'Developer'));
     }
-  } catch {
-    // catch-no-log-ok Applications may be unreadable in tests
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ai/os/discoverXcodeDeveloperDir] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   for (const developer of candidates) {
     if (existsSync(developer)) return developer;
@@ -38,8 +43,11 @@ export function classifyXcodeDeveloperDir(applicationsDir = '/Applications'): Xc
     alt =
       existsSync(applicationsDir) &&
       readdirSync(applicationsDir).some((entry) => /^Xcode.*\.app$/i.test(entry));
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ai/os/discoverXcodeDeveloperDir] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   if (!existsSync(primaryApp) && !alt) return 'xcodeNotFound';
   return discoverXcodeDeveloperDir(applicationsDir) ? 'ready' : 'xcodeIncomplete';

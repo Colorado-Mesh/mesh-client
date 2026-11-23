@@ -486,7 +486,7 @@ export default function NodeDetailModal({
         if (!cancelled) setNodeNote(note ?? '');
       })
       .catch((e: unknown) => {
-        console.warn('[NodeDetailModal] getNodeNote failed ' + errLikeToLogString(e));
+        console.warn('mcL0471 [NodeDetailModal] getNodeNote failed ' + errLikeToLogString(e));
       });
     return () => {
       cancelled = true;
@@ -499,7 +499,9 @@ export default function NodeDetailModal({
       pendingNoteRef.current = null;
       if (pending !== null) {
         void window.electronAPI.db.setNodeNote(nodeId, pending).catch((e: unknown) => {
-          console.warn('[NodeDetailModal] setNodeNote (unmount) failed ' + errLikeToLogString(e));
+          console.warn(
+            'mcL0472 [NodeDetailModal] setNodeNote (unmount) failed ' + errLikeToLogString(e),
+          );
         });
       }
     };
@@ -619,8 +621,9 @@ export default function NodeDetailModal({
         publicKeyHex: contactPubkey,
         type,
       });
-    } catch {
-      // catch-no-log-ok Invalid pubkey simply hides the share QR.
+    } catch (e: unknown) {
+      console.debug('[renderer/components/NodeDetailModal] catch:', e);
+
       return null;
     }
   }, [isMeshcoreProtocol, contactPubkey, node]);
@@ -698,8 +701,8 @@ export default function NodeDetailModal({
           ownerInfoCompletedKeyRef.current = key;
           setOwnerInfoDeferred(false);
         })
-        .catch(() => {
-          // catch-no-log-ok the runtime already logged the failure and stores an error state
+        .catch((e: unknown) => {
+          console.debug('[renderer/components/NodeDetailModal] catch:', e);
           if (ownerInfoScheduledKeyRef.current === key) {
             ownerInfoScheduledKeyRef.current = null;
             ownerInfoCompletedKeyRef.current = key;
@@ -736,8 +739,8 @@ export default function NodeDetailModal({
         ownerInfoCompletedKeyRef.current = `${node.node_id}:${repeaterSecretsEpoch}`;
         setOwnerInfoDeferred(false);
       })
-      .catch(() => {
-        // catch-no-log-ok runtime logs and stores the error entry
+      .catch((e: unknown) => {
+        console.debug('[renderer/components/NodeDetailModal] catch:', e);
       })
       .finally(() => {
         setOwnerInfoRefreshing(false);
@@ -770,8 +773,8 @@ export default function NodeDetailModal({
           anonBasicScheduledKeyRef.current = null;
           anonBasicCompletedKeyRef.current = key;
         })
-        .catch(() => {
-          // catch-no-log-ok runtime logs and stores the error entry
+        .catch((e: unknown) => {
+          console.debug('[renderer/components/NodeDetailModal] catch:', e);
           if (anonBasicScheduledKeyRef.current === key) {
             anonBasicScheduledKeyRef.current = null;
             anonBasicCompletedKeyRef.current = key;
@@ -802,8 +805,8 @@ export default function NodeDetailModal({
       .then(() => {
         anonBasicCompletedKeyRef.current = `${node.node_id}:anon-basic`;
       })
-      .catch(() => {
-        // catch-no-log-ok runtime logs and stores the error entry
+      .catch((e: unknown) => {
+        console.debug('[renderer/components/NodeDetailModal] catch:', e);
       })
       .finally(() => {
         setAnonBasicRefreshing(false);
@@ -842,8 +845,9 @@ export default function NodeDetailModal({
           }
           setContactPubkey(syncHex ?? dbHex);
         }
-      } catch {
-        // catch-no-log-ok handle gracefully - show as unknown
+      } catch (e: unknown) {
+        console.debug('[renderer/components/NodeDetailModal] catch:', e);
+
         if (!cancelled) {
           setContactOnRadio(null);
           setContactPubkey(syncHex);
@@ -854,8 +858,9 @@ export default function NodeDetailModal({
         if (!cancelled) {
           setRadioContactCount(count);
         }
-      } catch {
-        // catch-no-log-ok handle gracefully - show as unknown
+      } catch (e: unknown) {
+        console.debug('[renderer/components/NodeDetailModal] catch:', e);
+
         if (!cancelled) setRadioContactCount(null);
       }
     };
@@ -966,7 +971,7 @@ export default function NodeDetailModal({
     try {
       await onRequestPosition?.(node.node_id);
     } catch (e) {
-      console.warn('[NodeDetailModal] request position failed ' + errLikeToLogString(e));
+      console.warn('mcL0473 [NodeDetailModal] request position failed ' + errLikeToLogString(e));
       setPositionRequestedAt(null);
       setActionStatus(t('nodeDetailModal.positionRequestFailed'));
     }
@@ -1043,7 +1048,7 @@ export default function NodeDetailModal({
               setActionStatus(null);
             } catch (e) {
               console.warn(
-                '[NodeDetailModal] requestRepeaterStatus failed ' + errLikeToLogString(e),
+                'mcL0474 [NodeDetailModal] requestRepeaterStatus failed ' + errLikeToLogString(e),
               );
               setActionStatus(
                 e instanceof Error ? e.message : t('nodeDetailModal.statusRequestFailed'),
@@ -1073,7 +1078,9 @@ export default function NodeDetailModal({
               await onRequestTelemetry(node.node_id);
               setActionStatus(null);
             } catch (e) {
-              console.warn('[NodeDetailModal] requestTelemetry failed ' + errLikeToLogString(e));
+              console.warn(
+                'mcL0475 [NodeDetailModal] requestTelemetry failed ' + errLikeToLogString(e),
+              );
               setActionStatus(
                 e instanceof Error
                   ? e.message
@@ -1110,7 +1117,9 @@ export default function NodeDetailModal({
                 await onRequestNeighbors(node.node_id);
                 setActionStatus(null);
               } catch (e) {
-                console.warn('[NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e));
+                console.warn(
+                  'mcL0476 [NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e),
+                );
                 setActionStatus(
                   e instanceof Error
                     ? e.message
@@ -1223,7 +1232,9 @@ export default function NodeDetailModal({
                 setActionStatus(t('nodeDetailModal.noPublicKeyAvailable'));
               }
             } catch (e) {
-              console.warn('[NodeDetailModal] exportContact failed ' + errLikeToLogString(e));
+              console.warn(
+                'mcL0477 [NodeDetailModal] exportContact failed ' + errLikeToLogString(e),
+              );
               setActionStatus(e instanceof Error ? e.message : t('nodeDetailModal.exportFailed'));
             } finally {
               setExportContactPending(false);
@@ -1250,7 +1261,9 @@ export default function NodeDetailModal({
                 success ? t('nodeDetailModal.shareContactSent') : t('nodeDetailModal.shareFailed'),
               );
             } catch (e) {
-              console.warn('[NodeDetailModal] shareContact failed ' + errLikeToLogString(e));
+              console.warn(
+                'mcL0478 [NodeDetailModal] shareContact failed ' + errLikeToLogString(e),
+              );
               setActionStatus(e instanceof Error ? e.message : t('nodeDetailModal.shareFailed'));
             } finally {
               setShareContactPending(false);
@@ -1304,7 +1317,7 @@ export default function NodeDetailModal({
               setRadioContactCount(count);
               setActionStatus(null);
             } catch (e) {
-              console.warn('[NodeDetailModal] addToRadio failed ' + errLikeToLogString(e));
+              console.warn('mcL0479 [NodeDetailModal] addToRadio failed ' + errLikeToLogString(e));
               setActionStatus(
                 e instanceof Error ? e.message : t('nodeDetailModal.addToRadioFailed'),
               );
@@ -1336,7 +1349,9 @@ export default function NodeDetailModal({
               setRadioContactCount(count);
               setActionStatus(null);
             } catch (e) {
-              console.warn('[NodeDetailModal] removeFromRadio failed ' + errLikeToLogString(e));
+              console.warn(
+                'mcL0480 [NodeDetailModal] removeFromRadio failed ' + errLikeToLogString(e),
+              );
               setActionStatus(
                 e instanceof Error ? e.message : t('nodeDetailModal.removeFromRadioFailed'),
               );
@@ -1387,7 +1402,9 @@ export default function NodeDetailModal({
                 setSuggestTeam({ candidate, preferSelf: isOurNode });
               })
               .catch((e: unknown) => {
-                console.warn('[NodeDetailModal] team link helper failed ' + errLikeToLogString(e));
+                console.warn(
+                  'mcL0481 [NodeDetailModal] team link helper failed ' + errLikeToLogString(e),
+                );
                 addToast(t('teamRoster.linkFailed'), 'error');
               });
           }}
@@ -1546,7 +1563,9 @@ export default function NodeDetailModal({
                       setActionStatus(t('nodeDetailModal.publicKeyCopied'));
                     })
                     .catch((e: unknown) => {
-                      console.warn('[NodeDetailModal] copy pubkey failed ' + errLikeToLogString(e));
+                      console.warn(
+                        'mcL0482 [NodeDetailModal] copy pubkey failed ' + errLikeToLogString(e),
+                      );
                     });
                 }}
                 className="text-muted hover:text-ink-200 shrink-0 rounded p-0.5"
@@ -2055,7 +2074,7 @@ export default function NodeDetailModal({
                             setActionStatus(null);
                           } catch (e) {
                             console.warn(
-                              '[NodeDetailModal] requestNeighbors load more failed ' +
+                              'mcL0483 [NodeDetailModal] requestNeighbors load more failed ' +
                                 errLikeToLogString(e),
                             );
                             setActionStatus(
@@ -2811,7 +2830,9 @@ export default function NodeDetailModal({
                         setAdminKeyError(null);
                       } catch (e: unknown) {
                         const msg = e instanceof Error ? e.message : String(e);
-                        console.warn('[NodeDetailModal] save remote admin key failed ' + msg);
+                        console.warn(
+                          'mcL0484 [NodeDetailModal] save remote admin key failed ' + msg,
+                        );
                         setAdminKeyError(
                           msg.startsWith('remoteAdmin.errors.')
                             ? t(msg)
@@ -2837,7 +2858,9 @@ export default function NodeDetailModal({
                           setAdminKeyError(null);
                         } catch (e: unknown) {
                           const msg = e instanceof Error ? e.message : String(e);
-                          console.warn('[NodeDetailModal] clear remote admin key failed ' + msg);
+                          console.warn(
+                            'mcL0485 [NodeDetailModal] clear remote admin key failed ' + msg,
+                          );
                           setAdminKeyError(
                             msg.startsWith('remoteAdmin.errors.')
                               ? t(msg)
@@ -2928,7 +2951,9 @@ export default function NodeDetailModal({
                 if (!noteSaveAllowedRef.current) return;
                 pendingNoteRef.current = null;
                 void window.electronAPI.db.setNodeNote(node.node_id, val).catch((e: unknown) => {
-                  console.warn('[NodeDetailModal] setNodeNote failed ' + errLikeToLogString(e));
+                  console.warn(
+                    'mcL0486 [NodeDetailModal] setNodeNote failed ' + errLikeToLogString(e),
+                  );
                 });
               }, 600);
             }}
@@ -2950,7 +2975,8 @@ export default function NodeDetailModal({
                   })
                   .catch((e: unknown) => {
                     console.warn(
-                      '[NodeDetailModal] forgetContactAdvert failed ' + errLikeToLogString(e),
+                      'mcL0487 [NodeDetailModal] forgetContactAdvert failed ' +
+                        errLikeToLogString(e),
                     );
                     setActionStatus(
                       e instanceof Error ? e.message : t('nodeDetailModal.forgetAdvertFailed'),

@@ -31,7 +31,7 @@ export function useTakContacts(): void {
         flushPending();
       })
       .catch((e: unknown) => {
-        console.warn('[useTakContacts] getContacts failed ' + errLikeToLogString(e));
+        console.warn('mcL0771 [useTakContacts] getContacts failed ' + errLikeToLogString(e));
         if (!cancelled) flushPending();
       });
     const pruneTimer = setInterval(() => {

@@ -1,4 +1,5 @@
 import type { AiWireFormat } from '../../../shared/ai-types';
+import { sanitizeLogMessage } from '../../sanitize-log-message';
 import { AiFailure } from '../errors';
 
 export interface AdapterInput {
@@ -93,8 +94,12 @@ export function parseDelta(format: AiWireFormat, line: string): { delta: string;
   let value: Record<string, unknown>;
   try {
     value = object(JSON.parse(line) as unknown);
-  } catch {
-    // catch-no-log-ok never echo provider responses
+  } catch (e: unknown) {
+    console.debug(
+      '[main/ai/adapters/index] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     throw new AiFailure('invalidResponse');
   }
   if (value.error || value.type === 'error') throw new AiFailure('httpError');

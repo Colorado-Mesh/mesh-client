@@ -39,7 +39,7 @@ export function MeshcoreFloodAdvertHeaderButton({ disabled, onSend, onSendZeroHo
     } catch (error) {
       const message = errLikeToLogString(error);
       const what = kind === 'flood' ? 'send' : 'zero-hop send';
-      console.warn(`[MeshcoreFloodAdvertHeaderButton] ${what} failed ${message}`);
+      console.warn(`mcL0456 [MeshcoreFloodAdvertHeaderButton] ${what} failed ${message}`);
       addToast(t('radioPanel.advertFailed', { message }), 'error');
     } finally {
       setSending(false);

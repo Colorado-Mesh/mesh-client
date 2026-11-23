@@ -70,8 +70,8 @@ export function TeamRosterDevicePickerDialog({
     try {
       await onConfirm(picked);
       onClose();
-    } catch {
-      // catch-no-log-ok Caller toasts; keep dialog open for retry
+    } catch (e: unknown) {
+      console.debug('[renderer/components/teamRoster/TeamRosterDevicePickerDialog] catch:', e);
     } finally {
       setBusy(false);
     }

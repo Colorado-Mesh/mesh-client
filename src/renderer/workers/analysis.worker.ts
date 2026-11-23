@@ -21,7 +21,7 @@ self.onmessage = (event: MessageEvent<AnalysisWorkerInbound>) => {
     const result: AnalysisWorkerOutbound = runAnalysisJob(request);
     self.postMessage(result);
   } catch (err) {
-    console.warn('[analysis.worker] job failed ' + errLikeToLogString(err));
+    console.warn('mcL1494 [analysis.worker] job failed ' + errLikeToLogString(err));
     const reply: AnalysisWorkerOutbound = {
       kind: 'error',
       sequence: request.sequence,

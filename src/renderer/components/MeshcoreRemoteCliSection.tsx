@@ -47,7 +47,7 @@ export default function MeshcoreRemoteCliSection({
       setAllow(allowed == null ? { kind: 'notOnRadio' } : { kind: 'loaded', allowed });
     } catch (e) {
       console.warn(
-        '[MeshcoreRemoteCliSection] read remote CLI flag failed ' + errLikeToLogString(e),
+        'mcL0459 [MeshcoreRemoteCliSection] read remote CLI flag failed ' + errLikeToLogString(e),
       );
       setFlagError(t('meshcoreRemoteCli.flagReadFailed'));
     } finally {
@@ -64,7 +64,8 @@ export default function MeshcoreRemoteCliSection({
         setAllow(next == null ? { kind: 'notOnRadio' } : { kind: 'loaded', allowed: next });
       } catch (e) {
         console.warn(
-          '[MeshcoreRemoteCliSection] write remote CLI flag failed ' + errLikeToLogString(e),
+          'mcL0460 [MeshcoreRemoteCliSection] write remote CLI flag failed ' +
+            errLikeToLogString(e),
         );
         setFlagError(t('meshcoreRemoteCli.flagWriteFailed'));
       } finally {
@@ -80,8 +81,8 @@ export default function MeshcoreRemoteCliSection({
       try {
         await remote.sendRemoteCli(nodeId, command, { confirmedDanger });
         setInput('');
-      } catch {
-        // catch-no-log-ok the runtime logs the failure and appends it to the CLI history
+      } catch (e: unknown) {
+        console.debug('[renderer/components/MeshcoreRemoteCliSection] catch:', e);
       } finally {
         setSending(false);
       }

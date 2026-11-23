@@ -421,7 +421,7 @@ export default function NomadNetworkPanel({
     void isReticulumSidecarRunning()
       .then(applyRunning)
       .catch((e: unknown) => {
-        console.warn('[NomadNetworkPanel] sidecar status ' + errLikeToLogString(e));
+        console.warn('mcL0493 [NomadNetworkPanel] sidecar status ' + errLikeToLogString(e));
       });
     const unsub = window.electronAPI.reticulum.onStatus((status) => {
       applyRunning(status.running && status.port > 0);
@@ -497,7 +497,7 @@ export default function NomadNetworkPanel({
     if (!nomadNodeChangedSincePageError(snap, selectedNode)) return;
 
     markAnnounceReloadDone();
-    console.warn('[NomadNetwork] page reload after announce refresh');
+    console.warn('mcL0494 [NomadNetwork] page reload after announce refresh');
     // eslint-disable-next-line react-hooks/set-state-in-effect -- auto-retry after announce updates node metadata
     void loadNodePage(selectedHash, pagePath, {
       forceReload: true,
@@ -548,7 +548,7 @@ export default function NomadNetworkPanel({
       } catch (e) {
         // Failure point: unexpected fetchNomadFile reject. Fallback: humanize if possible.
         if (!mountedRef.current) return;
-        console.warn('[NomadNetworkPanel] file download ' + errLikeToLogString(e));
+        console.warn('mcL0495 [NomadNetworkPanel] file download ' + errLikeToLogString(e));
         setFileDownloadError(humanizeNomadPageError(undefined, t));
       } finally {
         if (mountedRef.current) {
@@ -663,8 +663,7 @@ export default function NomadNetworkPanel({
           if (!mountedRef.current) return;
           void loadNodePage(hash, DEFAULT_NOMAD_NODE_PAGE_PATH, { forceReload: true });
         } catch (e) {
-          // catch-no-log-ok surfaced via page error when load fails; refresh failure is non-fatal
-          console.warn('[NomadNetwork] preview hosted site refresh failed:', e);
+          console.warn('mcL0496 [NomadNetwork] preview hosted site refresh failed:', e);
         }
       })();
     },

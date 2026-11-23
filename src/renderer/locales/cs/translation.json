@@ -545,7 +545,10 @@
     "dangerZoneEnvironmentHistoryDesc": "Odstraní všechna uložená měření teploty, vlhkosti, tlaku a kvality ovzduší pro každý protokol a identitu.",
     "clearAllRooms": "Vymazat všechny místnosti",
     "clearAllRoomsConfirm": "Tímto se odstraní všechny neoblíbené servery místností MeshCore z připojeného rádia a z místní databáze. Místnosti se znovu objeví, když se znovu zviditelní. Tento krok nelze vrátit zpět.",
-    "meshcomWatchlistHeading": "Seznam sledovaných volacích značek MeshCom"
+    "meshcomWatchlistHeading": "Seznam sledovaných volacích značek MeshCom",
+    "verboseLogging": "Zahrnout do protokolů ladění a informace",
+    "verboseLoggingDesc": "Ve výchozím nastavení je vypnuto, aby exporty zůstaly malé. Zapněte, reprodukujte problém a poté exportujte pro GitHub. Při hlášení problému uveďte všechny kódy mcL#### ze záznamu.",
+    "verboseLoggingSupportHint": "V případě chyb, které je obtížné reprodukovat, zapněte možnost Zapsat ladění a informace do souboru protokolu na panelu Aplikace → Protokol, reprodukujte problém a poté vyberte možnost Exportovat. Exporty podpory vždy obsahují úplný protokol na disku. Při hlášení problému uveďte všechny kódy mcL####."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -2734,6 +2737,14 @@
       "gps": {
         "label": "Vyhledání polohy IP se nezdařilo",
         "recommendation": "Záložní umístění založené na protokolu IP se nezdařilo. Zkontrolujte dostupnost internetu; radio GPS a ručně nastavené statické umístění jsou od tohoto vyhledávání IP odděleny."
+      },
+      "caught-serious-error": {
+        "label": "Zjištěny závažné chyby",
+        "recommendation": "Byla zjištěna závažná chyba bez pádu systému. Uveďte všechny kódy mcL####, v případě potřeby povolte podrobné protokolování, reprodukujte chybu, poté exportujte pro GitHub a nahlaste chybu."
+      },
+      "path-containment": {
+        "label": "Omezení cesty",
+        "recommendation": "Cesta unikla ze svého povoleného kořenového adresáře (jail). Pokud to bylo neočekávané, exportujte pro GitHub a nahlaste to; uveďte všechny kódy mcL#### v protokolu."
       }
     },
     "recommendationGroups": {
@@ -2766,7 +2777,8 @@
     "deviceSource": "Zařízení ({{count}})",
     "narrowLogPanel": "Úzký panel protokolu",
     "widenLogPanel": "Rozšířit panel protokolu",
-    "clearFailed": "Protokol nelze vymazat"
+    "clearFailed": "Protokol nelze vymazat",
+    "verboseLoggingOn": "Podrobné protokolování zapnuto – zaznamenávají se ladicí informace a informace."
   },
   "mapPanel": {
     "locationUnavailable": "Poloha není k dispozici.",

@@ -35,7 +35,7 @@ describe('parseStoredJson', () => {
     const raw = { polluted: true } as unknown as string | null;
     expect(parseStoredJson(raw, 'non-string raw')).toBeNull();
     expect(console.warn).toHaveBeenCalledWith(
-      '[parseStoredJson] non-string raw failed expected string, got object',
+      'mcL0988 [parseStoredJson] non-string raw failed expected string, got object',
     );
   });
 });

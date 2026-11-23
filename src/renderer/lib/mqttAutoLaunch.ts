@@ -58,7 +58,9 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
   if (!settings.autoLaunch) return;
 
   if (prot === 'meshcore' && meshcoreMqttNeedsColoradoRegionAck()) {
-    console.warn('[App] MQTT auto-launch deferred: Colorado Mesh region confirmation pending');
+    console.warn(
+      'mcL0977 [App] MQTT auto-launch deferred: Colorado Mesh region confirmation pending',
+    );
     return;
   }
 
@@ -77,7 +79,7 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
     const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(meshcorePreset, connectSettings);
     if (!iataPrepared.ok) {
       console.warn(
-        '[App] MQTT auto-launch skipped: invalid MeshCore topic prefix (need meshcore/{IATA} or meshcore/test)',
+        'mcL0978 [App] MQTT auto-launch skipped: invalid MeshCore topic prefix (need meshcore/{IATA} or meshcore/test)',
       );
       return;
     }
@@ -87,7 +89,7 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
   if (prot === 'meshcore' && usesMeshcoreDeviceSigningMqtt(meshcorePreset, connectSettings)) {
     const presetErr = validateLetsMeshPresetConnect(connectSettings);
     if (presetErr) {
-      console.warn('[App] MQTT auto-launch skipped: ' + errLikeToLogString(presetErr));
+      console.warn('mcL0979 [App] MQTT auto-launch skipped: ' + errLikeToLogString(presetErr));
       return;
     }
     const identity = await readMeshcoreIdentityAsync();
@@ -104,20 +106,21 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
         connectSettings.tokenExpiresAt = expiresAt;
       } catch (e) {
         console.warn(
-          '[App] LetsMesh auth token auto-launch generation failed ' + errLikeToLogString(e),
+          'mcL0980 [App] LetsMesh auth token auto-launch generation failed ' +
+            errLikeToLogString(e),
         );
         return;
       }
     } else {
       if (!connectSettings.password.trim()) {
         console.warn(
-          '[App] MQTT auto-launch skipped: LetsMesh needs imported identity or password',
+          'mcL0981 [App] MQTT auto-launch skipped: LetsMesh needs imported identity or password',
         );
         return;
       }
       const manualErr = validateLetsMeshManualCredentials(connectSettings);
       if (manualErr) {
-        console.warn('[App] MQTT auto-launch skipped: ' + errLikeToLogString(manualErr));
+        console.warn('mcL0982 [App] MQTT auto-launch skipped: ' + errLikeToLogString(manualErr));
         return;
       }
     }

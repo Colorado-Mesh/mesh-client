@@ -754,7 +754,7 @@ function OverviewMapPanel({
       await onSendPositionOnAir();
       addToast(t('mapPanel.meshcomSendPositionSent'), 'success');
     } catch (err) {
-      console.warn('[MapPanel] MeshCom send position on air failed', err);
+      console.warn('mcL0436 [MapPanel] MeshCom send position on air failed', err);
       addToast(
         t('mapPanel.meshcomSendPositionFailed', {
           message: err instanceof Error ? err.message : t('common.unknown'),
@@ -783,12 +783,12 @@ function OverviewMapPanel({
       } else if (result.reason === 'empty') {
         addToast(t('gpxExport.empty'), 'error');
       } else if (result.reason === 'cancelled') {
-        // catch-no-log-ok user dismissed save dialog
+        console.debug('[MapPanel] GPX export cancelled');
       } else {
         addToast(t('gpxExport.failed'), 'error');
       }
     } catch (err) {
-      console.error('[MapPanel] GPX export failed', err);
+      console.error('mcL0437 [MapPanel] GPX export failed', err);
       addToast(t('gpxExport.failed'), 'error');
     } finally {
       setGpxExporting(false);
@@ -888,7 +888,7 @@ function OverviewMapPanel({
   useEffect(() => {
     ensureLoRaMapPanelStyles();
     void loadHistoryFromDb().catch((e: unknown) => {
-      console.warn('[MapPanel] loadHistoryFromDb failed:', String(e));
+      console.warn('mcL0438 [MapPanel] loadHistoryFromDb failed:', String(e));
     });
   }, [loadHistoryFromDb]);
 
@@ -902,7 +902,7 @@ function OverviewMapPanel({
     nodeIdsToLoad.forEach((nodeId) => {
       routeWeightLoadedNodeIdsRef.current.add(nodeId);
       void loadPathHistoryForNode(nodeId).catch((e: unknown) => {
-        console.warn('[MapPanel] load path history for node failed:', String(e));
+        console.warn('mcL0439 [MapPanel] load path history for node failed:', String(e));
       });
     });
   }, [routeWeightsSupported, showRouteWeights, nodes, loadPathHistoryForNode, pathRecords.size]);

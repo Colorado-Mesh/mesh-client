@@ -113,7 +113,7 @@ export function usePowerRecovery(
       setSystemSuspended(false);
       clearTimers();
       void window.electronAPI.mqtt.powerResume().catch((e: unknown) => {
-        console.warn('[usePowerRecovery] mqtt.powerResume failed ' + errLikeToLogString(e));
+        console.warn('mcL0760 [usePowerRecovery] mqtt.powerResume failed ' + errLikeToLogString(e));
       });
 
       for (const { protocol, delayMs } of resumeSchedule) {

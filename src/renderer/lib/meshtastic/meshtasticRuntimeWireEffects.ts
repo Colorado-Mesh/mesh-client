@@ -282,7 +282,7 @@ export function attachMeshtasticRuntimeWireEffects(
     clearConfigureTimeout();
     configureTimeoutRef.current = setTimeout(() => {
       console.warn(
-        `[useMeshtasticRuntime] configure stall timeout (${type} ${MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS / 1000}s) — forcing disconnect`,
+        `mcL0956 [useMeshtasticRuntime] configure stall timeout (${type} ${MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS / 1000}s) — forcing disconnect`,
       );
       clearConfigureTimeout();
       handleConnectionLostRef.current();
@@ -868,7 +868,8 @@ export function attachMeshtasticRuntimeWireEffects(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- External SDK value is validated by surrounding boundary logic.
       void mqttClientProxyBridgeRef.current?.handleFromRadio(packet).catch((e: unknown) => {
         console.warn(
-          '[useMeshtasticRuntime] mqttClientProxy FromRadio failed ' + errLikeToLogString(e),
+          'mcL0957 [useMeshtasticRuntime] mqttClientProxy FromRadio failed ' +
+            errLikeToLogString(e),
         );
       });
       return;

@@ -90,7 +90,7 @@ describe('reticulumLocalInterfaceLogging', () => {
       error: 'adapter busy',
     });
     expect(warn).toHaveBeenCalledWith(
-      '[useReticulumRuntime] interface.state action=ble_peer_failed id=peer-1 error=adapter busy',
+      'mcL1039 [useReticulumRuntime] interface.state action=ble_peer_failed id=peer-1 error=adapter busy',
     );
   });
 });

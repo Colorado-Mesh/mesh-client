@@ -23,8 +23,8 @@ export function loadPersistedMeshcoreSelfNodeId(): number {
       const n = Number.parseInt(raw, 10);
       if (Number.isFinite(n) && n > 0) return n >>> 0;
     }
-  } catch {
-    // catch-no-log-ok localStorage unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcoreLastSelfNodeId] catch:', e);
   }
   return 0;
 }
@@ -34,11 +34,11 @@ export function persistMeshcoreSelfNodeId(nodeId: number): void {
   const idStr = String(nodeId >>> 0);
   try {
     localStorage.setItem(MESHCORE_LAST_SELF_NODE_LS_KEY, idStr);
-  } catch {
-    // catch-no-log-ok localStorage unavailable
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcoreLastSelfNodeId] catch:', e);
   }
   mergeAppSetting(SETTING_KEY, idStr, 'meshcoreLastSelfNodeId persist');
-  void window.electronAPI.appSettings.set(SETTING_KEY, idStr).catch(() => {
-    // catch-no-log-ok best-effort mirror to SQLite; localStorage already updated
+  void window.electronAPI.appSettings.set(SETTING_KEY, idStr).catch((e: unknown) => {
+    console.debug('[renderer/lib/meshcoreLastSelfNodeId] catch:', e);
   });
 }

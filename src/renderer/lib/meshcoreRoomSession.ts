@@ -449,12 +449,12 @@ export async function meshcoreRoomLogin(
           const errMsg = errLikeToLogString(e);
           if (attempt < MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS) {
             console.warn(
-              `[meshcoreRoomSession] room login attempt ${attempt}/${MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS} failed ${errMsg}`,
+              `mcL0934 [meshcoreRoomSession] room login attempt ${attempt}/${MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS} failed ${errMsg}`,
             );
             throwIfRoomLoginAborted(signal);
             await meshcoreAbortablePromise(sleepMs(MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS), signal);
           } else {
-            console.warn('[meshcoreRoomSession] room login failed ' + errMsg);
+            console.warn('mcL0935 [meshcoreRoomSession] room login failed ' + errMsg);
           }
         }
       }

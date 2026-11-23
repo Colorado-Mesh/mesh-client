@@ -82,7 +82,7 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
       set({ hubs: map, lastRefreshAt: Date.now() });
     } catch (e) {
       if (!isReticulumSidecarExpectedProxyError(e)) {
-        console.warn('[rrcHubStore] refresh ' + errLikeToLogString(e));
+        console.warn('mcL1472 [rrcHubStore] refresh ' + errLikeToLogString(e));
       }
     }
   },
@@ -134,7 +134,7 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
     try {
       const res = await window.electronAPI.reticulum.rrc.setFavorite(key, favorited);
       if (!res.ok) {
-        console.warn('[rrcHubStore] favorite not ok ' + (res.error ?? ''));
+        console.warn('mcL1473 [rrcHubStore] favorite not ok ' + (res.error ?? ''));
         if (prev) {
           set((s) => {
             const next = new Map(s.hubs);
@@ -146,7 +146,7 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
         }
       }
     } catch (e) {
-      console.warn('[rrcHubStore] favorite ' + errLikeToLogString(e));
+      console.warn('mcL1474 [rrcHubStore] favorite ' + errLikeToLogString(e));
       if (prev) {
         set((s) => {
           const next = new Map(s.hubs);
@@ -170,7 +170,7 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
         label,
       })) as { ok?: boolean; hub?: RrcHubInfo; error?: string };
       if (res.ok === false) {
-        console.warn('[rrcHubStore] upsertManual not ok ' + (res.error ?? ''));
+        console.warn('mcL1475 [rrcHubStore] upsertManual not ok ' + (res.error ?? ''));
         return null;
       }
       if (res.hub) {
@@ -185,7 +185,7 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
       await get().refreshFromSidecar();
       return get().getHub(clean) ?? null;
     } catch (e) {
-      console.warn('[rrcHubStore] upsertManual ' + errLikeToLogString(e));
+      console.warn('mcL1476 [rrcHubStore] upsertManual ' + errLikeToLogString(e));
       return null;
     }
   },

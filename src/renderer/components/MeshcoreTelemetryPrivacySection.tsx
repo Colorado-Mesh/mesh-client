@@ -209,9 +209,8 @@ export default function MeshcoreTelemetryPrivacySection({
             telemetryModeLoc: meshcoreTriStateToTelemetryMode(loc),
             telemetryModeEnv: meshcoreTriStateToTelemetryMode(env),
           }).catch((err: unknown) => {
-            // catch-no-log-ok parent onApply usually handles errors; defensive for unhandled callers
             console.warn(
-              '[MeshcoreTelemetryPrivacySection] onApply rejected:',
+              'mcL0463 [MeshcoreTelemetryPrivacySection] onApply rejected:',
               err instanceof Error ? err.message : String(err),
             );
           })

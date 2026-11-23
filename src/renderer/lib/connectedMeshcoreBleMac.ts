@@ -13,8 +13,9 @@ function loadPersistedMeshcoreBleMacForSuppression(): string | null {
     if (!trimmed) return null;
     if (meshcoreBleMacToMeshtasticNodeId(trimmed) == null) return null;
     return trimmed;
-  } catch {
-    // catch-no-log-ok localStorage unavailable in tests or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/connectedMeshcoreBleMac] catch:', e);
+
     return null;
   }
 }
@@ -26,8 +27,8 @@ function persistMeshcoreBleMacForSuppression(mac: string | null): void {
     } else {
       localStorage.removeItem(MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY);
     }
-  } catch {
-    // catch-no-log-ok localStorage unavailable in tests or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/connectedMeshcoreBleMac] catch:', e);
   }
 }
 
@@ -139,7 +140,7 @@ export function resetConnectedMeshcoreBleMacForTests(): void {
   connectedMeshcoreBleMac = null;
   try {
     localStorage.removeItem(MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY);
-  } catch {
-    // catch-no-log-ok localStorage unavailable in tests or private mode
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/connectedMeshcoreBleMac] catch:', e);
   }
 }

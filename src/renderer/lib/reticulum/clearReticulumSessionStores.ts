@@ -31,11 +31,11 @@ export function clearReticulumSessionStores(): void {
   if (isReticulumVoiceSessionBusy(voiceState.activeCall ?? voiceState.incomingCall)) {
     // Best-effort sidecar hangup before local clear (stack may already be dead).
     try {
-      void window.electronAPI.reticulum.voice.hangup().catch(() => {
-        // catch-no-log-ok teardown hangup when sidecar is already gone
+      void window.electronAPI.reticulum.voice.hangup().catch((e: unknown) => {
+        console.debug('[renderer/lib/reticulum/clearReticulumSessionStores] catch:', e);
       });
-    } catch {
-      // catch-no-log-ok electronAPI/voice unavailable during teardown
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/reticulum/clearReticulumSessionStores] catch:', e);
     }
   }
   stopReticulumVoiceMedia();

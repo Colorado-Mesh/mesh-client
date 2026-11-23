@@ -24,7 +24,7 @@ const SIDECAR_PATH_RE =
  * @returns {number}
  */
 function run(cmd, args) {
-  console.error(`check:pr: ${cmd} ${args.join(' ')}`);
+  console.error('check:pr:', cmd, args.join(' '));
   const result = spawnSync(cmd, args, {
     cwd: ROOT,
     env: process.env,
@@ -32,7 +32,7 @@ function run(cmd, args) {
     shell: false,
   });
   if (result.error) {
-    console.error(`check:pr: failed to spawn ${cmd}:`, result.error.message);
+    console.error('check:pr: failed to spawn', cmd + ':', result.error.message);
     return 1;
   }
   return typeof result.status === 'number' ? result.status : 1;

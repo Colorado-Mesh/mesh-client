@@ -6,6 +6,7 @@ import {
   ENV_SKIP_ORIGIN_MIGRATION,
   RENDERER_SCHEME,
 } from '../shared/rendererOrigin';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 export type RendererLoadSource = 'env' | 'dist' | 'custom-protocol';
 
@@ -28,8 +29,11 @@ export function normalizeDevServerUrl(devServerUrl?: string): string | undefined
   if (!devServerUrl) return undefined;
   try {
     if (new URL(devServerUrl).protocol === `${RENDERER_SCHEME}:`) return undefined;
-  } catch {
-    // catch-no-log-ok preserve malformed overrides so loading reports the original invalid URL.
+  } catch (e: unknown) {
+    console.debug(
+      '[main/resolveRendererLoadUrl] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
   }
   return devServerUrl;
 }

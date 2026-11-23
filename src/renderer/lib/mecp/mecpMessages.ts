@@ -105,7 +105,7 @@ export async function loadMecpLanguage(lang: string): Promise<LanguageFile> {
     LANGUAGE_MODULES[lang] = mod.default;
     return mod.default;
   } catch (e) {
-    console.warn('[mecp] failed to load language', lang, e);
+    console.warn('mcL0865 [mecp] failed to load language', lang, e);
     return FALLBACK_LANGUAGE;
   }
 }

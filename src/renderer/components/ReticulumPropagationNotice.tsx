@@ -93,7 +93,10 @@ export function ReticulumPropagationNotice({
                   }
                 })
                 .catch((err: unknown) => {
-                  console.warn('[ReticulumPropagationNotice] addFromDiscovered rejected', err);
+                  console.warn(
+                    'mcL0585 [ReticulumPropagationNotice] addFromDiscovered rejected',
+                    err,
+                  );
                   addToast(t('reticulumPropagation.addFailed'), 'error');
                 });
             }}

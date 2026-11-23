@@ -21,7 +21,7 @@ function watchKey(identityId: IdentityId, storeId: string): string {
 /** Tell main how a TAK client's direct message ended, so its device hears about it. */
 export function reportTakDmOutcome(dmRef: string, outcome: TakDmOutcome): void {
   window.electronAPI.tak.dmStatus({ dmRef, outcome }).catch((e: unknown) => {
-    console.warn('[TakDmStatus] dmStatus failed ' + errLikeToLogString(e));
+    console.warn('mcL1166 [TakDmStatus] dmStatus failed ' + errLikeToLogString(e));
   });
 }
 

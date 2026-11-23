@@ -164,7 +164,7 @@ export function KeyBackupRestoreSection({
           addToast(t('securityPanel.restoreVerifyFailed'), 'error');
         }
       } catch (err) {
-        console.warn('[KeyBackupRestoreSection] restore ' + errLikeToLogString(err));
+        console.warn('mcL0426 [KeyBackupRestoreSection] restore ' + errLikeToLogString(err));
         addToast(
           t('securityPanel.restoreFailed', { message: keyBackupFailureMessage(err, t) }),
           'error',
@@ -203,7 +203,7 @@ export function KeyBackupRestoreSection({
       addToast(t('securityPanel.keysBackedUpForDevice', { label: nodeDisplayLabel }), 'success');
       refreshStatus();
     } catch (err) {
-      console.warn('[KeyBackupRestoreSection] backup ' + errLikeToLogString(err));
+      console.warn('mcL0427 [KeyBackupRestoreSection] backup ' + errLikeToLogString(err));
       addToast(
         t('securityPanel.backupFailed', { message: keyBackupFailureMessage(err, t) }),
         'error',
@@ -236,7 +236,7 @@ export function KeyBackupRestoreSection({
         setRemoveConfirmKey(null);
         refreshStatus();
       } catch (err) {
-        console.warn('[KeyBackupRestoreSection] remove ' + errLikeToLogString(err));
+        console.warn('mcL0428 [KeyBackupRestoreSection] remove ' + errLikeToLogString(err));
         addToast(t('securityPanel.failed', { message: keyBackupFailureMessage(err, t) }), 'error');
       }
     },
@@ -333,8 +333,8 @@ export function KeyBackupRestoreSection({
                 prefix = publicKeyPrefixHex(
                   Uint8Array.from(atob(entry.publicKeyB64), (c) => c.charCodeAt(0)),
                 );
-              } catch {
-                // catch-no-log-ok malformed backup base64 — keep fallback prefix label
+              } catch (e: unknown) {
+                console.debug('[renderer/components/KeyBackupRestoreSection] catch:', e);
               }
               return (
                 <li key={nodeKey}>

@@ -9,6 +9,7 @@
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { pnpmExecutable } from './ci-verify-pnpm.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -22,10 +23,10 @@ const maxAttempts = process.platform === 'win32' ? 3 : 1;
 let lastStatus = 1;
 
 for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-  const result = spawnSync('pnpm', ['install'], {
+  const result = spawnSync(pnpmExecutable(), ['install'], {
     cwd: projectRoot,
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: false,
   });
   lastStatus = result.status ?? 1;
   if (lastStatus === 0) {

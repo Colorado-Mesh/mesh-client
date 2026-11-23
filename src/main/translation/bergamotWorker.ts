@@ -2,6 +2,7 @@ import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 
 import { MS_PER_MINUTE, MS_PER_SECOND } from '../../shared/timeConstants';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import type { TranslationWorkerJob, TranslationWorkerReply } from './bergamotWorkerRuntime';
 
 export interface TranslationWorkerPort {
@@ -29,7 +30,7 @@ export class BergamotWorker {
 
   private terminate(worker: TranslationWorkerPort): void {
     this.terminating = worker.terminate().catch(() => {
-      console.warn('[translation] Could not terminate worker');
+      console.warn('mcL0311 [translation] Could not terminate worker');
     });
   }
 
@@ -50,8 +51,11 @@ export class BergamotWorker {
       if (generation !== this.generation) throw new Error('Translation cancelled');
       return this.execute({ ...job, id: ++this.nextId });
     });
-    this.tail = result.catch(() => {
-      // catch-no-log-ok caller receives the rejection; keep serial queue usable
+    this.tail = result.catch((e: unknown) => {
+      console.debug(
+        '[main/translation/bergamotWorker] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
     });
     return result.finally(() => {
       this.queued -= 1;
@@ -124,8 +128,12 @@ export class BergamotWorker {
       active.once('message', onMessage);
       try {
         active.postMessage(job);
-      } catch {
-        // catch-no-log-ok failed transport is returned through the request rejection
+      } catch (e: unknown) {
+        console.debug(
+          '[main/translation/bergamotWorker] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+
         finish();
       }
     });

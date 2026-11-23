@@ -12,8 +12,9 @@ const MAX_USER_AGENT_SNIPPET_LENGTH = 160;
 export function formatJsonForRendererLog(detail: Record<string, unknown>): string {
   try {
     return sanitizeLogMessage(JSON.stringify(detail));
-  } catch {
-    // catch-no-log-ok stringify fallback for circular / non-serializable log payloads
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/connectionWebStreams] catch:', e);
+
     return sanitizeLogMessage('{}');
   }
 }
@@ -54,7 +55,7 @@ export function assertMeshtasticSerialWebStreamsAvailable(): void {
   if (missing.length === 0) return;
 
   console.error(
-    `[connection] Meshtastic serial: Web Streams unavailable ${formatJsonForRendererLog({
+    `mcL0808 [connection] Meshtastic serial: Web Streams unavailable ${formatJsonForRendererLog({
       ...d,
       missing,
     })}`,
@@ -90,7 +91,7 @@ export function assertTransportReadyForMeshDevice(transport: unknown, context: s
   if (fromOk && toOk) return;
 
   console.error(
-    `[connection] Transport missing streams for MeshDevice ${sanitizeLogMessage(context)} ${formatJsonForRendererLog(
+    `mcL0809 [connection] Transport missing streams for MeshDevice ${sanitizeLogMessage(context)} ${formatJsonForRendererLog(
       {
         ...getMeshtasticStreamsDiagnostics(),
         hasFromDevice: t.fromDevice != null,

@@ -32,6 +32,8 @@ import {
 } from 'fs';
 import { tmpdir } from 'os';
 import path, { resolve } from 'path';
+
+import { joinUnderRoot } from './lib/path-under-root.mjs';
 import { fileURLToPath } from 'url';
 
 import { LaunchSmokeError, launchAndAssert } from './packaged-launch-smoke.mjs';
@@ -52,7 +54,7 @@ export {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const releaseDir = path.join(projectRoot, 'release');
+const releaseDir = joinUnderRoot(projectRoot, 'release');
 
 /** `--appimage-extract` must finish within this or the smoke fails (ms). */
 const EXTRACT_TIMEOUT_MS = 120_000;
@@ -97,7 +99,9 @@ export function listLaunchableAppImages(dir, hostArch = process.arch) {
     fail('No AppImage found in release/');
   }
 
-  const launchable = appImages.filter((name) => shouldLaunchOnHost(path.join(dir, name), hostArch));
+  const launchable = appImages.filter((name) =>
+    shouldLaunchOnHost(joinUnderRoot(dir, name), hostArch),
+  );
   if (launchable.length === 0) {
     fail(`No native-arch AppImage to launch on ${hostArch} (found: ${appImages.join(', ')})`);
   }
@@ -130,6 +134,16 @@ function tailText(text, max = 8192) {
 }
 
 /**
+ * CI smoke subprocesses must be absolute paths (AppImage) — no PATH lookup.
+ * @param {string} cmd
+ * @returns {string}
+ */
+function assertSpawnExecutable(cmd) {
+  if (path.isAbsolute(cmd)) return cmd;
+  fail(`refusing to spawn non-absolute command: ${cmd}`);
+}
+
+/**
  * @param {string} message
  * @param {import('child_process').SpawnSyncReturns<string>} result
  */
@@ -152,7 +166,9 @@ function extractAppImage(appImagePath, extractDir) {
   prepareAppImageExtractDir(extractDir);
   // Artifact downloads may drop +x on AppImages.
   chmodSync(appImagePath, 0o755);
-  const result = spawnSync(appImagePath, ['--appimage-extract'], {
+  const executable = assertSpawnExecutable(appImagePath);
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- AppImage path validated absolute by assertSpawnExecutable.
+  const result = spawnSync(executable, ['--appimage-extract'], {
     cwd: extractDir,
     env: process.env,
     encoding: 'utf8',
@@ -172,7 +188,7 @@ function extractAppImage(appImagePath, extractDir) {
   if ((result.status ?? 1) !== 0) {
     failExtract(`AppImage extract exited ${result.status ?? 'null'} for ${appImagePath}`, result);
   }
-  const payloadRoot = path.join(extractDir, 'squashfs-root');
+  const payloadRoot = joinUnderRoot(extractDir, 'squashfs-root');
   if (!existsSync(payloadRoot)) {
     failExtract(`AppImage extract did not create squashfs-root under ${extractDir}`, result);
   }
@@ -189,17 +205,17 @@ async function main() {
   const launchable = listLaunchableAppImages(releaseDir);
 
   for (const name of launchable) {
-    const appImagePath = path.join(releaseDir, name);
+    const appImagePath = joinUnderRoot(releaseDir, name);
     const size = statSync(appImagePath).size;
     if (size < 50 * 1024 * 1024) {
       fail(`AppImage too small (${size} bytes): ${appImagePath}`);
     }
     const label = isArm64Name(name) ? 'arm64' : 'x64';
-    const extractDir = mkdtempSync(path.join(tmpdir(), `mesh-client-launch-${label}-`));
-    const userDataDir = mkdtempSync(path.join(tmpdir(), `mesh-client-userdata-${label}-`));
+    const extractDir = mkdtempSync(joinUnderRoot(tmpdir(), `mesh-client-launch-${label}-`));
+    const userDataDir = mkdtempSync(joinUnderRoot(tmpdir(), `mesh-client-userdata-${label}-`));
     try {
       const payloadRoot = extractAppImage(appImagePath, extractDir);
-      const appRun = path.join(payloadRoot, 'AppRun');
+      const appRun = joinUnderRoot(payloadRoot, 'AppRun');
       if (!existsSync(appRun)) {
         fail(`AppRun not found in extracted AppImage: ${appRun}`);
       }
@@ -218,7 +234,9 @@ async function main() {
     }
   }
 
-  const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;
+  const version = JSON.parse(
+    readFileSync(joinUnderRoot(projectRoot, 'package.json'), 'utf-8'),
+  ).version;
   console.debug(`[test-linux-appimage-launch] OK — native AppImage boots headlessly (v${version})`);
 }
 

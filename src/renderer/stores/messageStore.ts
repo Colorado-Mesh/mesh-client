@@ -148,7 +148,7 @@ function emitMessageStoreEvent(event: MessageStoreEvent): void {
     try {
       listener(event);
     } catch (err: unknown) {
-      console.warn('[messageStore] event listener failed', err);
+      console.warn('mcL1419 [messageStore] event listener failed', err);
     }
   }
 }

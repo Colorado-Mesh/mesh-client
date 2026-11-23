@@ -121,7 +121,9 @@ export async function migrateLegacyMeshtasticDmKeyBackup(nodeNum: number): Promi
   try {
     return await backup.migrateLegacySingleSlot(LEGACY_MESHTASTIC_DM_KEY_BACKUP_KEY, nodeNum);
   } catch (err) {
-    console.warn('[meshtasticDmKeyBackupStorage] legacy migrate failed ' + errLikeToLogString(err));
+    console.warn(
+      'mcL0965 [meshtasticDmKeyBackupStorage] legacy migrate failed ' + errLikeToLogString(err),
+    );
     return false;
   }
 }

@@ -8,6 +8,8 @@ import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
 
@@ -34,9 +36,9 @@ export function findUsocketPackageDirs(root) {
     }
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      const full = path.join(dir, entry.name);
+      const full = joinUnderRoot(dir, entry.name);
       if (entry.name === 'usocket') {
-        const pkgPath = path.join(full, 'package.json');
+        const pkgPath = joinUnderRoot(full, 'package.json');
         if (existsSync(pkgPath)) {
           try {
             const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
@@ -64,17 +66,18 @@ export function findUsocketPackageDirs(root) {
  * @param {string} [nodeModulesRoot]
  * @returns {string[]} removed absolute paths
  */
-export function stripUsocketPackages(nodeModulesRoot = path.join(projectRoot, 'node_modules')) {
+export function stripUsocketPackages(nodeModulesRoot = joinUnderRoot(projectRoot, 'node_modules')) {
   const dirs = findUsocketPackageDirs(nodeModulesRoot);
   for (const dir of dirs) {
     try {
       if (existsSync(dir) && statSync(dir).isDirectory()) {
         rmSync(dir, { recursive: true, force: true });
-        console.debug(`[beforeBuild] Removed usocket package: ${dir}`);
+        console.debug('[beforeBuild] Removed usocket package:', dir);
       }
     } catch (err) {
       console.warn(
-        `[beforeBuild] Failed to remove usocket at ${dir}:`,
+        '[beforeBuild] Failed to remove usocket at',
+        dir + ':',
         err instanceof Error ? err.message : String(err),
       );
     }
@@ -89,7 +92,7 @@ export function stripUsocketPackages(nodeModulesRoot = path.join(projectRoot, 'n
  * @param {string} [nodeModulesRoot]
  * @returns {Promise<boolean>}
  */
-export async function runBeforeBuild(nodeModulesRoot = path.join(projectRoot, 'node_modules')) {
+export async function runBeforeBuild(nodeModulesRoot = joinUnderRoot(projectRoot, 'node_modules')) {
   const removed = stripUsocketPackages(nodeModulesRoot);
   if (removed.length === 0) {
     console.debug('[beforeBuild] No usocket packages found under node_modules');

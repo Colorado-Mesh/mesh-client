@@ -13,10 +13,11 @@ function getByFlatKeyPath(root: unknown, flatKey: string | undefined): unknown {
   if (!flatKey) return undefined;
   let cur: unknown = root;
   for (const part of flatKey.split('.')) {
-    if (cur == null || typeof cur !== 'object' || !(part in cur)) {
+    if (cur == null || typeof cur !== 'object' || !Object.hasOwn(cur, part)) {
       return undefined;
     }
-    cur = (cur as Record<string, unknown>)[part];
+    // Own-property read only — avoids prototype-chain walks on dynamic keys.
+    cur = Object.getOwnPropertyDescriptor(cur, part)?.value;
   }
   return cur;
 }

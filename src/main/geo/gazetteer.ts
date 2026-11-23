@@ -1,3 +1,4 @@
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { haversineKm } from './geoDistance';
 
 /** One row of the bundled GeoNames cities table (`resources/geo/cities15000.tsv`). */
@@ -67,15 +68,23 @@ function countryName(code: string): string {
   if (regionNames === undefined) {
     try {
       regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
-    } catch {
-      // catch-no-log-ok Intl.DisplayNames unavailable; country names just won't match
+    } catch (e: unknown) {
+      console.debug(
+        '[main/geo/gazetteer] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+
       regionNames = null;
     }
   }
   try {
     return regionNames?.of(code) ?? '';
-  } catch {
-    // catch-no-log-ok unknown region code
+  } catch (e: unknown) {
+    console.debug(
+      '[main/geo/gazetteer] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return '';
   }
 }

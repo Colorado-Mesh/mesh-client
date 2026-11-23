@@ -20,6 +20,8 @@ import type {
 
 import fs from 'fs';
 
+import { sanitizeLogMessage } from './sanitize-log-message';
+
 // node:sqlite is experimental in Node.js 22; suppress its ExperimentalWarning so
 // it does not pollute dev console output.  (The module is stable in Node.js 24+.)
 // We must load sqlite via require() here (not import) so the suppression override
@@ -222,8 +224,11 @@ export class NodeSqliteDB {
       } catch (err) {
         try {
           this._run('ROLLBACK');
-        } catch {
-          // catch-no-log-ok ROLLBACK attempt during transaction error — secondary failure, outer catch rethrows
+        } catch (e: unknown) {
+          console.debug(
+            '[main/db-compat] catch:',
+            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+          );
         }
         throw err;
       }

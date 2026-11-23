@@ -1,0 +1,227 @@
+# Mesh Client Semgrep policy (complements `semgrep --config auto` + `p/nodejs`).
+#
+# Tracked in git — do not add to .gitignore / exclude. Gate:
+#   pnpm run check:semgrep  (pre-commit, release, CI policy-scanners)
+#
+# Findings (especially from `--config auto`) may be false positives. Research
+# the rule and call path before dismissing. Prefer a real fix; if the finding
+# is wrong for this codebase, update this file and/or add a narrow nosemgrep
+# with a reason. See scripts/check-semgrep.mjs.
+#
+# Catch-block hygiene (log / rethrow / rare `// catch-no-log-ok <reason>`) for
+# src/main + src/renderer is enforced by `pnpm run check:silent-catches`.
+# Prefer `logCaughtDebug` / `console.debug` over suppressions. Do not add an
+# empty-catch Semgrep rule here (comment-only bodies would false-positive).
+#
+# Intentional `// nosemgrep` keeper families (do not delete blindly — dry-run
+# removing them re-fails `--config auto`):
+#   - path-join-resolve-traversal — containment helpers after segment validation
+#     (`pathUnderRoot`, `pathCanonical`, `scripts/lib/path-under-root.mjs`)
+#   - detect-non-literal-regexp — escaped / length-capped / fixed-fragment RegExp
+#   - detect-child-process — argv-only spawn with shell false + path validation
+#
+# Electron BrowserWindow prefs are also covered by check:electron-security on
+# index.ts; these rules scan all of src/ so pop-out / migration windows cannot
+# quietly regress.
+rules:
+  # AES-GCM must pin authTagLength so truncated tags are rejected.
+  - id: mesh-client-aes-gcm-auth-tag-length
+    message: >
+      AES-256-GCM createCipheriv/createDecipheriv must pass options with
+      `authTagLength` (use 16) so authentication tags cannot be truncated.
+      Three-arg forms and four-arg forms missing authTagLength are forbidden.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-347'
+      likelihood: LOW
+      impact: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: crypto.createCipheriv("aes-256-gcm", $KEY, $IV)
+          - pattern: crypto.createDecipheriv("aes-256-gcm", $KEY, $IV)
+          - pattern: crypto.createCipheriv('aes-256-gcm', $KEY, $IV)
+          - pattern: crypto.createDecipheriv('aes-256-gcm', $KEY, $IV)
+          - pattern: createCipheriv("aes-256-gcm", $KEY, $IV)
+          - pattern: createDecipheriv("aes-256-gcm", $KEY, $IV)
+          - pattern: createCipheriv('aes-256-gcm', $KEY, $IV)
+          - pattern: createDecipheriv('aes-256-gcm', $KEY, $IV)
+          - patterns:
+              - pattern-either:
+                  - pattern: crypto.createCipheriv("aes-256-gcm", $KEY, $IV, $OPTS)
+                  - pattern: crypto.createDecipheriv("aes-256-gcm", $KEY, $IV, $OPTS)
+                  - pattern: crypto.createCipheriv('aes-256-gcm', $KEY, $IV, $OPTS)
+                  - pattern: crypto.createDecipheriv('aes-256-gcm', $KEY, $IV, $OPTS)
+                  - pattern: createCipheriv("aes-256-gcm", $KEY, $IV, $OPTS)
+                  - pattern: createDecipheriv("aes-256-gcm", $KEY, $IV, $OPTS)
+                  - pattern: createCipheriv('aes-256-gcm', $KEY, $IV, $OPTS)
+                  - pattern: createDecipheriv('aes-256-gcm', $KEY, $IV, $OPTS)
+              - metavariable-pattern:
+                  metavariable: $OPTS
+                  patterns:
+                    - pattern-not: '{..., authTagLength: $LEN, ...}'
+
+  # Electron webPreferences anti-patterns (all BrowserWindow call sites).
+  - id: mesh-client-electron-node-integration-true
+    message: >
+      Electron webPreferences must keep nodeIntegration: false (never true).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-94'
+    patterns:
+      - pattern: 'nodeIntegration: true'
+    paths:
+      include:
+        - /src
+
+  - id: mesh-client-electron-context-isolation-false
+    message: >
+      Electron webPreferences must keep contextIsolation: true (never false).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-94'
+    patterns:
+      - pattern: 'contextIsolation: false'
+    paths:
+      include:
+        - /src
+
+  - id: mesh-client-electron-sandbox-false
+    message: >
+      Electron webPreferences must keep sandbox: true (never false).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-94'
+    patterns:
+      - pattern: 'sandbox: false'
+    paths:
+      include:
+        - /src
+
+  - id: mesh-client-electron-websecurity-false
+    message: >
+      Electron webPreferences must not set webSecurity: false.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-79'
+    patterns:
+      - pattern: 'webSecurity: false'
+    paths:
+      include:
+        - /src
+
+  # Prefer argv-only spawn/execFile; never enable a shell.
+  - id: mesh-client-child-process-shell-true
+    message: >
+      Do not pass shell: true to spawn/spawnSync/execFile/execFileSync. Use
+      argv-only invocation (no shell metacharacter expansion).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-78'
+    patterns:
+      - pattern-either:
+          - pattern: 'spawn($CMD, $ARGS, {..., shell: true, ...})'
+          - pattern: 'spawnSync($CMD, $ARGS, {..., shell: true, ...})'
+          - pattern: 'execFile($CMD, $ARGS, {..., shell: true, ...})'
+          - pattern: 'execFileSync($CMD, $ARGS, {..., shell: true, ...})'
+          - pattern: 'child_process.spawn($CMD, $ARGS, {..., shell: true, ...})'
+          - pattern: 'child_process.spawnSync($CMD, $ARGS, {..., shell: true, ...})'
+          - pattern: 'child_process.execFile($CMD, $ARGS, {..., shell: true, ...})'
+          - pattern: 'child_process.execFileSync($CMD, $ARGS, {..., shell: true, ...})'
+    paths:
+      include:
+        - /src
+        - /scripts
+
+  - id: mesh-client-child-process-exec-shell
+    message: >
+      Do not use child_process.exec / execSync (shell). Prefer execFile /
+      spawn with an argv array.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-78'
+    patterns:
+      - pattern-either:
+          - pattern: child_process.exec(...)
+          - pattern: child_process.execSync(...)
+          - pattern: require("child_process").exec(...)
+          - pattern: require('child_process').exec(...)
+          - pattern: require("node:child_process").exec(...)
+          - pattern: require('node:child_process').exec(...)
+    paths:
+      include:
+        - /src
+        - /scripts
+
+  - id: mesh-client-no-new-function
+    message: >
+      Do not use new Function(...). Prefer JSON.parse for data or structured
+      logic (same policy as eval — see check:xss-patterns).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-94'
+    patterns:
+      - pattern: new Function(...)
+    paths:
+      include:
+        - /src
+
+  # Weak hashes must not be used for security-sensitive digests.
+  - id: mesh-client-no-weak-hash
+    message: >
+      Do not use createHash('md5') or createHash('sha1') for digests. Prefer
+      sha256 (or stronger). Non-security content hashing should still avoid
+      MD5/SHA-1 so tooling does not treat them as acceptable.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-328'
+    patterns:
+      - pattern-either:
+          - pattern: createHash("md5")
+          - pattern: createHash('md5')
+          - pattern: createHash("sha1")
+          - pattern: createHash('sha1')
+          - pattern: crypto.createHash("md5")
+          - pattern: crypto.createHash('md5')
+          - pattern: crypto.createHash("sha1")
+          - pattern: crypto.createHash('sha1')
+    paths:
+      include:
+        - /src
+
+  # Main-process uniqueness / tokens must use crypto randomness (not Math.random).
+  - id: mesh-client-main-no-math-random
+    message: >
+      Do not use Math.random() in src/main. Prefer crypto.randomBytes /
+      randomInt / randomFill for filenames, tokens, and IDs (renderer UI
+      jitter/packet ids are out of scope for this rule).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: 'CWE-330'
+    patterns:
+      - pattern: Math.random(...)
+    paths:
+      include:
+        - /src/main
+      exclude:
+        - /src/main/**/*.test.ts
+        - /src/main/**/*.test.tsx

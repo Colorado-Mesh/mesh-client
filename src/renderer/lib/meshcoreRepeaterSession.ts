@@ -178,7 +178,7 @@ export async function meshcoreRepeaterTryLoginWithPassword(
     const restoreRadioContact = opts?.restoreRadioContact;
     if (restoreRadioContact && isMeshcoreNotFoundError(e)) {
       console.warn(
-        '[meshcoreRepeaterSession] node missing from radio contacts; re-adding for login',
+        'mcL0923 [meshcoreRepeaterSession] node missing from radio contacts; re-adding for login',
       );
       try {
         await restoreRadioContact();
@@ -186,7 +186,7 @@ export async function meshcoreRepeaterTryLoginWithPassword(
         return { attempted: true, ok: true, fromPersisted };
       } catch (restoreErr) {
         console.warn(
-          '[meshcoreRepeaterSession] repeater login after contact restore failed ' +
+          'mcL0924 [meshcoreRepeaterSession] repeater login after contact restore failed ' +
             errLikeToLogString(restoreErr),
         );
         return { attempted: true, ok: false, fromPersisted, error: restoreErr };
@@ -199,12 +199,15 @@ export async function meshcoreRepeaterTryLoginWithPassword(
         return { attempted: true, ok: true, fromPersisted };
       } catch (retryErr) {
         console.warn(
-          '[meshcoreRepeaterSession] repeater login retry failed ' + errLikeToLogString(retryErr),
+          'mcL0925 [meshcoreRepeaterSession] repeater login retry failed ' +
+            errLikeToLogString(retryErr),
         );
         return { attempted: true, ok: false, fromPersisted, error: retryErr };
       }
     }
-    console.warn('[meshcoreRepeaterSession] repeater login failed ' + errLikeToLogString(e));
+    console.warn(
+      'mcL0926 [meshcoreRepeaterSession] repeater login failed ' + errLikeToLogString(e),
+    );
     return { attempted: true, ok: false, fromPersisted, error: e };
   }
 }

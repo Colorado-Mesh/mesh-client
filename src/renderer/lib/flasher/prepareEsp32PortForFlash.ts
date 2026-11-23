@@ -17,8 +17,8 @@ export async function prepareEsp32PortForFlash(port: SerialPort): Promise<void> 
     } else {
       await rnode.close();
     }
-  } catch {
-    // catch-no-log-ok not an RNode or port busy — esptool will attempt ROM sync
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/flasher/prepareEsp32PortForFlash] catch:', e);
   }
   await closeSerialPortIfOpen(port);
 }

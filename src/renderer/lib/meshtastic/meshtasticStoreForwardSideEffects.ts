@@ -102,7 +102,8 @@ function appendReplayedHistoryText(identityId: IdentityId, replayed: ChatMessage
       await window.electronAPI.db.saveMessage(withMeshtasticChannelIdentity(chat));
     } catch (error) {
       console.warn(
-        '[meshtasticStoreForwardSideEffects] saveMessage failed ' + errLikeToLogString(error),
+        'mcL0961 [meshtasticStoreForwardSideEffects] saveMessage failed ' +
+          errLikeToLogString(error),
       );
       throw error;
     }

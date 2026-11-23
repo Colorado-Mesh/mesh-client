@@ -7,9 +7,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { joinUnderRoot } from './lib/path-under-root.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const EXT_ROOT = path.join(ROOT, '.github', 'codeql', 'extensions');
+const EXT_ROOT = joinUnderRoot(ROOT, '.github', 'codeql', 'extensions');
 
 function readText(p) {
   return fs.readFileSync(p, 'utf8');
@@ -24,7 +26,7 @@ function main() {
   const packs = fs
     .readdirSync(EXT_ROOT, { withFileTypes: true })
     .filter((d) => d.isDirectory())
-    .map((d) => path.join(EXT_ROOT, d.name));
+    .map((d) => joinUnderRoot(EXT_ROOT, d.name));
 
   if (packs.length === 0) {
     console.error('check-codeql-extensions: no packs under', EXT_ROOT);
@@ -34,8 +36,8 @@ function main() {
   let foundBarriers = false;
   let foundPackMeta = false;
   for (const dir of packs) {
-    const qlpack = path.join(dir, 'qlpack.yml');
-    const codeqlPack = path.join(dir, 'codeql-pack.yml');
+    const qlpack = joinUnderRoot(dir, 'qlpack.yml');
+    const codeqlPack = joinUnderRoot(dir, 'codeql-pack.yml');
     const metaFiles = [qlpack, codeqlPack].filter((p) => fs.existsSync(p));
     if (metaFiles.length === 0) continue;
 
@@ -60,11 +62,11 @@ function main() {
       }
     }
 
-    const modelsDir = path.join(dir, 'models');
+    const modelsDir = joinUnderRoot(dir, 'models');
     if (!fs.existsSync(modelsDir)) continue;
     for (const ent of fs.readdirSync(modelsDir, { withFileTypes: true })) {
       if (!ent.isFile() || !ent.name.endsWith('.yml')) continue;
-      const body = readText(path.join(modelsDir, ent.name));
+      const body = readText(joinUnderRoot(modelsDir, ent.name));
       if (body.includes('extensible: barrierModel')) {
         foundBarriers = true;
         if (

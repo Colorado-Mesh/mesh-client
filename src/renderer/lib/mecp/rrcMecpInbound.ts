@@ -108,8 +108,9 @@ function loadRules() {
     const raw = getAppSettingsRaw();
     const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
     return parseMecpRebroadcastRules(parsed?.[MECP_REBROADCAST_SETTINGS_KEY]);
-  } catch {
-    // catch-no-log-ok
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/mecp/rrcMecpInbound] catch:', e);
+
     return [];
   }
 }
@@ -206,7 +207,7 @@ export async function handleRrcMecpInbound(args: RrcMecpInboundArgs): Promise<vo
       ...(blocked ? { blocked: true } : {}),
     });
   } catch (e) {
-    console.warn('[rrcMecpInbound] appendReceived failed', e);
+    console.warn('mcL0868 [rrcMecpInbound] appendReceived failed', e);
   }
 
   if (blocked) return;
@@ -244,7 +245,7 @@ export async function handleRrcMecpInbound(args: RrcMecpInboundArgs): Promise<vo
           messageId: args.messageId,
         });
       } catch (e) {
-        console.warn('[rrcMecpInbound] rebroadcast audit failed', e);
+        console.warn('mcL0869 [rrcMecpInbound] rebroadcast audit failed', e);
       }
     },
   );

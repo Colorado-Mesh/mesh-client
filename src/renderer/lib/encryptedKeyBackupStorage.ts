@@ -58,8 +58,8 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
   function mutate<T>(operation: () => Promise<T>): Promise<T> {
     const next = mutation
       ? mutation
-          .catch(() => {
-            /* catch-no-log-ok the original caller receives the error */
+          .catch((e: unknown) => {
+            console.debug('[renderer/lib/encryptedKeyBackupStorage] catch:', e);
           })
           .then(operation)
       : operation();
@@ -138,8 +138,9 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
             backedUpAt: e.backedUpAt as number,
           }) satisfies EncryptedKeyBackupIndexEntry,
       );
-    } catch {
-      // catch-no-log-ok corrupt index JSON — treat as empty index (rebuild hooks recover it)
+    } catch (e: unknown) {
+      console.debug('[renderer/lib/encryptedKeyBackupStorage] catch:', e);
+
       return [];
     }
   }
@@ -238,8 +239,8 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
           publicKeyB64: payload.publicKey,
           backedUpAt: payload.backedUpAt,
         });
-      } catch {
-        // catch-no-log-ok skip corrupt slot during rebuild
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/encryptedKeyBackupStorage] catch:', e);
       }
     }
     entries.sort((a, b) => b.backedUpAt - a.backedUpAt);
@@ -285,10 +286,10 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
       let existingPayload: EncryptedKeyBackupPayload | null = null;
       try {
         existingPayload = parsePayload(existing);
-      } catch {
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/encryptedKeyBackupStorage] catch:', e);
         // A prior interrupted single-slot migration leaves the legacy shape in this final slot.
         // Re-run the conversion below so it becomes a regular indexed backup payload.
-        // catch-no-log-ok Expected intermediate migration shape; the conversion below validates it.
       }
       if (existingPayload) {
         const verified = await migrateLegacyBackupCiphertext(

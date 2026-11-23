@@ -1,23 +1,23 @@
 import { app } from 'electron';
-import path from 'path';
+
+import { assertPathInsideRoot, isPathInsideRoot, joinUnderRoot } from '../shared/pathUnderRoot';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /** Canonical inbound attachment directory under Electron userData. */
 export function getReticulumAttachmentsDir(): string {
-  return path.join(app.getPath('userData'), 'reticulum', 'attachments');
+  return joinUnderRoot(app.getPath('userData'), 'reticulum', 'attachments');
 }
 
 export function isReticulumAttachmentPathJailed(filePath: string): boolean {
-  const resolved = path.resolve(filePath);
-  const dir = path.resolve(getReticulumAttachmentsDir());
-  return resolved === dir || resolved.startsWith(`${dir}${path.sep}`);
+  return isPathInsideRoot(getReticulumAttachmentsDir(), filePath);
 }
 
 export function assertReticulumAttachmentPathJailed(filePath: string): string {
-  const resolved = path.resolve(filePath);
-  if (!isReticulumAttachmentPathJailed(resolved)) {
+  try {
+    return assertPathInsideRoot(getReticulumAttachmentsDir(), filePath);
+  } catch {
     throw new Error('attachment path outside reticulum attachments directory');
   }
-  return resolved;
 }
 
 export function sanitizeReticulumAttachmentPathForDb(
@@ -25,6 +25,14 @@ export function sanitizeReticulumAttachmentPathForDb(
 ): string | null {
   if (typeof attachmentPath !== 'string' || !attachmentPath.trim()) return null;
   const trimmed = attachmentPath.trim().slice(0, 512);
-  if (!isReticulumAttachmentPathJailed(trimmed)) return null;
-  return path.resolve(trimmed);
+  try {
+    return assertReticulumAttachmentPathJailed(trimmed);
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-attachment-path] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
+    return null;
+  }
 }

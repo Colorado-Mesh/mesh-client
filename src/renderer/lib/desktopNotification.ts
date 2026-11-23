@@ -14,8 +14,8 @@ function withNotificationPermission(show: () => void): void {
       .then((perm) => {
         if (perm === 'granted') show();
       })
-      .catch(() => {
-        // catch-no-log-ok: best-effort notification permission
+      .catch((e: unknown) => {
+        console.debug('[renderer/lib/desktopNotification] catch:', e);
       });
   }
 }
@@ -35,8 +35,8 @@ export function fireNotification(
     withNotificationPermission(() => {
       new Notification(title, { body, silent: opts?.silent === true });
     });
-  } catch {
-    // catch-no-log-ok: best-effort desktop notification
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/desktopNotification] catch:', e);
   }
 }
 

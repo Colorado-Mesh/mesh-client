@@ -1,11 +1,12 @@
 import fs from 'fs';
-import path from 'path';
 
+import { joinUnderRoot } from '../shared/pathUnderRoot';
 import {
   parseReticulumIniEnabledValue,
   parseReticulumIniInterfaceField,
 } from './reticulum-config-ini';
 import { readUtf8FileBounded } from './reticulum-config-read';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 /**
  * Local radios that should hold the machine awake. RNodeMultiInterface is the
@@ -112,12 +113,16 @@ function scanConfigContent(
 }
 
 function readConfigContent(configDir: string): string | null {
-  const configPath = path.join(configDir, 'config');
+  const configPath = joinUnderRoot(configDir, 'config');
   try {
     if (!fs.existsSync(configPath)) return null;
     return readUtf8FileBounded(configPath);
-  } catch {
-    // catch-no-log-ok unreadable config treated as no matching interface
+  } catch (e: unknown) {
+    console.debug(
+      '[main/reticulum-ble-rnode-config] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 }

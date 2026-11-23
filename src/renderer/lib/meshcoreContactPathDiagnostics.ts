@@ -46,8 +46,8 @@ export async function fetchMeshcoreContactPathDiagnostics(): Promise<
       let pathBytes: number[] = [];
       try {
         pathBytes = JSON.parse(row.path_bytes) as number[];
-      } catch {
-        // catch-no-log-ok malformed path_bytes
+      } catch (e: unknown) {
+        console.debug('[renderer/lib/meshcoreContactPathDiagnostics] catch:', e);
       }
       const existing = bestByNode.get(row.node_id);
       if (
@@ -77,8 +77,9 @@ export async function fetchMeshcoreContactPathDiagnostics(): Promise<
         bestPathHopCount: best?.hopCount ?? null,
       };
     });
-  } catch {
-    // catch-no-log-ok debug snapshot is best-effort; renderer may lack IPC
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/meshcoreContactPathDiagnostics] catch:', e);
+
     return [];
   }
 }

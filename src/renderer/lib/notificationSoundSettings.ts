@@ -61,8 +61,9 @@ export function getNotificationSoundSettings(): NotificationSoundSettings {
       'notification sounds',
     );
     return normalizeNotificationSoundSettings(settings?.notificationSounds);
-  } catch {
-    // catch-no-log-ok: blocked storage must not suppress incoming alerts.
+  } catch (e: unknown) {
+    console.debug('[renderer/lib/notificationSoundSettings] catch:', e);
+
     return normalizeNotificationSoundSettings(null);
   }
 }
@@ -93,8 +94,8 @@ export function saveNotificationSoundSetting(
     await window.electronAPI.appSettings.set('notificationSounds', JSON.stringify(settings));
     mergeAppSetting('notificationSounds', settings, 'notification sounds save');
   });
-  writes = save.catch(() => {
-    // catch-no-log-ok: caller surfaces persistence errors; keep the next write usable.
+  writes = save.catch((e: unknown) => {
+    console.debug('[renderer/lib/notificationSoundSettings] catch:', e);
   });
   return save;
 }

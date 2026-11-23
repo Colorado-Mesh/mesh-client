@@ -36,7 +36,7 @@ describe('ensureLocaleLoaded', () => {
     try {
       await expect(ensureLocaleLoaded(i18n, 'ko-KR')).resolves.toBe(false);
       expect(i18n.language).toBe('en');
-      expect(spy).toHaveBeenCalledWith('[i18n] requested locale is not selectable');
+      expect(spy).toHaveBeenCalledWith('mcL0861 [i18n] requested locale is not selectable');
     } finally {
       restore();
     }
@@ -47,7 +47,7 @@ describe('ensureLocaleLoaded', () => {
     try {
       await expect(ensureLocaleLoaded(i18n, 'xx')).resolves.toBe(false);
       expect(i18n.language).toBe('en');
-      expect(spy).toHaveBeenCalledWith('[i18n] requested locale is not selectable');
+      expect(spy).toHaveBeenCalledWith('mcL0861 [i18n] requested locale is not selectable');
     } finally {
       restore();
     }

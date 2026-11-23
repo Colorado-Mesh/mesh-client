@@ -137,7 +137,7 @@ export function openRemoteShell(
     rows: size.rows,
   };
   void send(open).catch((err: unknown) => {
-    console.warn('[remoteShellSession] OPEN send failed ' + errLikeToLogString(err));
+    console.warn('mcL0963 [remoteShellSession] OPEN send failed ' + errLikeToLogString(err));
     if (useRemoteShellStore.getState().sessionId === sessionId) {
       fail('send_failed', errLikeToLogString(err).slice(0, REMOTE_ERROR_DETAIL_MAX));
     }
@@ -155,7 +155,7 @@ export function sendRemoteShellInput(text: string): boolean {
     const frame: RemoteShellFrame = { ...nextFrame('input', sessionId), payload };
     sendChain = sendChain.then(() =>
       send(frame).catch((err: unknown) => {
-        console.warn('[remoteShellSession] INPUT send failed ' + errLikeToLogString(err));
+        console.warn('mcL0964 [remoteShellSession] INPUT send failed ' + errLikeToLogString(err));
         if (useRemoteShellStore.getState().sessionId === sessionId) {
           fail('send_failed', errLikeToLogString(err).slice(0, REMOTE_ERROR_DETAIL_MAX));
         }

@@ -4,6 +4,8 @@ import path from 'node:path';
 
 import { app } from 'electron';
 
+import { sanitizeLogMessage } from './sanitize-log-message';
+
 const VAULT_VERSION = 1;
 const MIN_PASSCODE_LENGTH = 8;
 const MAX_PASSCODE_LENGTH = 256;
@@ -14,6 +16,8 @@ const SCRYPT_R = 8;
 const SCRYPT_P = 1;
 const SCRYPT_MAXMEM = 128 * SCRYPT_N * SCRYPT_R * 2;
 const AES_KEY_BYTES = 32;
+/** AES-GCM auth tag length in bytes (NIST / Node default). */
+const GCM_AUTH_TAG_LENGTH = 16;
 
 export interface VaultEnvelope {
   version: typeof VAULT_VERSION;
@@ -123,7 +127,9 @@ export async function encryptVaultSecret(
   const salt = crypto.randomBytes(16);
   const key = await deriveKey(passcode, salt);
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv, {
+    authTagLength: GCM_AUTH_TAG_LENGTH,
+  });
   const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
   key.fill(0);
@@ -148,9 +154,12 @@ export async function decryptVaultSecret(
   const salt = Buffer.from(envelope.saltB64, 'base64');
   const iv = Buffer.from(envelope.ivB64, 'base64');
   const tag = Buffer.from(envelope.tagB64, 'base64');
+  if (tag.length !== GCM_AUTH_TAG_LENGTH) throw new Error('invalid vault auth tag');
   const ciphertext = Buffer.from(envelope.ciphertextB64, 'base64');
   const key = await deriveKey(passcode, salt);
-  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv, {
+    authTagLength: GCM_AUTH_TAG_LENGTH,
+  });
   decipher.setAuthTag(tag);
   try {
     const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString(
@@ -180,8 +189,12 @@ function readEnvelopeFromDisk(): VaultEnvelope | null {
       return null;
     }
     return parsed;
-  } catch {
-    // catch-no-log-ok corrupt or missing vault envelope reads as not configured
+  } catch (e: unknown) {
+    console.debug(
+      '[main/identityVault] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+
     return null;
   }
 }
@@ -213,7 +226,11 @@ export async function setIdentityVaultPasscode(
     unlockedSecret = secret;
     return { ok: true };
   } catch (err) {
-    // catch-no-log-ok failure returned to IPC caller as { ok: false, error }
+    console.debug(
+      '[main/identityVault] catch:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+
     return {
       ok: false,
       error: err instanceof Error ? err.message : String(err),
@@ -232,8 +249,12 @@ export async function unlockIdentityVault(passcode: string): Promise<IdentityVau
       unlockAttemptCount = 0;
       return { ok: true };
     } catch (err) {
+      console.debug(
+        '[main/identityVault] catch:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
       unlockedSecret = null;
-      // catch-no-log-ok wrong passcode returned to IPC caller as { ok: false, error }
+
       return {
         ok: false,
         error: err instanceof Error ? err.message : String(err),
