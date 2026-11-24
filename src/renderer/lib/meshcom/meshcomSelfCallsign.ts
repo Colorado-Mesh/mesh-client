@@ -5,13 +5,16 @@
 
 import { getConnection, setConnection } from '../../stores/connectionStore';
 import { remapMessageNodeId, upsertMessage, useMessageStore } from '../../stores/messageStore';
-import { upsertNodeRecord } from '../../stores/nodeStore';
+import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { IdentityId } from '../types';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from './meshcomCallRegistry';
 import { callsignToNodeId, normalizeMeshcomCallsign } from './meshcomCallsign';
 import { meshcomOutboundDest } from './meshcomChannel';
 import { meshcomPersistIdentityId } from './meshcomPersistIdentity';
+
+/** Hydrate placeholder when SQLite has no from_call — treat as missing for self-repair. */
+const MESHCOM_UNKNOWN_SENDER_NAME = 'Unknown';
 
 export interface ApplyMeshcomSelfCallsignOpts {
   operatorName?: string;
@@ -38,6 +41,15 @@ export function meshcomCallsignFromDeviceHandle(handle: unknown): {
   return { callsign, ...(operatorName ? { operatorName } : {}) };
 }
 
+/** Registry first, then nodeStore longName — same fallback as sendChatOnIdentity outbound. */
+function meshcomCallForNode(identityId: IdentityId, nodeId: number): string {
+  if (nodeId === 0 || nodeId === 0xffffffff) return '';
+  const fromRegistry = meshcomCallForNodeId(nodeId);
+  if (fromRegistry) return fromRegistry;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent.
+  return useNodeStore.getState().nodes[identityId]?.[nodeId]?.longName?.trim() || '';
+}
+
 function rePersistOutboundAfterSelfRemap(
   identityId: IdentityId,
   callsign: string,
@@ -48,13 +60,16 @@ function rePersistOutboundAfterSelfRemap(
   for (const row of Object.values(bucket)) {
     if (row.from !== myNodeNum) continue;
     if (row.status !== 'sending' && row.status !== 'acked' && row.status !== 'failed') continue;
-    const next = row.senderName ? row : { ...row, senderName: callsign };
+    const next =
+      !row.senderName || row.senderName === MESHCOM_UNKNOWN_SENDER_NAME
+        ? { ...row, senderName: callsign }
+        : row;
     if (next !== row) upsertMessage(identityId, next);
     const toCallOrGroup =
       next.channelIndex > 0
         ? meshcomOutboundDest({ channelIndex: next.channelIndex })
         : next.to !== 0xffffffff
-          ? meshcomCallForNodeId(next.to) || null
+          ? meshcomCallForNode(identityId, next.to) || null
           : '*';
     void window.electronAPI.db
       .saveMeshcomMessage({
@@ -77,6 +92,24 @@ function rePersistOutboundAfterSelfRemap(
   }
 }
 
+/**
+ * Remap any `from:0` (and Unknown senderName) rows to the known self node and re-persist.
+ * Safe to call whenever self is known — independent of the 0→resolved transition.
+ */
+export function repairMeshcomZeroFromRows(
+  identityId: IdentityId,
+  callsignRaw: string,
+  myNodeNum: number,
+): void {
+  const callsign = normalizeMeshcomCallsign(callsignRaw);
+  if (!callsign || myNodeNum <= 0) return;
+  const bucket = useMessageStore.getState().messages[identityId] ?? {};
+  const hasZero = Object.values(bucket).some((row) => row.from === 0);
+  if (!hasZero) return;
+  remapMessageNodeId(identityId, 0, myNodeNum);
+  rePersistOutboundAfterSelfRemap(identityId, callsign, myNodeNum);
+}
+
 /** Sync MeshCom self callsign → myNodeNum / node row (settings, setOwner, learned TX echo). */
 export function applyMeshcomSelfCallsign(
   identityId: IdentityId,
@@ -88,8 +121,6 @@ export function applyMeshcomSelfCallsign(
   registerMeshcomCallsign(callsign);
   const resolved = callsignToNodeId(callsign);
   if (!resolved) return 0;
-
-  const prevMy = getConnection(identityId)?.myNodeNum ?? 0;
 
   opts?.setDeviceOwner?.({
     longName: callsign,
@@ -107,11 +138,15 @@ export function applyMeshcomSelfCallsign(
     lastHeardAt: Date.now(),
   });
 
-  // Early sends stamped from:0 stay left/"00" until remapped to the real self id.
-  if (prevMy === 0 && resolved > 0) {
-    remapMessageNodeId(identityId, 0, resolved);
-    rePersistOutboundAfterSelfRemap(identityId, callsign, resolved);
-  }
+  // Always repair from:0 rows when self is known (settings-first or late hydrate).
+  repairMeshcomZeroFromRows(identityId, callsign, resolved);
 
   return resolved;
+}
+
+/** Resolve self callsign for hydrate-time repair (node row / connection myNodeNum). */
+export function meshcomSelfCallsignForIdentity(identityId: IdentityId): string {
+  const my = getConnection(identityId)?.myNodeNum ?? 0;
+  if (my <= 0) return '';
+  return meshcomCallForNode(identityId, my);
 }

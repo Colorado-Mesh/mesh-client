@@ -215,6 +215,78 @@ describe('sendChatOnIdentity MeshCom', () => {
     });
   });
 
+  it('repairs from:0 Unknown rows even when myNodeNum was already set', async () => {
+    addIdentity({
+      id: ID,
+      protocol: meshcomProtocol,
+      signature: 'sig-cm',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID, { status: 'configured', myNodeNum: SELF_NODE });
+    upsertNode(ID, { nodeId: SELF_NODE, longName: SELF_CALL });
+    upsertMessage(ID, {
+      id: 'hydrated-0',
+      from: 0,
+      to: 0xffffffff,
+      payload: 'late hydrate',
+      channelIndex: 0,
+      timestamp: 2,
+      status: 'acked',
+      senderName: 'Unknown',
+    });
+
+    applyMeshcomSelfCallsign(ID, SELF_CALL);
+    expect(useMessageStore.getState().messages[ID]?.['hydrated-0']?.from).toBe(SELF_NODE);
+    expect(useMessageStore.getState().messages[ID]?.['hydrated-0']?.senderName).toBe(SELF_CALL);
+    await vi.waitFor(() => {
+      expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          msg_id: 'hydrated-0',
+          from_call: SELF_CALL,
+          text: 'late hydrate',
+        }),
+      );
+    });
+  });
+
+  it('uses nodeStore longName for DM recipient when registry has no entry', async () => {
+    const peerCall = 'W1AW-9';
+    const peerNode = callsignToNodeId(peerCall);
+    addIdentity({
+      id: ID,
+      protocol: meshcomProtocol,
+      signature: 'sig-cm',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID, { status: 'configured', myNodeNum: 0 });
+    upsertNode(ID, { nodeId: peerNode, longName: peerCall });
+    upsertMessage(ID, {
+      id: 'dm-0',
+      from: 0,
+      to: peerNode,
+      payload: 'dm',
+      channelIndex: -1,
+      timestamp: 3,
+      status: 'sending',
+      senderName: 'Unknown',
+    });
+
+    applyMeshcomSelfCallsign(ID, SELF_CALL);
+    await vi.waitFor(() => {
+      expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          msg_id: 'dm-0',
+          from_call: SELF_CALL,
+          to_call_or_group: peerCall,
+        }),
+      );
+    });
+  });
+
   it('persists failed status when MeshCom send rejects', async () => {
     addIdentity({
       id: ID,

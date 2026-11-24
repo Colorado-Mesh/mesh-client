@@ -1513,6 +1513,7 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1502: 'src/renderer/lib/protocols/meshcom/MeshComTransport.ts:connectNoMatch',
   mcL1503: 'src/renderer/lib/protocols/meshcom/MeshComTransport.ts:connectEmptyGranted',
   mcL1504: 'src/renderer/runtime/useMeshcomRuntime.ts:rebindMeshcomIdentity',
+  mcL1505: 'src/renderer/lib/hydrateMeshcomIdentityStores.ts:rebindMeshcomIdentity',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

@@ -253,7 +253,11 @@ export function validateDeleteMeshcomContact(
 /**
  * Move MeshCom messages/contacts from one identity_id to another.
  * Pass `fromId` `*` to consolidate every non-`toId` bucket into `toId` (orphan recovery).
- * Conflicting msg_id / callsign rows under `toId` win; source duplicates are deleted.
+ *
+ * Logical message identity for cross-bucket dedupe is
+ * `(msg_id, from_call, text, channel_idx, timestamp)`. Same msg_id alone is not enough
+ * (MeshCom firmware IDs wrap / collide) — colliding-but-distinct rows keep both by reminting
+ * the source msg_id before the move. Contacts still dedupe on callsign.
  */
 export function rebindMeshcomIdentityOn(
   db: NodeSqliteDB,
@@ -285,18 +289,39 @@ export function rebindMeshcomIdentityOn(
                UNION
                SELECT DISTINCT identity_id AS id FROM meshcom_contacts WHERE identity_id != ?`,
             )
-            .all(toId, toId) as { id: string }[]
+            .all(toId, toId) as { id: string | null }[]
         )
+          // Keep empty-string identity_id buckets (schema default); drop only non-strings / toId.
           .map((r) => r.id)
-          .filter((id) => typeof id === 'string' && id.length > 0 && id !== toId)
+          .filter((id): id is string => typeof id === 'string' && id !== toId)
       : [fromId];
 
   let changes = 0;
   for (const source of sourceIds) {
     if (source === toId) continue;
+    // True duplicates only — matching msg_id + body + channel + timestamp + sender.
     const dropMsg = db
       .prepareOnce(
         `DELETE FROM meshcom_messages
+         WHERE identity_id = @fromId
+           AND msg_id IS NOT NULL
+           AND EXISTS (
+             SELECT 1 FROM meshcom_messages AS dest
+             WHERE dest.identity_id = @toId
+               AND dest.msg_id = meshcom_messages.msg_id
+               AND IFNULL(dest.from_call, '') = IFNULL(meshcom_messages.from_call, '')
+               AND dest.text = meshcom_messages.text
+               AND dest.channel_idx = meshcom_messages.channel_idx
+               AND dest.timestamp = meshcom_messages.timestamp
+           )`,
+      )
+      .run({ fromId: source, toId });
+    changes += Number(dropMsg.changes);
+    // msg_id-only collisions are distinct logical messages — remint before move.
+    const remint = db
+      .prepareOnce(
+        `UPDATE meshcom_messages
+         SET msg_id = msg_id || '-rb' || CAST(id AS TEXT)
          WHERE identity_id = @fromId
            AND msg_id IS NOT NULL
            AND msg_id IN (
@@ -305,7 +330,7 @@ export function rebindMeshcomIdentityOn(
            )`,
       )
       .run({ fromId: source, toId });
-    changes += Number(dropMsg.changes);
+    changes += Number(remint.changes);
     const moveMsg = db
       .prepareOnce(`UPDATE meshcom_messages SET identity_id = @toId WHERE identity_id = @fromId`)
       .run({ fromId: source, toId });

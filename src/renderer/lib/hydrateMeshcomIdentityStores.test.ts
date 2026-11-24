@@ -75,4 +75,52 @@ describe('hydrateMeshcomIdentity', () => {
       OFFLINE_MESHCOM_IDENTITY_ID,
     );
   });
+
+  it('on rebind failure upserts offline + session rows without replace wipe', async () => {
+    const sessionId = 'id-ephemeral-meshcom';
+    vi.mocked(window.electronAPI.db.rebindMeshcomIdentity).mockRejectedValue(
+      new Error('sqlite busy'),
+    );
+    vi.mocked(window.electronAPI.db.getMeshcomMessages)
+      .mockResolvedValueOnce([
+        {
+          msg_id: 'offline-1',
+          from_call: 'SP2ONG-1',
+          text: 'from offline',
+          channel_idx: 0,
+          timestamp: 10,
+          status: 'acked',
+          received_via: 'rf',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          msg_id: 'legacy-1',
+          from_call: 'SP2ONG-1',
+          text: 'from legacy',
+          channel_idx: 312,
+          timestamp: 20,
+          status: 'acked',
+          received_via: 'rf',
+        },
+      ]);
+    vi.mocked(window.electronAPI.db.getMeshcomContacts).mockResolvedValue([]);
+
+    await hydrateMeshcomIdentity(sessionId, { nodes: false, messagesMode: 'replace' }, () => true);
+
+    expect(window.electronAPI.db.getMeshcomMessages).toHaveBeenCalledWith(
+      OFFLINE_MESHCOM_IDENTITY_ID,
+      undefined,
+      500,
+    );
+    expect(window.electronAPI.db.getMeshcomMessages).toHaveBeenCalledWith(
+      sessionId,
+      undefined,
+      500,
+    );
+    const bucket = useMessageStore.getState().messages[sessionId];
+    expect(bucket).toBeDefined();
+    expect(bucket['offline-1'].payload).toBe('from offline');
+    expect(bucket['legacy-1'].payload).toBe('from legacy');
+  });
 });

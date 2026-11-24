@@ -8,6 +8,7 @@ import {
   type MessageRecord,
   renameMessageId,
   updateMessageStatus,
+  useMessageStore,
 } from '../stores/messageStore';
 import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import { isMeshcoreOpenWireCompatEnabled } from './appSettingsStorage';
@@ -93,30 +94,43 @@ function persistMeshcomOutboundRow(
   status: 'sending' | 'acked' | 'failed',
   msgId?: string,
 ): void {
+  const resolvedMsgId = msgId ?? record.id;
+  // Completion can race self-callsign remap — prefer the live store row over a captured myNodeNum:0.
+  const live =
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity/message may be absent.
+    useMessageStore.getState().messages[identityId]?.[resolvedMsgId] ?? record;
+  const storedCall =
+    live.senderName?.trim() && live.senderName.trim() !== 'Unknown' ? live.senderName.trim() : '';
+  const fromNode =
+    (live.from > 0 ? live.from : 0) ||
+    (getConnection(identityId)?.myNodeNum ?? 0) ||
+    (myNodeNum > 0 ? myNodeNum : 0) ||
+    (record.from > 0 ? record.from : 0);
   const fromCall =
-    meshcomCallForOutboundNode(identityId, myNodeNum) ||
-    meshcomCallForOutboundNode(identityId, record.from) ||
+    storedCall ||
+    meshcomCallForOutboundNode(identityId, fromNode) ||
+    meshcomCallForOutboundNode(identityId, live.from) ||
     null;
   const toCallOrGroup =
-    record.channelIndex > 0
-      ? meshcomOutboundDest({ channelIndex: record.channelIndex })
-      : record.to !== 0xffffffff
-        ? meshcomCallForOutboundNode(identityId, record.to) || null
+    live.channelIndex > 0
+      ? meshcomOutboundDest({ channelIndex: live.channelIndex })
+      : live.to !== 0xffffffff
+        ? meshcomCallForOutboundNode(identityId, live.to) || null
         : '*';
   void window.electronAPI.db
     .saveMeshcomMessage({
       // Stable offline slot — session ids can be ephemeral across rematch/restart.
       identity_id: meshcomPersistIdentityId(),
-      msg_id: msgId ?? record.id,
+      msg_id: resolvedMsgId,
       from_call: fromCall,
       to_call_or_group: toCallOrGroup,
-      text: record.payload,
-      channel_idx: record.channelIndex,
+      text: live.payload,
+      channel_idx: live.channelIndex,
       // MeshCom DB only accepts rf|mqtt|both — outbound RF chat is 'rf' (not 'local').
       received_via: 'rf',
-      timestamp: record.timestamp,
+      timestamp: live.timestamp,
       status,
-      received_at: record.receivedAt ?? Date.now(),
+      received_at: live.receivedAt ?? Date.now(),
     })
     .catch((e: unknown) => {
       console.warn('mcL1120 [useSendMessage] saveMeshcomMessage failed ' + errLikeToLogString(e));
