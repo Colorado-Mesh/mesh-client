@@ -35,7 +35,7 @@ Runs on every push, pull request, and merge-queue `merge_group` for `main` (and 
 - **Typecheck:** `pnpm run typecheck`
 - **Application build:** `pnpm run build`
 - **Flatpak checks:** only when Flatpak inputs change; runs `check:flatpak`, `check:flatpak-offline-pnpm`, `desktop-file-validate`, and `appstreamcli validate`
-- **Policy scanners:** cheap always-on `check:*` set aligned with pre-commit/release (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap scanners) — **not** `check:semgrep` (Semgrep is local pre-commit only; see [development-environment.md](development-environment.md#helper-scripts-auto-install-where-possible))
+- **Policy scanners:** cheap always-on `check:*` set aligned with pre-commit/release (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap scanners) — **not** `check:semgrep` (Semgrep is local pre-commit only; see [development-environment.md](development-environment.md#8-helper-scripts-auto-install-where-possible))
 
 Each Node lane uses the same pinned Node 22/pnpm setup action and frozen install. Actionlint is downloaded from a fixed release URL and verified against a reviewed per-platform SHA-256 digest before extraction. Yamllint and its transitive dependencies install from exact wheel hashes in `scripts/requirements-yamllint.txt`. The final `Build & Test` job aggregates every lane so the existing required check name remains stable. Superseded runs for the same pull request or ref are cancelled.
 
