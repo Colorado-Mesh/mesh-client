@@ -4,7 +4,23 @@ export const MESHTASTIC_FIRMWARE_RELEASES_URL = 'https://github.com/meshtastic/f
 const MESHCORE_FIRMWARE_API = 'https://api.github.com/repos/meshcore-dev/MeshCore/releases/latest';
 export const MESHCORE_FIRMWARE_RELEASES_URL = 'https://github.com/meshcore-dev/MeshCore/releases';
 
+const MESHCOM_FIRMWARE_API =
+  'https://api.github.com/repos/icssw-org/MeshCom-Firmware/releases/latest';
+export const MESHCOM_FIRMWARE_RELEASES_URL =
+  'https://github.com/icssw-org/MeshCom-Firmware/releases';
+
 const FIRMWARE_CHECK_TIMEOUT_MS = 10_000;
+
+/** Parsed MeshCom FWVER / release tag (`4.40a`, `v4.40a.11.14`). */
+export interface MeshComVersionParts {
+  major: number;
+  minor: number;
+  /** Lowercase letter after minor (e.g. `a` in `4.40a`); empty when absent. */
+  letter: string;
+  /** Optional release-tag month/day (`11.14` in `v4.40a.11.14`). */
+  month: number | null;
+  day: number | null;
+}
 
 export interface FirmwareCheckResult {
   phase: 'idle' | 'checking' | 'up-to-date' | 'update-available' | 'error';
@@ -120,6 +136,90 @@ export async function fetchLatestMeshCoreRelease(): Promise<{
     version: normalizeMeshCoreVersionTag(data.tag_name),
     releaseUrl: data.html_url,
   };
+}
+
+export async function fetchLatestMeshComRelease(): Promise<{
+  version: string;
+  releaseUrl: string;
+}> {
+  const res = await fetchWithAbortTimeout(MESHCOM_FIRMWARE_API);
+  if (!res.ok) throw new Error(`GitHub API responded with ${res.status}`);
+  const data = (await res.json()) as { tag_name: string; html_url: string };
+  return {
+    version: normalizeMeshComVersionTag(data.tag_name),
+    releaseUrl: data.html_url,
+  };
+}
+
+/**
+ * Normalize MeshCom FWVER / GitHub tags for display and compare.
+ * Strips leading `v`, whitespace (device may report `4.40 a`), parenthetical region
+ * (` (eu)`), and RM fork suffix (`-rm5`). Keeps `major.minor` + optional letter +
+ * optional `.MM.DD` (release-tag calendar suffix — not a semver patch).
+ */
+export function normalizeMeshComVersionTag(tag: string): string {
+  let s = tag.trim();
+  if (s.startsWith('v') || s.startsWith('V')) s = s.slice(1);
+  const parenStart = s.indexOf('(');
+  if (parenStart >= 0) {
+    const parenEnd = s.indexOf(')', parenStart + 1);
+    if (parenEnd >= 0) {
+      s = `${s.slice(0, parenStart)}${s.slice(parenEnd + 1)}`;
+    }
+  }
+  const rmMatch = /-rm\d*/i.exec(s);
+  if (rmMatch) {
+    const at = rmMatch.index;
+    s = `${s.slice(0, at)}${s.slice(at + rmMatch[0].length)}`;
+  }
+  // Collapse spaces so `4.40 a` / `4.40a .11.22` still parse as lettered MeshCom tags.
+  s = s.replace(/\s+/g, '');
+  // Separate base + optional date to avoid nested-optional regex (eslint security/detect-unsafe-regex).
+  const baseMatch = /^(\d+\.\d+)([a-z]?)/i.exec(s);
+  if (!baseMatch) return s;
+  const base = `${baseMatch[1]}${baseMatch[2]}`.toLowerCase();
+  const rest = s.slice(baseMatch[0].length);
+  const dateMatch = /^\.(\d{1,2})\.(\d{1,2})/.exec(rest);
+  if (!dateMatch) return base;
+  return `${base}.${dateMatch[1]}.${dateMatch[2]}`;
+}
+
+export function parseMeshComVersion(version: string): MeshComVersionParts | null {
+  const normalized = normalizeMeshComVersionTag(version);
+  const baseMatch = /^(\d+)\.(\d+)([a-z]?)/i.exec(normalized);
+  if (!baseMatch) return null;
+  const rest = normalized.slice(baseMatch[0].length);
+  const dateMatch = /^\.(\d{1,2})\.(\d{1,2})$/.exec(rest);
+  if (rest.length > 0 && !dateMatch) return null;
+  return {
+    major: Number.parseInt(baseMatch[1], 10),
+    minor: Number.parseInt(baseMatch[2], 10),
+    letter: baseMatch[3].toLowerCase(),
+    month: dateMatch ? Number.parseInt(dateMatch[1], 10) : null,
+    day: dateMatch ? Number.parseInt(dateMatch[2], 10) : null,
+  };
+}
+
+/**
+ * True when GitHub release is newer than device FWVER.
+ * Device strings usually lack `.MM.DD`; when base `(major, minor, letter)` matches and only
+ * the release has a date suffix, treat as up-to-date to avoid perpetual toasts.
+ */
+export function meshComFirmwareUpdateAvailable(
+  deviceFirmware: string,
+  releaseVersion: string,
+): boolean {
+  const device = parseMeshComVersion(deviceFirmware);
+  const release = parseMeshComVersion(releaseVersion);
+  if (!device || !release) return false;
+  if (release.major !== device.major) return release.major > device.major;
+  if (release.minor !== device.minor) return release.minor > device.minor;
+  if (release.letter !== device.letter) return release.letter > device.letter;
+  // Same letter series: only compare dates when the device also reports MM.DD.
+  if (device.month == null || device.day == null) return false;
+  if (release.month == null || release.day == null) return false;
+  if (release.month !== device.month) return release.month > device.month;
+  return release.day > device.day;
 }
 
 /** Parses a MeshCore build date string like "19 Feb 2025" or "06-Jun-2026" into a Date (UTC midnight). */

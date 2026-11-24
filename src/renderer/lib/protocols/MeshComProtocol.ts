@@ -23,7 +23,11 @@ import {
   meshcomMsgIdAdvance,
   meshcomMsgSeqFromId,
 } from '../meshcom/meshcomFwMsgId';
-import { meshcomFirmwareDisplay, meshcomHwLabel } from '../meshcom/meshcomHwIds';
+import {
+  formatMeshcomInstalledFirmware,
+  meshcomFirmwareDisplay,
+  meshcomHwLabel,
+} from '../meshcom/meshcomHwIds';
 import {
   buildMeshcomKissTxMessage,
   type MeshcomKissEvent,
@@ -233,7 +237,10 @@ function emitSelfFromSettings(
       manualAddContacts: false,
     },
   });
-  const selfFw = meshcomFirmwareDisplay(handle.deviceSettings.fwver);
+  const selfFw = formatMeshcomInstalledFirmware(
+    handle.deviceSettings.fwver,
+    handle.deviceSettings.buildDate,
+  );
   emit({
     type: 'node_info',
     payload: {

@@ -500,7 +500,7 @@ export const MESHCOM_CAPABILITIES: ProtocolCapabilities = {
   hasJsonRadioConfigImport: false,
   nodeStaleThresholdMs: 48 * MS_PER_HOUR,
   nodeOfflineThresholdMs: 96 * MS_PER_HOUR,
-  hasFirmwareUpdateCheck: false,
+  hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: true,
   prefersDeviceDeliveryStatusOverMqtt: true,

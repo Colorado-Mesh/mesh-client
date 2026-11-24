@@ -166,7 +166,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasDistanceBasedHopAnomalies": false,
         "hasEnvironmentTelemetry": true,
         "hasFactoryReset": false,
-        "hasFirmwareUpdateCheck": false,
+        "hasFirmwareUpdateCheck": true,
         "hasFullPositionConfig": false,
         "hasGattBleScanning": true,
         "hasHopCount": true,

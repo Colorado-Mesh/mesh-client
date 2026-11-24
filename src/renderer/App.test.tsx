@@ -637,8 +637,12 @@ vi.mock('./lib/appSettingsStorage', () => ({
 vi.mock('./lib/firmwareCheck', () => ({
   fetchLatestMeshtasticRelease: vi.fn().mockResolvedValue(null),
   fetchLatestMeshCoreRelease: vi.fn().mockResolvedValue(null),
+  fetchLatestMeshComRelease: vi.fn().mockResolvedValue(null),
   parseMeshCoreBuildDate: vi.fn(),
   semverGt: vi.fn().mockReturnValue(false),
+  MESHCOM_FIRMWARE_RELEASES_URL: 'https://github.com/icssw-org/MeshCom-Firmware/releases',
+  MESHCORE_FIRMWARE_RELEASES_URL: 'https://github.com/meshcore-dev/MeshCore/releases',
+  MESHTASTIC_FIRMWARE_RELEASES_URL: 'https://github.com/meshtastic/firmware/releases',
 }));
 
 vi.mock('./lib/storedMeshProtocol', () => ({
