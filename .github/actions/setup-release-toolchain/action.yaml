@@ -42,16 +42,6 @@ runs:
         python3 -m pip install --require-hashes --only-binary=:all:
         -r scripts/requirements-yamllint.txt
 
-    # release.sh always-on check:semgrep — same as ci.yaml policy-scanners.
-    - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
-      with:
-        python-version: '3.12'
-    - name: Install Semgrep
-      shell: bash
-      run: |
-        python3 -m pip install --user -r scripts/requirements-semgrep.txt
-        echo "${HOME}/.local/bin" >> "$GITHUB_PATH"
-
     - name: Install Linux build deps (sidecar / Flatpak checks)
       shell: bash
       run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config

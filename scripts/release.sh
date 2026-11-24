@@ -730,9 +730,12 @@ if ! pnpm run check:silent-catches; then
   exit 1
 fi
 
-if ! pnpm run check:semgrep; then
-  print_error "Semgrep check failed (auto + .semgrep.yml). Research findings before dismissing; update .semgrep.yml if a rule is wrong for this repo."
-  exit 1
+# Semgrep runs locally (pre-commit + dev setup), not in GitHub Actions — saves CI time.
+if [ "${GITHUB_ACTIONS:-}" != "true" ]; then
+  if ! pnpm run check:semgrep; then
+    print_error "Semgrep check failed (auto + .semgrep.yml). Research findings before dismissing; update .semgrep.yml if a rule is wrong for this repo."
+    exit 1
+  fi
 fi
 
 if ! pnpm run check:url-hostname-sanitization; then

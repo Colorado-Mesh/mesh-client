@@ -1401,7 +1401,8 @@ export default function ConnectionPanel({
             if (rssiSeed != null && Number.isFinite(rssiSeed)) conn.bleRssi = rssiSeed;
           }
         } else if (state.connectionType === 'serial') {
-          const serialId = resolveLastSerialPortId(protocol);
+          const serialId =
+            lastConnectionRef.current?.serialPortId?.trim() || resolveLastSerialPortId(protocol);
           if (serialId) conn.serialPortId = serialId;
         }
         saveLastConnection(protocol, conn);
@@ -1877,7 +1878,8 @@ export default function ConnectionPanel({
       if (isAutoConnecting) {
         // MeshCom: only match this protocol's remembered port — never the shared last-serial key
         // (that belongs to Meshtastic/MeshCore and would open the wrong USB radio).
-        const lastId = resolveLastSerialPortId(protocol);
+        const lastId =
+          lastConnectionRef.current?.serialPortId?.trim() || resolveLastSerialPortId(protocol);
         if (lastId) {
           const match = ports.find((p) => p.portId === lastId);
           if (match) {

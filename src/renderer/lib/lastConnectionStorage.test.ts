@@ -185,6 +185,18 @@ describe('lastConnectionStorage reconnect rehydrate', () => {
     expect(resolveLastSerialPortId('meshtastic')).toBe('ttyUSB0');
   });
 
+  it('resolveLastSerialPortId returns null when storage reads fail', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+    });
+    expect(resolveLastSerialPortId('meshtastic')).toBeNull();
+  });
+
   it('resolveLastSerialPortId uses the meshcom serial claim port when MRU lacks serialPortId', () => {
     vi.mocked(peekLastSerialClaimPort).mockReturnValue({
       portId: 'meshcom-claimed-port',

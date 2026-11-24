@@ -565,7 +565,7 @@ function checkYamllint() {
 
 /**
  * Pure evaluator for required Semgrep readiness (unit-tested).
- * Pre-commit / release / CI also require Semgrep via `pnpm run check:semgrep`.
+ * Pre-commit and local release require Semgrep via `pnpm run check:semgrep` (not CI).
  * Semgrep App login / SEMGREP_APP_TOKEN are not required.
  *
  * @param {{ versionOutput: string | null }} input
@@ -578,7 +578,7 @@ export function evaluateSemgrepCheck(input) {
       status: 'fail',
       severity: 'required',
       label: 'semgrep not found',
-      hint: 'pnpm run setup:semgrep — or brew/pipx/pip install semgrep (App login not required; needed for check:semgrep)',
+      hint: 'pnpm run setup:semgrep — or pip install --user -r scripts/requirements-semgrep.txt (App login not required; needed for check:semgrep)',
     };
   }
   return {
@@ -590,6 +590,15 @@ export function evaluateSemgrepCheck(input) {
 }
 
 function checkSemgrep() {
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    return {
+      status: 'pass',
+      severity: 'optional',
+      label: 'semgrep (local pre-commit only)',
+      detail:
+        'not required on CI; run pnpm run setup:semgrep and git config core.hooksPath .githooks',
+    };
+  }
   return evaluateSemgrepCheck({
     versionOutput: commandOutput('semgrep', ['--version']),
   });

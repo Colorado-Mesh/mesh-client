@@ -1,7 +1,7 @@
 # Mesh Client Semgrep policy (complements p/typescript p/javascript p/nodejs p/security-audit + .semgrep.yml).
 #
 # Tracked in git — do not add to .gitignore / exclude. Gate:
-#   pnpm run check:semgrep  (full scan: release / CI policy-scanners)
+#   pnpm run check:semgrep  (full scan: local release; staged-only in pre-commit)
 #   pnpm run check:semgrep -- <file...>  (staged-only scan: pre-commit)
 #
 # Findings (especially from broad default packs) may be false positives. Research

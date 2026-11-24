@@ -160,20 +160,21 @@ export function resolveMeshcomKissReconnectAddress(
 }
 
 export function resolveLastSerialPortId(protocol: MeshProtocol): string | null {
-  const last = loadLastConnection(protocol);
-  if (last?.serialPortId) return last.serialPortId;
-  if (protocol === 'meshcom') {
-    const claimed = peekLastSerialClaimPort('meshcom');
-    const rawId =
-      claimed && 'portId' in claimed && typeof claimed.portId === 'string' ? claimed.portId : null;
-    const portId = rawId?.trim();
-    return portId || null;
-  }
   try {
+    const last = loadLastConnection(protocol);
+    if (last?.serialPortId) return last.serialPortId;
+    if (protocol === 'meshcom') {
+      const claimed = peekLastSerialClaimPort('meshcom');
+      const rawId =
+        claimed && 'portId' in claimed && typeof claimed.portId === 'string'
+          ? claimed.portId
+          : null;
+      const portId = rawId?.trim();
+      return portId || null;
+    }
     return localStorage.getItem(LAST_SERIAL_PORT_KEY);
   } catch (e: unknown) {
     console.debug('[renderer/lib/lastConnectionStorage] catch:', e);
-
     return null;
   }
 }

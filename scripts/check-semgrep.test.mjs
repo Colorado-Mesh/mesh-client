@@ -56,6 +56,18 @@ describe('check:semgrep gate', () => {
     expect(pkg.scripts['check:semgrep']).toBe('node scripts/check-semgrep.mjs');
   });
 
+  it('does not install or run semgrep in GitHub Actions workflows', () => {
+    const paths = [
+      '.github/workflows/ci.yaml',
+      '.github/workflows/e2e.yaml',
+      '.github/actions/setup-release-toolchain/action.yaml',
+    ];
+    for (const rel of paths) {
+      const text = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+      expect(text, rel).not.toMatch(/requirements-semgrep|check:semgrep|pip install.*semgrep/i);
+    }
+  });
+
   it('runs community packs + .semgrep.yml (no Pro auto)', () => {
     const wrapper = fs.readFileSync(CHECK_SEMGREP, 'utf8');
     expect(wrapper).not.toMatch(/--config',\s*'auto'/);

@@ -57,7 +57,7 @@ jobs:
         with:
           components: clippy
 
-      - name: Install yamllint and Semgrep
+      - name: Install yamllint
         shell: bash
         run: |
           # Isolated venv: Homebrew/system Python may be externally managed (PEP 668).
@@ -72,7 +72,6 @@ jobs:
           fi
           "$PIP" install --require-hashes --only-binary=:all: \
             -r scripts/requirements-yamllint.txt
-          "$PIP" install -r scripts/requirements-semgrep.txt
 
       # After toolchain is on PATH; skip node_modules until install.
       - name: Check environment (pre-install)

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 const cutRelease = readFileSync('.github/workflows/cut-release.yaml', 'utf8');
 const e2e = readFileSync('.github/workflows/e2e.yaml', 'utf8');
 const toolchain = readFileSync('.github/actions/setup-release-toolchain/action.yaml', 'utf8');
+const ci = readFileSync('.github/workflows/ci.yaml', 'utf8');
 const preflightJob = e2e.slice(e2e.indexOf('\n  release-preflight:'));
 
 describe('Release preflight (e2e.yaml job)', () => {
@@ -28,20 +29,24 @@ describe('Release preflight (e2e.yaml job)', () => {
       'setup:actionlint',
       'pip install --require-hashes --only-binary=:all:',
       'scripts/requirements-yamllint.txt',
-      'scripts/requirements-semgrep.txt',
     ]) {
       expect(toolchain).toContain(tool);
       expect(cutRelease).not.toContain(tool);
       expect(preflightJob).not.toContain(tool);
     }
+    expect(toolchain).not.toMatch(/requirements-semgrep|Install Semgrep/i);
     expect(cutRelease).not.toMatch(/uses: actions\/setup-node@/);
     expect(cutRelease).not.toMatch(/uses: pnpm\/action-setup@/);
   });
 
-  it('installs Semgrep into PATH for release.sh check:semgrep', () => {
-    expect(toolchain).toContain('Install Semgrep');
-    expect(toolchain).toContain('scripts/requirements-semgrep.txt');
-    expect(toolchain).toMatch(/\.local\/bin.*GITHUB_PATH|GITHUB_PATH.*\.local\/bin/);
+  it('does not install Semgrep in GitHub Actions (local pre-commit only)', () => {
+    expect(toolchain).not.toMatch(/requirements-semgrep|check:semgrep|Install Semgrep/i);
+    const e2eJob = e2e.slice(0, e2e.indexOf('\n  release-preflight:'));
+    expect(e2eJob).not.toMatch(/requirements-semgrep|check:semgrep/i);
+    expect(ci).not.toMatch(/requirements-semgrep|check:semgrep/i);
+    const releaseSh = readFileSync('scripts/release.sh', 'utf8');
+    expect(releaseSh).toMatch(/GITHUB_ACTIONS/);
+    expect(releaseSh).toMatch(/check:semgrep/);
   });
 
   it('installs clippy with the Rust toolchain for check:environment', () => {
@@ -49,19 +54,18 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(toolchain).toMatch(/components:\s*clippy/);
   });
 
-  it('Electron E2E job installs Rust, yamllint, and Semgrep before check:environment', () => {
+  it('Electron E2E job installs Rust and yamllint before check:environment', () => {
     const e2eJob = e2e.slice(0, e2e.indexOf('\n  release-preflight:'));
     expect(e2eJob).toContain('dtolnay/rust-toolchain');
     expect(e2eJob).toMatch(/components:\s*clippy/);
     expect(e2eJob).toContain('scripts/requirements-yamllint.txt');
-    // Isolated venv — system/Homebrew Python may be externally managed (PEP 668).
     expect(e2eJob).toContain('python3 -m venv');
-    expect(e2eJob).toContain('scripts/requirements-semgrep.txt');
+    expect(e2eJob).not.toContain('requirements-semgrep.txt');
     expect(e2eJob).not.toContain('pip install --user semgrep');
     expect(e2eJob.indexOf('Setup Rust')).toBeLessThan(
       e2eJob.indexOf('Check environment (pre-install)'),
     );
-    expect(e2eJob.indexOf('Install yamllint and Semgrep')).toBeLessThan(
+    expect(e2eJob.indexOf('Install yamllint')).toBeLessThan(
       e2eJob.indexOf('Check environment (pre-install)'),
     );
   });
@@ -97,6 +101,11 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(tokenRefs).toHaveLength(1);
     expect(cutRelease).toContain('GIT_ASKPASS');
     expect(cutRelease).not.toMatch(/git remote set-url[^\n]*RELEASE_CUT_TOKEN/);
+  });
+
+  it('pins Semgrep for local setup via requirements-semgrep.txt', () => {
+    const lock = readFileSync('scripts/requirements-semgrep.txt', 'utf8');
+    expect(lock).toContain('semgrep==1.186.0');
   });
 
   it('installs yamllint from an exact wheel-only hash lock', () => {

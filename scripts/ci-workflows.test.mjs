@@ -214,7 +214,6 @@ describe('CI workflow contracts', () => {
       'check:console-log',
       'check:silent-catches',
       'check:log-ids',
-      'check:semgrep',
       'check:url-hostname-sanitization',
       'check:xss-patterns',
       'check:protocol-string-gates',
@@ -231,6 +230,7 @@ describe('CI workflow contracts', () => {
     expect(runs.some((line) => line.startsWith('pnpm run check:i18n'))).toBe(false);
     expect(runs.some((line) => line === 'pnpm run check:licenses')).toBe(false);
     expect(runs.some((line) => line === 'pnpm run check:flatpak-offline-pnpm')).toBe(false);
+    expect(job).not.toMatch(/requirements-semgrep|check:semgrep|pip install.*semgrep/i);
   });
 
   it('blocks required coverage checks when detection or any shard fails', () => {

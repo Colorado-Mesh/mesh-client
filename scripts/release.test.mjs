@@ -163,6 +163,13 @@ describe('release.sh full-suite gate', () => {
     expect(script).toContain(`pnpm run ${scriptName}`);
   });
 
+  it('skips check:semgrep on GitHub Actions (local pre-commit only)', () => {
+    expect(script).toMatch(/GITHUB_ACTIONS/);
+    expect(script).toMatch(
+      /if \[ "\$\{GITHUB_ACTIONS:-\}" != "true" \]; then[\s\S]*pnpm run check:semgrep/,
+    );
+  });
+
   it('rejects --auto combined with an explicit bump (text contract)', () => {
     expect(script).toMatch(/--auto cannot be combined with patch\|minor\|major/);
   });

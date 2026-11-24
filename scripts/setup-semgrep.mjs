@@ -4,10 +4,36 @@
  * Semgrep App login / SEMGREP_APP_TOKEN are not required.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, symlinkSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, symlinkSync, unlinkSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(__dirname, '..');
+const REQUIREMENTS = join(repoRoot, 'scripts', 'requirements-semgrep.txt');
+
+/** @returns {string | null} pinned `major.minor.patch` from scripts/requirements-semgrep.txt */
+export function readPinnedSemgrepVersion() {
+  try {
+    const text = readFileSync(REQUIREMENTS, 'utf8');
+    const match = text.match(/^semgrep==(\d+\.\d+\.\d+)/m);
+    return match?.[1] ?? null;
+  } catch (e) {
+    console.debug(
+      '[setup-semgrep] readPinnedSemgrepVersion:',
+      e instanceof Error ? e.message : String(e),
+    );
+    return null;
+  }
+}
+
+/** @param {string} versionOutput */
+export function parseInstalledSemgrepVersion(versionOutput) {
+  const line = versionOutput.split('\n')[0]?.trim() ?? '';
+  const match = line.match(/(\d+\.\d+\.\d+)/);
+  return match?.[1] ?? null;
+}
 
 /**
  * @param {string} command
@@ -84,12 +110,27 @@ export function planSemgrepInstall(input = {}) {
   const note = 'Semgrep App login / SEMGREP_APP_TOKEN are not required for pnpm run check:semgrep.';
 
   if (versionOutput) {
-    return {
-      alreadyInstalled: true,
-      detail: versionOutput.split('\n')[0],
-      strategy: 'none',
-      note,
-    };
+    const pin = readPinnedSemgrepVersion();
+    const installed = parseInstalledSemgrepVersion(versionOutput);
+    if (pin && installed && installed === pin) {
+      return {
+        alreadyInstalled: true,
+        detail: installed,
+        strategy: 'none',
+        note,
+      };
+    }
+    if (!pin || !installed) {
+      return {
+        alreadyInstalled: true,
+        detail: versionOutput.split('\n')[0],
+        strategy: 'none',
+        note,
+      };
+    }
+    console.warn(
+      `setup-semgrep: installed semgrep ${installed} does not match pin ${pin}; will reinstall`,
+    );
   }
 
   const hasBrew =
@@ -180,22 +221,24 @@ function linkSemgrepIntoLocalBin(semgrepBin) {
 function installSemgrepViaPip() {
   const invoker = resolvePythonInvoker();
   if (!invoker) {
-    const res = spawnSync('pip', ['install', '--user', 'semgrep'], { stdio: 'inherit' });
+    const res = spawnSync('pip', ['install', '--user', '-r', REQUIREMENTS], { stdio: 'inherit' });
     return res.status ?? 1;
   }
   const [python, prefix] = invoker;
   const inVenv = pythonRunsInVirtualEnv(python, prefix);
 
   if (inVenv) {
-    const res = spawnSync(python, [...prefix, '-m', 'pip', 'install', 'semgrep'], {
+    const res = spawnSync(python, [...prefix, '-m', 'pip', 'install', '-r', REQUIREMENTS], {
       stdio: 'inherit',
     });
     return res.status ?? 1;
   }
 
-  const userAttempt = runCapture(python, [...prefix, '-m', 'pip', 'install', '--user', 'semgrep'], {
-    inherit: false,
-  });
+  const userAttempt = runCapture(
+    python,
+    [...prefix, '-m', 'pip', 'install', '--user', '-r', REQUIREMENTS],
+    { inherit: false },
+  );
   if (userAttempt.status === 0) {
     // Re-run with inherit so the user sees success noise consistent with other strategies.
     console.log('setup-semgrep: installed semgrep with pip --user');
@@ -215,7 +258,7 @@ function installSemgrepViaPip() {
   const venvCreate = spawnSync(python, [...prefix, '-m', 'venv', venvDir], { stdio: 'inherit' });
   if ((venvCreate.status ?? 1) !== 0) return venvCreate.status ?? 1;
   const { pip, semgrep, binDir } = venvPaths(venvDir);
-  const install = spawnSync(pip, ['install', 'semgrep'], { stdio: 'inherit' });
+  const install = spawnSync(pip, ['install', '-r', REQUIREMENTS], { stdio: 'inherit' });
   if ((install.status ?? 1) !== 0) return install.status ?? 1;
   linkSemgrepIntoLocalBin(semgrep);
   if (!commandOutput('semgrep', ['--version'])) {
@@ -229,12 +272,23 @@ function installSemgrepViaPip() {
  * @returns {number}
  */
 function runInstall(strategy) {
+  const pin = readPinnedSemgrepVersion();
+  const pipSpec = pin ? `semgrep==${pin}` : 'semgrep';
   if (strategy === 'brew') {
     const res = spawnSync('brew', ['install', 'semgrep'], { stdio: 'inherit' });
-    return res.status ?? 1;
+    if ((res.status ?? 1) !== 0) return res.status ?? 1;
+    const after = commandOutput('semgrep', ['--version']);
+    const installed = after ? parseInstalledSemgrepVersion(after) : null;
+    if (pin && installed && installed !== pin) {
+      console.warn(
+        `setup-semgrep: Homebrew cannot pin semgrep; installed ${installed}, repo pin is ${pin}. ` +
+          'If check:semgrep fails, reinstall with pip: pip install --user -r scripts/requirements-semgrep.txt',
+      );
+    }
+    return 0;
   }
   if (strategy === 'pipx') {
-    const res = spawnSync('pipx', ['install', 'semgrep'], { stdio: 'inherit' });
+    const res = spawnSync('pipx', ['install', pipSpec], { stdio: 'inherit' });
     return res.status ?? 1;
   }
   if (strategy === 'pip') {
@@ -257,7 +311,7 @@ function main() {
     console.error('  Install manually:');
     console.error('    macOS:  brew install semgrep');
     console.error('    pipx:   pipx install semgrep');
-    console.error('    pip:    pip install --user semgrep');
+    console.error(`    pip:    pip install --user -r scripts/requirements-semgrep.txt`);
     console.error('  Then re-run: pnpm run setup:semgrep');
     process.exit(1);
   }

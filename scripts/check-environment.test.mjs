@@ -9,6 +9,7 @@ import {
   evaluateRustCheck,
   evaluateRustClippyCheck,
   evaluateSemgrepCheck,
+  runChecks,
   evaluateWindowsBuildDepsCheck,
   evaluateYamllintCheck,
   parseCheckEnvironmentArgs,
@@ -393,6 +394,23 @@ describe('check-environment evaluatePlaywrightCheck', () => {
     });
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('pass');
+  });
+});
+
+describe('check-environment semgrep on CI', () => {
+  it('treats semgrep as optional on GitHub Actions', () => {
+    const prev = process.env.GITHUB_ACTIONS;
+    process.env.GITHUB_ACTIONS = 'true';
+    try {
+      const semgrep = runChecks({ skipNodeModules: true }).find((c) =>
+        c.label.startsWith('semgrep'),
+      );
+      expect(semgrep?.status).toBe('pass');
+      expect(semgrep?.severity).toBe('optional');
+    } finally {
+      if (prev === undefined) delete process.env.GITHUB_ACTIONS;
+      else process.env.GITHUB_ACTIONS = prev;
+    }
   });
 });
 
