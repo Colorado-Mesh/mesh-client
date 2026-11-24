@@ -47,9 +47,7 @@ export async function startMeshcoreRadio(selfId = 171) {
       if (code === 'ECONNRESET' || code === 'EPIPE' || code === 'ECONNABORTED') return;
       console.error(
         '[meshcore-radio] unexpected socket error',
-        sanitizeForConsoleEcho(
-          `${code ?? 'unknown'}: ${err instanceof Error ? err.message : String(err)}`,
-        ),
+        sanitizeForConsoleEcho(err instanceof Error ? (err.stack ?? String(err)) : String(err)),
       );
     });
     socket.on('close', () => sockets.delete(socket));
