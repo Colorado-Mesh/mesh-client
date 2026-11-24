@@ -223,6 +223,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
+      # Semgrep's protobuf stack is not reliable on runner default Python 3.14 yet.
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
       - name: Install Semgrep
         run: pip install --user -r scripts/requirements-semgrep.txt
       - name: Always-on policy scanners
