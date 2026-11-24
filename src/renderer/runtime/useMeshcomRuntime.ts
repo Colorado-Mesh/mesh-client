@@ -279,10 +279,12 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         status: 'disconnected',
         myNodeNum: 0,
         connectionType: null,
+        firmwareVersion: undefined,
       });
       setConnection(resolveIdentityId(), {
         status: 'disconnected',
         connectionType: null,
+        firmwareVersion: undefined,
       });
     },
     [detachIngest, resolveIdentityId],
@@ -332,6 +334,11 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     (snap: MeshcomDeviceSettingsSnapshot) => {
       const identityId = identityIdRef.current;
       let nodeId = getConnection(identityId)?.myNodeNum ?? 0;
+      const fw = snap.firmwareVersion?.trim();
+      if (fw) {
+        setState((prev) => (prev.firmwareVersion === fw ? prev : { ...prev, firmwareVersion: fw }));
+        setConnection(identityId, { firmwareVersion: fw });
+      }
       if (snap.callsign) {
         setDeviceOwner({
           longName: snap.callsign,

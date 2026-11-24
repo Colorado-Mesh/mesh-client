@@ -1,11 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  fetchLatestMeshComRelease,
   fetchLatestMeshCoreRelease,
   fetchLatestMeshtasticRelease,
   isFirmwareCheckTimeoutError,
+  meshComFirmwareUpdateAvailable,
   meshCoreFirmwareUpdateAvailable,
+  normalizeMeshComVersionTag,
   normalizeMeshCoreVersionTag,
+  parseMeshComVersion,
   parseMeshCoreBuildDate,
   semverGt,
 } from './firmwareCheck';
@@ -247,5 +251,107 @@ describe('meshCoreFirmwareUpdateAvailable', () => {
         publishedAt: new Date('2026-06-06T00:00:00.000Z'),
       }),
     ).toBe(false);
+  });
+});
+
+// ─── fetchLatestMeshComRelease ────────────────────────────────────
+
+describe('fetchLatestMeshComRelease', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('resolves with normalized version and releaseUrl', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          tag_name: 'v4.40a.11.14',
+          html_url: 'https://github.com/icssw-org/MeshCom-Firmware/releases/tag/v4.40a.11.14',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const result = await fetchLatestMeshComRelease();
+    expect(result.version).toBe('4.40a.11.14');
+    expect(result.releaseUrl).toBe(
+      'https://github.com/icssw-org/MeshCom-Firmware/releases/tag/v4.40a.11.14',
+    );
+  });
+
+  it('rejects on non-OK response', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('Not Found', { status: 404 }));
+    await expect(fetchLatestMeshComRelease()).rejects.toThrow('404');
+  });
+
+  it('propagates network failure', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('network error'));
+    await expect(fetchLatestMeshComRelease()).rejects.toThrow('network error');
+  });
+});
+
+// ─── normalizeMeshComVersionTag / parseMeshComVersion ─────────────
+
+describe('normalizeMeshComVersionTag', () => {
+  it('strips v-prefix and keeps release date suffix', () => {
+    expect(normalizeMeshComVersionTag('v4.40a.11.14')).toBe('4.40a.11.14');
+  });
+
+  it('strips RM fork suffix and parenthetical region', () => {
+    expect(normalizeMeshComVersionTag('4.40a-rm5')).toBe('4.40a');
+    expect(normalizeMeshComVersionTag('4.35p (eu)')).toBe('4.35p');
+  });
+
+  it('lowercases the letter series', () => {
+    expect(normalizeMeshComVersionTag('V4.40A')).toBe('4.40a');
+  });
+});
+
+describe('parseMeshComVersion', () => {
+  it('parses lettered base and optional MM.DD', () => {
+    expect(parseMeshComVersion('4.40a')).toEqual({
+      major: 4,
+      minor: 40,
+      letter: 'a',
+      month: null,
+      day: null,
+    });
+    expect(parseMeshComVersion('v4.40a.11.14')).toEqual({
+      major: 4,
+      minor: 40,
+      letter: 'a',
+      month: 11,
+      day: 14,
+    });
+  });
+
+  it('returns null for unparseable strings', () => {
+    expect(parseMeshComVersion('not-a-version')).toBeNull();
+  });
+});
+
+// ─── meshComFirmwareUpdateAvailable ───────────────────────────────
+
+describe('meshComFirmwareUpdateAvailable', () => {
+  it('returns false when device letter series matches latest release', () => {
+    expect(meshComFirmwareUpdateAvailable('4.40a', '4.40a.11.14')).toBe(false);
+    expect(meshComFirmwareUpdateAvailable('4.40a-rm5', 'v4.40a.11.14')).toBe(false);
+  });
+
+  it('returns true when release major/minor/letter is newer', () => {
+    expect(meshComFirmwareUpdateAvailable('4.35p', '4.40a.11.14')).toBe(true);
+    expect(meshComFirmwareUpdateAvailable('4.40a', '4.41a.01.01')).toBe(true);
+    expect(meshComFirmwareUpdateAvailable('4.40a', '4.40b.01.01')).toBe(true);
+  });
+
+  it('compares MM.DD only when the device reports a date', () => {
+    expect(meshComFirmwareUpdateAvailable('4.40a.11.07', '4.40a.11.14')).toBe(true);
+    expect(meshComFirmwareUpdateAvailable('4.40a.11.14', '4.40a.11.14')).toBe(false);
+  });
+
+  it('returns false for unparseable device or release', () => {
+    expect(meshComFirmwareUpdateAvailable('bogus', '4.40a.11.14')).toBe(false);
+    expect(meshComFirmwareUpdateAvailable('4.40a', 'bogus')).toBe(false);
   });
 });

@@ -370,6 +370,7 @@ import {
 } from './lib/enabledProtocols';
 import {
   type FirmwareCheckResult,
+  MESHCOM_FIRMWARE_RELEASES_URL,
   MESHCORE_FIRMWARE_RELEASES_URL,
   MESHTASTIC_FIRMWARE_RELEASES_URL,
 } from './lib/firmwareCheck';
@@ -2171,13 +2172,19 @@ function AppContent() {
     capabilities.hasReticulumInterfaceConfig;
   const showConnectionFirmwareCheck = capabilities.hasFirmwareUpdateCheck;
   const openFirmwareReleases = useCallback(() => {
+    const fallbackReleasesUrl = capabilities.hasMeshcomDeviceCommands
+      ? MESHCOM_FIRMWARE_RELEASES_URL
+      : capabilities.prefersDeviceOwnerLongNameInHeader
+        ? MESHCORE_FIRMWARE_RELEASES_URL
+        : MESHTASTIC_FIRMWARE_RELEASES_URL;
     void window.electronAPI.update.openReleases(
-      firmwareCheckState.releaseUrl ??
-        (capabilities.prefersDeviceOwnerLongNameInHeader
-          ? MESHCORE_FIRMWARE_RELEASES_URL
-          : MESHTASTIC_FIRMWARE_RELEASES_URL),
+      firmwareCheckState.releaseUrl ?? fallbackReleasesUrl,
     );
-  }, [capabilities.prefersDeviceOwnerLongNameInHeader, firmwareCheckState.releaseUrl]);
+  }, [
+    capabilities.hasMeshcomDeviceCommands,
+    capabilities.prefersDeviceOwnerLongNameInHeader,
+    firmwareCheckState.releaseUrl,
+  ]);
   const nodeCountLabel = capabilities.nodeListTabUsesContactsLabel
     ? t('common.contacts')
     : capabilities.nodeListTabUsesPeersLabel

@@ -135,7 +135,9 @@ BLE HELLO `TYP` **MH** JSON and serial `--mheard` rows parse into `node_info` / 
 
 ## Firmware release watch
 
-`pnpm run update` runs `check_meshcom_upstream` against [icssw-org/MeshCom-Firmware](https://github.com/icssw-org/MeshCom-Firmware) published releases (`MESHCOM_UPSTREAM_WATCH_ENTRIES` in `scripts/update.sh`). On a newer tag, review EXTUDP/BLE/serial wire sources and country profiles, then bump `reviewed-ref`.
+`pnpm run update` runs `check_meshcom_upstream` against [icssw-org/MeshCom-Firmware](https://github.com/icssw-org/MeshCom-Firmware) published releases (`MESHCOM_UPSTREAM_WATCH_ENTRIES` in `scripts/update.sh`). On a newer tag, review EXTUDP/BLE/serial wire sources and country profiles, then bump `reviewed-ref` (and [`MESHCOM_FIRMWARE_REVIEWED_REF`](../../src/shared/meshcomConstants.ts)). That pin is for maintainers only — it does not drive the in-app “latest” fetch.
+
+**In-app update check:** With a MeshCom radio `configured` and a device `FWVER`, `FirmwareUpdateNotifier` fetches GitHub `/releases/latest` (`hasFirmwareUpdateCheck: true`) and compares lettered versions (`4.40a` vs `v4.40a.11.14`) in [`firmwareCheck.ts`](../../src/renderer/lib/firmwareCheck.ts). Same toast / Connection indicator pattern as Meshtastic and MeshCore. USB device flash stays off (`hasDeviceFirmwareFlash: false`).
 
 ## Capability gates
 

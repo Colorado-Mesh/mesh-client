@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next';
 
 import { protocolRecord, selectByProtocol } from '@/renderer/lib/appProtocolSelect';
 import {
+  fetchLatestMeshComRelease,
   fetchLatestMeshCoreRelease,
   fetchLatestMeshtasticRelease,
   type FirmwareCheckResult,
   isFirmwareCheckTimeoutError,
+  meshComFirmwareUpdateAvailable,
   meshCoreFirmwareUpdateAvailable,
   semverGt,
 } from '@/renderer/lib/firmwareCheck';
@@ -22,6 +24,8 @@ import { useToast } from './Toast';
 const fetchLatestReleaseByProtocol = protocolRecord(
   fetchLatestMeshtasticRelease,
   fetchLatestMeshCoreRelease,
+  fetchLatestMeshCoreRelease,
+  fetchLatestMeshComRelease,
 );
 
 function isUpdateAvailable(
@@ -29,6 +33,10 @@ function isUpdateAvailable(
   firmwareVersion: string,
   release: { version: string; publishedAt?: Date },
 ): boolean {
+  // MeshCom also sets prefersDeviceOwnerLongNameInHeader — check before MeshCore.
+  if (capabilities.hasMeshcomDeviceCommands) {
+    return meshComFirmwareUpdateAvailable(firmwareVersion, release.version);
+  }
   if (capabilities.prefersDeviceOwnerLongNameInHeader) {
     return meshCoreFirmwareUpdateAvailable(firmwareVersion, {
       version: release.version,

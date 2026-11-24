@@ -177,9 +177,9 @@ If a flash fails or is cancelled:
 
 ## Firmware update toast
 
-When a Meshtastic or MeshCore radio is connected and configured, Mesh Client checks the upstream releases. If a newer one exists, a toast reads **Firmware update available: v<version>**. The firmware status indicator shows the same result, and when an update is available, clicking it opens the release page.
+When a Meshtastic, MeshCore, or MeshCom radio is connected and configured, Mesh Client checks the upstream releases (Meshtastic/MeshCore firmware repos, or [MeshCom-Firmware](https://github.com/icssw-org/MeshCom-Firmware/releases) for MeshCom). If a newer one exists, a toast reads **Firmware update available: v<version>**. The firmware status indicator shows the same result, and when an update is available, clicking it opens the release page.
 
-**Don't remind me** silences the toast for that release, per protocol. It comes back when a newer release ships. The toast does not flash anything. Download the file from the release page and follow this guide.
+**Don't remind me** silences the toast for that release, per protocol. It comes back when a newer release ships. The toast does not flash anything. For Meshtastic and MeshCore, download the file from the release page and follow this guide. MeshCom has no in-app USB flasher yet — use the upstream release assets / OTA tooling.
 
 ---
 
