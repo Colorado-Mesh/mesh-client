@@ -56,6 +56,17 @@ const unsupported = (op: string) => {
 /** How long sendMessage waits for a KISS TX_RESULT before failing the promise. */
 const MESHCOM_KISS_TX_ACK_TIMEOUT_MS = 8 * MS_PER_SECOND;
 
+/** Drop inbound text that matches a recent outbound inject (EXTUDP/serial/BLE/KISS TX echo). */
+const MESHCOM_TX_ECHO_TTL_MS = 5 * MS_PER_SECOND;
+const MESHCOM_TX_ECHO_MAX = 16;
+
+interface MeshcomRecentOutbound {
+  /** Normalized wire dest (`*`, GRC digits, or callsign). */
+  dst: string;
+  msg: string;
+  at: number;
+}
+
 function settleKissTxWaiter(
   handle: MeshComDeviceHandle,
   msgId: number,
@@ -109,6 +120,8 @@ export interface MeshComDeviceHandle {
   deviceSettings: MeshcomDeviceSettingsAccum;
   /** Resolvers waiting for BLE `CONFFIN` (or serial collect finish). */
   deviceSettingsWaiters: (() => void)[];
+  /** Recent outbound text for TX-echo suppression (mutated by send/subscribe). */
+  recentOutbound: MeshcomRecentOutbound[];
 }
 
 function learnMeshcomGwPrefixFromMsgId(handle: MeshComDeviceHandle, msgId: number): void {
@@ -132,9 +145,95 @@ function noteLocalMeshcomFirmwareMsgId(handle: MeshComDeviceHandle, msgId: numbe
 }
 
 function isLocalMeshcomSource(handle: MeshComDeviceHandle, sourceCall: string): boolean {
-  const op = normalizeMeshcomCallsign(handle.operatorCallsign);
   const src = normalizeMeshcomCallsign(sourceCall);
+  if (!src) return false;
+  const op =
+    normalizeMeshcomCallsign(handle.operatorCallsign) ||
+    normalizeMeshcomCallsign(handle.deviceSettings.call ?? '');
   return op.length > 0 && src === op;
+}
+
+function normalizeMeshcomEchoDst(dst: string): string {
+  const resolved = resolveMeshcomDestination(dst);
+  if (resolved.channelIndex === 0) return '*';
+  if (resolved.channelIndex > 0) return String(resolved.channelIndex);
+  return resolved.wireDest;
+}
+
+function noteRecentOutbound(handle: MeshComDeviceHandle, dst: string, msg: string): void {
+  const now = Date.now();
+  const entry: MeshcomRecentOutbound = {
+    dst: normalizeMeshcomEchoDst(dst),
+    msg,
+    at: now,
+  };
+  handle.recentOutbound = handle.recentOutbound.filter((e) => now - e.at <= MESHCOM_TX_ECHO_TTL_MS);
+  handle.recentOutbound.push(entry);
+  if (handle.recentOutbound.length > MESHCOM_TX_ECHO_MAX) {
+    handle.recentOutbound.shift();
+  }
+}
+
+function consumeRecentOutboundEcho(handle: MeshComDeviceHandle, dst: string, msg: string): boolean {
+  const now = Date.now();
+  const wantDst = normalizeMeshcomEchoDst(dst);
+  const idx = handle.recentOutbound.findIndex(
+    (e) => now - e.at <= MESHCOM_TX_ECHO_TTL_MS && e.dst === wantDst && e.msg === msg,
+  );
+  if (idx < 0) {
+    handle.recentOutbound = handle.recentOutbound.filter(
+      (e) => now - e.at <= MESHCOM_TX_ECHO_TTL_MS,
+    );
+    return false;
+  }
+  handle.recentOutbound.splice(idx, 1);
+  return true;
+}
+
+function parseMeshcomInboundMsgId(raw: string | number | undefined): number | null {
+  if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) return raw >>> 0;
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const asDec = Number.parseInt(raw, 10);
+  if (Number.isFinite(asDec) && asDec > 0 && String(asDec) === raw.trim()) return asDec >>> 0;
+  const asHex = Number.parseInt(raw, 16);
+  if (Number.isFinite(asHex) && asHex > 0) return asHex >>> 0;
+  return null;
+}
+
+/**
+ * Drop own TX chat echoes. When a content match learns the NODE callsign, seed
+ * `operatorCallsign` and emit `device_self_info` so the runtime can set `myNodeNum`.
+ */
+function shouldDropLocalMeshcomText(
+  handle: MeshComDeviceHandle,
+  sourceCall: string,
+  dst: string,
+  msg: string,
+  emit: (event: DomainEvent) => void,
+): boolean {
+  const local = isLocalMeshcomSource(handle, sourceCall);
+  const echo = consumeRecentOutboundEcho(handle, dst, msg);
+  if (!local && !echo) return false;
+
+  if (echo && !normalizeMeshcomCallsign(handle.operatorCallsign)) {
+    const src = normalizeMeshcomCallsign(sourceCall);
+    if (src) {
+      handle.operatorCallsign = src;
+      handle.deviceSettings.call ??= src;
+      emit({
+        type: 'device_self_info',
+        payload: {
+          name: src,
+          publicKey: new Uint8Array(0),
+          type: 0,
+          txPower: 0,
+          radioFreq: 0,
+          manualAddContacts: false,
+        },
+      });
+    }
+  }
+  return true;
 }
 
 function allocateMeshcomOutboundPacketId(handle: MeshComDeviceHandle): number {
@@ -395,6 +494,10 @@ function emitPhoneAprsEvents(
     return;
   }
   if (parsed.kind === 'text') {
+    if (shouldDropLocalMeshcomText(handle, parsed.sourceCall, parsed.destCall, parsed.text, emit)) {
+      noteLocalMeshcomFirmwareMsgId(handle, parsed.msgId);
+      return;
+    }
     const from = rememberCallsign(handle, parsed.sourceCall);
     const { to, channelIndex } = textMessageToFromDest(handle, parsed.destCall);
     emit({
@@ -420,9 +523,6 @@ function emitPhoneAprsEvents(
         hopCount: parsed.hopCount,
       },
     });
-    if (isLocalMeshcomSource(handle, parsed.sourceCall)) {
-      noteLocalMeshcomFirmwareMsgId(handle, parsed.msgId);
-    }
     return;
   }
   if (parsed.kind === 'position') {
@@ -469,7 +569,13 @@ function emitExtUdpEvents(
 
   if (parsed.type === 'msg') {
     const { origin, hopCount } = parseMeshcomSrcPath(parsed.src);
-    const from = rememberCallsign(handle, origin || parsed.src);
+    const sourceCall = origin || parsed.src;
+    if (shouldDropLocalMeshcomText(handle, sourceCall, parsed.dst, parsed.msg, emit)) {
+      const msgId = parseMeshcomInboundMsgId(parsed.msg_id);
+      if (msgId != null) noteLocalMeshcomFirmwareMsgId(handle, msgId);
+      return;
+    }
+    const from = rememberCallsign(handle, sourceCall);
     const { to, channelIndex } = textMessageToFromDest(handle, parsed.dst);
     if (origin) {
       emit({
@@ -607,6 +713,9 @@ function emitConsoleTextLine(
     // Inbound `{CALL}text` is from that callsign (ALL/group dest is rare on serial RX).
     const fromCall =
       dest.channelIndex === -1 ? dest.wireDest : normalizeMeshcomCallsign(destRaw) || destRaw;
+    const echoDst =
+      dest.channelIndex > 0 ? String(dest.channelIndex) : dest.channelIndex === 0 ? '*' : '*';
+    if (shouldDropLocalMeshcomText(handle, fromCall, echoDst, text, emit)) return;
     const from = rememberCallsign(handle, fromCall);
     const { to, channelIndex } =
       dest.channelIndex > 0
@@ -637,10 +746,12 @@ function emitConsoleTextLine(
     return;
   }
 
-  // Serial ALL inject uses `::text` (two colons).
+  // Serial ALL inject uses `::text` (two colons). Empty sourceCall: only recent-outbound
+  // content match can drop (no callsign on this wire form).
   if (trimmed.startsWith('::')) {
     const text = trimmed.slice(2).trim().slice(0, MESHCOM_MAX_TEXT_LEN);
     if (!text) return;
+    if (shouldDropLocalMeshcomText(handle, '', '*', text, emit)) return;
     emit({
       type: 'text_message',
       payload: {
@@ -727,6 +838,9 @@ function emitKissEvents(
             level: 0,
           },
         });
+        continue;
+      }
+      if (shouldDropLocalMeshcomText(handle, frame.src, info.addressee, info.text, emit)) {
         continue;
       }
       const { to, channelIndex } = textMessageToFromDest(handle, info.addressee);
@@ -816,6 +930,7 @@ export const meshcomProtocol: Protocol = {
       kissTxWaiters: new Map(),
       deviceSettings: emptyMeshcomDeviceSettingsAccum(),
       deviceSettingsWaiters: [],
+      recentOutbound: [],
     };
   },
 
@@ -929,6 +1044,7 @@ export const meshcomProtocol: Protocol = {
         device.firmwareMsgSeq = seq;
         throw err;
       }
+      noteRecentOutbound(device, dst, text);
       return { packetId };
     }
 
@@ -963,6 +1079,7 @@ export const meshcomProtocol: Protocol = {
         if (packetId > 0) {
           noteLocalMeshcomFirmwareMsgId(device, packetId);
         }
+        noteRecentOutbound(device, dst, text);
         return { packetId };
       } catch (err) {
         const pending = device.kissTxWaiters.get(msgNumber);
@@ -984,6 +1101,7 @@ export const meshcomProtocol: Protocol = {
         device.firmwareMsgSeq = seq;
         throw err;
       }
+      noteRecentOutbound(device, dst, text);
       return { packetId };
     }
 
@@ -1002,6 +1120,7 @@ export const meshcomProtocol: Protocol = {
       device.firmwareMsgSeq = seq;
       throw err;
     }
+    noteRecentOutbound(device, dst, text);
     return { packetId };
   },
 

@@ -931,6 +931,42 @@ describe('MapPanel layer controls', () => {
     expect(markerMock).not.toHaveBeenCalled();
   });
 
+  it('does not synthesize a Node-0 self marker when myNodeNum is 0', () => {
+    markerMock.mockClear();
+    const nowSec = Math.floor(Date.now() / 1000);
+    const peerId = 0xabc;
+    const nodes = new Map<number, MeshNode>([
+      [
+        peerId,
+        {
+          node_id: peerId,
+          long_name: 'SP2ONG-1',
+          short_name: 'SP2O',
+          hw_model: 'HELTEC-E290',
+          snr: 0,
+          battery: 91,
+          last_heard: nowSec,
+          latitude: 53.056,
+          longitude: 18.5616,
+        },
+      ],
+    ]);
+    const ourPosition: OurPosition = { lat: 53.056, lon: 18.5616, source: 'device' };
+    render(
+      <MapPanel
+        nodes={nodes}
+        myNodeNum={0}
+        locationFilter={defaultFilter}
+        ourPosition={ourPosition}
+        onLocateMe={vi.fn().mockResolvedValue(null)}
+        protocol="meshcom"
+      />,
+    );
+    // Only the real peer contact — no ghost selfFallback at node_id 0.
+    expect(markerMock).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/Node-0/i)).toBeNull();
+  });
+
   it.each(['meshtastic', 'meshcore'] as const)(
     'toggles the sensor layer and picks its metric (%s)',
     async (protocol) => {

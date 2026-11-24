@@ -32,6 +32,13 @@ describe('useMeshcomRuntime setNodeFavorited', () => {
     expect(SOURCE).not.toMatch(/setNodeFavorited:\s*async\s*\(\)\s*=>\s*\{\s*\}/);
   });
 
+  it('setOwner and device_self_info sync myNodeNum via applyMeshcomSelfCallsign', () => {
+    expect(SOURCE).toMatch(/function applyMeshcomSelfCallsign\(/);
+    expect(SOURCE).toMatch(/applyMeshcomSelfCallsign\(identityId, opts\.longName/);
+    expect(SOURCE).toMatch(/'device_self_info'/);
+    expect(SOURCE).toMatch(/attachTypedPacketListener\(/);
+  });
+
   it('patches the UI identity bucket and saves favorited to SQLite', async () => {
     upsertNodeRecord(OFFLINE_MESHCOM_IDENTITY_ID, {
       nodeId: NODE_ID,

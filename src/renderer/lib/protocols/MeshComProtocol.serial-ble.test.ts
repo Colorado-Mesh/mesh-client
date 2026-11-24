@@ -53,11 +53,12 @@ function mockConnection(transport: MeshComDeviceHandle['transport']): {
 function makeHandle(
   transport: MeshComDeviceHandle['transport'],
   conn: MeshComConnection,
+  opts?: { operatorCallsign?: string },
 ): MeshComDeviceHandle {
   return {
     connection: conn,
     transport,
-    operatorCallsign: 'N0CALL-1',
+    operatorCallsign: opts?.operatorCallsign ?? 'N0CALL-1',
     callsignByNodeId: new Map(),
     kissSession: null,
     nextMsgNumber: 1,
@@ -66,6 +67,7 @@ function makeHandle(
     kissTxWaiters: new Map(),
     deviceSettings: emptyMeshcomDeviceSettingsAccum(),
     deviceSettingsWaiters: [],
+    recentOutbound: [],
   };
 }
 
@@ -493,6 +495,91 @@ describe('MeshComProtocol serial/BLE', () => {
 
     await expect(pending).rejects.toThrow(/KISS TX rejected status=0x3/);
     expect(handle.kissTxWaiters.size).toBe(0);
+    unsub();
+  });
+
+  it('drops EXTUDP msg when src matches operatorCallsign', () => {
+    const { conn } = mockConnection('udp');
+    const handle = makeHandle('udp', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    conn.onData?.(
+      new TextEncoder().encode(
+        JSON.stringify({
+          type: 'msg',
+          src: 'N0CALL-1',
+          dst: '999',
+          msg: 'Test',
+          msg_id: '42',
+        }),
+      ),
+    );
+
+    expect(events.filter((e) => e.type === 'text_message')).toHaveLength(0);
+    expect(handle.firmwareMsgSeq).toBeGreaterThan(1);
+    unsub();
+  });
+
+  it('keeps EXTUDP msg from a foreign callsign', () => {
+    const { conn } = mockConnection('udp');
+    const handle = makeHandle('udp', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    conn.onData?.(
+      new TextEncoder().encode(
+        JSON.stringify({
+          type: 'msg',
+          src: 'SP2ONG-1',
+          dst: '*',
+          msg: 'hello peer',
+        }),
+      ),
+    );
+
+    const texts = events.filter((e) => e.type === 'text_message');
+    expect(texts).toHaveLength(1);
+    expect(texts[0]?.payload.payload).toBe('hello peer');
+    unsub();
+  });
+
+  it('drops recent outbound EXTUDP echo and learns operatorCallsign when empty', async () => {
+    const { conn } = mockConnection('udp');
+    const handle = makeHandle('udp', conn, { operatorCallsign: '' });
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    await meshcomProtocol.sendMessage(handle, { text: 'echo me', channelIndex: 999 });
+    conn.onData?.(
+      new TextEncoder().encode(
+        JSON.stringify({
+          type: 'msg',
+          src: 'SP2ONG-1',
+          dst: '999',
+          msg: 'echo me',
+          msg_id: '7',
+        }),
+      ),
+    );
+
+    expect(events.filter((e) => e.type === 'text_message')).toHaveLength(0);
+    expect(handle.operatorCallsign).toBe('SP2ONG-1');
+    expect(events.some((e) => e.type === 'device_self_info' && e.payload.name === 'SP2ONG-1')).toBe(
+      true,
+    );
+    unsub();
+  });
+
+  it('drops brace console line when fromCall is local operator', () => {
+    const { conn } = mockConnection('serial');
+    const handle = makeHandle('serial', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    conn.onData?.(new TextEncoder().encode('{N0CALL-1}own echo\n'));
+
+    expect(events.filter((e) => e.type === 'text_message')).toHaveLength(0);
     unsub();
   });
 });

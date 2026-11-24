@@ -100,6 +100,41 @@ function resolveHost(httpAddress?: string): string {
   return trimmed && trimmed.length > 0 ? trimmed : '127.0.0.1';
 }
 
+/** Sync MeshCom self callsign → myNodeNum / node row (settings, setOwner, learned TX echo). */
+function applyMeshcomSelfCallsign(
+  identityId: IdentityId,
+  callsignRaw: string,
+  opts?: {
+    operatorName?: string;
+    batteryLevel?: number | null;
+    voltage?: number | null;
+    setDeviceOwner?: (owner: { longName: string; shortName: string; isLicensed: boolean }) => void;
+    setMyNodeNum?: (nodeId: number) => void;
+  },
+): number {
+  const callsign = normalizeMeshcomCallsign(callsignRaw);
+  if (!callsign) return 0;
+  registerMeshcomCallsign(callsign);
+  const resolved = callsignToNodeId(callsign);
+  if (!resolved) return 0;
+  opts?.setDeviceOwner?.({
+    longName: callsign,
+    shortName: opts.operatorName || callsign.slice(0, 4),
+    isLicensed: true,
+  });
+  opts?.setMyNodeNum?.(resolved);
+  setConnection(identityId, { myNodeNum: resolved });
+  upsertNodeRecord(identityId, {
+    nodeId: resolved,
+    longName: callsign,
+    shortName: (opts?.operatorName || callsign).slice(0, 4),
+    batteryLevel: opts?.batteryLevel ?? undefined,
+    voltage: opts?.voltage ?? undefined,
+    lastHeardAt: Date.now(),
+  });
+  return resolved;
+}
+
 /**
  * MeshCom runtime — session registration, transport open, ingest, reconnect, power resume.
  * Transport createDevice / EXTUDP decode wiring continues with the parallel transport agent.
@@ -226,12 +261,28 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           ].slice(-MAX_TELEMETRY_POINTS),
         );
       });
+      // Learned NODE callsign from own TX echo / settings emits device_self_info.
+      const detachSelfInfo = attachTypedPacketListener(
+        identityId,
+        'device_self_info',
+        (payload) => {
+          const name = payload.name?.trim();
+          if (!name) return;
+          applyMeshcomSelfCallsign(identityId, name, {
+            setDeviceOwner,
+            setMyNodeNum: (id) => {
+              setState((prev) => (prev.myNodeNum === id ? prev : { ...prev, myNodeNum: id }));
+            },
+          });
+        },
+      );
       // Sync attach so routing ACKs are registered before session becomes configured.
       const detachRoutingAck = attachMeshcomRoutingAckSideEffects(identityId);
       const prevTelemetryDetach = telemetryDetachRef.current;
       telemetryDetachRef.current = () => {
         prevTelemetryDetach?.();
         detachSignal();
+        detachSelfInfo();
         detachRoutingAck();
       };
     },
@@ -340,27 +391,16 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         setConnection(identityId, { firmwareVersion: fw });
       }
       if (snap.callsign) {
-        setDeviceOwner({
-          longName: snap.callsign,
-          shortName: snap.operatorName,
-          isLicensed: true,
+        const resolved = applyMeshcomSelfCallsign(identityId, snap.callsign, {
+          operatorName: snap.operatorName,
+          batteryLevel: snap.batteryLevel,
+          voltage: snap.voltage,
+          setDeviceOwner,
+          setMyNodeNum: (id) => {
+            setState((prev) => (prev.myNodeNum === id ? prev : { ...prev, myNodeNum: id }));
+          },
         });
-        const resolved = callsignToNodeId(snap.callsign);
-        if (resolved) {
-          nodeId = resolved;
-          setState((prev) =>
-            prev.myNodeNum === resolved ? prev : { ...prev, myNodeNum: resolved },
-          );
-          setConnection(identityId, { myNodeNum: resolved });
-          upsertNodeRecord(identityId, {
-            nodeId: resolved,
-            longName: snap.callsign,
-            shortName: (snap.operatorName || snap.callsign).slice(0, 4),
-            batteryLevel: snap.batteryLevel,
-            voltage: snap.voltage,
-            lastHeardAt: Date.now(),
-          });
-        }
+        if (resolved) nodeId = resolved;
       }
       if (snap.batteryLevel != null || snap.voltage != null) {
         pushLocalTelemetry({
@@ -901,6 +941,14 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       }
       const protocol = await ensureMeshcomProtocolLoaded();
       await protocol.setOwner(handle, opts);
+      // protocol.setOwner updates handle.operatorCallsign; also sync UI myNodeNum (UDP/KISS).
+      applyMeshcomSelfCallsign(identityId, opts.longName, {
+        operatorName: opts.shortName,
+        setDeviceOwner,
+        setMyNodeNum: (id) => {
+          setState((prev) => (prev.myNodeNum === id ? prev : { ...prev, myNodeNum: id }));
+        },
+      });
     },
     [resolveIdentityId],
   );

@@ -1022,7 +1022,8 @@ function OverviewMapPanel({
   );
 
   const selfFallbackNode = useMemo<MeshNode | null>(() => {
-    if (selfInNodesToRender || !ourPosition) return null;
+    // myNodeNum 0 would synthesize a ghost "Node-0" star beside the real self contact.
+    if (myNodeNum <= 0 || selfInNodesToRender || !ourPosition) return null;
     const nowSec = Math.floor(Date.now() / 1000);
     const longName = homeNode?.long_name || `Node-${myNodeNum.toString(16).toUpperCase()}`;
     return {
