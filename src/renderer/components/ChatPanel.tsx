@@ -1260,7 +1260,7 @@ function ChatPanel({
    * manual pick. A deliberate selection always wins and unblocks saving.
    */
   const selectChannel = useCallback(
-    (index: number) => {
+    (index: number, opts?: { focusComposer?: boolean }) => {
       if (channelRestoreScopeKey != null) {
         channelRestoreRef.current = {
           scope: channelRestoreScopeKey,
@@ -1271,6 +1271,8 @@ function ChatPanel({
       }
       setChannel(index);
       // Channel pills / switcher keep focus after click; move caret into the composer.
+      // Add-channel dialogs manage their own focus (keep-open re-entry) — skip the steal.
+      if (opts?.focusComposer === false) return;
       queueMicrotask(() => {
         composerInputRef.current?.focus();
       });
@@ -3822,7 +3824,7 @@ function ChatPanel({
                   onSetChannel={onSetMeshcoreChannel}
                   onSelectChannel={(index) => {
                     setViewMode('channels');
-                    selectChannel(index);
+                    selectChannel(index, { focusComposer: false });
                   }}
                   onRemoveChannel={onDeleteMeshcoreChannel ? askToRemoveChannel : undefined}
                   onImportContactFromQr={onImportContactFromQr}

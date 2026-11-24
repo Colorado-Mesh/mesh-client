@@ -364,6 +364,38 @@ describe('MeshcoreChatChannelManager', () => {
     expect(props.onSetChannel).toHaveBeenLastCalledWith(3, '#last', expect.any(Uint8Array));
   });
 
+  it('keeps Name focused after Save when onSelectChannel steals focus on a microtask', async () => {
+    const user = userEvent.setup();
+    const steal = document.createElement('input');
+    steal.setAttribute('aria-label', 'steal-focus');
+    document.body.appendChild(steal);
+    const props = renderManager({
+      onSelectChannel: vi.fn(() => {
+        // Match ChatPanel.selectChannel: composer focus is deferred one microtask.
+        queueMicrotask(() => {
+          steal.focus();
+        });
+      }),
+    });
+    await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+    await user.click(screen.getByRole('switch', { name: 'Keep open after adding' }));
+    await user.type(screen.getByLabelText('Name'), 'weather');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Name')).toHaveValue('');
+      expect(screen.getByLabelText('Name')).toHaveFocus();
+    });
+    await user.type(screen.getByLabelText('Name'), 'weather');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toHaveTextContent('#weather is already added.');
+      expect(screen.getByLabelText('Name')).toHaveValue('');
+      expect(screen.getByLabelText('Name')).toHaveFocus();
+    });
+    expect(props.onSetChannel).toHaveBeenCalledTimes(1);
+    steal.remove();
+  });
+
   it('retains private mode but clears each saved name and key, including after retry', async () => {
     const warn = mockConsoleWarn();
     const user = userEvent.setup();

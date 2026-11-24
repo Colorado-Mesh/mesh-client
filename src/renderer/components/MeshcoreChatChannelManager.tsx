@@ -126,7 +126,10 @@ export default function MeshcoreChatChannelManager({
       setName('');
       setKeyHex('');
       setFeedback({ message, type: 'success' });
-      inputRef.current?.focus();
+      // ChatPanel.selectChannel focuses the composer on a microtask; run after that.
+      queueMicrotask(() => {
+        inputRef.current?.focus();
+      });
     } else {
       closeDialog();
     }

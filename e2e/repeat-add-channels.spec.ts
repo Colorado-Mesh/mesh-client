@@ -48,9 +48,12 @@ test('repeat add channels: opt-in, private/public, duplicates, retries, busy gua
 
   await add.click();
   await repeat.click();
+  // Save-click (not Enter): ChatPanel used to steal focus to the composer on a microtask
+  // after onSelectChannel; keep-open must win that race so the next name can be typed.
   for (const channel of ['two', 'three', 'two']) {
     await name.fill(channel);
     await save.click();
+    await expect(dialog).not.toHaveAttribute('aria-busy', 'true');
     await expect(name).toHaveValue('');
     await expect(name).toBeFocused();
     await expect(repeat).toBeChecked();
