@@ -1,5 +1,7 @@
 import { createServer, type Socket } from 'node:net';
 
+import { sanitizeForConsoleEcho } from '../../src/main/sanitize-log-message';
+
 /** Local companion protocol fixture: real Electron TCP/SDK/DB path, no radio or RF. */
 export async function startMeshcoreRadio(selfId = 171) {
   const sockets = new Set<Socket>();
@@ -43,7 +45,12 @@ export async function startMeshcoreRadio(selfId = 171) {
     socket.on('error', (err: NodeJS.ErrnoException) => {
       const code = err.code;
       if (code === 'ECONNRESET' || code === 'EPIPE' || code === 'ECONNABORTED') return;
-      console.error('[meshcore-radio] unexpected socket error', err);
+      console.error(
+        '[meshcore-radio] unexpected socket error',
+        sanitizeForConsoleEcho(
+          `${code ?? 'unknown'}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
     });
     socket.on('close', () => sockets.delete(socket));
     let buffer = Buffer.alloc(0);

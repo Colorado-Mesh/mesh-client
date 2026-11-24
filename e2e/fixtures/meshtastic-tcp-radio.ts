@@ -3,6 +3,8 @@ import { createServer, type Socket } from 'node:net';
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { Channel, Mesh, Portnums } from '@meshtastic/protobufs';
 
+import { sanitizeForConsoleEcho } from '../../src/main/sanitize-log-message';
+
 /** Local Meshtastic TCP (port 4403 PhoneAPI) fixture: real Electron TCP path, no radio. */
 export async function startMeshtasticTcpRadio(opts?: {
   myNodeNum?: number;
@@ -148,7 +150,12 @@ export async function startMeshtasticTcpRadio(opts?: {
     socket.on('error', (err: NodeJS.ErrnoException) => {
       const code = err.code;
       if (code === 'ECONNRESET' || code === 'EPIPE' || code === 'ECONNABORTED') return;
-      console.error('[meshtastic-tcp-radio] unexpected socket error', err);
+      console.error(
+        '[meshtastic-tcp-radio] unexpected socket error',
+        sanitizeForConsoleEcho(
+          `${code ?? 'unknown'}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
     });
     socket.on('close', () => sockets.delete(socket));
     let buffer = Buffer.alloc(0);
