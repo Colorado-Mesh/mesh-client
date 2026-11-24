@@ -13,6 +13,7 @@ import {
   loadPersistedRoomsLastRead,
   savePersistedRoomsLastRead,
 } from './lib/chatPanelProtocolStorage';
+import { errLikeToLogString } from './lib/errLikeToLogString';
 import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
@@ -1279,10 +1280,10 @@ describe('App shell layout', () => {
     onTestFinished(warn.restore);
     loadSettingSearchEntriesMock.mockRejectedValueOnce(new Error('chunk load failed'));
     renderApp();
+    const chunkErr = new Error('chunk load failed');
     await waitFor(() => {
       expect(warn.spy).toHaveBeenCalledWith(
-        'mcL0335 [App] settings search registry failed to load',
-        expect.any(Error),
+        `mcL0335 [App] settings search registry failed to load ${errLikeToLogString(chunkErr)}`,
       );
     });
     await openSettingFromLauncher('reduce motion', 'Reduce motion, Appearance');

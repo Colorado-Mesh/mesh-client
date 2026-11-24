@@ -273,11 +273,11 @@ if [ "$manifest_only" -eq 0 ]; then
       while IFS= read -r f || [ -n "$f" ]; do
         set -- "$@" "$f"
         if [ "$#" -eq 50 ]; then
-          pnpm exec semgrep scan --config p/typescript --config p/javascript --config p/nodejs --config p/security-audit --config .semgrep.yml --error --disable-version-check --metrics=off -- "$@" || exit 1
+          pnpm run check:semgrep -- "$@" || exit 1
           set --
         fi
       done < "$SEMGREP_LIST"
-      [ "$#" -eq 0 ] || pnpm exec semgrep scan --config p/typescript --config p/javascript --config p/nodejs --config p/security-audit --config .semgrep.yml --error --disable-version-check --metrics=off -- "$@"
+      [ "$#" -eq 0 ] || pnpm run check:semgrep -- "$@"
     ) || fail 'semgrep (staged)'
   else
     printf 'pre-commit: skip semgrep (no staged JS/TS)\n' >&2

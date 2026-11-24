@@ -30,6 +30,7 @@ Always-on hard rules for logging/security edits. Full detail: AGENTS.md §1 / §
 
 ## Semgrep × ESLint
 
+- Semgrep runs **locally** via `.githooks/pre-commit` (`check:semgrep` on staged JS/TS), not in GitHub Actions. Set `git config core.hooksPath .githooks` and `pnpm run setup:semgrep` when missing.
 - Green Semgrep ≠ green lint. After Semgrep-driven edits, run `pnpm exec eslint --cache <touched>` and fix import-sort / format-string fallout before commit.
 
 ## Main bundle budget

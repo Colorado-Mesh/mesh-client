@@ -64,4 +64,12 @@ describe('pathCanonical', () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('allows children when allowedRoot is the filesystem root', () => {
+    const fsRoot = path.parse(path.resolve(os.tmpdir())).root;
+    const realRoot = fs.realpathSync.native(fsRoot);
+    const child = path.join(realRoot, `mesh-canon-fsroot-${process.pid}`, 'nested.bin');
+    expect(isUnderCanonicalRoot(child, realRoot)).toBe(true);
+    expect(isUnderCanonicalRoot(realRoot, realRoot)).toBe(true);
+  });
 });

@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
-import { selectGrantedSerialPort } from '@/renderer/lib/serialPortSignature';
+import {
+  selectGrantedSerialPort,
+  SERIAL_MULTIPLE_MATCH_ERROR,
+} from '@/renderer/lib/serialPortSignature';
 
 import { requestFlasherSerialPort } from './flasherSerial';
 import { getFlasherSessionSerialPort } from './flasherSessionPort';
@@ -10,10 +13,14 @@ vi.mock('@/renderer/lib/connection', () => ({
   closeSerialPortIfOpen: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@/renderer/lib/serialPortSignature', () => ({
-  loadLastSerialPortId: vi.fn(() => 'port-heltec'),
-  selectGrantedSerialPort: vi.fn(),
-}));
+vi.mock('@/renderer/lib/serialPortSignature', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as object),
+    loadLastSerialPortId: vi.fn(() => 'port-heltec'),
+    selectGrantedSerialPort: vi.fn(),
+  };
+});
 
 vi.mock('./flasherSessionPort', async (importOriginal) => {
   const actual = await importOriginal();
@@ -165,6 +172,42 @@ describe('requestFlasherSerialPort', () => {
 
     await expect(requestFlasherSerialPort(undefined)).resolves.toBe(grantedPort);
 
+    expect(selectSerialPort).toHaveBeenCalledWith('');
+  });
+
+  it('falls back to requestPort when granted ports are ambiguous', async () => {
+    const picked = {
+      getInfo: () => ({ usbVendorId: 0x10c4, usbProductId: 0xea60 }),
+    } as SerialPort;
+    vi.mocked(selectGrantedSerialPort).mockImplementation(() => {
+      throw new Error(SERIAL_MULTIPLE_MATCH_ERROR);
+    });
+
+    const requestPort = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockResolvedValueOnce(picked);
+    const onSerialPortsDiscovered = vi.fn((handler: (ports: unknown[]) => void) => {
+      queueMicrotask(() => {
+        handler([]);
+      });
+      return () => {};
+    });
+    const selectSerialPort = vi.fn();
+
+    vi.stubGlobal('navigator', {
+      serial: {
+        getPorts: vi.fn().mockResolvedValue([{}, {}]),
+        requestPort,
+      },
+    });
+    vi.stubGlobal('window', {
+      electronAPI: { onSerialPortsDiscovered, selectSerialPort },
+    });
+
+    await expect(requestFlasherSerialPort(undefined)).resolves.toBe(picked);
+    expect(selectGrantedSerialPort).toHaveBeenCalled();
+    expect(requestPort).toHaveBeenCalledTimes(2);
     expect(selectSerialPort).toHaveBeenCalledWith('');
   });
 });

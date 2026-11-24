@@ -9386,7 +9386,8 @@
     "currentValue": "сейчас {{value}}",
     "rmFirmwareOnlyHint": "Доступно только для прошивки MeshCom RM / Kocel",
     "rmFirmwareRequired": "Для {{command}} требуется прошивка MeshCom RM (например, kocel 4.40a-rm5). Этот узел сообщает {{version}}.",
-    "rmFirmwareUnknownVersion": "запас (не сырье)"
+    "rmFirmwareUnknownVersion": "запас (не сырье)",
+    "sendFailedToast": "Команда не выполнена."
   },
   "meshcomWatchlist": {
     "label": "Список наблюдения за позывными MeshCom",

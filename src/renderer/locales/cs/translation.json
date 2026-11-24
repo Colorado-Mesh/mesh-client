@@ -9327,7 +9327,8 @@
     "currentValue": "nyní {{value}}",
     "rmFirmwareOnlyHint": "K dispozici pouze s firmwarem MeshCom RM / kocel",
     "rmFirmwareRequired": "{{command}} vyžaduje firmware MeshCom RM (např. kocel 4.40a-rm5). Tento uzel hlásí {{version}}.",
-    "rmFirmwareUnknownVersion": "zásoby (ne RM)"
+    "rmFirmwareUnknownVersion": "zásoby (ne RM)",
+    "sendFailedToast": "Příkaz se nezdařil."
   },
   "meshcomWatchlist": {
     "label": "Seznam sledovaných volacích značek MeshCom",

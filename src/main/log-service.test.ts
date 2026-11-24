@@ -47,12 +47,12 @@ describe('log-service source contracts', () => {
     expect(rotateIdx).toBeLessThan(appendFileIdx);
   });
 
-  it('always writes all levels to disk (including debug)', () => {
+  it('documents verbose-only gating with packaged launch smoke marker exception', () => {
     const appendLineIdx = LOG_SERVICE_SOURCE.indexOf('export function appendLine(');
     const body = LOG_SERVICE_SOURCE.slice(appendLineIdx, appendLineIdx + 1200);
-    // No debug suppression guard - all levels go to disk
-    expect(body).not.toContain("level !== 'debug'");
-    expect(body).not.toContain('app.isPackaged');
+    expect(body).toContain('isVerboseOnlyLevel');
+    expect(body).toContain('isAlwaysPersistedLogMessage');
+    expect(LOG_SERVICE_SOURCE).toContain('[Startup] renderer loaded:');
   });
 
   it('broadcastLine wraps webContents.send in try/catch', () => {
@@ -175,6 +175,14 @@ describe('getRecentLines', () => {
     expect(getRecentLines().length).toBe(before);
     appendLine('warn', 'test', 'visible warn');
     expect(getRecentLines().at(-1)?.message).toContain('visible warn');
+    setVerboseLoggingEnabled(true);
+  });
+
+  it('persists packaged launch smoke marker debug lines when verbose is off', async () => {
+    const { appendLine, getRecentLines, setVerboseLoggingEnabled } = await import('./log-service');
+    setVerboseLoggingEnabled(false);
+    appendLine('debug', 'main', '[Startup] renderer loaded: file:///index.html');
+    expect(getRecentLines().at(-1)?.message).toContain('[Startup] renderer loaded:');
     setVerboseLoggingEnabled(true);
   });
 

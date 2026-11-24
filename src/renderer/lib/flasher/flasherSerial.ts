@@ -1,5 +1,9 @@
 import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
-import { loadLastSerialPortId, selectGrantedSerialPort } from '@/renderer/lib/serialPortSignature';
+import {
+  isAmbiguousSerialPortMatchError,
+  loadLastSerialPortId,
+  selectGrantedSerialPort,
+} from '@/renderer/lib/serialPortSignature';
 
 import { sleepMillis } from './binaryUtils';
 import {
@@ -71,9 +75,17 @@ async function pickGrantedFlasherPort(sessionOnly = false): Promise<SerialPort> 
   }
 
   const fallbackPortId = loadLastSerialPortId();
-  const port = selectGrantedSerialPort(granted, fallbackPortId);
-  await closeSerialPortIfOpen(port);
-  return port;
+  try {
+    const port = selectGrantedSerialPort(granted, fallbackPortId);
+    await closeSerialPortIfOpen(port);
+    return port;
+  } catch (err) {
+    if (isAmbiguousSerialPortMatchError(err)) {
+      assertWebSerialAvailable();
+      return navigator.serial.requestPort({ filters: [] });
+    }
+    throw err;
+  }
 }
 
 export interface RequestFlasherSerialPortOptions {

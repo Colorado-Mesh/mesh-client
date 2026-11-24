@@ -252,7 +252,15 @@ export function upsertConnectionHistory(
   const prev = read.status === 'missing' ? seedFromLastConnection(protocol) : read.entries;
 
   const fields = pickLastConnectionFields(connection);
-  const replaceEntryId = options?.replaceEntryId;
+  let replaceEntryId = options?.replaceEntryId;
+  if (replaceEntryId) {
+    const replaceTarget = prev.find((entry) => entry.id === replaceEntryId);
+    const replaceKey = replaceTarget ? connectionHistoryIdentityKey(replaceTarget, protocol) : null;
+    const crossTypeBleEnrich = replaceTarget?.type === 'ble' && connection.type === 'ble';
+    if (replaceKey && replaceKey !== identity && !crossTypeBleEnrich) {
+      replaceEntryId = undefined;
+    }
+  }
   const aliasKeys = connectionHistoryAliasKeys(connection, protocol);
   const existing =
     (replaceEntryId ? prev.find((entry) => entry.id === replaceEntryId) : undefined) ??

@@ -216,6 +216,15 @@ describe('privileged workflow boundaries', () => {
     ]);
   });
 
+  it('does not run Semgrep in GitHub Actions workflows', () => {
+    for (const name of ['ci', 'e2e', 'tests', 'cut-release']) {
+      const source = read(`.github/workflows/${name}.yaml`);
+      expect(source, name).not.toMatch(/requirements-semgrep|check:semgrep|Install Semgrep/i);
+    }
+    const toolchain = read('.github/actions/setup-release-toolchain/action.yaml');
+    expect(toolchain).not.toMatch(/requirements-semgrep|Install Semgrep/i);
+  });
+
   it('records an active main merge queue ruleset with admin bypass', () => {
     const ruleset = JSON.parse(read('.github/rulesets/main-merge-queue.json'));
     expect(ruleset).toMatchObject({

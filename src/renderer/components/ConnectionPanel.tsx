@@ -99,6 +99,7 @@ import {
   BLE_SELECTION_CLEARED_EVENT,
   type BleSelectionClearedDetail,
   clearLastConnection,
+  resolveLastSerialPortId,
   resolveMeshcomKissReconnectAddress,
 } from '../lib/lastConnectionStorage';
 import {
@@ -362,15 +363,6 @@ function clearLastBleDevice(protocol: MeshProtocol) {
     removeRendererStorageItem(lastBleDeviceKey(protocol));
   } catch (e) {
     console.debug('[ConnectionPanel] clearLastBleDevice ' + errLikeToLogString(e));
-  }
-}
-
-function loadLastSerialPort(): string | null {
-  try {
-    return localStorage.getItem(LAST_SERIAL_PORT_KEY);
-  } catch (e) {
-    console.debug('[ConnectionPanel] loadLastSerialPort ' + errLikeToLogString(e));
-    return null;
   }
 }
 
@@ -1147,6 +1139,9 @@ export default function ConnectionPanel({
   const windowsReconnectAttemptRef = useRef<object | null>(null);
   /** Saved-devices row id chosen for reconnect — configure updates that row instead of duplicating. */
   const pendingHistoryRowIdRef = useRef<string | null>(null);
+  const clearPendingHistoryReplace = useCallback(() => {
+    pendingHistoryRowIdRef.current = null;
+  }, []);
   const manualBleScanActiveRef = useRef(false);
   const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
   lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
@@ -1406,10 +1401,8 @@ export default function ConnectionPanel({
             if (rssiSeed != null && Number.isFinite(rssiSeed)) conn.bleRssi = rssiSeed;
           }
         } else if (state.connectionType === 'serial') {
-          // MeshCom must not inherit the shared Meshtastic/MeshCore serial key.
           const serialId =
-            lastConnectionRef.current?.serialPortId ??
-            (protocol === 'meshcom' ? null : loadLastSerialPort());
+            lastConnectionRef.current?.serialPortId?.trim() || resolveLastSerialPortId(protocol);
           if (serialId) conn.serialPortId = serialId;
         }
         saveLastConnection(protocol, conn);
@@ -1886,7 +1879,7 @@ export default function ConnectionPanel({
         // MeshCom: only match this protocol's remembered port — never the shared last-serial key
         // (that belongs to Meshtastic/MeshCore and would open the wrong USB radio).
         const lastId =
-          lastConnection?.serialPortId ?? (protocol === 'meshcom' ? null : loadLastSerialPort());
+          lastConnectionRef.current?.serialPortId?.trim() || resolveLastSerialPortId(protocol);
         if (lastId) {
           const match = ports.find((p) => p.portId === lastId);
           if (match) {
@@ -1906,6 +1899,7 @@ export default function ConnectionPanel({
   }, [isAutoConnecting, lastConnection, protocol]);
 
   const handleConnect = useCallback(async () => {
+    clearPendingHistoryReplace();
     // Cancel deferred dual-Noble BLE auto-connect so it cannot race prepareRfConnect against
     // a manual TCP/serial/HTTP connect (orphan TCP socket + connectType flip).
     // Mount auto-connect lives in ProtocolAutoConnectCoordinator — cancel that gate too.
@@ -1945,6 +1939,7 @@ export default function ConnectionPanel({
         await startGattScanningWithRetry(protocol);
       } catch (err) {
         manualBleScanActiveRef.current = false;
+        clearPendingHistoryReplace();
         console.warn(
           'mcL0407 [ConnectionPanel] startGattScanning failed: ' + errLikeToLogString(err),
         );
@@ -1968,6 +1963,7 @@ export default function ConnectionPanel({
         await onConnect('serial');
       }
     } catch (err) {
+      clearPendingHistoryReplace();
       console.warn('mcL0408 [ConnectionPanel] handleConnect failed ' + errLikeToLogString(err));
       let errorMsg: string;
       if (connectionType === 'serial') {
@@ -1988,7 +1984,7 @@ export default function ConnectionPanel({
       setConnecting(false);
       setConnectionStage('');
     }
-  }, [connectionType, activeHostAddress, onConnect, protocol, t]);
+  }, [clearPendingHistoryReplace, connectionType, activeHostAddress, onConnect, protocol, t]);
 
   const handleCancelConnection = useCallback(() => {
     cancelProtocolRfAutoConnect(protocol);
@@ -2249,6 +2245,7 @@ export default function ConnectionPanel({
                 setConnecting(false);
                 setConnectionStage('');
                 setPendingBleReconnect(null);
+                clearPendingHistoryReplace();
               }
               return;
             }
@@ -2257,12 +2254,14 @@ export default function ConnectionPanel({
               isAutoConnectingRef.current = false;
               setIsAutoConnecting(false);
               setPendingBleReconnect(null);
+              clearPendingHistoryReplace();
               promptWindowsPairing(bleConnectId);
               return;
             }
             if (pairState === 'blocked') {
               windowsReconnectAttemptRef.current = null;
               setPendingBleReconnect(null);
+              clearPendingHistoryReplace();
               showWindowsPairStateBlocked(bleConnectId);
               return;
             }
@@ -2303,6 +2302,7 @@ export default function ConnectionPanel({
             console.debug('[renderer/components/ConnectionPanel] catch:', err);
 
             if (windowsReconnectAttemptRef.current !== attempt) return;
+            clearPendingHistoryReplace();
             windowsReconnectAttemptRef.current = null;
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
@@ -2343,6 +2343,7 @@ export default function ConnectionPanel({
         setConnectionStage('connectionPanel.stagePleaseWait');
         onConnect(target.type, addr).catch((err: unknown) => {
           console.debug('[renderer/components/ConnectionPanel] catch:', err);
+          clearPendingHistoryReplace();
           // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
           const httpErr = humanizeHttpError(addr, err, t);
           if (httpErr) setError(httpErr);
@@ -2383,7 +2384,7 @@ export default function ConnectionPanel({
             if (httpErr) setError(httpErr);
             setConnecting(false);
             setConnectionStage('');
-            pendingHistoryRowIdRef.current = null;
+            clearPendingHistoryReplace();
           });
           return;
         }
@@ -2398,6 +2399,7 @@ export default function ConnectionPanel({
         setConnectionStage('connectionPanel.stagePleaseWait');
         onConnect('tcp', addr).catch((err: unknown) => {
           console.debug('[renderer/components/ConnectionPanel] catch:', err);
+          clearPendingHistoryReplace();
           // Empty humanize = MeshCore setup AbortError (supersede/cancel); do not setError('').
           const tcpErr = humanizeHttpError(addr, err, t);
           if (tcpErr) setError(tcpErr);
@@ -2413,6 +2415,7 @@ export default function ConnectionPanel({
         onAutoConnect('serial', undefined, target.serialPortId).catch((err: unknown) => {
           isAutoConnectingRef.current = false;
           setIsAutoConnecting(false);
+          clearPendingHistoryReplace();
           setError(
             humanizeSerialError(err, t, {
               inAppHolders: listInAppSerialHolders(protocol, peekLastSerialClaimPort(protocol)),
@@ -2424,6 +2427,7 @@ export default function ConnectionPanel({
       }
     },
     [
+      clearPendingHistoryReplace,
       setLastConnection,
       onConnect,
       onAutoConnect,

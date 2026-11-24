@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   type BeaconTrafficMessage,
   buildBeaconTrafficNodeIndex,
@@ -199,7 +200,7 @@ export function useBeaconTraffic(
       generation.current += 1;
       unsubscribe();
       void api.disconnect().catch((cause: unknown) => {
-        console.warn('mcL0718 [beacon] disconnect failed', cause);
+        console.warn('mcL0718 [beacon] disconnect failed ' + errLikeToLogString(cause));
       });
     };
   }, [enabled, clearFeed, provider]);
@@ -250,7 +251,7 @@ export function useBeaconTraffic(
         acceptUpdates.current = false;
         setStatus('error');
         setError(BEACON_STATUS_PUBLIC_HTTPS_REJECTED);
-        console.warn('mcL0719 [beacon] connection failed', cause);
+        console.warn('mcL0719 [beacon] connection failed ' + errLikeToLogString(cause));
         return false;
       }
     },

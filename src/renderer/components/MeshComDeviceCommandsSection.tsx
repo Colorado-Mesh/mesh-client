@@ -146,7 +146,7 @@ export default function MeshComDeviceCommandsSection({
         const msg = errLikeToLogString(e);
         console.warn('mcL0442 [MeshComDeviceCommands] send failed ' + msg);
         pushConsole('error', msg);
-        onToast?.(t('meshcomDeviceCommands.sendFailed', { detail: msg }), 'error');
+        onToast?.(t('meshcomDeviceCommands.sendFailedToast'), 'error');
         return false;
       } finally {
         setBusy(false);
@@ -214,7 +214,7 @@ export default function MeshComDeviceCommandsSection({
         const msg = errLikeToLogString(e);
         console.warn('mcL0443 [MeshComDeviceCommands] descriptor send failed ' + msg);
         pushConsole('error', msg);
-        onToast?.(t('meshcomDeviceCommands.sendFailed', { detail: msg }), 'error');
+        onToast?.(t('meshcomDeviceCommands.sendFailedToast'), 'error');
         setBusy(false);
       }
     },
@@ -394,11 +394,10 @@ export default function MeshComDeviceCommandsSection({
                     const line = buildMeshcomCommandLine(cmd, argValue);
                     requestSend(line, true, line);
                   } catch (e) {
-                    console.warn('mcL0445 [MeshComDeviceCommands] build/send failed', e);
-                    onToast?.(
-                      t('meshcomDeviceCommands.sendFailed', { detail: errLikeToLogString(e) }),
-                      'error',
+                    console.warn(
+                      'mcL0445 [MeshComDeviceCommands] build/send failed ' + errLikeToLogString(e),
                     );
+                    onToast?.(t('meshcomDeviceCommands.sendFailedToast'), 'error');
                   }
                   return;
                 }

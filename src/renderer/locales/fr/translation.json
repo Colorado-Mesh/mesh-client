@@ -9242,7 +9242,8 @@
     "currentValue": "maintenant {{value}}",
     "rmFirmwareOnlyHint": "Uniquement disponible sur le micrologiciel MeshCom RM/kocel",
     "rmFirmwareRequired": "{{command}} nécessite le micrologiciel MeshCom RM (par exemple, kocel 4.40a-rm5). Ce nœud signale {{version}}.",
-    "rmFirmwareUnknownVersion": "stock (non-RM)"
+    "rmFirmwareUnknownVersion": "stock (non-RM)",
+    "sendFailedToast": "Commande échouée"
   },
   "meshcomWatchlist": {
     "label": "Liste de surveillance des indicatifs d’appel MeshCom",

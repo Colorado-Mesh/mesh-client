@@ -45,7 +45,8 @@ describe('check:semgrep gate', () => {
 
   it('wires semgrep into always-on pre-commit for staged files', () => {
     const hook = fs.readFileSync(PRE_COMMIT, 'utf8');
-    expect(hook).toMatch(/semgrep scan --config p\/typescript/);
+    expect(hook).toMatch(/pnpm run check:semgrep --/);
+    expect(hook).not.toMatch(/pnpm exec semgrep scan --config p\/typescript/);
     expect(hook).toMatch(/skip semgrep \(no staged JS\/TS\)/);
     expect(hook).toMatch(/manifest_only/);
   });
@@ -53,6 +54,18 @@ describe('check:semgrep gate', () => {
   it('package.json exposes check:semgrep', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
     expect(pkg.scripts['check:semgrep']).toBe('node scripts/check-semgrep.mjs');
+  });
+
+  it('does not install or run semgrep in GitHub Actions workflows', () => {
+    const paths = [
+      '.github/workflows/ci.yaml',
+      '.github/workflows/e2e.yaml',
+      '.github/actions/setup-release-toolchain/action.yaml',
+    ];
+    for (const rel of paths) {
+      const text = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+      expect(text, rel).not.toMatch(/requirements-semgrep|check:semgrep|pip install.*semgrep/i);
+    }
   });
 
   it('runs community packs + .semgrep.yml (no Pro auto)', () => {

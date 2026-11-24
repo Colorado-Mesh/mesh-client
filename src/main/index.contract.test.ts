@@ -168,6 +168,18 @@ describe('GATT BLE disconnect handling (source contract)', () => {
     );
   });
 
+  it('skips render-process-gone dialogs for clean-exit and during app quit', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /render-process-gone[\s\S]{0,400}details\.reason === 'clean-exit'[\s\S]{0,120}isQuitting/,
+    );
+    const handler = INDEX_SOURCE.slice(
+      INDEX_SOURCE.indexOf("'render-process-gone'"),
+      INDEX_SOURCE.indexOf("'render-process-gone'") + 600,
+    );
+    expect(handler).not.toContain('showErrorBox');
+    expect(handler).toContain('showCrashReportDialog');
+  });
+
   it('resolves meshtastic:tcp-write with no-socket instead of rejecting when the socket is gone', () => {
     expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'no-socket'");
     expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'reject'");

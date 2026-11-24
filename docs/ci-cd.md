@@ -35,7 +35,7 @@ Runs on every push, pull request, and merge-queue `merge_group` for `main` (and 
 - **Typecheck:** `pnpm run typecheck`
 - **Application build:** `pnpm run build`
 - **Flatpak checks:** only when Flatpak inputs change; runs `check:flatpak`, `check:flatpak-offline-pnpm`, `desktop-file-validate`, and `appstreamcli validate`
-- **Policy scanners:** cheap always-on `check:*` set from pre-commit/release (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, `check:semgrep`, and the matching cheap scanners) so `--no-verify` and GitHub-only edits cannot skip them
+- **Policy scanners:** cheap always-on `check:*` set aligned with pre-commit/release (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap scanners) — **not** `check:semgrep` (Semgrep is local pre-commit only; see [development-environment.md](development-environment.md#8-helper-scripts-auto-install-where-possible))
 
 Each Node lane uses the same pinned Node 22/pnpm setup action and frozen install. Actionlint is downloaded from a fixed release URL and verified against a reviewed per-platform SHA-256 digest before extraction. Yamllint and its transitive dependencies install from exact wheel hashes in `scripts/requirements-yamllint.txt`. The final `Build & Test` job aggregates every lane so the existing required check name remains stable. Superseded runs for the same pull request or ref are cancelled.
 
@@ -114,13 +114,13 @@ The workflow does not change repository security settings. Existing global cover
 
 Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manual** `workflow_dispatch`:
 
-1. Checkout (`persist-credentials: false`), setup pnpm + Node 22, install Rust (clippy) + yamllint + Semgrep (required by `check:environment`), `node scripts/check-environment.mjs --skip-node-modules`, `pnpm install --frozen-lockfile`, then `pnpm run check:environment` (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`)
+1. Checkout (`persist-credentials: false`), setup pnpm + Node 22, install Rust (clippy) + yamllint, `node scripts/check-environment.mjs --skip-node-modules`, `pnpm install --frozen-lockfile`, then `pnpm run check:environment` (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`)
 2. Linux (`ubuntu-24.04`): install Electron runtime libraries (`libatk-bridge2.0-0t64`, `libgtk-3-0t64`, `libasound2t64`, …) + `xvfb`
 3. `pnpm run build` (unpackaged `dist-electron` + renderer)
 4. `pnpm run test:e2e` (Linux under `xvfb-run -a`; macOS/Windows plain) — Playwright launches the local Electron binary via `resolveLocalElectronBin()` with an isolated `--user-data-dir`
 5. On failure, upload `test-results/` + `playwright-report/` (7-day retention)
 
-A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the same `setup-node-pnpm` + `setup-release-toolchain` composites as `cut-release.yaml`, stopping before any bump, tag, or push. The toolchain composite installs Semgrep (`pip install --user semgrep` + `~/.local/bin` on `PATH`) so always-on `check:semgrep` matches `ci.yaml` policy-scanners. Its ESLint step matches the CI lint job (`--concurrency 2 --config eslint.ci.config.mjs`) after `format:check`, so type-aware lint does not OOM on the runner. Check it is green before cutting a release.
+A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the same `setup-node-pnpm` + `setup-release-toolchain` composites as `cut-release.yaml`, stopping before any bump, tag, or push. `release.sh` skips `check:semgrep` on GitHub Actions (Semgrep runs locally via pre-commit). Its ESLint step matches the CI lint job (`--concurrency 2 --config eslint.ci.config.mjs`) after `format:check`, so type-aware lint does not OOM on the runner. Check it is green before cutting a release.
 
 Local: `pnpm run test:e2e:build`. See [development-environment.md](development-environment.md#playwright-electron-e2e).
 
@@ -452,7 +452,7 @@ Privileged workflows are additionally restricted by protected environments: `rel
 All PRs (and merge-queue groups) for `main` must pass the **required check names** listed above. Those jobs cover:
 
 - Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
-- Cheap always-on policy scanners (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, `check:semgrep`, and the matching cheap `check:*` set)
+- Cheap always-on policy scanners (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap `check:*` set; Semgrep is not in CI — use `core.hooksPath=.githooks` locally)
 - Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
 - Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on `merge_group`, `main`, and manual runs
 

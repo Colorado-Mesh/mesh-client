@@ -104,6 +104,11 @@ function isVerboseOnlyLevel(level: LogLevel): boolean {
   return level === 'debug' || level === 'info' || level === 'log';
 }
 
+/** Packaged launch smokes read these from mesh-client.log even when verbose logging is off. */
+function isAlwaysPersistedLogMessage(message: string): boolean {
+  return message.includes('[Startup] renderer loaded:');
+}
+
 function getLogFilePath(): string {
   if (!logFilePath) {
     logFilePath = path.join(app.getPath('userData'), LOG_FILENAME);
@@ -247,7 +252,11 @@ export function appendLine(
   message: string,
   protocol?: MeshProtocol,
 ): void {
-  if (isVerboseOnlyLevel(level) && !verboseLoggingEnabled) {
+  if (
+    isVerboseOnlyLevel(level) &&
+    !verboseLoggingEnabled &&
+    !isAlwaysPersistedLogMessage(message)
+  ) {
     return;
   }
   message = sanitizeLogMessage(message);

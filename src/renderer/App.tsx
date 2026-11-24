@@ -2721,7 +2721,10 @@ function AppContent() {
         if (!cancelled) setSettingSearchEntries(entries);
       },
       (err: unknown) => {
-        if (!cancelled) console.warn('mcL0335 [App] settings search registry failed to load', err);
+        if (!cancelled)
+          console.warn(
+            'mcL0335 [App] settings search registry failed to load ' + errLikeToLogString(err),
+          );
       },
     );
     return () => {
@@ -4218,7 +4221,9 @@ function AppContent() {
         try {
           dmPeer = openReticulumDmFromHash(hit.reticulumPeerHash);
         } catch (err) {
-          console.warn('mcL0345 [App] global search open Reticulum DM failed', err);
+          console.warn(
+            'mcL0345 [App] global search open Reticulum DM failed ' + errLikeToLogString(err),
+          );
           dmPeer = null;
         }
       }
@@ -4976,7 +4981,7 @@ function AppContent() {
           void window.electronAPI.reticulum.rrc
             .join({ hub_dest_hash: hub, room })
             .catch((err: unknown) => {
-              console.warn('mcL0353 [App] room macro RRC join failed:', err);
+              console.warn('mcL0353 [App] room macro RRC join failed: ' + errLikeToLogString(err));
             });
         }
       }

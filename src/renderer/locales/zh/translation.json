@@ -9242,7 +9242,8 @@
     "currentValue": "现在{{value}}",
     "rmFirmwareOnlyHint": "仅适用于MeshCom RM/kocel固件",
     "rmFirmwareRequired": "{{command}} 需要 MeshCom RM 固件（例如 kocel 4.40a-rm5）。此节点报告{{version}}。",
-    "rmFirmwareUnknownVersion": "股票（非RM）"
+    "rmFirmwareUnknownVersion": "股票（非RM）",
+    "sendFailedToast": "命令失败"
   },
   "meshcomWatchlist": {
     "label": "MeshCom呼号观察名单",

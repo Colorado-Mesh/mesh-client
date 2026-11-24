@@ -53,6 +53,17 @@ describe('planSemgrepInstall', () => {
     ).toBe('pip');
   });
 
+  it('reinstalls when the installed version does not match the requirements pin', () => {
+    expect(
+      planSemgrepInstall({
+        versionOutput: '1.128.0\n',
+        hasBrew: false,
+        hasPipx: true,
+        hasPip: true,
+      }),
+    ).toMatchObject({ alreadyInstalled: false, strategy: 'pipx' });
+  });
+
   it('returns none when no installer is available', () => {
     expect(
       planSemgrepInstall({

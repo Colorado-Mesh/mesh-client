@@ -9,6 +9,13 @@ describe('meshcomExtUdpCodec', () => {
     expect(MESHCOM_EXTUDP_PORT).toBe(1799);
   });
 
+  it('truncates EXTUDP msg by UTF-8 bytes, not UTF-16 code units', () => {
+    const emoji = '😀'.repeat(80);
+    const json = JSON.parse(serializeMeshcomExtUdp({ type: 'msg', dst: '*', msg: emoji }));
+    expect(new TextEncoder().encode(json.msg).length).toBeLessThanOrEqual(150);
+    expect(json.msg.length).toBeLessThan(emoji.length);
+  });
+
   it('serializes outbound msg and tele', () => {
     expect(JSON.parse(serializeMeshcomExtUdp({ type: 'msg', dst: 'DH1FR-1', msg: 'hi' }))).toEqual({
       type: 'msg',

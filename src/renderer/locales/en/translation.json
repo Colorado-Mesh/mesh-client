@@ -9248,6 +9248,7 @@
     "argInput": "Argument for {{command}}",
     "sent": "Command sent to the node.",
     "sendFailed": "Command failed: {{detail}}",
+    "sendFailedToast": "Command failed.",
     "rmFirmwareOnlyHint": "Only available on MeshCom RM / kocel firmware",
     "rmFirmwareRequired": "{{command}} needs MeshCom RM firmware (e.g. kocel 4.40a-rm5). This node reports {{version}}.",
     "rmFirmwareUnknownVersion": "stock (non-RM)",

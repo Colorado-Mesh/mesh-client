@@ -9242,7 +9242,8 @@
     "currentValue": "jetzt {{value}}",
     "rmFirmwareOnlyHint": "Nur verfügbar mit MeshCom RM-/Kocel-Firmware",
     "rmFirmwareRequired": "{{command}} benötigt die MeshCom-RM-Firmware (z. B. kocel 4.40a-rm5). Dieser Knoten meldet {{version}}.",
-    "rmFirmwareUnknownVersion": "Lagerbestand (nicht RM)"
+    "rmFirmwareUnknownVersion": "Lagerbestand (nicht RM)",
+    "sendFailedToast": "Befehl fehlgeschlagen."
   },
   "meshcomWatchlist": {
     "label": "MeshCom-Rufzeichen-Beobachtungsliste",

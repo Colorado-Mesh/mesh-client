@@ -9242,7 +9242,8 @@
     "currentValue": "sekarang {{value}}",
     "rmFirmwareOnlyHint": "Hanya tersedia di firmware MeshCom RM / kocel",
     "rmFirmwareRequired": "{{command}} memerlukan firmware MeshCom RM (misalnya kocel 4.40a-rm5). Node ini melaporkan {{version}}.",
-    "rmFirmwareUnknownVersion": "stok (bukan RM)"
+    "rmFirmwareUnknownVersion": "stok (bukan RM)",
+    "sendFailedToast": "Perintah gagal."
   },
   "meshcomWatchlist": {
     "label": "Daftar pantau nama panggilan MeshCom",

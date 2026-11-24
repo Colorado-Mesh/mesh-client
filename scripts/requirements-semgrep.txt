@@ -1,0 +1,2 @@
+# Pinned Semgrep for CI, release, and setup-semgrep (update version + re-verify in workflows).
+semgrep==1.186.0

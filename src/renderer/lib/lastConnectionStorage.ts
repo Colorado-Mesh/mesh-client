@@ -3,6 +3,7 @@ import { parseConnectHostPort } from '@/shared/connectHost';
 import { isTwelveHexBleMac, normalizeBleMac } from '@/shared/normalizeBleMac';
 
 import { parseStoredJson } from './parseStoredJson';
+import { peekLastSerialClaimPort } from './serialPortClaim';
 import { LAST_SERIAL_PORT_KEY } from './serialPortSignature';
 import type { ConnectionType, MeshProtocol } from './types';
 
@@ -159,16 +160,21 @@ export function resolveMeshcomKissReconnectAddress(
 }
 
 export function resolveLastSerialPortId(protocol: MeshProtocol): string | null {
-  const last = loadLastConnection(protocol);
-  if (last?.serialPortId) return last.serialPortId;
-  // MeshCom must not inherit the shared Meshtastic/MeshCore last-serial key — that opens the
-  // wrong USB radio and makes CM look like it is routing MeshCore traffic.
-  if (protocol === 'meshcom') return null;
   try {
+    const last = loadLastConnection(protocol);
+    if (last?.serialPortId) return last.serialPortId;
+    if (protocol === 'meshcom') {
+      const claimed = peekLastSerialClaimPort('meshcom');
+      const rawId =
+        claimed && 'portId' in claimed && typeof claimed.portId === 'string'
+          ? claimed.portId
+          : null;
+      const portId = rawId?.trim();
+      return portId || null;
+    }
     return localStorage.getItem(LAST_SERIAL_PORT_KEY);
   } catch (e: unknown) {
     console.debug('[renderer/lib/lastConnectionStorage] catch:', e);
-
     return null;
   }
 }

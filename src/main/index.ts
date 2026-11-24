@@ -2171,19 +2171,11 @@ function createWindow() {
 
   // ─── Renderer crash / load failure detection ──────────────────────
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    if (details.reason === 'clean-exit' || isQuitting) {
+      return;
+    }
     const detail = `reason=${details.reason} exit=${String(details.exitCode ?? 'n/a')}`;
     console.error('mcL0065 [main] Renderer process gone:', sanitizeLogMessage(detail));
-    try {
-      dialog.showErrorBox(
-        'Mesh-Client — Renderer Stopped',
-        `The renderer process ended unexpectedly (${details.reason}, exit ${details.exitCode ?? 'n/a'}).\n\nRestart the application. If this keeps happening, export the log from the app (if still usable) or check the log file in your userData folder.`,
-      );
-    } catch (e: unknown) {
-      console.debug(
-        '[main/index] catch:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
-    }
     showCrashReportDialog({
       source: 'render-process-gone',
       error: new Error(`Renderer process gone: ${detail}`),
