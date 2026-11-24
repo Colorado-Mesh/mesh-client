@@ -20,7 +20,12 @@ import { markOutboundBlocked } from './markOutboundBlocked';
 import { meshcomCallForNodeId } from './meshcom/meshcomCallRegistry';
 import { meshcomOutboundDest } from './meshcom/meshcomChannel';
 import { meshcomTransportSupportsDmDeliveryAck } from './meshcom/meshcomDmDeliveryAck';
+import { meshcomPersistIdentityId } from './meshcom/meshcomPersistIdentity';
 import { scheduleMeshcomDmAckTimeout } from './meshcom/meshcomRoutingAckSideEffects';
+import {
+  applyMeshcomSelfCallsign,
+  meshcomCallsignFromDeviceHandle,
+} from './meshcom/meshcomSelfCallsign';
 import {
   clearHeardRepeatWindowIfMessage,
   openHeardRepeatWindow,
@@ -100,7 +105,8 @@ function persistMeshcomOutboundRow(
         : '*';
   void window.electronAPI.db
     .saveMeshcomMessage({
-      identity_id: identityId,
+      // Stable offline slot — session ids can be ephemeral across rematch/restart.
+      identity_id: meshcomPersistIdentityId(),
       msg_id: msgId ?? record.id,
       from_call: fromCall,
       to_call_or_group: toCallOrGroup,
@@ -308,7 +314,24 @@ export function sendChatOnIdentity(
     isMeshtastic,
     isMeshcoreDm,
   );
-  const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
+  let myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
+  let meshcomSenderName: string | undefined;
+  // MeshCom self callsign can arrive after link-up; stamp from handle when myNodeNum is still 0
+  // so the first bubble is not left/"00".
+  if (isMeshcom && myNodeNum === 0) {
+    const fromHandle = meshcomCallsignFromDeviceHandle(handle);
+    if (fromHandle.callsign) {
+      myNodeNum = applyMeshcomSelfCallsign(identityId, fromHandle.callsign, {
+        operatorName: fromHandle.operatorName,
+      });
+      meshcomSenderName = fromHandle.callsign;
+    }
+  } else if (isMeshcom && myNodeNum > 0) {
+    meshcomSenderName =
+      meshcomCallForNodeId(myNodeNum) ||
+      nodesOf(identityId)?.[myNodeNum]?.longName?.trim() ||
+      undefined;
+  }
   const meshcoreSenderName =
     identity.protocol.type === 'meshcore'
       ? nodesOf(identityId)?.[myNodeNum]?.longName?.trim() ||
@@ -333,6 +356,7 @@ export function sendChatOnIdentity(
     from: myNodeNum,
     // Incoming MeshCore @[Name] replies resolve against this live record.
     ...(isMeshcore ? { senderName: meshcoreSenderName } : {}),
+    ...(isMeshcom && meshcomSenderName ? { senderName: meshcomSenderName } : {}),
     to: destination ?? 0xffffffff,
     payload: resolvedOutbound.displayPayload,
     channelIndex: isMeshcoreDm || isMeshcomDm ? -1 : channelIndex,

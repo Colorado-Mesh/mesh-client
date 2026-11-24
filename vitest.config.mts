@@ -124,6 +124,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/savedLocations.test.ts',
   'src/renderer/lib/ourPositionReference.test.ts',
   'src/renderer/lib/hydrateIdentityStoresFromDb.test.ts',
+  'src/renderer/lib/hydrateMeshcomIdentityStores.test.ts',
   'src/renderer/lib/ingest/meshtasticIngest.test.ts',
   'src/renderer/lib/ingest/meshcoreIngest.test.ts',
   'src/renderer/lib/ingest/meshcomIngest.test.ts',

@@ -250,6 +250,85 @@ export function validateDeleteMeshcomContact(
   };
 }
 
+/**
+ * Move MeshCom messages/contacts from one identity_id to another.
+ * Pass `fromId` `*` to consolidate every non-`toId` bucket into `toId` (orphan recovery).
+ * Conflicting msg_id / callsign rows under `toId` win; source duplicates are deleted.
+ */
+export function rebindMeshcomIdentityOn(
+  db: NodeSqliteDB,
+  fromIdRaw: unknown,
+  toIdRaw: unknown,
+): { changes: number } {
+  if (typeof toIdRaw !== 'string' || !toIdRaw.trim()) {
+    throw new Error('db:rebindMeshcomIdentity: toId must be a non-empty string');
+  }
+  if (toIdRaw.length > MAX_IDENTITY_LEN) {
+    throw new Error('db:rebindMeshcomIdentity: toId too long');
+  }
+  if (typeof fromIdRaw !== 'string' || !fromIdRaw.trim()) {
+    throw new Error('db:rebindMeshcomIdentity: fromId must be a non-empty string');
+  }
+  if (fromIdRaw.length > MAX_IDENTITY_LEN) {
+    throw new Error('db:rebindMeshcomIdentity: fromId too long');
+  }
+  const toId = toIdRaw.trim().slice(0, MAX_IDENTITY_LEN);
+  const fromId = fromIdRaw.trim().slice(0, MAX_IDENTITY_LEN);
+  if (fromId === toId) return { changes: 0 };
+
+  const sourceIds: string[] =
+    fromId === '*'
+      ? (
+          db
+            .prepareOnce(
+              `SELECT DISTINCT identity_id AS id FROM meshcom_messages WHERE identity_id != ?
+               UNION
+               SELECT DISTINCT identity_id AS id FROM meshcom_contacts WHERE identity_id != ?`,
+            )
+            .all(toId, toId) as { id: string }[]
+        )
+          .map((r) => r.id)
+          .filter((id) => typeof id === 'string' && id.length > 0 && id !== toId)
+      : [fromId];
+
+  let changes = 0;
+  for (const source of sourceIds) {
+    if (source === toId) continue;
+    const dropMsg = db
+      .prepareOnce(
+        `DELETE FROM meshcom_messages
+         WHERE identity_id = @fromId
+           AND msg_id IS NOT NULL
+           AND msg_id IN (
+             SELECT msg_id FROM meshcom_messages
+             WHERE identity_id = @toId AND msg_id IS NOT NULL
+           )`,
+      )
+      .run({ fromId: source, toId });
+    changes += Number(dropMsg.changes);
+    const moveMsg = db
+      .prepareOnce(`UPDATE meshcom_messages SET identity_id = @toId WHERE identity_id = @fromId`)
+      .run({ fromId: source, toId });
+    changes += Number(moveMsg.changes);
+
+    const dropContact = db
+      .prepareOnce(
+        `DELETE FROM meshcom_contacts
+         WHERE identity_id = @fromId
+           AND callsign IN (
+             SELECT callsign FROM meshcom_contacts WHERE identity_id = @toId
+           )`,
+      )
+      .run({ fromId: source, toId });
+    changes += Number(dropContact.changes);
+    const moveContact = db
+      .prepareOnce(`UPDATE meshcom_contacts SET identity_id = @toId WHERE identity_id = @fromId`)
+      .run({ fromId: source, toId });
+    changes += Number(moveContact.changes);
+  }
+  return { changes };
+}
+
 export interface MeshcomDbIpcDeps {
   ipcMain: IpcMain;
 }
@@ -522,6 +601,17 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
       return { changes: Number(result.changes) };
     } catch (err) {
       finishDbIpcHandler('db:deleteMeshcomContact', err);
+    }
+  });
+
+  ipcMain.handle('db:rebindMeshcomIdentity', (event, fromId: unknown, toId: unknown) => {
+    if (!validateIpcSender(event)) throw new Error('db:rebindMeshcomIdentity: unauthorized sender');
+    try {
+      const db = getDbForIpc('db:rebindMeshcomIdentity');
+      if (!db) return { changes: 0 };
+      return rebindMeshcomIdentityOn(db, fromId, toId);
+    } catch (err) {
+      finishDbIpcHandler('db:rebindMeshcomIdentity', err);
     }
   });
 }

@@ -5,11 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { callsignToNodeId } from '../lib/meshcom/meshcomCallsign';
+import { applyMeshcomSelfCallsign } from '../lib/meshcom/meshcomSelfCallsign';
+import { OFFLINE_MESHCOM_IDENTITY_ID } from '../lib/offlineProtocolIdentities';
 import { meshcomProtocol } from '../lib/protocols/MeshComProtocol';
 import { sendChatOnIdentity } from '../lib/sendChatOnIdentity';
-import { setConnection } from '../stores/connectionStore';
+import { getConnection, setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
-import { useMessageStore } from '../stores/messageStore';
+import { upsertMessage, useMessageStore } from '../stores/messageStore';
 import { upsertNode, useNodeStore } from '../stores/nodeStore';
 
 vi.mock('../lib/drivers/ConnectionDriver', () => ({
@@ -50,7 +52,7 @@ describe('sendChatOnIdentity MeshCom', () => {
 
     expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        identity_id: ID,
+        identity_id: OFFLINE_MESHCOM_IDENTITY_ID,
         text: 'hello cm',
         channel_idx: 0,
         to_call_or_group: '*',
@@ -141,6 +143,76 @@ describe('sendChatOnIdentity MeshCom', () => {
       }),
     );
     expect(useMessageStore.getState().messages[ID]?.['77']?.channelIndex).toBe(-1);
+  });
+
+  it('stamps early outbound from device callsign when myNodeNum is still 0', () => {
+    addIdentity({
+      id: ID,
+      protocol: meshcomProtocol,
+      signature: 'sig-cm',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID, { status: 'configured', myNodeNum: 0 });
+    vi.spyOn(meshcomProtocol, 'sendMessage').mockResolvedValue({ packetId: 55 });
+    vi.mocked(connectionDriver.getHandle).mockReturnValue({
+      kind: 'rf',
+      operatorCallsign: SELF_CALL,
+      deviceSettings: { call: SELF_CALL, operatorName: 'Test' },
+    });
+
+    const provisionalId = sendChatOnIdentity(ID, { text: 'early', channelIndex: 312 });
+    expect(provisionalId).toBeDefined();
+
+    const row = useMessageStore.getState().messages[ID]?.[provisionalId!];
+    expect(row?.from).toBe(SELF_NODE);
+    expect(row?.senderName).toBe(SELF_CALL);
+    expect(getConnection(ID)?.myNodeNum).toBe(SELF_NODE);
+    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        identity_id: OFFLINE_MESHCOM_IDENTITY_ID,
+        from_call: SELF_CALL,
+        channel_idx: 312,
+        text: 'early',
+      }),
+    );
+  });
+
+  it('remaps from:0 outbound rows when self callsign arrives after send', async () => {
+    addIdentity({
+      id: ID,
+      protocol: meshcomProtocol,
+      signature: 'sig-cm',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID, { status: 'configured', myNodeNum: 0 });
+    upsertMessage(ID, {
+      id: 'early-0',
+      from: 0,
+      to: 0xffffffff,
+      payload: 'left00',
+      channelIndex: 312,
+      timestamp: 1,
+      status: 'sending',
+    });
+
+    const resolved = applyMeshcomSelfCallsign(ID, SELF_CALL);
+    expect(resolved).toBe(SELF_NODE);
+    expect(useMessageStore.getState().messages[ID]?.['early-0']?.from).toBe(SELF_NODE);
+    expect(useMessageStore.getState().messages[ID]?.['early-0']?.senderName).toBe(SELF_CALL);
+    await vi.waitFor(() => {
+      expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          identity_id: OFFLINE_MESHCOM_IDENTITY_ID,
+          msg_id: 'early-0',
+          from_call: SELF_CALL,
+          text: 'left00',
+        }),
+      );
+    });
   });
 
   it('persists failed status when MeshCom send rejects', async () => {

@@ -54,7 +54,7 @@ describe('attachMeshcomRoutingAckSideEffects', () => {
     // MeshCom never claims Meshtastic cryptographic `valid` proof.
     expect(row.ackProofStatus).toBe('absent');
     expect(updateMeshcomMessageStatus).toHaveBeenCalledWith({
-      identity_id: identityId,
+      identity_id: 'offline-meshcom',
       msg_id: '42',
       status: 'acked',
     });
@@ -162,7 +162,7 @@ describe('attachMeshcomRoutingAckSideEffects', () => {
     );
     expect(useMessageStore.getState().messages[identityId]['7'].status).toBe('failed');
     expect(updateMeshcomMessageStatus).toHaveBeenCalledWith({
-      identity_id: identityId,
+      identity_id: 'offline-meshcom',
       msg_id: '7',
       status: 'failed',
     });
@@ -184,7 +184,7 @@ describe('attachMeshcomRoutingAckSideEffects', () => {
     vi.advanceTimersByTime(MESHCOM_DM_ACK_TIMEOUT_MS);
     expect(useMessageStore.getState().messages[identityId]['99'].status).toBe('failed');
     expect(updateMeshcomMessageStatus).toHaveBeenCalledWith({
-      identity_id: identityId,
+      identity_id: 'offline-meshcom',
       msg_id: '99',
       status: 'failed',
     });

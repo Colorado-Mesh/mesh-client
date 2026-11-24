@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   pruneMeshcomContactsByCountOn,
   pruneMeshcomMessagesByCountOn,
+  rebindMeshcomIdentityOn,
   validateDeleteMeshcomContact,
   validateSaveMeshcomContact,
   validateSaveMeshcomMessage,
@@ -168,5 +169,43 @@ describe('pruneMeshcomContactsByCountOn', () => {
     const db = { prepareOnce } as never;
     expect(pruneMeshcomContactsByCountOn(db, 100)).toBe(45);
     expect(run).toHaveBeenCalledWith(95);
+  });
+});
+
+describe('rebindMeshcomIdentityOn', () => {
+  it('moves messages and contacts from an ephemeral id into offline', () => {
+    const run = vi.fn().mockReturnValue({ changes: 2 });
+    const prepareOnce = vi.fn().mockReturnValue({ run, all: vi.fn().mockReturnValue([]) });
+    const db = { prepareOnce } as never;
+    expect(rebindMeshcomIdentityOn(db, 'id-old-session', 'offline-meshcom')).toEqual({
+      changes: 8,
+    });
+    expect(prepareOnce).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE meshcom_messages SET identity_id'),
+    );
+    expect(prepareOnce).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE meshcom_contacts SET identity_id'),
+    );
+    expect(run).toHaveBeenCalledWith({ fromId: 'id-old-session', toId: 'offline-meshcom' });
+  });
+
+  it('no-ops when fromId equals toId', () => {
+    const prepareOnce = vi.fn();
+    const db = { prepareOnce } as never;
+    expect(rebindMeshcomIdentityOn(db, 'offline-meshcom', 'offline-meshcom')).toEqual({
+      changes: 0,
+    });
+    expect(prepareOnce).not.toHaveBeenCalled();
+  });
+
+  it('consolidates every non-toId bucket when fromId is *', () => {
+    const all = vi.fn().mockReturnValue([{ id: 'id-a' }, { id: 'id-b' }]);
+    const run = vi.fn().mockReturnValue({ changes: 1 });
+    const prepareOnce = vi.fn().mockReturnValue({ run, all });
+    const db = { prepareOnce } as never;
+    expect(rebindMeshcomIdentityOn(db, '*', 'offline-meshcom').changes).toBeGreaterThan(0);
+    expect(all).toHaveBeenCalledWith('offline-meshcom', 'offline-meshcom');
+    expect(run).toHaveBeenCalledWith({ fromId: 'id-a', toId: 'offline-meshcom' });
+    expect(run).toHaveBeenCalledWith({ fromId: 'id-b', toId: 'offline-meshcom' });
   });
 });

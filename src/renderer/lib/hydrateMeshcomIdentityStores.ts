@@ -10,6 +10,7 @@ import { replaceNodeRecordsForIdentity, upsertNodeRecordsForIdentity } from '../
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { callsignToNodeId } from './meshcom/meshcomCallsign';
 import { meshcomHwLabel } from './meshcom/meshcomHwIds';
+import { meshcomPersistIdentityId } from './meshcom/meshcomPersistIdentity';
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
 import type { IdentityId, MeshNode } from './types';
 
@@ -30,8 +31,20 @@ export async function hydrateMeshcomIdentity(
   const messagesMode = opts.messagesMode ?? 'upsert';
   const nodesMode = opts.nodesMode ?? 'upsert';
 
+  // SQLite is always keyed by the stable offline slot; apply rows into the session bucket.
+  const persistId = meshcomPersistIdentityId();
+  try {
+    if (identityId !== persistId) {
+      await window.electronAPI.db.rebindMeshcomIdentity(identityId, persistId);
+    }
+    await window.electronAPI.db.rebindMeshcomIdentity('*', persistId);
+  } catch {
+    // catch-no-log-ok rebind is best-effort migration for older id-* rows; hydrate still reads offline
+  }
+  if (!isCurrent()) return;
+
   if (loadNodes) {
-    const contacts = (await window.electronAPI.db.getMeshcomContacts(identityId)) as {
+    const contacts = (await window.electronAPI.db.getMeshcomContacts(persistId)) as {
       callsign?: string | null;
       node_id?: number | null;
       lat?: number | null;
@@ -75,7 +88,7 @@ export async function hydrateMeshcomIdentity(
   }
 
   if (loadMessages) {
-    const rows = (await window.electronAPI.db.getMeshcomMessages(identityId, undefined, 500)) as {
+    const rows = (await window.electronAPI.db.getMeshcomMessages(persistId, undefined, 500)) as {
       id?: number;
       msg_id?: string | null;
       from_call?: string | null;
