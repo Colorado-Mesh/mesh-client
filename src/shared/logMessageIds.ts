@@ -1511,6 +1511,7 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1499: 'src/renderer/lib/connection.ts:reconnectSerialAmbiguousMatch',
   mcL1500: 'src/renderer/lib/protocols/meshcore/MeshCoreTransport.ts:reconnectAmbiguousMatch',
   mcL1501: 'src/renderer/lib/protocols/meshcom/MeshComTransport.ts:connectAmbiguousMatch',
+  mcL1502: 'src/renderer/lib/protocols/meshcom/MeshComTransport.ts:connectNoMatch',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

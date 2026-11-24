@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getPortSignature,
   isAmbiguousSerialPortMatchError,
+  isSerialNoMatchError,
   LAST_SERIAL_PORT_SIGNATURE_KEY,
   selectGrantedSerialPort,
   SERIAL_MULTIPLE_MATCH_ERROR,
@@ -83,7 +84,15 @@ describe('serialPortSignature', () => {
       SERIAL_MULTIPLE_MATCH_ERROR,
     );
     expect(isAmbiguousSerialPortMatchError(new Error(SERIAL_MULTIPLE_MATCH_ERROR))).toBe(true);
+    expect(isSerialNoMatchError(new Error(SERIAL_NO_MATCH_ERROR))).toBe(true);
+    expect(isSerialNoMatchError(new Error(SERIAL_MULTIPLE_MATCH_ERROR))).toBe(false);
     expect(debug).toHaveBeenCalledWith(expect.stringContaining('"reason":"ambiguous"'));
+  });
+
+  it('isSerialNoMatchError detects the no-match message', () => {
+    expect(isSerialNoMatchError(new Error(SERIAL_NO_MATCH_ERROR))).toBe(true);
+    expect(isSerialNoMatchError(SERIAL_NO_MATCH_ERROR)).toBe(true);
+    expect(isSerialNoMatchError(new Error('other'))).toBe(false);
   });
 
   it('selectGrantedSerialPort disambiguates by serialNumber when both sides expose it', () => {

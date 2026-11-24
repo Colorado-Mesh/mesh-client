@@ -19,6 +19,7 @@ import {
 } from '../lib/gpsSource';
 import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityNodeMap } from '../lib/identityStoreReads';
+import { resolveLastSerialPortId } from '../lib/lastConnectionStorage';
 import { canTransmitLocation } from '../lib/locationTransmit';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from '../lib/meshcom/meshcomCallRegistry';
 import { callsignToNodeId, normalizeMeshcomCallsign } from '../lib/meshcom/meshcomCallsign';
@@ -42,7 +43,6 @@ import {
 } from '../lib/serialDeliveryProbe';
 import { registerMeshcomSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
 import { SERIAL_STALE_THRESHOLD_MS, SERIAL_WATCHDOG_INTERVAL_MS } from '../lib/serialPortRecovery';
-import { loadLastSerialPortId } from '../lib/serialPortSignature';
 import { MAX_TELEMETRY_POINTS } from '../lib/sessionMemoryCaps';
 import {
   type MeshcomRfTransportType,
@@ -587,13 +587,15 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       const { openMeshComTransport } = await import('../hooks/openMeshComTransport');
       let opened: Awaited<ReturnType<typeof openMeshComTransport>> | undefined;
       try {
+        const meshcomSerialPortId =
+          type === 'serial' ? (resolveLastSerialPortId('meshcom') ?? undefined) : undefined;
         opened = await openMeshComTransport(type, {
           blePeripheralId,
           host:
             type === 'udp' || type === 'tcp' || type === 'http'
               ? resolveHost(httpAddress)
               : undefined,
-          portSignature: type === 'serial' ? (loadLastSerialPortId() ?? undefined) : undefined,
+          portSignature: meshcomSerialPortId,
         });
         connectionParamsRef.current = {
           rfType: type,
@@ -602,7 +604,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
               ? resolveHost(httpAddress)
               : undefined,
           blePeripheralId,
-          serialPortId: type === 'serial' ? loadLastSerialPortId() : undefined,
+          serialPortId: meshcomSerialPortId,
         };
         await attachRfSession(opened.driverIdentityId, type);
       } catch (err) {

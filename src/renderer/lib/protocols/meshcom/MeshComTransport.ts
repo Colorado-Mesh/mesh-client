@@ -17,6 +17,7 @@ import {
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import {
   isAmbiguousSerialPortMatchError,
+  isSerialNoMatchError,
   persistSerialPortIdentity,
   selectGrantedSerialPort,
 } from '../../serialPortSignature';
@@ -151,6 +152,9 @@ class WebSerialMeshComConnection implements MeshComConnection {
       } catch (err) {
         if (isAmbiguousSerialPortMatchError(err)) {
           console.warn('mcL1501 [MeshComTransport] ambiguous serial match — opening port picker');
+          port = await navigator.serial.requestPort();
+        } else if (isSerialNoMatchError(err)) {
+          console.warn('mcL1502 [MeshComTransport] no matching serial port — opening port picker');
           port = await navigator.serial.requestPort();
         } else {
           throw err;
