@@ -192,6 +192,12 @@ export async function startMeshtasticTcpRadio(opts?: {
     get lastWantConfigId() {
       return lastWantConfigId;
     },
+    /** Test-only: fire the accepted-socket error handler (log sanitization / swallow checks). */
+    emitSocketErrorForTests(err: NodeJS.ErrnoException) {
+      for (const s of sockets) {
+        s.emit('error', err);
+      }
+    },
     async close() {
       for (const s of sockets) s.destroy();
       sockets.clear();

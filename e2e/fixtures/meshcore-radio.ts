@@ -238,6 +238,12 @@ export async function startMeshcoreRadio(selfId = 171) {
         if (!socket.destroyed && socket.writable) socket.write(frame);
       }
     },
+    /** Test-only: fire the accepted-socket error handler (log sanitization / swallow checks). */
+    emitSocketErrorForTests(err: NodeJS.ErrnoException) {
+      for (const socket of sockets) {
+        socket.emit('error', err);
+      }
+    },
     close: async () => {
       for (const socket of sockets) {
         socket.destroy();
