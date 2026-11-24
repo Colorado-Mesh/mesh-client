@@ -748,6 +748,11 @@ export interface ElectronAPI {
       favorited?: number | boolean | null;
     }) => Promise<{ changes: number }>;
     deleteMeshcomContact: (identityId: string, callsign: string) => Promise<{ changes: number }>;
+    /**
+     * Move MeshCom messages/contacts from `fromId` → `toId`.
+     * Pass `fromId` `*` to consolidate every other identity into `toId` (orphan recovery).
+     */
+    rebindMeshcomIdentity: (fromId: string, toId: string) => Promise<{ changes: number }>;
     updateMeshcoreMessageSender: (
       messageId: number,
       senderId: number,

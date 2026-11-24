@@ -1,8 +1,15 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 
+import { NodeSqliteDB } from '../db-compat';
+import { runSchemaUpgrade } from '../db-schema-sync';
 import {
   pruneMeshcomContactsByCountOn,
   pruneMeshcomMessagesByCountOn,
+  rebindMeshcomIdentityOn,
   validateDeleteMeshcomContact,
   validateSaveMeshcomContact,
   validateSaveMeshcomMessage,
@@ -168,5 +175,215 @@ describe('pruneMeshcomContactsByCountOn', () => {
     const db = { prepareOnce } as never;
     expect(pruneMeshcomContactsByCountOn(db, 100)).toBe(45);
     expect(run).toHaveBeenCalledWith(95);
+  });
+});
+
+describe('rebindMeshcomIdentityOn', () => {
+  it('moves messages and contacts from an ephemeral id into offline', () => {
+    const run = vi.fn().mockReturnValue({ changes: 2 });
+    const prepareOnce = vi.fn().mockReturnValue({ run, all: vi.fn().mockReturnValue([]) });
+    const db = { prepareOnce } as never;
+    // drop-logical + remint + move messages + merge + drop + move contacts
+    expect(rebindMeshcomIdentityOn(db, 'id-old-session', 'offline-meshcom')).toEqual({
+      changes: 12,
+    });
+    expect(prepareOnce).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE meshcom_messages SET identity_id'),
+    );
+    expect(prepareOnce).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE meshcom_contacts SET identity_id'),
+    );
+    expect(prepareOnce).toHaveBeenCalledWith(
+      expect.stringContaining("msg_id || '-rb' || CAST(id AS TEXT)"),
+    );
+    expect(run).toHaveBeenCalledWith({ fromId: 'id-old-session', toId: 'offline-meshcom' });
+  });
+
+  it('no-ops when fromId equals toId', () => {
+    const prepareOnce = vi.fn();
+    const db = { prepareOnce } as never;
+    expect(rebindMeshcomIdentityOn(db, 'offline-meshcom', 'offline-meshcom')).toEqual({
+      changes: 0,
+    });
+    expect(prepareOnce).not.toHaveBeenCalled();
+  });
+
+  it('consolidates every non-toId bucket when fromId is *', () => {
+    const all = vi.fn().mockReturnValue([{ id: 'id-a' }, { id: '' }, { id: 'id-b' }]);
+    const run = vi.fn().mockReturnValue({ changes: 1 });
+    const prepareOnce = vi.fn().mockReturnValue({ run, all });
+    const db = { prepareOnce } as never;
+    expect(rebindMeshcomIdentityOn(db, '*', 'offline-meshcom').changes).toBeGreaterThan(0);
+    expect(all).toHaveBeenCalledWith('offline-meshcom', 'offline-meshcom');
+    expect(run).toHaveBeenCalledWith({ fromId: 'id-a', toId: 'offline-meshcom' });
+    expect(run).toHaveBeenCalledWith({ fromId: '', toId: 'offline-meshcom' });
+    expect(run).toHaveBeenCalledWith({ fromId: 'id-b', toId: 'offline-meshcom' });
+  });
+});
+
+describe('rebindMeshcomIdentityOn with NodeSqliteDB', () => {
+  it('keeps distinct msg_id collisions and drops only logical duplicates', () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-mc-rebind-'));
+    try {
+      const db = new NodeSqliteDB(path.join(dir, 'test.db'));
+      runSchemaUpgrade(db);
+      const insert = db.prepareOnce(
+        `INSERT INTO meshcom_messages
+           (identity_id, msg_id, from_call, text, channel_idx, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      );
+      // Same logical message under both identities — source should be dropped.
+      insert.run('offline-meshcom', 'shared', 'N0CALL', 'same body', 0, 1000);
+      insert.run('id-old', 'shared', 'N0CALL', 'same body', 0, 1000);
+      // msg_id collision with different body — both must survive (source reminted).
+      insert.run('offline-meshcom', 'collide', 'N0CALL', 'offline text', 0, 2000);
+      insert.run('id-old', 'collide', 'N0PEER', 'orphan text', 312, 2001);
+      // Source-only id — moves unchanged.
+      insert.run('id-old', 'only-src', 'N0CALL', 'orphan only', 0, 3000);
+      // Null msg_id under source — moves; unrelated identity untouched.
+      insert.run('id-old', null, 'N0CALL', 'null id', 0, 4000);
+      insert.run('id-unrelated', 'shared', 'N0OTHER', 'leave me', 0, 5000);
+
+      rebindMeshcomIdentityOn(db, 'id-old', 'offline-meshcom');
+
+      const rows = db
+        .prepareOnce(
+          `SELECT identity_id, msg_id, from_call, text, channel_idx, timestamp
+           FROM meshcom_messages ORDER BY timestamp, id`,
+        )
+        .all() as {
+        identity_id: string;
+        msg_id: string | null;
+        from_call: string | null;
+        text: string;
+        channel_idx: number;
+        timestamp: number;
+      }[];
+
+      expect(rows.filter((r) => r.identity_id === 'id-old')).toEqual([]);
+      expect(rows.filter((r) => r.identity_id === 'id-unrelated')).toEqual([
+        expect.objectContaining({
+          msg_id: 'shared',
+          text: 'leave me',
+          from_call: 'N0OTHER',
+        }),
+      ]);
+      const offline = rows.filter((r) => r.identity_id === 'offline-meshcom');
+      expect(offline).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            msg_id: 'shared',
+            text: 'same body',
+            from_call: 'N0CALL',
+            timestamp: 1000,
+          }),
+          expect.objectContaining({
+            msg_id: 'collide',
+            text: 'offline text',
+            from_call: 'N0CALL',
+          }),
+          expect.objectContaining({
+            msg_id: expect.stringMatching(/^collide-rb\d+$/),
+            text: 'orphan text',
+            from_call: 'N0PEER',
+            channel_idx: 312,
+          }),
+          expect.objectContaining({
+            msg_id: 'only-src',
+            text: 'orphan only',
+          }),
+          expect.objectContaining({
+            msg_id: null,
+            text: 'null id',
+          }),
+        ]),
+      );
+      // Logical duplicate was not double-inserted.
+      expect(offline.filter((r) => r.msg_id === 'shared' && r.text === 'same body')).toHaveLength(
+        1,
+      );
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('merges source favorite and coords into destination before dropping the contact', () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-mc-rebind-contact-'));
+    try {
+      const db = new NodeSqliteDB(path.join(dir, 'test.db'));
+      runSchemaUpgrade(db);
+      db.prepareOnce(
+        `INSERT INTO meshcom_contacts
+           (callsign, identity_id, node_id, lat, lon, batt, last_heard, favorited)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run('N0CALL', 'offline-meshcom', 1, null, null, null, 100, 0);
+      db.prepareOnce(
+        `INSERT INTO meshcom_contacts
+           (callsign, identity_id, node_id, lat, lon, batt, last_heard, favorited)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run('N0CALL', 'id-old', 1, 39.7, -105.0, 88, 200, 1);
+
+      rebindMeshcomIdentityOn(db, 'id-old', 'offline-meshcom');
+
+      const row = db
+        .prepareOnce(
+          `SELECT identity_id, favorited, lat, lon, batt, last_heard
+           FROM meshcom_contacts WHERE callsign = 'N0CALL'`,
+        )
+        .get() as {
+        identity_id: string;
+        favorited: number;
+        lat: number | null;
+        lon: number | null;
+        batt: number | null;
+        last_heard: number | null;
+      };
+      expect(row.identity_id).toBe('offline-meshcom');
+      expect(row.favorited).toBe(1);
+      expect(row.lat).toBe(39.7);
+      expect(row.lon).toBe(-105.0);
+      expect(row.batt).toBe(88);
+      expect(row.last_heard).toBe(200);
+      expect(
+        (
+          db
+            .prepareOnce(`SELECT COUNT(*) AS c FROM meshcom_contacts WHERE callsign = 'N0CALL'`)
+            .get() as { c: number }
+        ).c,
+      ).toBe(1);
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('does not treat same msg_id with different recipients as logical duplicates', () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-mc-rebind-to-'));
+    try {
+      const db = new NodeSqliteDB(path.join(dir, 'test.db'));
+      runSchemaUpgrade(db);
+      const insert = db.prepareOnce(
+        `INSERT INTO meshcom_messages
+           (identity_id, msg_id, from_call, to_call_or_group, text, channel_idx, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      );
+      insert.run('offline-meshcom', 'm1', 'N0CALL', 'W1AW', 'hi', -1, 1000);
+      insert.run('id-old', 'm1', 'N0CALL', 'K1ABC', 'hi', -1, 1000);
+      rebindMeshcomIdentityOn(db, 'id-old', 'offline-meshcom');
+      const rows = db
+        .prepareOnce(
+          `SELECT msg_id, to_call_or_group FROM meshcom_messages
+           WHERE identity_id = 'offline-meshcom' ORDER BY id`,
+        )
+        .all() as { msg_id: string; to_call_or_group: string }[];
+      expect(rows).toHaveLength(2);
+      expect(rows.map((r) => r.to_call_or_group).sort()).toEqual(['K1ABC', 'W1AW']);
+      expect(rows.some((r) => r.msg_id === 'm1')).toBe(true);
+      expect(rows.some((r) => /^m1-rb\d+$/.test(r.msg_id))).toBe(true);
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

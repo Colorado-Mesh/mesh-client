@@ -26,7 +26,9 @@ import { callsignToNodeId, normalizeMeshcomCallsign } from '../lib/meshcom/meshc
 import { resolveMeshcomContactIdentity } from '../lib/meshcom/meshcomContactIdentity';
 import type { MeshcomDeviceSettingsSnapshot } from '../lib/meshcom/meshcomDeviceSettings';
 import { markMeshcomLocallyDeletedContact } from '../lib/meshcom/meshcomLocallyDeletedContacts';
+import { meshcomPersistIdentityId } from '../lib/meshcom/meshcomPersistIdentity';
 import { attachMeshcomRoutingAckSideEffects } from '../lib/meshcom/meshcomRoutingAckSideEffects';
+import { applyMeshcomSelfCallsign } from '../lib/meshcom/meshcomSelfCallsign';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
@@ -112,41 +114,6 @@ function persistOpenedMeshcomSerialPort(
     return openedId;
   }
   return resolveLastSerialPortId('meshcom') ?? fallbackPortId ?? undefined;
-}
-
-/** Sync MeshCom self callsign → myNodeNum / node row (settings, setOwner, learned TX echo). */
-function applyMeshcomSelfCallsign(
-  identityId: IdentityId,
-  callsignRaw: string,
-  opts?: {
-    operatorName?: string;
-    batteryLevel?: number | null;
-    voltage?: number | null;
-    setDeviceOwner?: (owner: { longName: string; shortName: string; isLicensed: boolean }) => void;
-    setMyNodeNum?: (nodeId: number) => void;
-  },
-): number {
-  const callsign = normalizeMeshcomCallsign(callsignRaw);
-  if (!callsign) return 0;
-  registerMeshcomCallsign(callsign);
-  const resolved = callsignToNodeId(callsign);
-  if (!resolved) return 0;
-  opts?.setDeviceOwner?.({
-    longName: callsign,
-    shortName: opts.operatorName || callsign.slice(0, 4),
-    isLicensed: true,
-  });
-  opts?.setMyNodeNum?.(resolved);
-  setConnection(identityId, { myNodeNum: resolved });
-  upsertNodeRecord(identityId, {
-    nodeId: resolved,
-    longName: callsign,
-    shortName: (opts?.operatorName || callsign).slice(0, 4),
-    batteryLevel: opts?.batteryLevel ?? undefined,
-    voltage: opts?.voltage ?? undefined,
-    lastHeardAt: Date.now(),
-  });
-  return resolved;
 }
 
 /**
@@ -542,7 +509,22 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       rfReconnectRef.current.markSuccess();
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
-      void hydrateIdentityStoresFromDb('meshcom', driverIdentityId).catch((e: unknown) => {
+      // Recover orphaned id-* SQLite rows from older builds into the stable offline slot,
+      // then hydrate into the live driver identity (Zustand merge is not enough).
+      const persistId = meshcomPersistIdentityId();
+      void (async () => {
+        try {
+          if (driverIdentityId !== persistId) {
+            await window.electronAPI.db.rebindMeshcomIdentity(driverIdentityId, persistId);
+          }
+          await window.electronAPI.db.rebindMeshcomIdentity('*', persistId);
+        } catch (e: unknown) {
+          console.warn(
+            'mcL1504 [useMeshcomRuntime] rebindMeshcomIdentity ' + errLikeToLogString(e),
+          );
+        }
+        await hydrateIdentityStoresFromDb('meshcom', driverIdentityId);
+      })().catch((e: unknown) => {
         console.warn('mcL1182 [useMeshcomRuntime] hydrate after attach ' + errLikeToLogString(e));
       });
       if (type === 'serial' || type === 'ble') {
@@ -881,18 +863,16 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       const prevFav = existing?.favorited ?? false;
       syncMeshcomFavoriteBuckets(nodeId, favorited, existing, syncIdentityIds, callsign);
       try {
-        for (const id of syncIdentityIds) {
-          await window.electronAPI.db.saveMeshcomContact({
-            callsign,
-            identity_id: id,
-            node_id: nodeId >>> 0,
-            favorited: favorited ? 1 : 0,
-            lat: existing?.latitude ?? null,
-            lon: existing?.longitude ?? null,
-            batt: existing?.batteryLevel ?? null,
-            last_heard: existing?.lastHeardAt ?? null,
-          });
-        }
+        await window.electronAPI.db.saveMeshcomContact({
+          callsign,
+          identity_id: meshcomPersistIdentityId(),
+          node_id: nodeId >>> 0,
+          favorited: favorited ? 1 : 0,
+          lat: existing?.latitude ?? null,
+          lon: existing?.longitude ?? null,
+          batt: existing?.batteryLevel ?? null,
+          last_heard: existing?.lastHeardAt ?? null,
+        });
       } catch (e) {
         console.warn('mcL1187 [useMeshcomRuntime] setNodeFavorited ' + errLikeToLogString(e));
         syncMeshcomFavoriteBuckets(nodeId, prevFav, existing, syncIdentityIds, callsign);
@@ -919,9 +899,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         removeNode(id, nodeId);
       }
       try {
-        for (const id of syncIdentityIds) {
-          await window.electronAPI.db.deleteMeshcomContact(id, callsign);
-        }
+        await window.electronAPI.db.deleteMeshcomContact(meshcomPersistIdentityId(), callsign);
       } catch (e: unknown) {
         console.warn('mcL1189 [useMeshcomRuntime] deleteMeshcomContact ' + errLikeToLogString(e));
       }

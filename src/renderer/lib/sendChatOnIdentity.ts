@@ -8,6 +8,7 @@ import {
   type MessageRecord,
   renameMessageId,
   updateMessageStatus,
+  useMessageStore,
 } from '../stores/messageStore';
 import { type NodeRecord, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import { isMeshcoreOpenWireCompatEnabled } from './appSettingsStorage';
@@ -20,7 +21,12 @@ import { markOutboundBlocked } from './markOutboundBlocked';
 import { meshcomCallForNodeId } from './meshcom/meshcomCallRegistry';
 import { meshcomOutboundDest } from './meshcom/meshcomChannel';
 import { meshcomTransportSupportsDmDeliveryAck } from './meshcom/meshcomDmDeliveryAck';
+import { meshcomPersistIdentityId } from './meshcom/meshcomPersistIdentity';
 import { scheduleMeshcomDmAckTimeout } from './meshcom/meshcomRoutingAckSideEffects';
+import {
+  applyMeshcomSelfCallsign,
+  meshcomCallsignFromDeviceHandle,
+} from './meshcom/meshcomSelfCallsign';
 import {
   clearHeardRepeatWindowIfMessage,
   openHeardRepeatWindow,
@@ -88,29 +94,43 @@ function persistMeshcomOutboundRow(
   status: 'sending' | 'acked' | 'failed',
   msgId?: string,
 ): void {
+  const resolvedMsgId = msgId ?? record.id;
+  // Completion can race self-callsign remap — prefer the live store row over a captured myNodeNum:0.
+  const live =
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity/message may be absent.
+    useMessageStore.getState().messages[identityId]?.[resolvedMsgId] ?? record;
+  const storedCall =
+    live.senderName?.trim() && live.senderName.trim() !== 'Unknown' ? live.senderName.trim() : '';
+  const fromNode =
+    (live.from > 0 ? live.from : 0) ||
+    (getConnection(identityId)?.myNodeNum ?? 0) ||
+    (myNodeNum > 0 ? myNodeNum : 0) ||
+    (record.from > 0 ? record.from : 0);
   const fromCall =
-    meshcomCallForOutboundNode(identityId, myNodeNum) ||
-    meshcomCallForOutboundNode(identityId, record.from) ||
+    storedCall ||
+    meshcomCallForOutboundNode(identityId, fromNode) ||
+    meshcomCallForOutboundNode(identityId, live.from) ||
     null;
   const toCallOrGroup =
-    record.channelIndex > 0
-      ? meshcomOutboundDest({ channelIndex: record.channelIndex })
-      : record.to !== 0xffffffff
-        ? meshcomCallForOutboundNode(identityId, record.to) || null
+    live.channelIndex > 0
+      ? meshcomOutboundDest({ channelIndex: live.channelIndex })
+      : live.to !== 0xffffffff
+        ? meshcomCallForOutboundNode(identityId, live.to) || null
         : '*';
   void window.electronAPI.db
     .saveMeshcomMessage({
-      identity_id: identityId,
-      msg_id: msgId ?? record.id,
+      // Stable offline slot — session ids can be ephemeral across rematch/restart.
+      identity_id: meshcomPersistIdentityId(),
+      msg_id: resolvedMsgId,
       from_call: fromCall,
       to_call_or_group: toCallOrGroup,
-      text: record.payload,
-      channel_idx: record.channelIndex,
+      text: live.payload,
+      channel_idx: live.channelIndex,
       // MeshCom DB only accepts rf|mqtt|both — outbound RF chat is 'rf' (not 'local').
       received_via: 'rf',
-      timestamp: record.timestamp,
+      timestamp: live.timestamp,
       status,
-      received_at: record.receivedAt ?? Date.now(),
+      received_at: live.receivedAt ?? Date.now(),
     })
     .catch((e: unknown) => {
       console.warn('mcL1120 [useSendMessage] saveMeshcomMessage failed ' + errLikeToLogString(e));
@@ -308,7 +328,24 @@ export function sendChatOnIdentity(
     isMeshtastic,
     isMeshcoreDm,
   );
-  const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
+  let myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
+  let meshcomSenderName: string | undefined;
+  // MeshCom self callsign can arrive after link-up; stamp from handle when myNodeNum is still 0
+  // so the first bubble is not left/"00".
+  if (isMeshcom && myNodeNum === 0) {
+    const fromHandle = meshcomCallsignFromDeviceHandle(handle);
+    if (fromHandle.callsign) {
+      myNodeNum = applyMeshcomSelfCallsign(identityId, fromHandle.callsign, {
+        operatorName: fromHandle.operatorName,
+      });
+      meshcomSenderName = fromHandle.callsign;
+    }
+  } else if (isMeshcom && myNodeNum > 0) {
+    meshcomSenderName =
+      meshcomCallForNodeId(myNodeNum) ||
+      nodesOf(identityId)?.[myNodeNum]?.longName?.trim() ||
+      undefined;
+  }
   const meshcoreSenderName =
     identity.protocol.type === 'meshcore'
       ? nodesOf(identityId)?.[myNodeNum]?.longName?.trim() ||
@@ -333,6 +370,7 @@ export function sendChatOnIdentity(
     from: myNodeNum,
     // Incoming MeshCore @[Name] replies resolve against this live record.
     ...(isMeshcore ? { senderName: meshcoreSenderName } : {}),
+    ...(isMeshcom && meshcomSenderName ? { senderName: meshcomSenderName } : {}),
     to: destination ?? 0xffffffff,
     payload: resolvedOutbound.displayPayload,
     channelIndex: isMeshcoreDm || isMeshcomDm ? -1 : channelIndex,

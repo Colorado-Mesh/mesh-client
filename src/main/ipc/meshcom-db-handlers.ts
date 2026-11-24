@@ -250,6 +250,183 @@ export function validateDeleteMeshcomContact(
   };
 }
 
+/**
+ * Move MeshCom messages/contacts from one identity_id to another.
+ * Pass `fromId` `*` to consolidate every non-`toId` bucket into `toId` (orphan recovery).
+ *
+ * Logical message identity for cross-bucket dedupe is
+ * `(msg_id, from_call, to_call_or_group, text, channel_idx, timestamp)`. Same msg_id alone
+ * is not enough (MeshCom firmware IDs wrap / collide) — colliding-but-distinct rows keep
+ * both by reminting the source msg_id before the move.
+ *
+ * Contacts dedupe on callsign after merging source favorites / missing coords into dest
+ * (same COALESCE / preserve-favorite spirit as saveMeshcomContact upsert).
+ */
+export function rebindMeshcomIdentityOn(
+  db: NodeSqliteDB,
+  fromIdRaw: unknown,
+  toIdRaw: unknown,
+): { changes: number } {
+  if (typeof toIdRaw !== 'string' || !toIdRaw.trim()) {
+    throw new Error('db:rebindMeshcomIdentity: toId must be a non-empty string');
+  }
+  if (toIdRaw.length > MAX_IDENTITY_LEN) {
+    throw new Error('db:rebindMeshcomIdentity: toId too long');
+  }
+  if (typeof fromIdRaw !== 'string' || !fromIdRaw.trim()) {
+    throw new Error('db:rebindMeshcomIdentity: fromId must be a non-empty string');
+  }
+  if (fromIdRaw.length > MAX_IDENTITY_LEN) {
+    throw new Error('db:rebindMeshcomIdentity: fromId too long');
+  }
+  const toId = toIdRaw.trim().slice(0, MAX_IDENTITY_LEN);
+  const fromId = fromIdRaw.trim().slice(0, MAX_IDENTITY_LEN);
+  if (fromId === toId) return { changes: 0 };
+
+  const sourceIds: string[] =
+    fromId === '*'
+      ? (
+          db
+            .prepareOnce(
+              `SELECT DISTINCT identity_id AS id FROM meshcom_messages WHERE identity_id != ?
+               UNION
+               SELECT DISTINCT identity_id AS id FROM meshcom_contacts WHERE identity_id != ?`,
+            )
+            .all(toId, toId) as { id: string | null }[]
+        )
+          // Keep empty-string identity_id buckets (schema default); drop only non-strings / toId.
+          .map((r) => r.id)
+          .filter((id): id is string => typeof id === 'string' && id !== toId)
+      : [fromId];
+
+  let changes = 0;
+  for (const source of sourceIds) {
+    if (source === toId) continue;
+    // True duplicates only — matching msg_id + sender + recipient + body + channel + timestamp.
+    const dropMsg = db
+      .prepareOnce(
+        `DELETE FROM meshcom_messages
+         WHERE identity_id = @fromId
+           AND msg_id IS NOT NULL
+           AND EXISTS (
+             SELECT 1 FROM meshcom_messages AS dest
+             WHERE dest.identity_id = @toId
+               AND dest.msg_id = meshcom_messages.msg_id
+               AND IFNULL(dest.from_call, '') = IFNULL(meshcom_messages.from_call, '')
+               AND IFNULL(dest.to_call_or_group, '') = IFNULL(meshcom_messages.to_call_or_group, '')
+               AND dest.text = meshcom_messages.text
+               AND dest.channel_idx = meshcom_messages.channel_idx
+               AND dest.timestamp = meshcom_messages.timestamp
+           )`,
+      )
+      .run({ fromId: source, toId });
+    changes += Number(dropMsg.changes);
+    // msg_id-only collisions are distinct logical messages — remint before move.
+    const remint = db
+      .prepareOnce(
+        `UPDATE meshcom_messages
+         SET msg_id = msg_id || '-rb' || CAST(id AS TEXT)
+         WHERE identity_id = @fromId
+           AND msg_id IS NOT NULL
+           AND msg_id IN (
+             SELECT msg_id FROM meshcom_messages
+             WHERE identity_id = @toId AND msg_id IS NOT NULL
+           )`,
+      )
+      .run({ fromId: source, toId });
+    changes += Number(remint.changes);
+    const moveMsg = db
+      .prepareOnce(`UPDATE meshcom_messages SET identity_id = @toId WHERE identity_id = @fromId`)
+      .run({ fromId: source, toId });
+    changes += Number(moveMsg.changes);
+
+    // Fold source prefs into dest before dropping the source row (favorite wins; fill gaps).
+    const mergeContact = db
+      .prepareOnce(
+        `UPDATE meshcom_contacts
+         SET
+           favorited = CASE
+             WHEN favorited = 1 THEN 1
+             WHEN (
+               SELECT s.favorited FROM meshcom_contacts AS s
+               WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+             ) = 1 THEN 1
+             ELSE favorited
+           END,
+           lat = COALESCE(
+             lat,
+             (SELECT s.lat FROM meshcom_contacts AS s
+              WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign)
+           ),
+           lon = COALESCE(
+             lon,
+             (SELECT s.lon FROM meshcom_contacts AS s
+              WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign)
+           ),
+           batt = COALESCE(
+             batt,
+             (SELECT s.batt FROM meshcom_contacts AS s
+              WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign)
+           ),
+           hw_id = COALESCE(
+             hw_id,
+             (SELECT s.hw_id FROM meshcom_contacts AS s
+              WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign)
+           ),
+           last_heard = CASE
+             WHEN (
+               SELECT s.last_heard FROM meshcom_contacts AS s
+               WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+             ) IS NOT NULL
+             AND (
+               last_heard IS NULL
+               OR (
+                 SELECT s.last_heard FROM meshcom_contacts AS s
+                 WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+               ) > last_heard
+             )
+             THEN (
+               SELECT s.last_heard FROM meshcom_contacts AS s
+               WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+             )
+             ELSE last_heard
+           END,
+           node_id = CASE
+             WHEN node_id = 0 THEN COALESCE(
+               NULLIF((
+                 SELECT s.node_id FROM meshcom_contacts AS s
+                 WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+               ), 0),
+               node_id
+             )
+             ELSE node_id
+           END
+         WHERE identity_id = @toId
+           AND callsign IN (
+             SELECT callsign FROM meshcom_contacts WHERE identity_id = @fromId
+           )`,
+      )
+      .run({ fromId: source, toId });
+    changes += Number(mergeContact.changes);
+
+    const dropContact = db
+      .prepareOnce(
+        `DELETE FROM meshcom_contacts
+         WHERE identity_id = @fromId
+           AND callsign IN (
+             SELECT callsign FROM meshcom_contacts WHERE identity_id = @toId
+           )`,
+      )
+      .run({ fromId: source, toId });
+    changes += Number(dropContact.changes);
+    const moveContact = db
+      .prepareOnce(`UPDATE meshcom_contacts SET identity_id = @toId WHERE identity_id = @fromId`)
+      .run({ fromId: source, toId });
+    changes += Number(moveContact.changes);
+  }
+  return { changes };
+}
+
 export interface MeshcomDbIpcDeps {
   ipcMain: IpcMain;
 }
@@ -522,6 +699,17 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
       return { changes: Number(result.changes) };
     } catch (err) {
       finishDbIpcHandler('db:deleteMeshcomContact', err);
+    }
+  });
+
+  ipcMain.handle('db:rebindMeshcomIdentity', (event, fromId: unknown, toId: unknown) => {
+    if (!validateIpcSender(event)) throw new Error('db:rebindMeshcomIdentity: unauthorized sender');
+    try {
+      const db = getDbForIpc('db:rebindMeshcomIdentity');
+      if (!db) return { changes: 0 };
+      return rebindMeshcomIdentityOn(db, fromId, toId);
+    } catch (err) {
+      finishDbIpcHandler('db:rebindMeshcomIdentity', err);
     }
   });
 }

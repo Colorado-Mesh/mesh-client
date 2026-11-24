@@ -21,6 +21,7 @@ import { normalizeMeshcomCallsign } from '../meshcom/meshcomCallsign';
 import { maybeAlertMeshcomWatchlistCallsign } from '../meshcom/meshcomCallsignWatchlist';
 import { shouldApplyMeshcomContact } from '../meshcom/meshcomLocallyDeletedContacts';
 import { noteMeshcomNetworkTimeFromText } from '../meshcom/meshcomNetworkTime';
+import { meshcomPersistIdentityId } from '../meshcom/meshcomPersistIdentity';
 import type { DomainEvent } from '../protocols/Protocol';
 import { recordRadioSelfPosition } from '../radioSelfPosition';
 import { chatMessageToMessageRecord, messageRecordToChatMessage } from '../storeRecordAdapters';
@@ -73,7 +74,7 @@ function persistContact(
   persistDbWrite('meshcom ingest contact', () =>
     window.electronAPI.db.saveMeshcomContact({
       callsign,
-      identity_id: identityId,
+      identity_id: meshcomPersistIdentityId(),
       node_id: opts.nodeId >>> 0,
       lat: opts.lat ?? null,
       lon: opts.lon ?? null,
@@ -136,7 +137,7 @@ function handleTextMessage(
 
   persistDbWrite('meshcom ingest message', () =>
     window.electronAPI.db.saveMeshcomMessage({
-      identity_id: identityId,
+      identity_id: meshcomPersistIdentityId(),
       msg_id: event.payload.id,
       from_call: fromCall || null,
       to_call_or_group: toCall || null,

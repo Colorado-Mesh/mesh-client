@@ -500,6 +500,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }) => ipcRenderer.invoke('db:saveMeshcomContact', contact),
     deleteMeshcomContact: (identityId: string, callsign: string) =>
       ipcRenderer.invoke('db:deleteMeshcomContact', identityId, callsign),
+    rebindMeshcomIdentity: (fromId: string, toId: string) =>
+      ipcRenderer.invoke('db:rebindMeshcomIdentity', fromId, toId),
     updateMeshcoreMessageSender: (messageId: number, senderId: number, senderName: string) =>
       ipcRenderer.invoke('db:updateMeshcoreMessageSender', messageId, senderId, senderName),
     saveMeshcoreMessage: (message: {

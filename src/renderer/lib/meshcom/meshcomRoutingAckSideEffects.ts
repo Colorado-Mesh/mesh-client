@@ -19,6 +19,7 @@ import type { IdentityId } from '../types';
 import { meshcomCallForNodeId } from './meshcomCallRegistry';
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
 import { meshcomRoutingAckMatchesOutbound } from './meshcomFwMsgId';
+import { meshcomPersistIdentityId } from './meshcomPersistIdentity';
 
 /** FAQ: undelivered DM after ~6 minutes. */
 export const MESHCOM_DM_ACK_TIMEOUT_MS = 6 * MS_PER_MINUTE;
@@ -134,7 +135,7 @@ function persistMeshcomTerminalStatus(
 ): void {
   void window.electronAPI.db
     .updateMeshcomMessageStatus({
-      identity_id: identityId,
+      identity_id: meshcomPersistIdentityId(),
       msg_id: messageId,
       status,
     })
