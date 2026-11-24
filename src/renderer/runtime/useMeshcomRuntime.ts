@@ -19,6 +19,7 @@ import {
 } from '../lib/gpsSource';
 import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityNodeMap } from '../lib/identityStoreReads';
+import { resolveLastSerialPortId, saveLastConnection } from '../lib/lastConnectionStorage';
 import { canTransmitLocation } from '../lib/locationTransmit';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from '../lib/meshcom/meshcomCallRegistry';
 import { callsignToNodeId, normalizeMeshcomCallsign } from '../lib/meshcom/meshcomCallsign';
@@ -42,7 +43,6 @@ import {
 } from '../lib/serialDeliveryProbe';
 import { registerMeshcomSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
 import { SERIAL_STALE_THRESHOLD_MS, SERIAL_WATCHDOG_INTERVAL_MS } from '../lib/serialPortRecovery';
-import { loadLastSerialPortId } from '../lib/serialPortSignature';
 import { MAX_TELEMETRY_POINTS } from '../lib/sessionMemoryCaps';
 import {
   type MeshcomRfTransportType,
@@ -98,6 +98,55 @@ function toUiConnectionType(type: MeshcomRfTransportType): ConnectionType {
 function resolveHost(httpAddress?: string): string {
   const trimmed = httpAddress?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : '127.0.0.1';
+}
+
+/** Persist the opened Web Serial port as MeshCom last-connection; return its id for reconnect. */
+function persistOpenedMeshcomSerialPort(
+  handle: unknown,
+  fallbackPortId?: string | null,
+): string | undefined {
+  const port = (handle as MeshComDeviceHandle | null)?.connection.getSerialPort?.() ?? null;
+  const openedId = (port as (SerialPort & { portId?: string }) | null)?.portId?.trim() || null;
+  if (openedId) {
+    saveLastConnection('meshcom', { type: 'serial', serialPortId: openedId });
+    return openedId;
+  }
+  return resolveLastSerialPortId('meshcom') ?? fallbackPortId ?? undefined;
+}
+
+/** Sync MeshCom self callsign → myNodeNum / node row (settings, setOwner, learned TX echo). */
+function applyMeshcomSelfCallsign(
+  identityId: IdentityId,
+  callsignRaw: string,
+  opts?: {
+    operatorName?: string;
+    batteryLevel?: number | null;
+    voltage?: number | null;
+    setDeviceOwner?: (owner: { longName: string; shortName: string; isLicensed: boolean }) => void;
+    setMyNodeNum?: (nodeId: number) => void;
+  },
+): number {
+  const callsign = normalizeMeshcomCallsign(callsignRaw);
+  if (!callsign) return 0;
+  registerMeshcomCallsign(callsign);
+  const resolved = callsignToNodeId(callsign);
+  if (!resolved) return 0;
+  opts?.setDeviceOwner?.({
+    longName: callsign,
+    shortName: opts.operatorName || callsign.slice(0, 4),
+    isLicensed: true,
+  });
+  opts?.setMyNodeNum?.(resolved);
+  setConnection(identityId, { myNodeNum: resolved });
+  upsertNodeRecord(identityId, {
+    nodeId: resolved,
+    longName: callsign,
+    shortName: (opts?.operatorName || callsign).slice(0, 4),
+    batteryLevel: opts?.batteryLevel ?? undefined,
+    voltage: opts?.voltage ?? undefined,
+    lastHeardAt: Date.now(),
+  });
+  return resolved;
 }
 
 /**
@@ -226,12 +275,28 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           ].slice(-MAX_TELEMETRY_POINTS),
         );
       });
+      // Learned NODE callsign from own TX echo / settings emits device_self_info.
+      const detachSelfInfo = attachTypedPacketListener(
+        identityId,
+        'device_self_info',
+        (payload) => {
+          const name = payload.name?.trim();
+          if (!name) return;
+          applyMeshcomSelfCallsign(identityId, name, {
+            setDeviceOwner,
+            setMyNodeNum: (id) => {
+              setState((prev) => (prev.myNodeNum === id ? prev : { ...prev, myNodeNum: id }));
+            },
+          });
+        },
+      );
       // Sync attach so routing ACKs are registered before session becomes configured.
       const detachRoutingAck = attachMeshcomRoutingAckSideEffects(identityId);
       const prevTelemetryDetach = telemetryDetachRef.current;
       telemetryDetachRef.current = () => {
         prevTelemetryDetach?.();
         detachSignal();
+        detachSelfInfo();
         detachRoutingAck();
       };
     },
@@ -340,27 +405,16 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         setConnection(identityId, { firmwareVersion: fw });
       }
       if (snap.callsign) {
-        setDeviceOwner({
-          longName: snap.callsign,
-          shortName: snap.operatorName,
-          isLicensed: true,
+        const resolved = applyMeshcomSelfCallsign(identityId, snap.callsign, {
+          operatorName: snap.operatorName,
+          batteryLevel: snap.batteryLevel,
+          voltage: snap.voltage,
+          setDeviceOwner,
+          setMyNodeNum: (id) => {
+            setState((prev) => (prev.myNodeNum === id ? prev : { ...prev, myNodeNum: id }));
+          },
         });
-        const resolved = callsignToNodeId(snap.callsign);
-        if (resolved) {
-          nodeId = resolved;
-          setState((prev) =>
-            prev.myNodeNum === resolved ? prev : { ...prev, myNodeNum: resolved },
-          );
-          setConnection(identityId, { myNodeNum: resolved });
-          upsertNodeRecord(identityId, {
-            nodeId: resolved,
-            longName: snap.callsign,
-            shortName: (snap.operatorName || snap.callsign).slice(0, 4),
-            batteryLevel: snap.batteryLevel,
-            voltage: snap.voltage,
-            lastHeardAt: Date.now(),
-          });
-        }
+        if (resolved) nodeId = resolved;
       }
       if (snap.batteryLevel != null || snap.voltage != null) {
         pushLocalTelemetry({
@@ -547,14 +601,22 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       const { openMeshComTransport } = await import('../hooks/openMeshComTransport');
       let opened: Awaited<ReturnType<typeof openMeshComTransport>> | undefined;
       try {
+        const meshcomSerialPortId =
+          type === 'serial' ? (resolveLastSerialPortId('meshcom') ?? undefined) : undefined;
         opened = await openMeshComTransport(type, {
           blePeripheralId,
           host:
             type === 'udp' || type === 'tcp' || type === 'http'
               ? resolveHost(httpAddress)
               : undefined,
-          portSignature: type === 'serial' ? (loadLastSerialPortId() ?? undefined) : undefined,
+          portSignature: meshcomSerialPortId,
         });
+        // Persist the port actually opened (chooser / reconnect) as MeshCom last
+        // connection so resolveLastSerialPortId does not keep a stale MeshCom id.
+        const selectedSerialPortId =
+          type === 'serial'
+            ? persistOpenedMeshcomSerialPort(opened.handle, meshcomSerialPortId)
+            : undefined;
         connectionParamsRef.current = {
           rfType: type,
           httpAddress:
@@ -562,7 +624,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
               ? resolveHost(httpAddress)
               : undefined,
           blePeripheralId,
-          serialPortId: type === 'serial' ? loadLastSerialPortId() : undefined,
+          serialPortId: selectedSerialPortId,
         };
         await attachRfSession(opened.driverIdentityId, type);
       } catch (err) {
@@ -596,7 +658,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           });
           connectionParamsRef.current = {
             rfType: 'serial',
-            serialPortId: lastSerialPortId,
+            serialPortId: persistOpenedMeshcomSerialPort(opened.handle, lastSerialPortId),
           };
           await attachRfSession(opened.driverIdentityId, 'serial');
         } catch (err) {
@@ -901,6 +963,16 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       }
       const protocol = await ensureMeshcomProtocolLoaded();
       await protocol.setOwner(handle, opts);
+      // Drop sync if the session was replaced/disconnected during the protocol call.
+      if (connectionDriver.getHandle(identityId) !== handle) return;
+      // protocol.setOwner updates handle.operatorCallsign; also sync UI myNodeNum (UDP/KISS).
+      applyMeshcomSelfCallsign(identityId, opts.longName, {
+        operatorName: opts.shortName,
+        setDeviceOwner,
+        setMyNodeNum: (id) => {
+          setState((prev) => (prev.myNodeNum === id ? prev : { ...prev, myNodeNum: id }));
+        },
+      });
     },
     [resolveIdentityId],
   );

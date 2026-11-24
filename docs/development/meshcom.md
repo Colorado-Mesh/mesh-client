@@ -155,10 +155,14 @@ Each Mesh Client instance binds **one** local UDP socket on **1799** for EXTUDP 
 
 At connect, the bridge resolves a hostname to a canonical IPv4 and filters inbound datagrams to that peer (not the unresolved hostname string).
 
+**Own-TX chat filter:** the node reflects local sends back as EXTUDP `msg` with `src` = NODE callsign. [`MeshComProtocol`](../../src/renderer/lib/protocols/MeshComProtocol.ts) drops those chat lines when SOURCE matches the linked operator callsign (or a recent outbound `dst`+`msg` echo), and may learn `operatorCallsign` / emit `device_self_info` so the runtime can set `myNodeNum`. POS/tele from self are kept for the map and telemetry.
+
+**Self map marker:** Map self is a star (`isSelf`); peers are circles. Do not synthesize a fallback self marker when `myNodeNum` is `0` (that produced a ghost `Node-0` star beside the real callsign contact). `setOwner` and learned callsign paths sync `myNodeNum` via `callsignToNodeId` like BLE/serial settings.
+
 ## Serial console `{CALL}text`
 
 - **TX:** `{CALLSIGN}payload` directs the injection to that callsign (or `{groupId}` for GRC).
-- **RX:** firmware echoes use the **sender** callsign inside braces (see ICSSW `sendReply` / `:{CALL}` forms), so `{OE1BBB-2}hello` attributes `from` = `OE1BBB-2`.
+- **RX:** firmware echoes use the **sender** callsign inside braces (see ICSSW `sendReply` / `:{CALL}` forms), so `{OE1BBB-2}hello` attributes `from` = `OE1BBB-2`. Own-callsign / recent-outbound echoes are filtered the same way as EXTUDP.
 
 ## BLE phone framing
 

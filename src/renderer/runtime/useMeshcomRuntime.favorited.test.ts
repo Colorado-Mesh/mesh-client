@@ -2,15 +2,31 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { connectionDriver } from '../lib/drivers/ConnectionDriver';
+import { packetRouter } from '../lib/drivers/PacketRouter';
 import { registerMeshcomCallsign } from '../lib/meshcom/meshcomCallRegistry';
 import { callsignToNodeId } from '../lib/meshcom/meshcomCallsign';
 import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCOM_IDENTITY_ID,
 } from '../lib/offlineProtocolIdentities';
+import { ensureMeshcomProtocolLoaded } from '../lib/protocols/meshcomProtocolLoader';
 import { loadRuntimeSource } from '../lib/sourceContractTestHelpers';
+import { getConnection, useConnectionStore } from '../stores/connectionStore';
 import { upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import { useMeshcomRuntime } from './useMeshcomRuntime';
+
+vi.mock('../lib/drivers/ConnectionDriver', () => ({
+  connectionDriver: {
+    getHandle: vi.fn(),
+    disconnect: vi.fn().mockResolvedValue(undefined),
+    getLastDataAtForIdentity: vi.fn().mockReturnValue(0),
+  },
+}));
+
+vi.mock('../lib/protocols/meshcomProtocolLoader', () => ({
+  ensureMeshcomProtocolLoaded: vi.fn(),
+}));
 
 const SOURCE = loadRuntimeSource('useMeshcomRuntime.ts');
 const CALLSIGN = 'W1AW-1';
@@ -20,7 +36,10 @@ describe('useMeshcomRuntime setNodeFavorited', () => {
   beforeEach(() => {
     ensureOfflineProtocolIdentities();
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+    useConnectionStore.setState({ connections: {} });
     vi.mocked(window.electronAPI.db.saveMeshcomContact).mockClear();
+    vi.mocked(connectionDriver.getHandle).mockReset();
+    vi.mocked(ensureMeshcomProtocolLoaded).mockReset();
     registerMeshcomCallsign(CALLSIGN);
   });
 
@@ -30,6 +49,99 @@ describe('useMeshcomRuntime setNodeFavorited', () => {
     expect(SOURCE).toMatch(/resolveMeshcomContactIdentity\(/);
     expect(SOURCE).toMatch(/syncIdentityIds/);
     expect(SOURCE).not.toMatch(/setNodeFavorited:\s*async\s*\(\)\s*=>\s*\{\s*\}/);
+  });
+
+  it('setOwner syncs myNodeNum on the runtime and connection store', async () => {
+    const handle = {
+      connection: { transport: 'udp' },
+      transport: 'udp',
+      operatorCallsign: '',
+    };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
+    vi.mocked(ensureMeshcomProtocolLoaded).mockResolvedValue({
+      setOwner: vi.fn().mockResolvedValue(undefined),
+    } as unknown as Awaited<ReturnType<typeof ensureMeshcomProtocolLoaded>>);
+
+    const { result } = renderHook(() => useMeshcomRuntime());
+
+    await act(async () => {
+      await result.current.setOwner({
+        longName: CALLSIGN,
+        shortName: 'W1AW',
+        isLicensed: true,
+      });
+    });
+
+    expect(result.current.selfNodeId).toBe(NODE_ID);
+    expect(getConnection(OFFLINE_MESHCOM_IDENTITY_ID)?.myNodeNum).toBe(NODE_ID);
+  });
+
+  it('setOwner skips myNodeNum sync when the session handle changed during the protocol call', async () => {
+    const handle = {
+      connection: { transport: 'udp' },
+      transport: 'udp',
+      operatorCallsign: '',
+    };
+    const replaced = {
+      connection: { transport: 'udp' },
+      transport: 'udp',
+      operatorCallsign: '',
+    };
+    let sessionReplaced = false;
+    vi.mocked(connectionDriver.getHandle).mockImplementation(() =>
+      sessionReplaced ? replaced : handle,
+    );
+    vi.mocked(ensureMeshcomProtocolLoaded).mockResolvedValue({
+      setOwner: vi.fn().mockImplementation(() => {
+        sessionReplaced = true;
+        return Promise.resolve();
+      }),
+    } as unknown as Awaited<ReturnType<typeof ensureMeshcomProtocolLoaded>>);
+
+    const { result } = renderHook(() => useMeshcomRuntime());
+
+    await act(async () => {
+      await result.current.setOwner({
+        longName: CALLSIGN,
+        shortName: 'W1AW',
+        isLicensed: true,
+      });
+    });
+
+    expect(result.current.selfNodeId).toBeNull();
+    expect(getConnection(OFFLINE_MESHCOM_IDENTITY_ID)?.myNodeNum).toBeUndefined();
+  });
+
+  it('device_self_info syncs myNodeNum on the runtime and connection store', async () => {
+    const { result } = renderHook(() => useMeshcomRuntime());
+    const attachRfSession = result.current.attachRfSession as (
+      id: string,
+      type: 'udp',
+    ) => Promise<void>;
+
+    await act(async () => {
+      await attachRfSession(OFFLINE_MESHCOM_IDENTITY_ID, 'udp');
+    });
+
+    act(() => {
+      packetRouter.dispatch(
+        {
+          type: 'device_self_info',
+          payload: {
+            name: CALLSIGN,
+            publicKey: new Uint8Array(0),
+            type: 0,
+            txPower: 0,
+            radioFreq: 0,
+            manualAddContacts: false,
+          },
+        },
+        OFFLINE_MESHCOM_IDENTITY_ID,
+      );
+    });
+
+    expect(result.current.selfNodeId).toBe(NODE_ID);
+    expect(getConnection(OFFLINE_MESHCOM_IDENTITY_ID)?.myNodeNum).toBe(NODE_ID);
   });
 
   it('patches the UI identity bucket and saves favorited to SQLite', async () => {

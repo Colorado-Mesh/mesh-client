@@ -163,6 +163,25 @@ describe('serialPortClaim', () => {
     expect(cancelProtocolRfAutoConnect).toHaveBeenCalledWith('meshtastic');
   });
 
+  it('MeshCom claim does not yield another protocol on shared USB signature alone', async () => {
+    const claim = makePort({ usbVendorId: 0x303a, usbProductId: 0x1001 });
+    vi.mocked(loadLastSerialPortSignature).mockReturnValue({
+      usbVendorId: 0x303a,
+      usbProductId: 0x1001,
+    });
+    const releaseHold = vi.fn().mockResolvedValue(undefined);
+    registerMeshtasticSerialDisconnectTarget({
+      isSerialConnected: () => true,
+      onDisconnected: vi.fn(),
+      releaseHold,
+    });
+
+    await releaseConflictingSerialSessions('meshcom', claim);
+
+    expect(releaseHold).not.toHaveBeenCalled();
+    expect(cancelProtocolRfAutoConnect).not.toHaveBeenCalled();
+  });
+
   it('releaseConflictingSerialSessions leaves a different USB device alone', async () => {
     const held = makePort({ usbVendorId: 0x1111, usbProductId: 0x2222 });
     const claim = makePort({ usbVendorId: 0x303a, usbProductId: 0x1001 });

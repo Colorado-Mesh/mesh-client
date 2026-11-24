@@ -1133,6 +1133,7 @@ function ChatPanel({
     indexSignature: null,
     arrivedFromDifferentScope: false,
   });
+  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
   if (!channelRestoreInitializedRef.current) {
     channelRestoreInitializedRef.current = true;
     if (channelRestoreScopeKey != null) {
@@ -1269,6 +1270,10 @@ function ChatPanel({
         };
       }
       setChannel(index);
+      // Channel pills / switcher keep focus after click; move caret into the composer.
+      queueMicrotask(() => {
+        composerInputRef.current?.focus();
+      });
     },
     [channelRestoreScopeKey],
   );
@@ -1452,7 +1457,6 @@ function ChatPanel({
   const reactionPickerTarget = useRef<{ id: number; channel: number } | null>(null);
   const reactionHiddenInputRef = useRef<HTMLInputElement | null>(null);
   const reactionCapturePendingRef = useRef(false);
-  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const handleReactRef = useRef<
     ((glyph: string, packetId: number, msgChannel: number) => Promise<void>) | null
@@ -1755,8 +1759,8 @@ function ChatPanel({
   // Launcher (or another panel) asked for a specific channel.
   useEffect(() => {
     if (initialChannelTarget == null) return;
-    selectChannel(initialChannelTarget);
     setViewMode('channels');
+    selectChannel(initialChannelTarget);
     onChannelTargetConsumed?.();
   }, [initialChannelTarget, onChannelTargetConsumed, selectChannel]);
 
@@ -3745,8 +3749,8 @@ function ChatPanel({
                       data-channel-unread={unread}
                       {...channelDrag(String(ch.index))}
                       onClick={() => {
-                        selectChannel(ch.index);
                         setViewMode((v) => (v === 'weather' ? 'weather' : 'channels'));
+                        selectChannel(ch.index);
                       }}
                       onContextMenu={
                         hasChannelMenu(ch.index)
@@ -3817,8 +3821,8 @@ function ChatPanel({
                   disabled={meshcoreChannelManagementDisabled}
                   onSetChannel={onSetMeshcoreChannel}
                   onSelectChannel={(index) => {
-                    selectChannel(index);
                     setViewMode('channels');
+                    selectChannel(index);
                   }}
                   onRemoveChannel={onDeleteMeshcoreChannel ? askToRemoveChannel : undefined}
                   onImportContactFromQr={onImportContactFromQr}
@@ -3830,8 +3834,8 @@ function ChatPanel({
                   canApplyToDevice={meshcomGrcCanApplyToDevice}
                   disabled={composerDisabled}
                   onSelectChannel={(index) => {
-                    selectChannel(index);
                     setViewMode('channels');
+                    selectChannel(index);
                   }}
                   onBookOnDevice={onMeshcomBookGrc}
                 />
@@ -4593,8 +4597,8 @@ function ChatPanel({
                             } else if (type === 'dm' && raw) {
                               openDmTo(Number(raw));
                             } else {
-                              if (raw !== undefined) selectChannel(Number(raw));
                               setViewMode('channels');
+                              if (raw !== undefined) selectChannel(Number(raw));
                             }
                           }}
                           {...{ [PARENT_HOVER_ATTR]: '' }}

@@ -90,6 +90,9 @@ export async function releaseConflictingSerialSessions(
     const target = targets.get(protocol);
     if (!target?.isSerialConnected()) continue;
     const held = target.getOpenSerialPort?.() ?? null;
+    // MeshCom must not yield another protocol on shared USB-signature alone (no live
+    // hold handle) — that can disconnect Meshtastic/MeshCore on a different device.
+    if (claimingProtocol === 'meshcom' && !held) continue;
     if (!portConflictsWithClaim(held, port)) continue;
     if (!target.releaseHold) {
       console.warn(

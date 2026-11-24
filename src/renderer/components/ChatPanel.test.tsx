@@ -3123,6 +3123,26 @@ describe('ChatPanel unread watermarks', () => {
     );
   });
 
+  it('focuses the composer when a channel pill is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          channels={[
+            { index: 0, name: 'Primary' },
+            { index: 1, name: 'Ops' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    const channels = screen.getByRole('region', { name: 'Channels' });
+    await user.click(within(channels).getByRole('button', { name: 'Ops' }));
+    await waitFor(() => {
+      expect(getComposer()).toHaveFocus();
+    });
+  });
+
   it('clears the unread divider without scrolling when all unread messages are visible', async () => {
     const ts = 1_781_469_336_193;
     // Seed a stored watermark so the component treats the last message as unread.
@@ -7290,7 +7310,9 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
       });
       last.focus();
       await user.keyboard('{Enter}');
-      expect(last).toHaveFocus();
+      await waitFor(() => {
+        expect(getComposer()).toHaveFocus();
+      });
       expect(last).toHaveAttribute('aria-pressed', 'true');
       expect(last).toHaveAccessibleName(channels[23].name);
       expect(within(group).getByRole('button', { name: 'Channel 22 1' })).toBeVisible();
@@ -7960,7 +7982,9 @@ describe('ChatPanel — weather view', () => {
       });
       last.focus();
       await user.keyboard('{Enter}');
-      expect(last).toHaveFocus();
+      await waitFor(() => {
+        expect(getComposer()).toHaveFocus();
+      });
       expect(last).toHaveAttribute('aria-pressed', 'true');
       expect(last).toHaveAccessibleName(channelButtonLabel('Regional 39', 1));
       expect(screen.getByTestId('weather-filter-settings')).toBeInTheDocument();

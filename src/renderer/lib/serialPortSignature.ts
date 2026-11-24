@@ -127,6 +127,11 @@ export function isAmbiguousSerialPortMatchError(err: unknown): boolean {
   return msg.includes(SERIAL_MULTIPLE_MATCH_ERROR);
 }
 
+export function isSerialNoMatchError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes(SERIAL_NO_MATCH_ERROR);
+}
+
 /**
  * Pick a granted SerialPort for auto-reconnect: match `portId` first, then
  * saved USB/Bluetooth signature. Does not fall back to an arbitrary port.

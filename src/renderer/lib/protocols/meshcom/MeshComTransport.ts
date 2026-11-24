@@ -15,11 +15,7 @@ import {
   releaseConflictingSerialSessions,
 } from '../../serialPortClaim';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
-import {
-  isAmbiguousSerialPortMatchError,
-  persistSerialPortIdentity,
-  selectGrantedSerialPort,
-} from '../../serialPortSignature';
+import { persistSerialPortIdentity } from '../../serialPortSignature';
 import type { TransportParams } from '../../types';
 
 export type MeshComTransportKind = 'udp' | 'tcp' | 'serial' | 'ble';
@@ -146,14 +142,21 @@ class WebSerialMeshComConnection implements MeshComConnection {
     let port: SerialPort;
     if (this.portSignature) {
       const ports = await navigator.serial.getPorts();
-      try {
-        port = selectGrantedSerialPort(ports, this.portSignature);
-      } catch (err) {
-        if (isAmbiguousSerialPortMatchError(err)) {
-          console.warn('mcL1501 [MeshComTransport] ambiguous serial match — opening port picker');
-          port = await navigator.serial.requestPort();
+      // MeshCom-scoped portId only — never the shared USB signature (that can bind another
+      // protocol's / flasher device). Empty grants or no id match → chooser.
+      if (ports.length === 0) {
+        console.warn('mcL1503 [MeshComTransport] no granted serial ports — opening port picker');
+        port = await navigator.serial.requestPort();
+      } else {
+        const wantId = this.portSignature;
+        const match = (ports as (SerialPort & { portId?: string })[]).find(
+          (candidate) => candidate.portId === wantId,
+        );
+        if (match) {
+          port = match;
         } else {
-          throw err;
+          console.warn('mcL1502 [MeshComTransport] no matching serial port — opening port picker');
+          port = await navigator.serial.requestPort();
         }
       }
     } else {
