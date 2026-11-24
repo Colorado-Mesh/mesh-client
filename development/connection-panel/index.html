@@ -2443,6 +2443,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connection panel
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -2459,6 +2477,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#first-run-protocol-wizard-localstorage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First-run protocol wizard (localStorage)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -3071,6 +3119,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#first-run-protocol-wizard-localstorage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First-run protocol wizard (localStorage)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -3104,6 +3171,31 @@
 <li><strong>MeshCore chat channel filter:</strong> <code>meshcoreConfiguredChatChannels.ts</code> — zero-PSK slots excluded from unread badges and chat channel pills.</li>
 <li><strong>Planned-reboot reconnect (MeshCore):</strong> a companion reboot from the CLI settings sets <code>meshcorePlannedRebootRef</code>; the reconnect cycle then sets <code>plannedReboot</code> on the connection record (<code>connectionStore</code> → <code>useConnectionView</code>) and the App banner shows <code>connectionBanner.rebootingReconnectAttempt</code> instead of a connection-loss message. The first reconnect attempt waits at least <code>MESHCORE_PLANNED_REBOOT_RECONNECT_DELAY_MS</code> (8 s, <code>firstAttemptMinDelayMs</code>) for boot and BLE re-advertising; exhaustion or a manual disconnect clears the flag. See <a href="../meshcore-companion-cli/">meshcore-companion-cli.md</a>.</li>
 </ul>
+<h2 id="first-run-protocol-wizard-localstorage">First-run protocol wizard (localStorage)<a class="headerlink" href="#first-run-protocol-wizard-localstorage" title="Permanent link">&para;</a></h2>
+<p>The welcome picker/tour is <strong>not</strong> SQLite-backed. Progress lives in renderer <code>localStorage</code> under <code>mesh-client:firstRunWizard</code> (<code>FIRST_RUN_WIZARD_STORAGE_KEY</code> in <code>firstRunWizard.ts</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unseen</code></td>
+<td>Existing installs default here; wizard does not open until a fresh DB is detected.</td>
+</tr>
+<tr>
+<td><code>pending</code></td>
+<td>Shown on a new install but not finished; opens again on the next launch until done/skipped.</td>
+</tr>
+<tr>
+<td><code>done</code></td>
+<td>Finished or skipped; never shown again.</td>
+</tr>
+</tbody>
+</table>
+<p><code>useFirstRunWizardLauncher</code> (mounted from <code>App.tsx</code>) decides when to surface the wizard. It opens when status is <code>pending</code>, or when status is <code>unseen</code> <strong>and</strong> <code>window.electronAPI.db.wasCreatedThisLaunch</code> is strictly <code>true</code> (fresh SQLite on this boot). IPC/read failures are intentionally <strong>fail-open</strong> — a broken <code>wasCreatedThisLaunch</code> call must not block startup. See <code>firstRunWizardStore.ts</code> and <a href="../renderer-storage/">renderer-storage.md</a> for durable vs ephemeral storage boundaries.</p>
 
 
 
@@ -3124,7 +3216,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 23, 2026 20:59:37 UTC">November 23, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 24, 2026 02:43:38 UTC">November 24, 2026</span>
   </span>
 
     

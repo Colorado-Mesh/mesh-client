@@ -5478,7 +5478,7 @@ to verify each mode.</p>
 </tr>
 <tr>
 <td><code>check:semgrep</code></td>
-<td>Semgrep <code>p/typescript</code> <code>p/javascript</code> <code>p/nodejs</code> <code>p/security-audit</code> + <code>.semgrep.yml</code> (research FPs; staged-only in pre-commit)</td>
+<td>Semgrep <code>p/typescript</code> <code>p/javascript</code> <code>p/nodejs</code> <code>p/security-audit</code> + <code>.semgrep.yml</code> (local pre-commit / release; not GitHub Actions)</td>
 </tr>
 <tr>
 <td><code>check:silent-catches</code></td>
@@ -5746,7 +5746,7 @@ to verify each mode.</p>
 <ul>
 <li><code>actionlint</code> (recommended for workflow linting; run <code>pnpm run setup:actionlint</code> or <code>pnpm run setup:dev</code>)</li>
 <li><code>yamllint</code> (<strong>required</strong> for <code>check:environment</code> and pre-commit YAML lint; <code>pnpm run setup:yamllint</code> or brew/apt/pip)</li>
-<li><strong>Semgrep</strong> (<strong>required</strong> for <code>check:environment</code> and always-on pre-commit / release / CI <code>pnpm run check:semgrep</code>; <code>pnpm run setup:semgrep</code> or brew/pipx/pip). App login is <strong>not</strong> required. Config is tracked at <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.semgrep.yml"><code>.semgrep.yml</code></a>. Findings may be false positives — research before dismissing; if wrong for this repo, update <code>.semgrep.yml</code> or add a narrow <code>nosemgrep</code> with a reason (see <code>scripts/check-semgrep.mjs</code>). Semgrep and ESLint are separate: after Semgrep-driven edits, lint the touched files — <code>nosemgrep</code> does not replace <code>eslint-disable</code> (see AGENTS.md <strong>Semgrep × ESLint</strong>).</li>
+<li><strong>Semgrep</strong> (<strong>required locally</strong> for <code>check:environment</code> and always-on pre-commit <code>check:semgrep</code>; not run in GitHub Actions). Run <code>git config core.hooksPath .githooks</code> and <code>pnpm run setup:semgrep</code> (pin in <code>scripts/requirements-semgrep.txt</code>; brew/pipx/pip). App login is <strong>not</strong> required. Config is tracked at <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.semgrep.yml"><code>.semgrep.yml</code></a>. Findings may be false positives — research before dismissing; if wrong for this repo, update <code>.semgrep.yml</code> or add a narrow <code>nosemgrep</code> with a reason (see <code>scripts/check-semgrep.mjs</code>). Semgrep and ESLint are separate: after Semgrep-driven edits, lint the touched files — <code>nosemgrep</code> does not replace <code>eslint-disable</code> (see AGENTS.md <strong>Semgrep × ESLint</strong>).</li>
 <li><strong>Rust / <code>cargo</code> + clippy</strong> (<strong>required</strong> for <code>check:environment</code>; prefer <a href="https://rustup.rs/">rustup</a>; <code>pnpm run setup:dev</code> prints a non-interactive rustup recipe and can <code>rustup component add clippy</code>). Needed for the Reticulum sidecar — see <a href="#reticulum-sidecar-optional">Reticulum sidecar</a>. <code>rust-toolchain.toml</code> installs clippy/rustfmt/llvm-tools-preview on first build in <code>reticulum-sidecar/</code>. Optional: <code>cargo install cargo-llvm-cov</code> for <code>pnpm run reticulum:sidecar:coverage</code>.</li>
 <li>Podman or Docker (Docker-compatible engine) and <code>act</code> (optional for container CI — <code>act:*</code>; host CI uses <code>act:*:native</code> without a container engine)</li>
 <li>Python 3 + <code>venv</code> + MkDocs Python deps (for docs checks/builds)</li>
@@ -5891,7 +5891,7 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 <li>When <code>src/renderer/locales/en/translation.json</code> is staged: <code>pnpm run i18n:auto-translate</code> (incremental vs <code>HEAD</code> English, not <code>--all</code>) and re-stage <code>src/renderer/locales/</code> — see <a href="#9-internationalization-i18n">Internationalization</a></li>
 <li>ESLint on <strong>staged</strong> JS/TS with <code>--cache</code> (skip when none staged)</li>
 <li><code>pnpm run typecheck</code> (full tree); path-gated <code>typecheck:strict-shared</code> when <code>src/shared/</code> or <code>tsconfig.strict.json</code> staged</li>
-<li>Always-on: <code>check:electron-security</code>, <code>check:log-injection</code>, <code>check:log-service-sinks</code>, <code>check:codeql-extensions</code>, <code>check:insecure-temp-files</code>, <code>check:console-log</code>, <code>check:silent-catches</code>, <code>check:log-ids</code>, <code>check:semgrep</code> (auto + <code>.semgrep.yml</code>; findings may be wrong — research before dismissing, then update <code>.semgrep.yml</code> / narrow <code>nosemgrep</code> if truly incorrect), <code>check:url-hostname-sanitization</code>, <code>check:xss-patterns</code>, <code>check:protocol-string-gates</code>, <code>check:log-panel-filter</code>, <code>check:licenses</code>; <code>check:i18n</code> when English locale staged else <code>check:i18n:branch</code></li>
+<li>Always-on: <code>check:electron-security</code>, <code>check:log-injection</code>, <code>check:log-service-sinks</code>, <code>check:codeql-extensions</code>, <code>check:insecure-temp-files</code>, <code>check:console-log</code>, <code>check:silent-catches</code>, <code>check:log-ids</code>, <code>check:semgrep</code> (<code>p/typescript</code>, <code>p/javascript</code>, <code>p/nodejs</code>, <code>p/security-audit</code>, <code>.semgrep.yml</code>; findings may be wrong — research before dismissing, then update <code>.semgrep.yml</code> / narrow <code>nosemgrep</code> if truly incorrect), <code>check:url-hostname-sanitization</code>, <code>check:xss-patterns</code>, <code>check:protocol-string-gates</code>, <code>check:log-panel-filter</code>, <code>check:licenses</code>; <code>check:i18n</code> when English locale staged else <code>check:i18n:branch</code></li>
 <li>Path-gated: <code>check:flatpak</code>, <code>check:db-migrations</code>, <code>check:main-bundle</code> (when <code>src/main/</code> or esbuild main-build scripts staged), <code>check:ipc-contract</code>, <code>check:reticulum-interface-modes</code>, <code>check:reticulum-decommissioned-hubs</code>, <code>check:reticulum-sidecar</code> (when <code>cargo</code> on <code>PATH</code> and sidecar paths staged)</li>
 <li><code>pnpm audit --audit-level=high</code> only when dependency manifests staged; <code>actionlint</code> when <code>.github/workflows/*</code> staged; <code>yamllint</code> when any <code>*.yaml</code> / <code>*.yml</code> staged</li>
 <li><code>pnpm run test:staged</code> (<code>scripts/precommit-tests.mjs</code>: staged-only <code>vitest related</code>; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)</li>
@@ -5977,7 +5977,7 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 <li>Install <code>yamllint</code> (<strong>required</strong> by <code>check:environment</code> and the git pre-commit hook):</li>
 <li><code>pnpm run setup:yamllint</code></li>
 <li>Or: <code>brew install yamllint</code> / <code>sudo apt install yamllint</code> / hash-locked <code>pip install --user --require-hashes --only-binary=:all: -r scripts/requirements-yamllint.txt</code></li>
-<li>Install Semgrep (<strong>required</strong> by <code>check:environment</code> and always-on pre-commit <code>check:semgrep</code>):</li>
+<li>Install Semgrep (<strong>required</strong> by <code>check:environment</code> and always-on pre-commit <code>check:semgrep</code>; <strong>not</strong> in GitHub Actions):</li>
 <li><code>pnpm run setup:semgrep</code></li>
 <li>Or: macOS <code>brew install semgrep</code> / <code>pipx install semgrep</code> / <code>pip install semgrep</code></li>
 <li>Semgrep App login / <code>SEMGREP_APP_TOKEN</code> are <strong>not</strong> required.</li>
@@ -6262,7 +6262,7 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 23, 2026 23:12:03 UTC">November 23, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 24, 2026 02:43:38 UTC">November 24, 2026</span>
   </span>
 
     
