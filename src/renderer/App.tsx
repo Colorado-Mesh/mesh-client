@@ -888,11 +888,11 @@ function AppContent() {
       ),
     [t],
   );
-  const [firmwareCheckState, setFirmwareCheckState] = useState<FirmwareCheckResult>({
-    phase: 'idle',
-  });
-  const handleFirmwareResult = useCallback((r: FirmwareCheckResult) => {
-    setFirmwareCheckState(r);
+  const [firmwareCheckByProtocol, setFirmwareCheckByProtocol] = useState<
+    Partial<Record<MeshProtocol, FirmwareCheckResult>>
+  >({});
+  const handleFirmwareResult = useCallback((p: MeshProtocol, r: FirmwareCheckResult) => {
+    setFirmwareCheckByProtocol((prev) => ({ ...prev, [p]: r }));
   }, []);
   const [telemetryNoticeDismissed, setTelemetryNoticeDismissed] = useState(false);
   const useFahrenheit = useTemperatureUnitStore((s) => s.useFahrenheit);
@@ -2171,6 +2171,8 @@ function AppContent() {
     capabilities.prefersDeviceOwnerLongNameInHeader ||
     capabilities.hasReticulumInterfaceConfig;
   const showConnectionFirmwareCheck = capabilities.hasFirmwareUpdateCheck;
+  // Active-protocol slice only — never show MeshCom/MeshCore/Meshtastic results on another tab.
+  const firmwareCheckState = firmwareCheckByProtocol[protocol] ?? { phase: 'idle' as const };
   const openFirmwareReleases = useCallback(() => {
     const fallbackReleasesUrl = capabilities.hasMeshcomDeviceCommands
       ? MESHCOM_FIRMWARE_RELEASES_URL

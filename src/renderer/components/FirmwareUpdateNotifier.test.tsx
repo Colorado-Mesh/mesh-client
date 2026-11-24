@@ -86,6 +86,7 @@ describe('FirmwareUpdateNotifier', () => {
     const onResult = renderNotifier();
     await waitFor(() => {
       expect(onResult).toHaveBeenCalledWith(
+        'meshcore',
         expect.objectContaining({ phase: 'update-available', latestVersion: '1.17.1' }),
       );
     });
@@ -197,10 +198,63 @@ describe('FirmwareUpdateNotifier', () => {
     );
     await waitFor(() => {
       expect(onResult).toHaveBeenCalledWith(
+        'meshcom',
         expect.objectContaining({ phase: 'up-to-date', latestVersion: '4.40a.11.14' }),
       );
     });
     expect(screen.queryByText(/Firmware update available/)).toBeNull();
     expect(localStorage.getItem(MESHCOM_DISMISS_KEY)).toBeNull();
+  });
+
+  it('reports results under the protocol that produced them', async () => {
+    fetchMeshtasticRelease.mockResolvedValue({
+      version: '2.6.0',
+      releaseUrl: 'https://github.com/meshtastic/firmware/releases/tag/v2.6.0',
+    });
+    const idle = { status: 'disconnected' } as unknown as DeviceState;
+    const meshcore = {
+      status: 'configured',
+      firmwareVersion: '1.17.0.4',
+    } as unknown as DeviceState;
+    const meshtastic = {
+      status: 'configured',
+      firmwareVersion: '2.5.0',
+    } as unknown as DeviceState;
+    const onResult = vi.fn();
+    const shared = {
+      deviceStateByProtocol: protocolRecord(meshtastic, meshcore, idle, idle),
+      capabilitiesByProtocol: protocolRecord(
+        MESHTASTIC_CAPABILITIES,
+        MESHCORE_CAPABILITIES,
+        RETICULUM_CAPABILITIES,
+        MESHCOM_CAPABILITIES,
+      ),
+      onResult,
+    };
+    const { rerender } = render(
+      <ToastProvider>
+        <FirmwareUpdateNotifier {...shared} activeProtocol="meshcore" />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(onResult).toHaveBeenCalledWith(
+        'meshcore',
+        expect.objectContaining({ phase: 'update-available', latestVersion: '1.17.1' }),
+      );
+    });
+
+    onResult.mockClear();
+    rerender(
+      <ToastProvider>
+        <FirmwareUpdateNotifier {...shared} activeProtocol="meshtastic" />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(onResult).toHaveBeenCalledWith(
+        'meshtastic',
+        expect.objectContaining({ phase: 'update-available', latestVersion: '2.6.0' }),
+      );
+    });
+    expect(onResult.mock.calls.every(([p]) => p === 'meshtastic')).toBe(true);
   });
 });

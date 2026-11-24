@@ -50,7 +50,8 @@ export interface FirmwareUpdateNotifierProps {
   deviceStateByProtocol: Record<MeshProtocol, DeviceState>;
   capabilitiesByProtocol: Record<MeshProtocol, ProtocolCapabilities>;
   activeProtocol: MeshProtocol;
-  onResult: (r: FirmwareCheckResult) => void;
+  /** Results are keyed by protocol so Connection never shows a stale cross-protocol check. */
+  onResult: (protocol: MeshProtocol, r: FirmwareCheckResult) => void;
 }
 
 /** Check upstream firmware releases when the active protocol radio reaches configured. */
@@ -73,7 +74,7 @@ export function FirmwareUpdateNotifier({
       return;
     }
 
-    onResult({ phase: 'checking' });
+    onResult(activeProtocol, { phase: 'checking' });
     let cancelled = false;
 
     void selectByProtocol(fetchLatestReleaseByProtocol, activeProtocol)()
@@ -81,6 +82,7 @@ export function FirmwareUpdateNotifier({
         if (cancelled) return;
         const updateAvailable = isUpdateAvailable(activeCapabilities, firmwareVersion, release);
         onResult(
+          activeProtocol,
           updateAvailable
             ? {
                 phase: 'update-available',
@@ -118,7 +120,7 @@ export function FirmwareUpdateNotifier({
           '[FirmwareUpdateNotifier] check failed:',
           err instanceof Error ? err.message : String(err),
         );
-        onResult({ phase: 'error' });
+        onResult(activeProtocol, { phase: 'error' });
       });
 
     return () => {
@@ -128,7 +130,7 @@ export function FirmwareUpdateNotifier({
 
   useEffect(() => {
     if (activeState.status === 'disconnected') {
-      onResult({ phase: 'idle' });
+      onResult(activeProtocol, { phase: 'idle' });
       toastShownRef.current[activeProtocol] = false;
     }
   }, [activeProtocol, activeState.status, onResult]);
