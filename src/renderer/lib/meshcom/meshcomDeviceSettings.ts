@@ -8,6 +8,7 @@
 
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
 import { parseMeshcomGrcListenList } from './meshcomGrcGroups';
+import { formatMeshcomInstalledFirmware } from './meshcomHwIds';
 
 /** Mutable accumulator while BLE config packets (or serial --info lines) arrive. */
 export interface MeshcomDeviceSettingsAccum {
@@ -48,6 +49,11 @@ export interface MeshcomDeviceSettingsAccum {
   txPower?: string;
   freqMhz?: string;
   fwver?: string;
+  /**
+   * Build stamp from BLE TYP `IS1` `BDATE` (`YYYYMMDD-HHMMSS`).
+   * Serial embeds the equivalent in `fwver` as `(build: …)`.
+   */
+  buildDate?: string;
   bme?: 'on' | 'off';
   bmp?: 'on' | 'off';
   onewire?: 'on' | 'off';
@@ -72,7 +78,10 @@ export interface MeshcomDeviceSettingsSnapshot {
   callsign: string;
   operatorName: string;
   countryCode: string;
-  /** Firmware revision from BLE `FWVER` / serial `--info` (e.g. `4.40a` or `4.40a-rm5`). */
+  /**
+   * Firmware revision for Connection / update-check display
+   * (release-tag shape, e.g. `4.40a.11.22`).
+   */
   firmwareVersion?: string;
   batteryLevel?: number;
   voltage?: number;
@@ -262,6 +271,12 @@ export function mergeMeshcomBleSettingsJson(
       if (ow) accum.onewire = ow;
       break;
     }
+    case 'IS1': {
+      // Firmware companion JSON: `{"TYP":"IS1","BDATE":"YYYYMMDD-HHMMSS"}` (sendInfo).
+      const bdate = asString(doc.BDATE);
+      if (bdate) accum.buildDate = bdate;
+      break;
+    }
     default:
       break;
   }
@@ -320,8 +335,9 @@ export function mergeMeshcomSerialInfoText(accum: MeshcomDeviceSettingsAccum, te
   if (web?.[1] === 'on' || web?.[1] === 'off') accum.webserver = web[1];
   const maxv = /MAXV\s+([\d.]+)/i.exec(text);
   if (maxv?.[1]) accum.maxv = maxv[1];
-  const fw = /--MeshCom\s+(\S+)/i.exec(text);
-  if (fw?.[1]) accum.fwver = fw[1];
+  // Full revision line: `4.40a (build: Nov 22 2026 / 14:30:00)` — not only the `\S+` token.
+  const fw = /--MeshCom\s+([^\r\n]+)/i.exec(text);
+  if (fw?.[1]) accum.fwver = fw[1].trim();
   const battV = /BATT\s+([\d.]+)\s*V/i.exec(text);
   if (battV?.[1]) {
     const n = Number.parseFloat(battV[1]);
@@ -465,7 +481,7 @@ export function snapshotMeshcomDeviceSettings(
     callsign: accum.call ?? '',
     operatorName: accum.operatorName ?? '',
     countryCode: accum.country ?? '',
-    firmwareVersion: accum.fwver,
+    firmwareVersion: formatMeshcomInstalledFirmware(accum.fwver, accum.buildDate) ?? undefined,
     batteryLevel: accum.battPercent,
     voltage: accum.battVoltage,
     temperatureC: accum.temperatureC,

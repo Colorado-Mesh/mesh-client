@@ -137,7 +137,9 @@ BLE HELLO `TYP` **MH** JSON and serial `--mheard` rows parse into `node_info` / 
 
 `pnpm run update` runs `check_meshcom_upstream` against [icssw-org/MeshCom-Firmware](https://github.com/icssw-org/MeshCom-Firmware) published releases (`MESHCOM_UPSTREAM_WATCH_ENTRIES` in `scripts/update.sh`). On a newer tag, review EXTUDP/BLE/serial wire sources and country profiles, then bump `reviewed-ref` (and [`MESHCOM_FIRMWARE_REVIEWED_REF`](../../src/shared/meshcomConstants.ts)). That pin is for maintainers only — it does not drive the in-app “latest” fetch.
 
-**In-app update check:** With a MeshCom radio `configured` and a device `FWVER`, `FirmwareUpdateNotifier` fetches GitHub `/releases/latest` (`hasFirmwareUpdateCheck: true`) and compares lettered versions (`4.40a` vs `v4.40a.11.14`) in [`firmwareCheck.ts`](../../src/renderer/lib/firmwareCheck.ts). Same toast / Connection indicator pattern as Meshtastic and MeshCore. USB device flash stays off (`hasDeviceFirmwareFlash: false`).
+**Connection firmware line:** BLE companion JSON reports spaced `FWVER` (`4.40 a`) plus TYP `IS1` `BDATE` (`YYYYMMDD-HHMMSS`); serial `--info` prints `--MeshCom 4.40a (build: …)`. [`formatMeshcomInstalledFirmware`](../../src/renderer/lib/meshcom/meshcomHwIds.ts) maps those into the same shape as [MeshCom-Firmware](https://github.com/icssw-org/MeshCom-Firmware/releases) tags (`4.40a.11.22`), not the raw BDATE stamp.
+
+**In-app update check:** With a MeshCom radio `configured` and a device firmware string, `FirmwareUpdateNotifier` fetches GitHub `/releases/latest` (`hasFirmwareUpdateCheck: true`) and compares lettered versions (`4.40a.11.22` vs `v4.40a.11.22`) in [`firmwareCheck.ts`](../../src/renderer/lib/firmwareCheck.ts). Same toast / Connection indicator pattern as Meshtastic and MeshCore. USB device flash stays off (`hasDeviceFirmwareFlash: false`).
 
 ## Capability gates
 

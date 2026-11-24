@@ -81,6 +81,22 @@ describe('meshcomDeviceSettings', () => {
     expect(snap.updatedAt).toBe(42);
   });
 
+  it('merges BLE TYP IS1 BDATE into full firmware revision display', () => {
+    const accum = emptyMeshcomDeviceSettingsAccum();
+    mergeMeshcomBleSettingsJson(accum, {
+      TYP: 'I',
+      CALL: 'OE1ABC-1',
+      FWVER: '4.40 a',
+    });
+    mergeMeshcomBleSettingsJson(accum, {
+      TYP: 'IS1',
+      BDATE: '20261122-143000',
+    });
+    expect(accum.fwver).toBe('4.40 a');
+    expect(accum.buildDate).toBe('20261122-143000');
+    expect(snapshotMeshcomDeviceSettings(accum).firmwareVersion).toBe('4.40a.11.22');
+  });
+
   it('parses serial --info console text', () => {
     const accum = emptyMeshcomDeviceSettingsAccum();
     mergeMeshcomSerialInfoText(
@@ -132,6 +148,8 @@ describe('meshcomDeviceSettings', () => {
     expect(accum.txPower).toBe('20');
     expect(accum.battVoltage).toBe(3.95);
     expect(accum.battPercent).toBe(72);
+    expect(accum.fwver).toBe('4.35p (build: Mar 20 2026)');
+    expect(snapshotMeshcomDeviceSettings(accum).firmwareVersion).toBe('4.35p.03.20');
     expect(meshcomListenGroupIdsFromSnapshot(snapshotMeshcomDeviceSettings(accum))).toEqual([
       232, 20,
     ]);
