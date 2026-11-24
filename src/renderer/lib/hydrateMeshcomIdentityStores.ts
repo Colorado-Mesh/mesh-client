@@ -4,6 +4,7 @@
 
 import { getConnection } from '../stores/connectionStore';
 import {
+  type MessageRecord,
   replaceMessageRecordsForIdentity,
   upsertMessageRecordsForIdentity,
 } from '../stores/messageStore';
@@ -27,7 +28,8 @@ export interface HydrateMeshcomIdentityOptions {
   nodesMode?: 'upsert' | 'replace';
 }
 
-interface MeshcomDbMessageRow {
+/** @internal Exported for hydrate merge tests. */
+export interface MeshcomDbMessageRow {
   id?: number;
   msg_id?: string | null;
   from_call?: string | null;
@@ -42,7 +44,8 @@ interface MeshcomDbMessageRow {
   received_via?: string | null;
 }
 
-function rowsToMessageRecords(rows: MeshcomDbMessageRow[]) {
+/** @internal Exported for hydrate merge tests. */
+export function rowsToMessageRecords(rows: MeshcomDbMessageRow[]): MessageRecord[] {
   return rows.map((row) => {
     const fromCall = typeof row.from_call === 'string' ? row.from_call : '';
     const senderId = fromCall ? callsignToNodeId(fromCall) : 0;
@@ -77,6 +80,45 @@ function rowsToMessageRecords(rows: MeshcomDbMessageRow[]) {
       rxSnr: typeof row.snr === 'number' ? row.snr : undefined,
     });
   });
+}
+
+function isSameLogicalMeshcomRecord(a: MessageRecord, b: MessageRecord): boolean {
+  return (
+    a.from === b.from &&
+    a.to === b.to &&
+    a.payload === b.payload &&
+    a.channelIndex === b.channelIndex &&
+    a.timestamp === b.timestamp
+  );
+}
+
+/**
+ * Merge offline + session rows after a failed rebind. Same store id with the same logical
+ * payload collapses; same msg_id with different content remints via meshcom-db:{row.id}.
+ */
+export function mergeMeshcomHydrateMessageRecords(
+  primary: MessageRecord[],
+  secondary: MessageRecord[],
+  secondaryRows: MeshcomDbMessageRow[],
+): MessageRecord[] {
+  const byId = new Map<string, MessageRecord>();
+  for (const row of primary) byId.set(row.id, row);
+  for (let i = 0; i < secondary.length; i++) {
+    const rec = secondary[i];
+    const existing = byId.get(rec.id);
+    if (!existing) {
+      byId.set(rec.id, rec);
+      continue;
+    }
+    if (isSameLogicalMeshcomRecord(existing, rec)) continue;
+    const dbId = secondaryRows[i]?.id;
+    const safeId =
+      typeof dbId === 'number' && Number.isFinite(dbId)
+        ? `meshcom-db:${dbId}`
+        : `${rec.id}-rb-${i}`;
+    byId.set(safeId, { ...rec, id: safeId });
+  }
+  return [...byId.values()];
 }
 
 export async function hydrateMeshcomIdentity(
@@ -201,7 +243,11 @@ export async function hydrateMeshcomIdentity(
         undefined,
         500,
       )) as MeshcomDbMessageRow[];
-      combined = [...combined, ...rowsToMessageRecords(legacyRows)];
+      combined = mergeMeshcomHydrateMessageRecords(
+        combined,
+        rowsToMessageRecords(legacyRows),
+        legacyRows,
+      );
     }
     if (!isCurrent()) return;
     const finalRecords = trimChatMessagesToMax(combined, MAX_IN_MEMORY_CHAT_MESSAGES);

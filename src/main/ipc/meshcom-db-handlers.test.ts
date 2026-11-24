@@ -183,9 +183,9 @@ describe('rebindMeshcomIdentityOn', () => {
     const run = vi.fn().mockReturnValue({ changes: 2 });
     const prepareOnce = vi.fn().mockReturnValue({ run, all: vi.fn().mockReturnValue([]) });
     const db = { prepareOnce } as never;
-    // drop-logical + remint + move messages + drop + move contacts
+    // drop-logical + remint + move messages + merge + drop + move contacts
     expect(rebindMeshcomIdentityOn(db, 'id-old-session', 'offline-meshcom')).toEqual({
-      changes: 10,
+      changes: 12,
     });
     expect(prepareOnce).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE meshcom_messages SET identity_id'),
@@ -302,6 +302,85 @@ describe('rebindMeshcomIdentityOn with NodeSqliteDB', () => {
       expect(offline.filter((r) => r.msg_id === 'shared' && r.text === 'same body')).toHaveLength(
         1,
       );
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('merges source favorite and coords into destination before dropping the contact', () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-mc-rebind-contact-'));
+    try {
+      const db = new NodeSqliteDB(path.join(dir, 'test.db'));
+      runSchemaUpgrade(db);
+      db.prepareOnce(
+        `INSERT INTO meshcom_contacts
+           (callsign, identity_id, node_id, lat, lon, batt, last_heard, favorited)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run('N0CALL', 'offline-meshcom', 1, null, null, null, 100, 0);
+      db.prepareOnce(
+        `INSERT INTO meshcom_contacts
+           (callsign, identity_id, node_id, lat, lon, batt, last_heard, favorited)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run('N0CALL', 'id-old', 1, 39.7, -105.0, 88, 200, 1);
+
+      rebindMeshcomIdentityOn(db, 'id-old', 'offline-meshcom');
+
+      const row = db
+        .prepareOnce(
+          `SELECT identity_id, favorited, lat, lon, batt, last_heard
+           FROM meshcom_contacts WHERE callsign = 'N0CALL'`,
+        )
+        .get() as {
+        identity_id: string;
+        favorited: number;
+        lat: number | null;
+        lon: number | null;
+        batt: number | null;
+        last_heard: number | null;
+      };
+      expect(row.identity_id).toBe('offline-meshcom');
+      expect(row.favorited).toBe(1);
+      expect(row.lat).toBe(39.7);
+      expect(row.lon).toBe(-105.0);
+      expect(row.batt).toBe(88);
+      expect(row.last_heard).toBe(200);
+      expect(
+        (
+          db
+            .prepareOnce(`SELECT COUNT(*) AS c FROM meshcom_contacts WHERE callsign = 'N0CALL'`)
+            .get() as { c: number }
+        ).c,
+      ).toBe(1);
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('does not treat same msg_id with different recipients as logical duplicates', () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-mc-rebind-to-'));
+    try {
+      const db = new NodeSqliteDB(path.join(dir, 'test.db'));
+      runSchemaUpgrade(db);
+      const insert = db.prepareOnce(
+        `INSERT INTO meshcom_messages
+           (identity_id, msg_id, from_call, to_call_or_group, text, channel_idx, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      );
+      insert.run('offline-meshcom', 'm1', 'N0CALL', 'W1AW', 'hi', -1, 1000);
+      insert.run('id-old', 'm1', 'N0CALL', 'K1ABC', 'hi', -1, 1000);
+      rebindMeshcomIdentityOn(db, 'id-old', 'offline-meshcom');
+      const rows = db
+        .prepareOnce(
+          `SELECT msg_id, to_call_or_group FROM meshcom_messages
+           WHERE identity_id = 'offline-meshcom' ORDER BY id`,
+        )
+        .all() as { msg_id: string; to_call_or_group: string }[];
+      expect(rows).toHaveLength(2);
+      expect(rows.map((r) => r.to_call_or_group).sort()).toEqual(['K1ABC', 'W1AW']);
+      expect(rows.some((r) => r.msg_id === 'm1')).toBe(true);
+      expect(rows.some((r) => /^m1-rb\d+$/.test(r.msg_id))).toBe(true);
       db.close();
     } finally {
       rmSync(dir, { recursive: true, force: true });

@@ -255,9 +255,12 @@ export function validateDeleteMeshcomContact(
  * Pass `fromId` `*` to consolidate every non-`toId` bucket into `toId` (orphan recovery).
  *
  * Logical message identity for cross-bucket dedupe is
- * `(msg_id, from_call, text, channel_idx, timestamp)`. Same msg_id alone is not enough
- * (MeshCom firmware IDs wrap / collide) — colliding-but-distinct rows keep both by reminting
- * the source msg_id before the move. Contacts still dedupe on callsign.
+ * `(msg_id, from_call, to_call_or_group, text, channel_idx, timestamp)`. Same msg_id alone
+ * is not enough (MeshCom firmware IDs wrap / collide) — colliding-but-distinct rows keep
+ * both by reminting the source msg_id before the move.
+ *
+ * Contacts dedupe on callsign after merging source favorites / missing coords into dest
+ * (same COALESCE / preserve-favorite spirit as saveMeshcomContact upsert).
  */
 export function rebindMeshcomIdentityOn(
   db: NodeSqliteDB,
@@ -299,7 +302,7 @@ export function rebindMeshcomIdentityOn(
   let changes = 0;
   for (const source of sourceIds) {
     if (source === toId) continue;
-    // True duplicates only — matching msg_id + body + channel + timestamp + sender.
+    // True duplicates only — matching msg_id + sender + recipient + body + channel + timestamp.
     const dropMsg = db
       .prepareOnce(
         `DELETE FROM meshcom_messages
@@ -310,6 +313,7 @@ export function rebindMeshcomIdentityOn(
              WHERE dest.identity_id = @toId
                AND dest.msg_id = meshcom_messages.msg_id
                AND IFNULL(dest.from_call, '') = IFNULL(meshcom_messages.from_call, '')
+               AND IFNULL(dest.to_call_or_group, '') = IFNULL(meshcom_messages.to_call_or_group, '')
                AND dest.text = meshcom_messages.text
                AND dest.channel_idx = meshcom_messages.channel_idx
                AND dest.timestamp = meshcom_messages.timestamp
@@ -335,6 +339,75 @@ export function rebindMeshcomIdentityOn(
       .prepareOnce(`UPDATE meshcom_messages SET identity_id = @toId WHERE identity_id = @fromId`)
       .run({ fromId: source, toId });
     changes += Number(moveMsg.changes);
+
+    // Fold source prefs into dest before dropping the source row (favorite wins; fill gaps).
+    const mergeContact = db
+      .prepareOnce(
+        `UPDATE meshcom_contacts
+         SET
+           favorited = CASE
+             WHEN favorited = 1 THEN 1
+             WHEN (
+               SELECT s.favorited FROM meshcom_contacts AS s
+               WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+             ) = 1 THEN 1
+             ELSE favorited
+           END,
+           lat = COALESCE(
+             lat,
+             (SELECT s.lat FROM meshcom_contacts AS s
+              WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign)
+           ),
+           lon = COALESCE(
+             lon,
+             (SELECT s.lon FROM meshcom_contacts AS s
+              WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign)
+           ),
+           batt = COALESCE(
+             batt,
+             (SELECT s.batt FROM meshcom_contacts AS s
+              WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign)
+           ),
+           hw_id = COALESCE(
+             hw_id,
+             (SELECT s.hw_id FROM meshcom_contacts AS s
+              WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign)
+           ),
+           last_heard = CASE
+             WHEN (
+               SELECT s.last_heard FROM meshcom_contacts AS s
+               WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+             ) IS NOT NULL
+             AND (
+               last_heard IS NULL
+               OR (
+                 SELECT s.last_heard FROM meshcom_contacts AS s
+                 WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+               ) > last_heard
+             )
+             THEN (
+               SELECT s.last_heard FROM meshcom_contacts AS s
+               WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+             )
+             ELSE last_heard
+           END,
+           node_id = CASE
+             WHEN node_id = 0 THEN COALESCE(
+               NULLIF((
+                 SELECT s.node_id FROM meshcom_contacts AS s
+                 WHERE s.identity_id = @fromId AND s.callsign = meshcom_contacts.callsign
+               ), 0),
+               node_id
+             )
+             ELSE node_id
+           END
+         WHERE identity_id = @toId
+           AND callsign IN (
+             SELECT callsign FROM meshcom_contacts WHERE identity_id = @fromId
+           )`,
+      )
+      .run({ fromId: source, toId });
+    changes += Number(mergeContact.changes);
 
     const dropContact = db
       .prepareOnce(
