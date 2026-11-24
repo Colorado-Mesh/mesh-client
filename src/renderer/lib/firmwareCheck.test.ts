@@ -296,11 +296,17 @@ describe('fetchLatestMeshComRelease', () => {
 describe('normalizeMeshComVersionTag', () => {
   it('strips v-prefix and keeps release date suffix', () => {
     expect(normalizeMeshComVersionTag('v4.40a.11.14')).toBe('4.40a.11.14');
+    expect(normalizeMeshComVersionTag('v4.40a.11.22')).toBe('4.40a.11.22');
   });
 
   it('strips RM fork suffix and parenthetical region', () => {
     expect(normalizeMeshComVersionTag('4.40a-rm5')).toBe('4.40a');
     expect(normalizeMeshComVersionTag('4.35p (eu)')).toBe('4.35p');
+  });
+
+  it('collapses whitespace so spaced device FWVER still matches release tags', () => {
+    expect(normalizeMeshComVersionTag('4.40 a')).toBe('4.40a');
+    expect(normalizeMeshComVersionTag(' 4.40  a ')).toBe('4.40a');
   });
 
   it('lowercases the letter series', () => {
@@ -334,24 +340,26 @@ describe('parseMeshComVersion', () => {
 // ─── meshComFirmwareUpdateAvailable ───────────────────────────────
 
 describe('meshComFirmwareUpdateAvailable', () => {
-  it('returns false when device letter series matches latest release', () => {
-    expect(meshComFirmwareUpdateAvailable('4.40a', '4.40a.11.14')).toBe(false);
-    expect(meshComFirmwareUpdateAvailable('4.40a-rm5', 'v4.40a.11.14')).toBe(false);
+  it('returns false when device letter series matches latest release (date suffix ignored)', () => {
+    // Latest ICSSW tag is calendar-suffixed; device FWVER is letter-only (or spaced).
+    expect(meshComFirmwareUpdateAvailable('4.40a', '4.40a.11.22')).toBe(false);
+    expect(meshComFirmwareUpdateAvailable('4.40 a', 'v4.40a.11.22')).toBe(false);
+    expect(meshComFirmwareUpdateAvailable('4.40a-rm5', 'v4.40a.11.22')).toBe(false);
   });
 
   it('returns true when release major/minor/letter is newer', () => {
-    expect(meshComFirmwareUpdateAvailable('4.35p', '4.40a.11.14')).toBe(true);
+    expect(meshComFirmwareUpdateAvailable('4.35p', '4.40a.11.22')).toBe(true);
     expect(meshComFirmwareUpdateAvailable('4.40a', '4.41a.01.01')).toBe(true);
     expect(meshComFirmwareUpdateAvailable('4.40a', '4.40b.01.01')).toBe(true);
   });
 
   it('compares MM.DD only when the device reports a date', () => {
-    expect(meshComFirmwareUpdateAvailable('4.40a.11.07', '4.40a.11.14')).toBe(true);
-    expect(meshComFirmwareUpdateAvailable('4.40a.11.14', '4.40a.11.14')).toBe(false);
+    expect(meshComFirmwareUpdateAvailable('4.40a.11.07', '4.40a.11.22')).toBe(true);
+    expect(meshComFirmwareUpdateAvailable('4.40a.11.22', '4.40a.11.22')).toBe(false);
   });
 
   it('returns false for unparseable device or release', () => {
-    expect(meshComFirmwareUpdateAvailable('bogus', '4.40a.11.14')).toBe(false);
+    expect(meshComFirmwareUpdateAvailable('bogus', '4.40a.11.22')).toBe(false);
     expect(meshComFirmwareUpdateAvailable('4.40a', 'bogus')).toBe(false);
   });
 });

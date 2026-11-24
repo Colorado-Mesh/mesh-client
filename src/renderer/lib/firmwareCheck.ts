@@ -153,8 +153,9 @@ export async function fetchLatestMeshComRelease(): Promise<{
 
 /**
  * Normalize MeshCom FWVER / GitHub tags for display and compare.
- * Strips leading `v`, parenthetical region (` (eu)`), and RM fork suffix (`-rm5`).
- * Keeps `major.minor` + optional letter + optional `.MM.DD` (release-tag date).
+ * Strips leading `v`, whitespace (device may report `4.40 a`), parenthetical region
+ * (` (eu)`), and RM fork suffix (`-rm5`). Keeps `major.minor` + optional letter +
+ * optional `.MM.DD` (release-tag calendar suffix — not a semver patch).
  */
 export function normalizeMeshComVersionTag(tag: string): string {
   let s = tag.trim();
@@ -171,7 +172,8 @@ export function normalizeMeshComVersionTag(tag: string): string {
     const at = rmMatch.index;
     s = `${s.slice(0, at)}${s.slice(at + rmMatch[0].length)}`;
   }
-  s = s.trim();
+  // Collapse spaces so `4.40 a` / `4.40a .11.22` still parse as lettered MeshCom tags.
+  s = s.replace(/\s+/g, '');
   // Separate base + optional date to avoid nested-optional regex (eslint security/detect-unsafe-regex).
   const baseMatch = /^(\d+\.\d+)([a-z]?)/i.exec(s);
   if (!baseMatch) return s;
