@@ -33,7 +33,6 @@ vi.mock('../../serialPortSignature', async (importOriginal) => {
   return {
     ...actual,
     persistSerialPortIdentity: vi.fn(),
-    selectGrantedSerialPort: vi.fn(),
   };
 });
 
@@ -42,20 +41,18 @@ vi.mock('../../meshtastic/meshtasticTransportLossDetection', () => ({
 }));
 
 import { connectGattWithScanBusyRetry } from '../../bleReconnectHelper';
-import {
-  selectGrantedSerialPort,
-  SERIAL_MULTIPLE_MATCH_ERROR,
-  SERIAL_NO_MATCH_ERROR,
-} from '../../serialPortSignature';
 import { createMeshComConnection, transportParamsToMeshCom } from './MeshComTransport';
 
 const connectGattWithScanBusyRetryMock = vi.mocked(connectGattWithScanBusyRetry);
 const openMock = vi.mocked(openSerialPortWithTimeout);
 const closeMock = vi.mocked(closeSerialPortIfOpen);
-const selectGrantedSerialPortMock = vi.mocked(selectGrantedSerialPort);
 
 /** Keep read() pending so the serial read loop does not tear the port down mid-assert. */
-function mockSerialPort(): SerialPort {
+function mockSerialPort(opts?: {
+  portId?: string;
+  usbVendorId?: number;
+  usbProductId?: number;
+}): SerialPort {
   return {
     readable: {
       getReader: () => ({
@@ -67,7 +64,11 @@ function mockSerialPort(): SerialPort {
     writable: new WritableStream<Uint8Array>(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    getInfo: () => ({}),
+    getInfo: () => ({
+      usbVendorId: opts?.usbVendorId,
+      usbProductId: opts?.usbProductId,
+    }),
+    portId: opts?.portId,
     open: vi.fn(),
     close: vi.fn(),
     forget: vi.fn(),
@@ -239,9 +240,8 @@ describe('MeshComTransport', () => {
 
   it('serial empty granted list falls back to requestPort when a saved identity exists', async () => {
     openMock.mockClear();
-    selectGrantedSerialPortMock.mockReset();
 
-    const port = mockSerialPort();
+    const port = mockSerialPort({ portId: 'chosen' });
     const requestPort = vi.fn().mockResolvedValue(port);
     const getPorts = vi.fn().mockResolvedValue([]);
     Object.defineProperty(navigator, 'serial', {
@@ -256,7 +256,6 @@ describe('MeshComTransport', () => {
     });
 
     expect(getPorts).toHaveBeenCalled();
-    expect(selectGrantedSerialPortMock).not.toHaveBeenCalled();
     expect(requestPort).toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('mcL1503 [MeshComTransport] no granted serial ports'),
@@ -269,14 +268,11 @@ describe('MeshComTransport', () => {
 
   it('serial no-match falls back to requestPort', async () => {
     openMock.mockClear();
-    selectGrantedSerialPortMock.mockReset();
-    selectGrantedSerialPortMock.mockImplementation(() => {
-      throw new Error(SERIAL_NO_MATCH_ERROR);
-    });
 
-    const port = mockSerialPort();
+    const other = mockSerialPort({ portId: 'other-device' });
+    const port = mockSerialPort({ portId: 'chosen' });
     const requestPort = vi.fn().mockResolvedValue(port);
-    const getPorts = vi.fn().mockResolvedValue([{} as SerialPort]);
+    const getPorts = vi.fn().mockResolvedValue([other]);
     Object.defineProperty(navigator, 'serial', {
       configurable: true,
       value: { requestPort, getPorts },
@@ -289,10 +285,6 @@ describe('MeshComTransport', () => {
     });
 
     expect(getPorts).toHaveBeenCalled();
-    expect(selectGrantedSerialPortMock).toHaveBeenCalledWith(
-      expect.any(Array),
-      'stale-flasher-port',
-    );
     expect(requestPort).toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('mcL1502 [MeshComTransport] no matching serial port'),
@@ -303,16 +295,48 @@ describe('MeshComTransport', () => {
     warn.mockRestore();
   });
 
-  it('serial ambiguous match falls back to requestPort', async () => {
+  it('serial matches MeshCom portId and ignores another granted device', async () => {
     openMock.mockClear();
-    selectGrantedSerialPortMock.mockReset();
-    selectGrantedSerialPortMock.mockImplementation(() => {
-      throw new Error(SERIAL_MULTIPLE_MATCH_ERROR);
+
+    const meshcomPort = mockSerialPort({
+      portId: 'meshcom-acm0',
+      usbVendorId: 0x303a,
+      usbProductId: 0x1001,
+    });
+    const otherProtocolPort = mockSerialPort({
+      portId: 'flasher-port',
+      usbVendorId: 4292,
+      usbProductId: 60000,
+    });
+    const requestPort = vi.fn();
+    const getPorts = vi.fn().mockResolvedValue([otherProtocolPort, meshcomPort]);
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: { requestPort, getPorts },
     });
 
-    const port = mockSerialPort();
-    const requestPort = vi.fn().mockResolvedValue(port);
-    const getPorts = vi.fn().mockResolvedValue([{} as SerialPort, {} as SerialPort]);
+    const conn = await createMeshComConnection({
+      transport: 'serial',
+      portSignature: 'meshcom-acm0',
+    });
+
+    expect(requestPort).not.toHaveBeenCalled();
+    expect(openMock).toHaveBeenCalledWith(meshcomPort, 115200, 'MeshCom serial open');
+    expect(conn.getSerialPort?.()).toBe(meshcomPort);
+    await conn.close();
+  });
+
+  it('serial does not bind another granted device when MeshCom portId is missing', async () => {
+    openMock.mockClear();
+
+    const otherProtocolPort = mockSerialPort({
+      portId: 'flasher-port',
+      usbVendorId: 4292,
+      usbProductId: 60000,
+    });
+    const chosen = mockSerialPort({ portId: 'user-picked' });
+    const requestPort = vi.fn().mockResolvedValue(chosen);
+    const getPorts = vi.fn().mockResolvedValue([otherProtocolPort]);
     Object.defineProperty(navigator, 'serial', {
       configurable: true,
       value: { requestPort, getPorts },
@@ -321,14 +345,12 @@ describe('MeshComTransport', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const conn = await createMeshComConnection({
       transport: 'serial',
-      portSignature: 'dual-cp2105',
+      portSignature: 'meshcom-missing-id',
     });
 
     expect(requestPort).toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('mcL1501 [MeshComTransport] ambiguous serial match'),
-    );
-    expect(openMock).toHaveBeenCalledWith(port, 115200, 'MeshCom serial open');
+    expect(openMock).toHaveBeenCalledWith(chosen, 115200, 'MeshCom serial open');
+    expect(conn.getSerialPort?.()).toBe(chosen);
     await conn.close();
     warn.mockRestore();
   });

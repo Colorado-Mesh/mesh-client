@@ -1510,7 +1510,6 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1498: 'src/renderer/components/ConnectionPanel.tsx:historyUpsertFailed',
   mcL1499: 'src/renderer/lib/connection.ts:reconnectSerialAmbiguousMatch',
   mcL1500: 'src/renderer/lib/protocols/meshcore/MeshCoreTransport.ts:reconnectAmbiguousMatch',
-  mcL1501: 'src/renderer/lib/protocols/meshcom/MeshComTransport.ts:connectAmbiguousMatch',
   mcL1502: 'src/renderer/lib/protocols/meshcom/MeshComTransport.ts:connectNoMatch',
   mcL1503: 'src/renderer/lib/protocols/meshcom/MeshComTransport.ts:connectEmptyGranted',
 };

@@ -19,7 +19,7 @@ import {
 } from '../lib/gpsSource';
 import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityNodeMap } from '../lib/identityStoreReads';
-import { resolveLastSerialPortId } from '../lib/lastConnectionStorage';
+import { resolveLastSerialPortId, saveLastConnection } from '../lib/lastConnectionStorage';
 import { canTransmitLocation } from '../lib/locationTransmit';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from '../lib/meshcom/meshcomCallRegistry';
 import { callsignToNodeId, normalizeMeshcomCallsign } from '../lib/meshcom/meshcomCallsign';
@@ -98,6 +98,20 @@ function toUiConnectionType(type: MeshcomRfTransportType): ConnectionType {
 function resolveHost(httpAddress?: string): string {
   const trimmed = httpAddress?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : '127.0.0.1';
+}
+
+/** Persist the opened Web Serial port as MeshCom last-connection; return its id for reconnect. */
+function persistOpenedMeshcomSerialPort(
+  handle: unknown,
+  fallbackPortId?: string | null,
+): string | undefined {
+  const port = (handle as MeshComDeviceHandle | null)?.connection.getSerialPort?.() ?? null;
+  const openedId = (port as (SerialPort & { portId?: string }) | null)?.portId?.trim() || null;
+  if (openedId) {
+    saveLastConnection('meshcom', { type: 'serial', serialPortId: openedId });
+    return openedId;
+  }
+  return resolveLastSerialPortId('meshcom') ?? fallbackPortId ?? undefined;
 }
 
 /** Sync MeshCom self callsign → myNodeNum / node row (settings, setOwner, learned TX echo). */
@@ -597,11 +611,11 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
               : undefined,
           portSignature: meshcomSerialPortId,
         });
-        // After open, persistSerialPortIdentity may have updated the MeshCom-scoped
-        // port (chooser / no-match). Prefer that for reconnect over the pre-open hint.
+        // Persist the port actually opened (chooser / reconnect) as MeshCom last
+        // connection so resolveLastSerialPortId does not keep a stale MeshCom id.
         const selectedSerialPortId =
           type === 'serial'
-            ? (resolveLastSerialPortId('meshcom') ?? meshcomSerialPortId)
+            ? persistOpenedMeshcomSerialPort(opened.handle, meshcomSerialPortId)
             : undefined;
         connectionParamsRef.current = {
           rfType: type,
@@ -644,7 +658,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           });
           connectionParamsRef.current = {
             rfType: 'serial',
-            serialPortId: resolveLastSerialPortId('meshcom') ?? lastSerialPortId,
+            serialPortId: persistOpenedMeshcomSerialPort(opened.handle, lastSerialPortId),
           };
           await attachRfSession(opened.driverIdentityId, 'serial');
         } catch (err) {
@@ -949,6 +963,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       }
       const protocol = await ensureMeshcomProtocolLoaded();
       await protocol.setOwner(handle, opts);
+      // Drop sync if the session was replaced/disconnected during the protocol call.
+      if (connectionDriver.getHandle(identityId) !== handle) return;
       // protocol.setOwner updates handle.operatorCallsign; also sync UI myNodeNum (UDP/KISS).
       applyMeshcomSelfCallsign(identityId, opts.longName, {
         operatorName: opts.shortName,

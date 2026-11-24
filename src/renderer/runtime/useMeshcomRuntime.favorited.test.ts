@@ -52,11 +52,12 @@ describe('useMeshcomRuntime setNodeFavorited', () => {
   });
 
   it('setOwner syncs myNodeNum on the runtime and connection store', async () => {
-    vi.mocked(connectionDriver.getHandle).mockReturnValue({
+    const handle = {
       connection: { transport: 'udp' },
       transport: 'udp',
       operatorCallsign: '',
-    });
+    };
+    vi.mocked(connectionDriver.getHandle).mockReturnValue(handle);
     vi.mocked(ensureMeshcomProtocolLoaded).mockResolvedValue({
       setOwner: vi.fn().mockResolvedValue(undefined),
     } as unknown as Awaited<ReturnType<typeof ensureMeshcomProtocolLoaded>>);
@@ -73,6 +74,42 @@ describe('useMeshcomRuntime setNodeFavorited', () => {
 
     expect(result.current.selfNodeId).toBe(NODE_ID);
     expect(getConnection(OFFLINE_MESHCOM_IDENTITY_ID)?.myNodeNum).toBe(NODE_ID);
+  });
+
+  it('setOwner skips myNodeNum sync when the session handle changed during the protocol call', async () => {
+    const handle = {
+      connection: { transport: 'udp' },
+      transport: 'udp',
+      operatorCallsign: '',
+    };
+    const replaced = {
+      connection: { transport: 'udp' },
+      transport: 'udp',
+      operatorCallsign: '',
+    };
+    let sessionReplaced = false;
+    vi.mocked(connectionDriver.getHandle).mockImplementation(() =>
+      sessionReplaced ? replaced : handle,
+    );
+    vi.mocked(ensureMeshcomProtocolLoaded).mockResolvedValue({
+      setOwner: vi.fn().mockImplementation(() => {
+        sessionReplaced = true;
+        return Promise.resolve();
+      }),
+    } as unknown as Awaited<ReturnType<typeof ensureMeshcomProtocolLoaded>>);
+
+    const { result } = renderHook(() => useMeshcomRuntime());
+
+    await act(async () => {
+      await result.current.setOwner({
+        longName: CALLSIGN,
+        shortName: 'W1AW',
+        isLicensed: true,
+      });
+    });
+
+    expect(result.current.selfNodeId).toBeNull();
+    expect(getConnection(OFFLINE_MESHCOM_IDENTITY_ID)?.myNodeNum).toBeUndefined();
   });
 
   it('device_self_info syncs myNodeNum on the runtime and connection store', async () => {
