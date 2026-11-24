@@ -1281,8 +1281,7 @@ describe('App shell layout', () => {
     renderApp();
     await waitFor(() => {
       expect(warn.spy).toHaveBeenCalledWith(
-        'mcL0335 [App] settings search registry failed to load',
-        expect.any(Error),
+        expect.stringContaining('mcL0335 [App] settings search registry failed to load'),
       );
     });
     await openSettingFromLauncher('reduce motion', 'Reduce motion, Appearance');

@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { peekLastSerialClaimPort } from './serialPortClaim';
+
+vi.mock('./serialPortClaim', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...(actual as object), peekLastSerialClaimPort: vi.fn(() => null) };
+});
+
 import {
   buildMeshcoreConnectionParamsFromLastConnection,
   buildMeshtasticConnectionParamsFromLastConnection,
@@ -17,6 +24,7 @@ import {
 
 describe('lastConnectionStorage reconnect rehydrate', () => {
   beforeEach(() => {
+    vi.mocked(peekLastSerialClaimPort).mockReturnValue(null);
     const store = new Map<string, string>();
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => store.get(key) ?? null,
@@ -175,6 +183,13 @@ describe('lastConnectionStorage reconnect rehydrate', () => {
       JSON.stringify({ type: 'serial', serialPortId: 'ttyUSB0' }),
     );
     expect(resolveLastSerialPortId('meshtastic')).toBe('ttyUSB0');
+  });
+
+  it('resolveLastSerialPortId uses the meshcom serial claim port when MRU lacks serialPortId', () => {
+    vi.mocked(peekLastSerialClaimPort).mockReturnValue({
+      portId: 'meshcom-claimed-port',
+    } as unknown as SerialPort);
+    expect(resolveLastSerialPortId('meshcom')).toBe('meshcom-claimed-port');
   });
 
   it('does not let MeshCom inherit the shared last-serial key from MeshCore/Meshtastic', () => {

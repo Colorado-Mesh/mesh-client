@@ -72,7 +72,7 @@ jobs:
           fi
           "$PIP" install --require-hashes --only-binary=:all: \
             -r scripts/requirements-yamllint.txt
-          "$PIP" install semgrep
+          "$PIP" install -r scripts/requirements-semgrep.txt
 
       # After toolchain is on PATH; skip node_modules until install.
       - name: Check environment (pre-install)

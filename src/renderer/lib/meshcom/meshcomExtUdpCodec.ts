@@ -14,6 +14,7 @@ import {
   MESHCOM_EXTUDP_DST_MAX_LEN,
   normalizeMeshcomCallsign,
 } from './meshcomCallsign';
+import { truncateToWireBytes } from './meshcomWireLimits';
 
 export { MESHCOM_EXTUDP_PORT, MESHCOM_MAX_MSG_ID_LEN };
 export const MESHCOM_EXTUDP_MSG_MAX_LEN = 150;
@@ -127,7 +128,7 @@ export function serializeMeshcomExtUdp(outbound: MeshcomExtUdpOutbound): string 
     if (!dst || dst.length < 1) {
       throw new Error('meshcom EXTUDP msg: dst must be 1–9 characters');
     }
-    const msg = outbound.msg.slice(0, MESHCOM_EXTUDP_MSG_MAX_LEN);
+    const msg = truncateToWireBytes(outbound.msg, MESHCOM_EXTUDP_MSG_MAX_LEN);
     return JSON.stringify({ type: 'msg', dst, msg });
   }
 

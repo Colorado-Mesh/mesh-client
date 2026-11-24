@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
-import { selectGrantedSerialPort } from '@/renderer/lib/serialPortSignature';
+import {
+  selectGrantedSerialPort,
+  SERIAL_MULTIPLE_MATCH_ERROR,
+} from '@/renderer/lib/serialPortSignature';
 
 import { requestFlasherSerialPort } from './flasherSerial';
 import { getFlasherSessionSerialPort } from './flasherSessionPort';
@@ -166,5 +169,27 @@ describe('requestFlasherSerialPort', () => {
     await expect(requestFlasherSerialPort(undefined)).resolves.toBe(grantedPort);
 
     expect(selectSerialPort).toHaveBeenCalledWith('');
+  });
+
+  it('falls back to requestPort when granted ports are ambiguous', async () => {
+    const picked = {
+      getInfo: () => ({ usbVendorId: 0x10c4, usbProductId: 0xea60 }),
+    } as SerialPort;
+    vi.mocked(selectGrantedSerialPort).mockImplementation(() => {
+      throw new Error(SERIAL_MULTIPLE_MATCH_ERROR);
+    });
+
+    vi.stubGlobal('navigator', {
+      serial: {
+        getPorts: vi.fn().mockResolvedValue([{}, {}]),
+        requestPort: vi.fn().mockResolvedValue(picked),
+      },
+    });
+    vi.stubGlobal('window', {
+      electronAPI: { onSerialPortsDiscovered: vi.fn(() => () => {}), selectSerialPort: vi.fn() },
+    });
+
+    await expect(requestFlasherSerialPort(undefined)).resolves.toBe(picked);
+    expect(navigator.serial!.requestPort).toHaveBeenCalled();
   });
 });

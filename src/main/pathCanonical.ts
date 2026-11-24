@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { joinUnderRoot, PathEscapesRootError } from '../shared/pathUnderRoot';
+import { isPathInsideRoot, joinUnderRoot, PathEscapesRootError } from '../shared/pathUnderRoot';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
 /**
@@ -75,5 +75,5 @@ export function isUnderCanonicalRoot(
   const root = canonicalizePath(allowedRoot);
   const target = canonicalizePath(candidate);
   if (root == null || target == null) return false;
-  return target === root || target.startsWith(`${root}${path.sep}`);
+  return isPathInsideRoot(root, target);
 }

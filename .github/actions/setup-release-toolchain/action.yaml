@@ -46,7 +46,7 @@ runs:
     - name: Install Semgrep
       shell: bash
       run: |
-        python3 -m pip install --user semgrep
+        python3 -m pip install --user -r scripts/requirements-semgrep.txt
         echo "${HOME}/.local/bin" >> "$GITHUB_PATH"
 
     - name: Install Linux build deps (sidecar / Flatpak checks)

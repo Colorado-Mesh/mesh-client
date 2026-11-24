@@ -224,7 +224,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
       - name: Install Semgrep
-        run: pip install --user semgrep
+        run: pip install --user -r scripts/requirements-semgrep.txt
       - name: Always-on policy scanners
         run: |
           export PATH="${HOME}/.local/bin:${PATH}"

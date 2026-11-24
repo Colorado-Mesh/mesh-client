@@ -1402,6 +1402,7 @@ export const radioSurface: SettingsSearchSurface = {
     'meshcomDeviceCommands.argInput': 'aria-label of a command argument field',
     'meshcomDeviceCommands.sent': 'success toast, not a control',
     'meshcomDeviceCommands.sendFailed': 'error toast or section status, not a control',
+    'meshcomDeviceCommands.sendFailedToast': 'generic device-command error toast, not a control',
     'meshcomDeviceCommands.rmFirmwareOnlyHint':
       'RM-only firmware hint on command rows, not a control',
     'meshcomDeviceCommands.rmFirmwareRequired':

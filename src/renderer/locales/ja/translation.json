@@ -9242,7 +9242,8 @@
     "currentValue": "現在 {{value}}",
     "rmFirmwareOnlyHint": "MeshCom RM / kocelファームウェアでのみ利用可能",
     "rmFirmwareRequired": "{{command}}にはMeshCom RMファームウェア（例：kocel 4.40a-rm5）が必要です。このノードは{{version}}を報告します。",
-    "rmFirmwareUnknownVersion": "在庫（RM以外）"
+    "rmFirmwareUnknownVersion": "在庫（RM以外）",
+    "sendFailedToast": "コマンドが失敗しました。"
   },
   "meshcomWatchlist": {
     "label": "MeshComコールサインのウォッチリスト",

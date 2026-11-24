@@ -9242,7 +9242,8 @@
     "currentValue": "ahora {{value}}",
     "rmFirmwareOnlyHint": "Solo disponible en el firmware MeshCom RM / Kocel",
     "rmFirmwareRequired": "{{command}} necesita el firmware MeshCom RM (por ejemplo, kocel 4.40a-rm5). Este nodo informa de {{version}}.",
-    "rmFirmwareUnknownVersion": "existencias (no RM)"
+    "rmFirmwareUnknownVersion": "existencias (no RM)",
+    "sendFailedToast": "Comando fallido"
   },
   "meshcomWatchlist": {
     "label": "Lista de seguimiento de indicativos de MeshCom",

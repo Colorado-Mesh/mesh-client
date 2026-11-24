@@ -40,8 +40,10 @@ export async function startMeshcoreRadio(selfId = 171) {
   ]);
   const server = createServer((socket) => {
     sockets.add(socket);
-    socket.on('error', () => {
-      // Teardown/close can emit ECONNRESET; ignore so Playwright does not see uncaught exceptions.
+    socket.on('error', (err: NodeJS.ErrnoException) => {
+      const code = err.code;
+      if (code === 'ECONNRESET' || code === 'EPIPE' || code === 'ECONNABORTED') return;
+      console.error('[meshcore-radio] unexpected socket error', err);
     });
     socket.on('close', () => sockets.delete(socket));
     let buffer = Buffer.alloc(0);

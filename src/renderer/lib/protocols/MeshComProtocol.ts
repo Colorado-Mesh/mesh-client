@@ -903,10 +903,13 @@ export const meshcomProtocol: Protocol = {
   async sendMessage(handle: unknown, opts: SendMessageOptions): Promise<SendResult> {
     const device = handle as MeshComDeviceHandle;
     const dst = resolveDestinationCallsign(device, opts);
-    const text = truncateToWireBytes(
-      opts.text,
-      meshcomBodyBudgetBytes(dst, { capExtUdp: device.transport === 'udp' }),
-    );
+    const bodyBudget =
+      device.transport === 'udp'
+        ? meshcomBodyBudgetBytes(dst, { capExtUdp: true })
+        : device.transport === 'tcp'
+          ? MESHCOM_MAX_TEXT_LEN
+          : meshcomBodyBudgetBytes(dst);
+    const text = truncateToWireBytes(opts.text, bodyBudget);
 
     if (device.transport === 'udp') {
       const json = serializeMeshcomExtUdp({ type: 'msg', dst, msg: text });

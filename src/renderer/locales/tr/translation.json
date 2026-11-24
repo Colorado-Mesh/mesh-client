@@ -9242,7 +9242,8 @@
     "currentValue": "şimdi {{value}}",
     "rmFirmwareOnlyHint": "Yalnızca MeshCom RM / kocel ürün yazılımında mevcuttur",
     "rmFirmwareRequired": "{{command}} için MeshCom RM ürün yazılımı (ör. kocel 4.40a-rm5) gerekiyor. Bu düğüm {{version}} bildiriyor.",
-    "rmFirmwareUnknownVersion": "stok (RM olmayan)"
+    "rmFirmwareUnknownVersion": "stok (RM olmayan)",
+    "sendFailedToast": "Komut başarısız"
   },
   "meshcomWatchlist": {
     "label": "MeshCom çağrı işareti izleme listesi",

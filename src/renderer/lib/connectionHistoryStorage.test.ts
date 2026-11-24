@@ -250,6 +250,25 @@ describe('connectionHistoryStorage', () => {
     expect(next?.[0]?.httpAddress).toBe('192.168.1.9:8001');
   });
 
+  it('ignores replaceEntryId when the new endpoint identity does not match the saved row', () => {
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.1:4403' },
+      1000,
+      'tcp-row',
+    );
+    const next = upsertConnectionHistory(
+      'meshtastic',
+      { type: 'serial', serialPortId: '/dev/ttyUSB0' },
+      2000,
+      'serial-new',
+      { replaceEntryId: 'tcp-row' },
+    );
+    expect(next).toHaveLength(2);
+    expect(next?.find((e) => e.id === 'tcp-row')?.type).toBe('tcp');
+    expect(next?.find((e) => e.id === 'serial-new')?.type).toBe('serial');
+  });
+
   it('updates a BLE history row in place when replaceEntryId is set', () => {
     upsertConnectionHistory(
       'meshtastic',

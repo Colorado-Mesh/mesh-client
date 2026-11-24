@@ -45,7 +45,8 @@ describe('check:semgrep gate', () => {
 
   it('wires semgrep into always-on pre-commit for staged files', () => {
     const hook = fs.readFileSync(PRE_COMMIT, 'utf8');
-    expect(hook).toMatch(/semgrep scan --config p\/typescript/);
+    expect(hook).toMatch(/pnpm run check:semgrep --/);
+    expect(hook).not.toMatch(/pnpm exec semgrep scan --config p\/typescript/);
     expect(hook).toMatch(/skip semgrep \(no staged JS\/TS\)/);
     expect(hook).toMatch(/manifest_only/);
   });

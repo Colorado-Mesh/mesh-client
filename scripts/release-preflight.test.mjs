@@ -28,7 +28,7 @@ describe('Release preflight (e2e.yaml job)', () => {
       'setup:actionlint',
       'pip install --require-hashes --only-binary=:all:',
       'scripts/requirements-yamllint.txt',
-      'pip install --user semgrep',
+      'scripts/requirements-semgrep.txt',
     ]) {
       expect(toolchain).toContain(tool);
       expect(cutRelease).not.toContain(tool);
@@ -40,7 +40,7 @@ describe('Release preflight (e2e.yaml job)', () => {
 
   it('installs Semgrep into PATH for release.sh check:semgrep', () => {
     expect(toolchain).toContain('Install Semgrep');
-    expect(toolchain).toContain('pip install --user semgrep');
+    expect(toolchain).toContain('scripts/requirements-semgrep.txt');
     expect(toolchain).toMatch(/\.local\/bin.*GITHUB_PATH|GITHUB_PATH.*\.local\/bin/);
   });
 
@@ -56,7 +56,7 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(e2eJob).toContain('scripts/requirements-yamllint.txt');
     // Isolated venv — system/Homebrew Python may be externally managed (PEP 668).
     expect(e2eJob).toContain('python3 -m venv');
-    expect(e2eJob).toMatch(/"\$PIP" install semgrep|\$PIP install semgrep/);
+    expect(e2eJob).toContain('scripts/requirements-semgrep.txt');
     expect(e2eJob).not.toContain('pip install --user semgrep');
     expect(e2eJob.indexOf('Setup Rust')).toBeLessThan(
       e2eJob.indexOf('Check environment (pre-install)'),
