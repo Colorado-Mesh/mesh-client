@@ -9,7 +9,7 @@ import {
   evaluateRustCheck,
   evaluateRustClippyCheck,
   evaluateSemgrepCheck,
-  runChecks,
+  checkSemgrep,
   evaluateWindowsBuildDepsCheck,
   evaluateYamllintCheck,
   parseCheckEnvironmentArgs,
@@ -402,11 +402,11 @@ describe('check-environment semgrep on CI', () => {
     const prev = process.env.GITHUB_ACTIONS;
     process.env.GITHUB_ACTIONS = 'true';
     try {
-      const semgrep = runChecks({ skipNodeModules: true }).find((c) =>
-        c.label.startsWith('semgrep'),
-      );
-      expect(semgrep?.status).toBe('pass');
-      expect(semgrep?.severity).toBe('optional');
+      expect(checkSemgrep()).toMatchObject({
+        status: 'pass',
+        severity: 'optional',
+        label: 'semgrep (local pre-commit only)',
+      });
     } finally {
       if (prev === undefined) delete process.env.GITHUB_ACTIONS;
       else process.env.GITHUB_ACTIONS = prev;

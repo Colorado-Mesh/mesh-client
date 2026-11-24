@@ -589,7 +589,7 @@ export function evaluateSemgrepCheck(input) {
   };
 }
 
-function checkSemgrep() {
+export function checkSemgrep() {
   if (process.env.GITHUB_ACTIONS === 'true') {
     return {
       status: 'pass',
