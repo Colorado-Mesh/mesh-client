@@ -174,7 +174,11 @@ function noteRecentOutbound(handle: MeshComDeviceHandle, dst: string, msg: strin
   }
 }
 
-function consumeRecentOutboundEcho(handle: MeshComDeviceHandle, dst: string, msg: string): boolean {
+function findRecentOutboundEchoIndex(
+  handle: MeshComDeviceHandle,
+  dst: string,
+  msg: string,
+): number {
   const now = Date.now();
   const wantDst = normalizeMeshcomEchoDst(dst);
   const idx = handle.recentOutbound.findIndex(
@@ -184,10 +188,8 @@ function consumeRecentOutboundEcho(handle: MeshComDeviceHandle, dst: string, msg
     handle.recentOutbound = handle.recentOutbound.filter(
       (e) => now - e.at <= MESHCOM_TX_ECHO_TTL_MS,
     );
-    return false;
   }
-  handle.recentOutbound.splice(idx, 1);
-  return true;
+  return idx;
 }
 
 function parseMeshcomInboundMsgId(raw: string | number | undefined): number | null {
@@ -201,8 +203,11 @@ function parseMeshcomInboundMsgId(raw: string | number | undefined): number | nu
 }
 
 /**
- * Drop own TX chat echoes. When a content match learns the NODE callsign, seed
- * `operatorCallsign` and emit `device_self_info` so the runtime can set `myNodeNum`.
+ * Drop own TX chat echoes. Dest+text alone must not suppress (or teach self)
+ * when the RF source conflicts with a known local identity — except serial/BLE
+ * `{PEER}text` inject echoes, where the brace is the outbound destination.
+ * When identity is still unknown, a content match with a real SOURCE can seed
+ * `operatorCallsign` / `device_self_info` for `myNodeNum` sync.
  */
 function shouldDropLocalMeshcomText(
   handle: MeshComDeviceHandle,
@@ -212,26 +217,40 @@ function shouldDropLocalMeshcomText(
   emit: (event: DomainEvent) => void,
 ): boolean {
   const local = isLocalMeshcomSource(handle, sourceCall);
-  const echo = consumeRecentOutboundEcho(handle, dst, msg);
+  const echoIdx = findRecentOutboundEchoIndex(handle, dst, msg);
+  const echo = echoIdx >= 0;
   if (!local && !echo) return false;
 
-  if (echo && !normalizeMeshcomCallsign(handle.operatorCallsign)) {
-    const src = normalizeMeshcomCallsign(sourceCall);
-    if (src) {
-      handle.operatorCallsign = src;
-      handle.deviceSettings.call ??= src;
-      emit({
-        type: 'device_self_info',
-        payload: {
-          name: src,
-          publicKey: new Uint8Array(0),
-          type: 0,
-          txPower: 0,
-          radioFreq: 0,
-          manualAddContacts: false,
-        },
-      });
-    }
+  const src = normalizeMeshcomCallsign(sourceCall);
+  const knownOp =
+    normalizeMeshcomCallsign(handle.operatorCallsign) ||
+    normalizeMeshcomCallsign(handle.deviceSettings.call ?? '');
+  const echoDstNorm = normalizeMeshcomEchoDst(dst);
+  // Foreign peer repeating our outbound text (real RF SOURCE ≠ local).
+  // Serial/BLE DM inject echoes put the peer callsign in braces (= outbound dest).
+  if (echo && !local && src && knownOp && src !== knownOp && src !== echoDstNorm) {
+    return false;
+  }
+
+  if (echo) {
+    handle.recentOutbound.splice(echoIdx, 1);
+  }
+
+  // Learn self only from a real SOURCE that is not a dest-addressed inject brace.
+  if (echo && !knownOp && src && src !== echoDstNorm) {
+    handle.operatorCallsign = src;
+    handle.deviceSettings.call ??= src;
+    emit({
+      type: 'device_self_info',
+      payload: {
+        name: src,
+        publicKey: new Uint8Array(0),
+        type: 0,
+        txPower: 0,
+        radioFreq: 0,
+        manualAddContacts: false,
+      },
+    });
   }
   return true;
 }
@@ -713,8 +732,13 @@ function emitConsoleTextLine(
     // Inbound `{CALL}text` is from that callsign (ALL/group dest is rare on serial RX).
     const fromCall =
       dest.channelIndex === -1 ? dest.wireDest : normalizeMeshcomCallsign(destRaw) || destRaw;
+    // Match send history dest: GRC index, ALL (`*`), or DM callsign (not `*` for DMs).
     const echoDst =
-      dest.channelIndex > 0 ? String(dest.channelIndex) : dest.channelIndex === 0 ? '*' : '*';
+      dest.channelIndex > 0
+        ? String(dest.channelIndex)
+        : dest.channelIndex === 0
+          ? '*'
+          : dest.wireDest;
     if (shouldDropLocalMeshcomText(handle, fromCall, echoDst, text, emit)) return;
     const from = rememberCallsign(handle, fromCall);
     const { to, channelIndex } =

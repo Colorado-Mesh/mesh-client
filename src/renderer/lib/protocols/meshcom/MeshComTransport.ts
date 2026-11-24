@@ -147,17 +147,26 @@ class WebSerialMeshComConnection implements MeshComConnection {
     let port: SerialPort;
     if (this.portSignature) {
       const ports = await navigator.serial.getPorts();
-      try {
-        port = selectGrantedSerialPort(ports, this.portSignature);
-      } catch (err) {
-        if (isAmbiguousSerialPortMatchError(err)) {
-          console.warn('mcL1501 [MeshComTransport] ambiguous serial match — opening port picker');
-          port = await navigator.serial.requestPort();
-        } else if (isSerialNoMatchError(err)) {
-          console.warn('mcL1502 [MeshComTransport] no matching serial port — opening port picker');
-          port = await navigator.serial.requestPort();
-        } else {
-          throw err;
+      // Empty grant list is not SERIAL_NO_MATCH_ERROR (selectGranted throws a different
+      // message); still open the picker so a saved identity does not block first connect.
+      if (ports.length === 0) {
+        console.warn('mcL1503 [MeshComTransport] no granted serial ports — opening port picker');
+        port = await navigator.serial.requestPort();
+      } else {
+        try {
+          port = selectGrantedSerialPort(ports, this.portSignature);
+        } catch (err) {
+          if (isAmbiguousSerialPortMatchError(err)) {
+            console.warn('mcL1501 [MeshComTransport] ambiguous serial match — opening port picker');
+            port = await navigator.serial.requestPort();
+          } else if (isSerialNoMatchError(err)) {
+            console.warn(
+              'mcL1502 [MeshComTransport] no matching serial port — opening port picker',
+            );
+            port = await navigator.serial.requestPort();
+          } else {
+            throw err;
+          }
         }
       }
     } else {

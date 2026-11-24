@@ -237,6 +237,36 @@ describe('MeshComTransport', () => {
     await conn.close();
   });
 
+  it('serial empty granted list falls back to requestPort when a saved identity exists', async () => {
+    openMock.mockClear();
+    selectGrantedSerialPortMock.mockReset();
+
+    const port = mockSerialPort();
+    const requestPort = vi.fn().mockResolvedValue(port);
+    const getPorts = vi.fn().mockResolvedValue([]);
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: { requestPort, getPorts },
+    });
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const conn = await createMeshComConnection({
+      transport: 'serial',
+      portSignature: 'saved-but-ungranted',
+    });
+
+    expect(getPorts).toHaveBeenCalled();
+    expect(selectGrantedSerialPortMock).not.toHaveBeenCalled();
+    expect(requestPort).toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('mcL1503 [MeshComTransport] no granted serial ports'),
+    );
+    expect(openMock).toHaveBeenCalledWith(port, 115200, 'MeshCom serial open');
+    expect(conn.getSerialPort?.()).toBe(port);
+    await conn.close();
+    warn.mockRestore();
+  });
+
   it('serial no-match falls back to requestPort', async () => {
     openMock.mockClear();
     selectGrantedSerialPortMock.mockReset();

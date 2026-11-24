@@ -597,6 +597,12 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
               : undefined,
           portSignature: meshcomSerialPortId,
         });
+        // After open, persistSerialPortIdentity may have updated the MeshCom-scoped
+        // port (chooser / no-match). Prefer that for reconnect over the pre-open hint.
+        const selectedSerialPortId =
+          type === 'serial'
+            ? (resolveLastSerialPortId('meshcom') ?? meshcomSerialPortId)
+            : undefined;
         connectionParamsRef.current = {
           rfType: type,
           httpAddress:
@@ -604,7 +610,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
               ? resolveHost(httpAddress)
               : undefined,
           blePeripheralId,
-          serialPortId: meshcomSerialPortId,
+          serialPortId: selectedSerialPortId,
         };
         await attachRfSession(opened.driverIdentityId, type);
       } catch (err) {
@@ -638,7 +644,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           });
           connectionParamsRef.current = {
             rfType: 'serial',
-            serialPortId: lastSerialPortId,
+            serialPortId: resolveLastSerialPortId('meshcom') ?? lastSerialPortId,
           };
           await attachRfSession(opened.driverIdentityId, 'serial');
         } catch (err) {

@@ -571,6 +571,47 @@ describe('MeshComProtocol serial/BLE', () => {
     unsub();
   });
 
+  it('keeps foreign peer traffic that repeats recent outbound dest+text', async () => {
+    const { conn } = mockConnection('udp');
+    const handle = makeHandle('udp', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    await meshcomProtocol.sendMessage(handle, { text: 'same text', channelIndex: 999 });
+    conn.onData?.(
+      new TextEncoder().encode(
+        JSON.stringify({
+          type: 'msg',
+          src: 'SP2ONG-1',
+          dst: '999',
+          msg: 'same text',
+        }),
+      ),
+    );
+
+    const texts = events.filter((e) => e.type === 'text_message');
+    expect(texts).toHaveLength(1);
+    expect(texts[0]?.payload.payload).toBe('same text');
+    expect(handle.operatorCallsign).toBe('N0CALL-1');
+    expect(events.some((e) => e.type === 'device_self_info')).toBe(false);
+    unsub();
+  });
+
+  it('drops serial DM console echo by destination callsign when operatorCallsign is unset', async () => {
+    const { conn } = mockConnection('serial');
+    const handle = makeHandle('serial', conn, { operatorCallsign: '' });
+    handle.callsignByNodeId.set(42, 'W9GIL-1');
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    await meshcomProtocol.sendMessage(handle, { text: 'dm ping', destination: 42 });
+    conn.onData?.(new TextEncoder().encode('{W9GIL-1}dm ping\n'));
+
+    expect(events.filter((e) => e.type === 'text_message')).toHaveLength(0);
+    expect(handle.operatorCallsign).toBe('');
+    unsub();
+  });
+
   it('drops brace console line when fromCall is local operator', () => {
     const { conn } = mockConnection('serial');
     const handle = makeHandle('serial', conn);
