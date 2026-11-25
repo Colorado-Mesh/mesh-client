@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getMeshcoreRepeaterRouteMode,
@@ -14,11 +14,38 @@ const KEY_B = '0c'.repeat(32);
 
 describe('meshcoreRepeaterRouteModeStorage', () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     localStorage.clear();
   });
 
   it('reads auto for a repeater with no saved choice', () => {
     expect(getMeshcoreRepeaterRouteMode(KEY_A)).toBe('auto');
+  });
+
+  it('reads auto, and the hook renders, when storage cannot be read', () => {
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    expect(getMeshcoreRepeaterRouteMode(KEY_A)).toBe('auto');
+    const { result } = renderHook(() => useMeshcoreRepeaterRouteModes());
+    expect(result.current).toEqual({});
+  });
+
+  it('keeps the previous choice, without throwing, when storage cannot be written', () => {
+    setMeshcoreRepeaterRouteMode(KEY_A, 'direct');
+    const { result } = renderHook(() => useMeshcoreRepeaterRouteModes());
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError');
+    });
+    expect(() => {
+      act(() => {
+        setMeshcoreRepeaterRouteMode(KEY_A, 'zeroHop');
+      });
+    }).not.toThrow();
+    expect(getMeshcoreRepeaterRouteMode(KEY_A)).toBe('direct');
+    expect(result.current).toEqual({ [KEY_A]: 'direct' });
   });
 
   it('saves and reads a mode per repeater', () => {

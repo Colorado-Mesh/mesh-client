@@ -367,6 +367,7 @@ import {
   type MeshcoreRepeaterRouteKind,
   meshcoreRepeaterRouteKind,
   type MeshcoreRepeaterRouteMode,
+  noteRadioContactRouteUnknown,
   withMeshcoreRepeaterLoginFallback,
   withMeshcoreRepeaterRouteEscalation,
 } from '../lib/meshcoreRepeaterRouteEscalation';
@@ -4904,6 +4905,11 @@ export function useMeshcoreRuntime() {
                 nodeForRadio,
                 repeaterRemoteRpcRef.current,
               );
+              noteRadioContactRouteUnknown(
+                outPathMapRef.current,
+                radioContactPathLenByNodeRef.current,
+                destNodeId,
+              );
             },
           );
           markMeshcoreCompanionTx();
@@ -6216,6 +6222,11 @@ export function useMeshcoreRuntime() {
                               pingNode,
                               repeaterRemoteRpcRef.current,
                             );
+                            noteRadioContactRouteUnknown(
+                              outPathMapRef.current,
+                              radioContactPathLenByNodeRef.current,
+                              nodeId,
+                            );
                           }
                         : undefined,
                       isSessionStale: roomPingSessionStale,
@@ -7087,6 +7098,11 @@ export function useMeshcoreRuntime() {
         restoreRadioContact: async () => {
           try {
             await addMeshcoreNodeContactToRadio(conn, pubKey, node, repeaterRemoteRpcRef.current);
+            noteRadioContactRouteUnknown(
+              outPathMapRef.current,
+              radioContactPathLenByNodeRef.current,
+              nodeId,
+            );
           } catch (e: unknown) {
             maybeRequestMeshcoreAutoOffloadForError(e instanceof Error ? e.cause : e);
             throw e;
@@ -7199,6 +7215,11 @@ export function useMeshcoreRuntime() {
                                 pubKey,
                                 statusNode,
                                 repeaterRemoteRpcRef.current,
+                              );
+                              noteRadioContactRouteUnknown(
+                                outPathMapRef.current,
+                                radioContactPathLenByNodeRef.current,
+                                nodeId,
                               );
                             } catch (e: unknown) {
                               if (!statusSessionStale()) {
@@ -9629,10 +9650,13 @@ export function useMeshcoreRuntime() {
           const existing = next.get(nodeId);
           const hasImportGps = latitude != null && longitude != null;
           const existingHasGps = existing?.latitude != null && existing?.longitude != null;
+          // Per-repeater settings (route mode) key on the public key, so imported rows carry it.
+          const publicKeyHex = bytesToHex(pubKey);
           if (existing) {
             const prevSec = lastHeardToUnixSeconds(existing.last_heard ?? 0);
             next.set(nodeId, {
               ...existing,
+              public_key_hex: existing.public_key_hex ?? publicKeyHex,
               long_name: name,
               short_name: '',
               latitude: hasImportGps && !existingHasGps ? latitude : existing.latitude,
@@ -9648,6 +9672,7 @@ export function useMeshcoreRuntime() {
             const dbHops = dbHopsById.get(nodeId);
             next.set(nodeId, {
               node_id: nodeId,
+              public_key_hex: publicKeyHex,
               long_name: name,
               short_name: '',
               hw_model: 'Repeater',
@@ -9859,6 +9884,11 @@ export function useMeshcoreRuntime() {
                 nodeForRadio,
                 repeaterRemoteRpcRef.current,
               );
+              noteRadioContactRouteUnknown(
+                outPathMapRef.current,
+                radioContactPathLenByNodeRef.current,
+                peerNodeId,
+              );
             },
           );
           if (
@@ -10064,6 +10094,11 @@ export function useMeshcoreRuntime() {
     }
     try {
       await conn.resetPath(pubKey);
+      noteRadioContactRouteUnknown(
+        outPathMapRef.current,
+        radioContactPathLenByNodeRef.current,
+        nodeId,
+      );
       return true;
     } catch (e: unknown) {
       console.warn('mcL1319 [useMeshcoreRuntime] resetContactPath error ' + errLikeToLogString(e));

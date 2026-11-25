@@ -467,6 +467,47 @@ describe('setMeshcoreRadioContactZeroHop', () => {
     );
   });
 
+  it('matches the radio contact by its whole public key, not a shared node id', async () => {
+    const pubKey = makePubKey(0x74);
+    const otherKey = makePubKey(0x75);
+    const other: MeshCoreContactRaw = {
+      publicKey: otherKey,
+      type: 1,
+      flags: 3,
+      outPathLen: 0x42,
+      outPath: new Uint8Array(64),
+      advName: 'Someone Else',
+      lastAdvert: 1_791_600_000,
+      advLat: 7,
+      advLon: 8,
+    };
+    const addOrUpdateContact = vi.fn().mockResolvedValue(undefined);
+    const conn = {
+      getContacts: vi.fn().mockResolvedValue([other]),
+      setContactPath: vi.fn(),
+      addOrUpdateContact,
+    };
+    // The other contact folds to the same 32-bit node id the caller passes.
+    const written = await setMeshcoreRadioContactZeroHop(
+      conn,
+      pubkeyToNodeId(otherKey),
+      pubKey,
+      node,
+    );
+    expect(written).toBe(0);
+    expect(addOrUpdateContact).toHaveBeenCalledWith(
+      pubKey,
+      2,
+      0,
+      0,
+      new Uint8Array(64),
+      'Ridge Repeater',
+      1_791_800_000,
+      39_500_000,
+      -105_250_000,
+    );
+  });
+
   it.each([
     ['a 2-byte route', 0x42, 0, 0x40],
     ['a 3-byte route', 0x81, 0, 0x80],

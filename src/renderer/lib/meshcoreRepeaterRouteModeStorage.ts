@@ -46,7 +46,14 @@ function parseModes(raw: string | null): StoredModes {
 }
 
 function readModes(): StoredModes {
-  const raw = localStorage.getItem(MESHCORE_REPEATER_ROUTE_MODES_KEY);
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(MESHCORE_REPEATER_ROUTE_MODES_KEY);
+  } catch (e: unknown) {
+    // Storage denied (SecurityError): every repeater stays on Auto.
+    logCaughtDebug('[meshcoreRepeaterRouteModeStorage] read', e);
+    return EMPTY;
+  }
   if (raw !== cachedRaw) {
     cachedRaw = raw;
     cachedModes = parseModes(raw);
@@ -70,7 +77,13 @@ export function setMeshcoreRepeaterRouteMode(
     Object.entries(readModes()).filter(([existing]) => existing !== key),
   );
   if (mode !== 'auto') next[key] = mode;
-  localStorage.setItem(MESHCORE_REPEATER_ROUTE_MODES_KEY, JSON.stringify(next));
+  try {
+    localStorage.setItem(MESHCORE_REPEATER_ROUTE_MODES_KEY, JSON.stringify(next));
+  } catch (e: unknown) {
+    // Quota full or storage denied: the previous choice stays in effect.
+    logCaughtDebug('[meshcoreRepeaterRouteModeStorage] write', e);
+    return;
+  }
   for (const listener of listeners) listener();
 }
 

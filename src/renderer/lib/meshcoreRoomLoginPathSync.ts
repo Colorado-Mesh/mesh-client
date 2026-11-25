@@ -177,6 +177,14 @@ function findRadioContact(
   return contacts.find((c) => pubkeyToNodeId(c.publicKey) === nodeId);
 }
 
+function publicKeysEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 /** Same trimming rules as hop inference when firmware reports outPathLen 0 but buffer has route bytes. */
 function pathBytesFromRadioContact(contact: MeshCoreContactRaw): Uint8Array {
   return meshcoreContactOutPathBytesForTrace(contact);
@@ -280,7 +288,10 @@ export async function setMeshcoreRadioContactZeroHop(
     MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
     'meshcoreZeroHopGetContacts',
   );
-  const existing = findRadioContact(contacts, nodeId);
+  // Match the whole key: two keys can fold to one 32-bit node id, and the write targets `pubKey`.
+  const existing = contacts.find(
+    (c) => pubkeyToNodeId(c.publicKey) === nodeId && publicKeysEqual(c.publicKey, pubKey),
+  );
   const contact = existing ?? buildContactFromNode(pubKey, node);
   const packedPathLen = meshcorePackPathLenByte(
     0,

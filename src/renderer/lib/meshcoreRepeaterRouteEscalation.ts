@@ -56,6 +56,21 @@ export interface MeshcoreRepeaterRouteEscalationDeps {
 export const MESHCORE_OUT_PATH_UNKNOWN_BYTE = 0xff;
 
 /**
+ * Record that the radio now holds no route to `nodeId` (a path reset, or a contact re-added with
+ * OUT_PATH_UNKNOWN). Without it a cached zero-hop route lets the next Zero-hop request skip its
+ * write and flood.
+ */
+export function noteRadioContactRouteUnknown(
+  outPaths: Map<number, Uint8Array>,
+  radioPathLens: Map<number, number>,
+  nodeId: number,
+): void {
+  const id = nodeId >>> 0;
+  outPaths.delete(id);
+  radioPathLens.set(id, MESHCORE_OUT_PATH_UNKNOWN_BYTE);
+}
+
+/**
  * Classify how the companion will send to a contact, from the app's stored hash path and
  * the last `outPathLen` byte read from the radio contact. A stored path wins because it can
  * be newer than that cached length (PathUpdated refreshes the path, not the length).
@@ -97,7 +112,33 @@ export function clearMeshcoreRepeaterRouteEscalationStateForTests(): void {
   lastEscalationByNode.clear();
 }
 
+/**
+ * A zero-hop route write that failed before a send. Nothing was sent, so this is never a request
+ * timeout: no login and no resend may follow it, even when the write itself timed out. Keeps the
+ * write's message so the row shows the same error.
+ */
+export class MeshcoreRepeaterRoutePrepError extends Error {
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause), { cause });
+    this.name = 'MeshcoreRepeaterRoutePrepError';
+  }
+}
+
+/** Run the Zero-hop route write; any failure becomes a {@link MeshcoreRepeaterRoutePrepError}. */
+async function prepareZeroHopRoute(
+  deps: MeshcoreRepeaterRouteEscalationDeps,
+  nodeId: number,
+): Promise<void> {
+  if (!deps.ensureZeroHopRoute) return;
+  try {
+    await deps.ensureZeroHopRoute(nodeId);
+  } catch (e: unknown) {
+    throw new MeshcoreRepeaterRoutePrepError(e);
+  }
+}
+
 export function isMeshcoreRepeaterTimeoutError(error: unknown): boolean {
+  if (error instanceof MeshcoreRepeaterRoutePrepError) return false;
   const msg = errLikeToLogString(error).toLowerCase();
   // SENT-ack failures are local companion/queue stalls — flooding the RF path will not help.
   if (msg.includes('waiting for sent acknowledgment')) return false;
@@ -136,9 +177,7 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
   };
 
   const ensureZeroHop = async (): Promise<void> => {
-    if (mode === 'zeroHop' && deps.ensureZeroHopRoute) {
-      await deps.ensureZeroHopRoute(normalizedId);
-    }
+    if (mode === 'zeroHop') await prepareZeroHopRoute(deps, normalizedId);
   };
 
   await ensureZeroHop();
@@ -226,7 +265,8 @@ export interface MeshcoreRepeaterLoginFallbackDeps extends MeshcoreRepeaterRoute
  * first attempt stays login-free (a known companion is answered at once); after a timeout
  * the retry logs in first (the flood resend in Auto, the same-route resend in Direct only and
  * Zero-hop). Failure point: a login that gets no reply rejects with its own timeout and the
- * request is not sent again. At most one login per call.
+ * request is not sent again. At most one login per call. In Zero-hop the route is written again
+ * after the login, because a login can re-add an evicted contact with no route (it would flood).
  */
 export async function withMeshcoreRepeaterLoginFallback<T>(
   nodeId: number,
@@ -234,18 +274,26 @@ export async function withMeshcoreRepeaterLoginFallback<T>(
   fn: (attempt: MeshcoreRepeaterRequestAttempt & { loggedIn: boolean }) => Promise<T>,
 ): Promise<T> {
   const normalizedId = nodeId >>> 0;
+  // One mode for the whole call, shared with the escalation below.
+  const mode = deps.routeMode?.(normalizedId) ?? 'auto';
   // Held in an object so the catch below reads the value the closure wrote.
   const state = { loggedIn: false };
   const loginOnce = async (): Promise<void> => {
     state.loggedIn = true;
     await deps.login(normalizedId);
+    if (mode === 'zeroHop') await prepareZeroHopRoute(deps, normalizedId);
   };
+  const escalationDeps = { ...deps, routeMode: () => mode };
   try {
-    return await withMeshcoreRepeaterRouteEscalation(normalizedId, deps, async (attempt) => {
-      const isRetry = attempt.escalated || attempt.sameRouteRetry;
-      if (isRetry && !state.loggedIn && deps.canLogin(normalizedId)) await loginOnce();
-      return fn({ ...attempt, loggedIn: state.loggedIn });
-    });
+    return await withMeshcoreRepeaterRouteEscalation(
+      normalizedId,
+      escalationDeps,
+      async (attempt) => {
+        const isRetry = attempt.escalated || attempt.sameRouteRetry;
+        if (isRetry && !state.loggedIn && deps.canLogin(normalizedId)) await loginOnce();
+        return fn({ ...attempt, loggedIn: state.loggedIn });
+      },
+    );
   } catch (err) {
     if (state.loggedIn || !isMeshcoreRepeaterTimeoutError(err) || !deps.canLogin(normalizedId)) {
       throw err;
