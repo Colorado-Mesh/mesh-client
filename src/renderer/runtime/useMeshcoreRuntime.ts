@@ -958,6 +958,94 @@ function applySavedHopsFallback(
   }
 }
 
+function parseMeshcoreTelemetryEntries(lppSensorData: Uint8Array | undefined): CayenneLppEntry[] {
+  if (!lppSensorData) return [];
+  try {
+    return CayenneLpp.parse(lppSensorData) as CayenneLppEntry[];
+  } catch (parseErr: unknown) {
+    console.warn(
+      'mcL1280 [useMeshcoreRuntime] telemetry CayenneLpp.parse error ' +
+        errLikeToLogString(parseErr),
+    );
+    return [];
+  }
+}
+
+function applyCayenneEntryFields(entries: CayenneLppEntry[], result: MeshCoreNodeTelemetry): void {
+  const temps = assignCayenneTemperatureFields(entries, CayenneLpp.LPP_TEMPERATURE);
+  result.temperature = temps.temperature;
+  result.mcuTemperature = temps.mcuTemperature;
+  for (const entry of entries) {
+    if (entry.type === CayenneLpp.LPP_TEMPERATURE) {
+      // handled above (env vs MCU by channel)
+    } else if (entry.type === CayenneLpp.LPP_RELATIVE_HUMIDITY && typeof entry.value === 'number') {
+      result.relativeHumidity = entry.value;
+    } else if (
+      entry.type === CayenneLpp.LPP_BAROMETRIC_PRESSURE &&
+      typeof entry.value === 'number'
+    ) {
+      result.barometricPressure = entry.value;
+    } else if (entry.type === CayenneLpp.LPP_VOLTAGE && typeof entry.value === 'number') {
+      result.voltage = entry.value;
+    } else if (
+      entry.type === CayenneLpp.LPP_GPS &&
+      typeof entry.value === 'object' &&
+      entry.value !== null
+    ) {
+      result.gps = entry.value;
+    }
+  }
+}
+
+function buildMeshcoreTelemetryResult(entries: CayenneLppEntry[]): MeshCoreNodeTelemetry {
+  const result: MeshCoreNodeTelemetry = { fetchedAt: Date.now(), entries };
+  applyCayenneEntryFields(entries, result);
+  return result;
+}
+
+function hasMeshcoreEnvironmentReading(
+  fromWire: ReturnType<typeof cayenneWireEntriesToEnvironmentReading>,
+  result: MeshCoreNodeTelemetry,
+): boolean {
+  return (
+    fromWire != null ||
+    result.temperature != null ||
+    result.mcuTemperature != null ||
+    result.relativeHumidity != null ||
+    result.barometricPressure != null
+  );
+}
+
+function buildMeshcoreEnvironmentPoint(
+  nodeId: number,
+  result: MeshCoreNodeTelemetry,
+  fromWire: ReturnType<typeof cayenneWireEntriesToEnvironmentReading>,
+): EnvironmentTelemetryPoint {
+  return {
+    timestamp: result.fetchedAt,
+    nodeNum: nodeId,
+    temperature: fromWire?.temperature ?? result.temperature,
+    mcuTemperature: fromWire?.mcuTemperature ?? result.mcuTemperature,
+    relativeHumidity: fromWire?.relativeHumidity ?? result.relativeHumidity,
+    barometricPressure: fromWire?.barometricPressure ?? result.barometricPressure,
+    lux: fromWire?.lux,
+    windDirection: fromWire?.windDirection,
+    co2: fromWire?.co2,
+  };
+}
+
+function withNodeAltitude(
+  nodes: Map<number, MeshNode>,
+  nodeId: number,
+  altitude: number,
+): Map<number, MeshNode> {
+  const current = nodes.get(nodeId);
+  if (!current) return nodes;
+  const next = new Map(nodes);
+  next.set(nodeId, { ...current, altitude });
+  return next;
+}
+
 export function useMeshcoreRuntime() {
   // Restore tombstones before any contact/message hydration in this session.
   restoreMeshcoreLocallyDeletedContactsFromStorage();
@@ -7540,44 +7628,8 @@ export function useMeshcoreRuntime() {
   /** Decode Cayenne LPP from a telemetry reply or push and update the per-node telemetry stores. */
   const applyMeshcoreTelemetryLpp = useCallback(
     (nodeId: number, lppSensorData: Uint8Array | undefined, source: 'rpc' | 'push') => {
-      let entries: CayenneLppEntry[] = [];
-      if (lppSensorData) {
-        try {
-          entries = CayenneLpp.parse(lppSensorData) as CayenneLppEntry[];
-        } catch (parseErr: unknown) {
-          console.warn(
-            'mcL1280 [useMeshcoreRuntime] telemetry CayenneLpp.parse error ' +
-              errLikeToLogString(parseErr),
-          );
-        }
-      }
-      const result: MeshCoreNodeTelemetry = { fetchedAt: Date.now(), entries };
-      const temps = assignCayenneTemperatureFields(entries, CayenneLpp.LPP_TEMPERATURE);
-      result.temperature = temps.temperature;
-      result.mcuTemperature = temps.mcuTemperature;
-      for (const entry of entries) {
-        if (entry.type === CayenneLpp.LPP_TEMPERATURE) {
-          // handled above (env vs MCU by channel)
-        } else if (
-          entry.type === CayenneLpp.LPP_RELATIVE_HUMIDITY &&
-          typeof entry.value === 'number'
-        ) {
-          result.relativeHumidity = entry.value;
-        } else if (
-          entry.type === CayenneLpp.LPP_BAROMETRIC_PRESSURE &&
-          typeof entry.value === 'number'
-        ) {
-          result.barometricPressure = entry.value;
-        } else if (entry.type === CayenneLpp.LPP_VOLTAGE && typeof entry.value === 'number') {
-          result.voltage = entry.value;
-        } else if (
-          entry.type === CayenneLpp.LPP_GPS &&
-          typeof entry.value === 'object' &&
-          entry.value !== null
-        ) {
-          result.gps = entry.value;
-        }
-      }
+      const entries = parseMeshcoreTelemetryEntries(lppSensorData);
+      const result = buildMeshcoreTelemetryResult(entries);
       setMeshcoreNodeTelemetry((prev) => {
         const next = new Map(prev);
         next.set(nodeId, result);
@@ -7589,25 +7641,13 @@ export function useMeshcoreRuntime() {
         return next;
       });
       const fromWire = cayenneWireEntriesToEnvironmentReading(entries);
-      const hasEnv =
-        fromWire != null ||
-        result.temperature != null ||
-        result.mcuTemperature != null ||
-        result.relativeHumidity != null ||
-        result.barometricPressure != null;
+      const hasEnv = hasMeshcoreEnvironmentReading(fromWire, result);
       if (hasEnv) {
-        const pt: EnvironmentTelemetryPoint = {
-          timestamp: result.fetchedAt,
-          nodeNum: nodeId,
-          temperature: fromWire?.temperature ?? result.temperature,
-          mcuTemperature: fromWire?.mcuTemperature ?? result.mcuTemperature,
-          relativeHumidity: fromWire?.relativeHumidity ?? result.relativeHumidity,
-          barometricPressure: fromWire?.barometricPressure ?? result.barometricPressure,
-          lux: fromWire?.lux,
-          windDirection: fromWire?.windDirection,
-          co2: fromWire?.co2,
-        };
-        setEnvironmentTelemetry((prev) => [...prev, pt].slice(-MAX_ENV_TELEMETRY_POINTS));
+        setEnvironmentTelemetry((prev) =>
+          [...prev, buildMeshcoreEnvironmentPoint(nodeId, result, fromWire)].slice(
+            -MAX_ENV_TELEMETRY_POINTS,
+          ),
+        );
         const identityId = meshcoreIdentityIdRef.current;
         if (identityId) {
           recordEnvironmentReading(
@@ -7626,13 +7666,7 @@ export function useMeshcoreRuntime() {
       }
       const altM = meshcoreTelemetryGpsAltitudeMeters(result.gps);
       if (altM !== undefined) {
-        setNodes((prev) => {
-          const cur = prev.get(nodeId);
-          if (!cur) return prev;
-          const next = new Map(prev);
-          next.set(nodeId, { ...cur, altitude: altM });
-          return next;
-        });
+        setNodes((prev) => withNodeAltitude(prev, nodeId, altM));
       }
       // Companion self LPP GPS is the only MeshCore radio fix that counts as device GPS
       // (advert lat/lon can be user- or app-set via setAdvertLatLong).
