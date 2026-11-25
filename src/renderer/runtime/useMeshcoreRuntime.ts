@@ -788,6 +788,176 @@ function meshcoreNodeFromDbContact(
   };
 }
 
+interface MeshcoreSavedHopRow {
+  node_id: number;
+  hops?: number | null;
+  hops_away?: number | null;
+}
+
+async function loadSavedHopsByNodeId(): Promise<Map<number, number>> {
+  const savedHopsByNodeId = new Map<number, number>();
+  try {
+    const savedRows = (await window.electronAPI.db.getNodes()) as MeshcoreSavedHopRow[];
+    for (const r of savedRows) {
+      const h = r.hops ?? r.hops_away;
+      if (h != null && Number.isFinite(h)) savedHopsByNodeId.set(r.node_id, h);
+    }
+  } catch (e) {
+    console.warn(
+      'mcL1198 [useMeshcoreRuntime] buildNodesFromContacts: getNodes for hops fallback ' +
+        errLikeToLogString(e),
+    );
+  }
+  return savedHopsByNodeId;
+}
+
+interface MeshcoreContactPersistOpts {
+  assertCurrent?: () => void;
+  awaitPersistence?: boolean;
+  radioSnapshotBefore?: string;
+}
+
+async function persistMeshcoreContactRows(
+  rows: ReturnType<typeof contactToDbRow>[],
+  opts: MeshcoreContactPersistOpts | undefined,
+): Promise<void> {
+  if (rows.length === 0 && opts?.radioSnapshotBefore === undefined) return;
+  const persist =
+    opts?.radioSnapshotBefore !== undefined
+      ? window.electronAPI.db.saveMeshcoreContactsBatch(rows, opts.radioSnapshotBefore)
+      : window.electronAPI.db.saveMeshcoreContactsBatch(rows);
+  if (opts?.awaitPersistence) {
+    await persist;
+    opts.assertCurrent?.();
+    return;
+  }
+  void persist.catch((e: unknown) => {
+    console.warn(
+      'mcL1199 [useMeshcoreRuntime] saveMeshcoreContactsBatch error ' + errLikeToLogString(e),
+    );
+  });
+}
+
+interface MeshcoreSelfBattery {
+  voltage: number;
+  battery: number | undefined;
+}
+
+interface MeshcoreSelfAdv {
+  lat: number | null;
+  lon: number | null;
+}
+
+interface MeshcoreStaticGps {
+  lat: number;
+  lon: number;
+}
+
+function resolveMeshcoreSelfDisplayName(
+  self: MeshCoreSelfInfo,
+  selfNode: MeshNode | undefined,
+  myNodeId: number,
+): string {
+  const trimmed = typeof self.name === 'string' ? self.name.trim() : '';
+  return trimmed || selfNode?.long_name || `Node-${myNodeId.toString(16).toUpperCase()}`;
+}
+
+function resolveMeshcoreSelfBattery(
+  batteryMilliVolts: number | null | undefined,
+): MeshcoreSelfBattery | null {
+  if (batteryMilliVolts == null || !Number.isFinite(batteryMilliVolts)) return null;
+  return {
+    voltage: batteryMilliVolts / 1000,
+    battery: meshcoreMilliVoltsToApproximateBatteryPercent(batteryMilliVolts),
+  };
+}
+
+function mergeMeshcoreSelfNode(
+  selfNode: MeshNode,
+  displayLongName: string,
+  battery: MeshcoreSelfBattery | null,
+  adv: MeshcoreSelfAdv,
+  storedStatic: MeshcoreStaticGps | null,
+): MeshNode {
+  return {
+    ...selfNode,
+    long_name: displayLongName,
+    short_name: '',
+    hops_away: 0,
+    latitude: storedStatic?.lat ?? adv.lat ?? selfNode.latitude ?? null,
+    longitude: storedStatic?.lon ?? adv.lon ?? selfNode.longitude ?? null,
+    ...battery,
+  };
+}
+
+function buildMeshcoreSelfNode(
+  myNodeId: number,
+  self: MeshCoreSelfInfo,
+  displayLongName: string,
+  battery: MeshcoreSelfBattery | null,
+  adv: MeshcoreSelfAdv,
+  storedStatic: MeshcoreStaticGps | null,
+): MeshNode {
+  return {
+    node_id: myNodeId,
+    long_name: displayLongName,
+    short_name: '',
+    hw_model: CONTACT_TYPE_LABELS[self.type] ?? 'Unknown',
+    battery: battery?.battery ?? 0,
+    snr: 0,
+    rssi: 0,
+    last_heard: Math.floor(Date.now() / 1000),
+    latitude: storedStatic?.lat ?? adv.lat,
+    longitude: storedStatic?.lon ?? adv.lon,
+    hops_away: 0,
+    ...(battery?.voltage != null ? { voltage: battery.voltage } : {}),
+  };
+}
+
+function applyMeshcoreSelfNodeToMap(
+  nextNodes: Map<number, MeshNode>,
+  myNodeId: number,
+  self: MeshCoreSelfInfo,
+): void {
+  const selfNode = nextNodes.get(myNodeId);
+  const displayLongName = resolveMeshcoreSelfDisplayName(self, selfNode, myNodeId);
+  const battery = resolveMeshcoreSelfBattery(self.batteryMilliVolts);
+  const adv = meshcoreScaledAdvLatLonToDeg(self.advLat ?? 0, self.advLon ?? 0);
+  const storedStatic = hasStoredStaticGps() ? readStoredStaticGps() : null;
+  nextNodes.set(
+    myNodeId,
+    selfNode
+      ? mergeMeshcoreSelfNode(selfNode, displayLongName, battery, adv, storedStatic)
+      : buildMeshcoreSelfNode(myNodeId, self, displayLongName, battery, adv, storedStatic),
+  );
+}
+
+function applyMeshcoreTraceHopsToMap(
+  nextNodes: Map<number, MeshNode>,
+  myNodeId: number,
+  traceResults: Map<number, MeshcoreTraceResultEntry>,
+): void {
+  for (const [nodeId, tr] of traceResults) {
+    if (myNodeId > 0 && nodeId === myNodeId) continue;
+    // Room Status-ping synthetics are not TraceData — do not stamp hops_away from them.
+    if (tr.fromStatusPing) continue;
+    const existing = nextNodes.get(nodeId);
+    if (!existing) continue;
+    nextNodes.set(nodeId, { ...existing, hops_away: meshcoreTracePathLenToHops(tr.pathLen) });
+  }
+}
+
+function applySavedHopsFallback(
+  nextNodes: Map<number, MeshNode>,
+  savedHopsByNodeId: Map<number, number>,
+): void {
+  for (const [nodeId, node] of nextNodes) {
+    if (node.hops_away !== undefined) continue;
+    const savedHops = savedHopsByNodeId.get(nodeId);
+    if (savedHops != null) nextNodes.set(nodeId, { ...node, hops_away: savedHops });
+  }
+}
+
 export function useMeshcoreRuntime() {
   // Restore tombstones before any contact/message hydration in this session.
   restoreMeshcoreLocallyDeletedContactsFromStorage();
@@ -1942,23 +2112,7 @@ export function useMeshcoreRuntime() {
       // Persisted hop counts from `nodes` are the source of truth across app restarts and
       // contact-table cleanups. Pre-fetch so each contact merge can fall back when the radio
       // reports no outPath and prevSnap has no entry yet.
-      const savedHopsByNodeId = new Map<number, number>();
-      try {
-        const savedRows = (await window.electronAPI.db.getNodes()) as {
-          node_id: number;
-          hops?: number | null;
-          hops_away?: number | null;
-        }[];
-        for (const r of savedRows) {
-          const h = r.hops ?? r.hops_away;
-          if (h != null && Number.isFinite(h)) savedHopsByNodeId.set(r.node_id, h);
-        }
-      } catch (e) {
-        console.warn(
-          'mcL1198 [useMeshcoreRuntime] buildNodesFromContacts: getNodes for hops fallback ' +
-            errLikeToLogString(e),
-        );
-      }
+      const savedHopsByNodeId = await loadSavedHopsByNodeId();
       opts?.assertCurrent?.();
       const staged = opts?.awaitPersistence === true;
       const baselinePubKeys = new Map(pubKeyMapRef.current);
@@ -2075,26 +2229,7 @@ export function useMeshcoreRuntime() {
         );
         pendingDbRows.push(dbRow);
       }
-      if (pendingDbRows.length > 0 || opts?.radioSnapshotBefore !== undefined) {
-        const persist =
-          opts?.radioSnapshotBefore !== undefined
-            ? window.electronAPI.db.saveMeshcoreContactsBatch(
-                pendingDbRows,
-                opts.radioSnapshotBefore,
-              )
-            : window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows);
-        if (opts?.awaitPersistence) {
-          await persist;
-          opts.assertCurrent?.();
-        } else {
-          void persist.catch((e: unknown) => {
-            console.warn(
-              'mcL1199 [useMeshcoreRuntime] saveMeshcoreContactsBatch error ' +
-                errLikeToLogString(e),
-            );
-          });
-        }
-      }
+      await persistMeshcoreContactRows(pendingDbRows, opts);
       if (staged) {
         opts?.assertCurrent?.();
         mergeLiveMapChanges(baselinePubKeys, pubKeyMapRef.current, buildPubKeys);
@@ -2136,72 +2271,14 @@ export function useMeshcoreRuntime() {
       const myNodeId = opts?.myNodeId ?? 0;
       const self = opts?.self;
       if (myNodeId > 0 && self) {
-        const selfNode = nextNodes.get(myNodeId);
-        const hexFallback = `Node-${myNodeId.toString(16).toUpperCase()}`;
-        const selfNameTrimmed = typeof self.name === 'string' ? self.name.trim() : '';
-        const displayLongName = selfNameTrimmed || selfNode?.long_name || hexFallback;
-        const displayShortName = '';
-        const selfMv = self.batteryMilliVolts;
-        const fromSelfBattery =
-          selfMv != null && Number.isFinite(selfMv)
-            ? {
-                voltage: selfMv / 1000,
-                battery: meshcoreMilliVoltsToApproximateBatteryPercent(selfMv),
-              }
-            : null;
-        const fromSelfAdv = meshcoreScaledAdvLatLonToDeg(self.advLat ?? 0, self.advLon ?? 0);
-        const storedStatic = hasStoredStaticGps() ? readStoredStaticGps() : null;
-        if (selfNode) {
-          nextNodes.set(myNodeId, {
-            ...selfNode,
-            long_name: displayLongName,
-            short_name: displayShortName,
-            hops_away: 0,
-            latitude: storedStatic?.lat ?? fromSelfAdv.lat ?? selfNode.latitude ?? null,
-            longitude: storedStatic?.lon ?? fromSelfAdv.lon ?? selfNode.longitude ?? null,
-            ...fromSelfBattery,
-          });
-        } else {
-          nextNodes.set(myNodeId, {
-            node_id: myNodeId,
-            long_name: displayLongName,
-            short_name: displayShortName,
-            hw_model: CONTACT_TYPE_LABELS[self.type] ?? 'Unknown',
-            battery: fromSelfBattery?.battery ?? 0,
-            snr: 0,
-            rssi: 0,
-            last_heard: Math.floor(Date.now() / 1000),
-            latitude: storedStatic?.lat ?? fromSelfAdv.lat,
-            longitude: storedStatic?.lon ?? fromSelfAdv.lon,
-            hops_away: 0,
-            ...(fromSelfBattery?.voltage != null ? { voltage: fromSelfBattery.voltage } : {}),
-          });
-        }
+        applyMeshcoreSelfNodeToMap(nextNodes, myNodeId, self);
       }
 
-      for (const [nodeId, tr] of meshcoreTraceResultsRef.current) {
-        if (myNodeId > 0 && nodeId === myNodeId) continue;
-        // Room Status-ping synthetics are not TraceData — do not stamp hops_away from them.
-        if (tr.fromStatusPing) continue;
-        const existing = nextNodes.get(nodeId);
-        if (existing) {
-          const traceHops = meshcoreTracePathLenToHops(tr.pathLen);
-          nextNodes.set(nodeId, {
-            ...existing,
-            hops_away: traceHops,
-          });
-        }
-      }
+      applyMeshcoreTraceHopsToMap(nextNodes, myNodeId, meshcoreTraceResultsRef.current);
 
       // Final fallback: nodes still missing hops_away after radio/contact/trace merges fall back
       // to persisted `nodes` rows. Critical when `meshcore_contacts` is sparse (off-radio cleanup).
-      for (const [nodeId, node] of nextNodes) {
-        if (node.hops_away !== undefined) continue;
-        const savedHops = savedHopsByNodeId.get(nodeId);
-        if (savedHops != null) {
-          nextNodes.set(nodeId, { ...node, hops_away: savedHops });
-        }
-      }
+      applySavedHopsFallback(nextNodes, savedHopsByNodeId);
 
       return nextNodes;
     },
