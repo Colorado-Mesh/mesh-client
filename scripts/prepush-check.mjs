@@ -5,7 +5,8 @@
  *
  * Usage: pnpm run check:changed
  */
-import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +20,129 @@ const PRETTIER_RE = /\.(?:[cm]?[jt]sx?|json|css|md|sh)$/i;
 const VITEST_INPUT_RE = /\.(?:[cm]?[jt]sx?|mjs)$/i;
 
 const ESLINT_BATCH = 40;
+
+/** Bump when the cache payload or key inputs change. */
+export const PREPUSH_CACHE_VERSION = 1;
+
+/**
+ * @param {typeof spawnSync} spawnSyncFn
+ * @param {string} cwd
+ * @param {string[]} gitArgs
+ * @param {string | undefined} input
+ * @returns {string | null}
+ */
+function gitText(spawnSyncFn, cwd, gitArgs, input) {
+  const result = spawnSyncFn('git', gitArgs, {
+    cwd,
+    encoding: 'utf8',
+    shell: false,
+    ...(input === undefined ? {} : { input }),
+  });
+  if (result.status !== 0) return null;
+  return String(result.stdout ?? '');
+}
+
+/**
+ * Stable identity of everything `check:changed` validates: committed HEAD, the
+ * merge-base it diffs against, tracked changes vs HEAD (staged + unstaged), and
+ * untracked file contents. Any edit, stage, commit, or untracked change moves it.
+ *
+ * @param {{ cwd?: string, spawnSyncFn?: typeof spawnSync, mergeBase?: string | null }} [opts]
+ * @returns {string}
+ */
+export function computePrepushCacheKey(opts = {}) {
+  const cwd = opts.cwd ?? ROOT;
+  const spawnSyncFn = opts.spawnSyncFn ?? spawnSync;
+  const mergeBase = opts.mergeBase === undefined ? resolveOriginMainMergeBase() : opts.mergeBase;
+
+  const head = gitText(spawnSyncFn, cwd, ['rev-parse', 'HEAD'])?.trim() ?? '';
+  const trackedDiff = gitText(spawnSyncFn, cwd, ['diff', 'HEAD', '--binary']) ?? '';
+  const untrackedList =
+    gitText(spawnSyncFn, cwd, ['ls-files', '--others', '--exclude-standard']) ?? '';
+  const untrackedPaths = untrackedList
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const untrackedHashes =
+    untrackedPaths.length > 0
+      ? (gitText(spawnSyncFn, cwd, ['hash-object', '--stdin-paths'], untrackedPaths.join('\n')) ??
+        '')
+      : '';
+
+  return createHash('sha256')
+    .update(head)
+    .update('\0')
+    .update(mergeBase ?? '')
+    .update('\0')
+    .update(trackedDiff)
+    .update('\0')
+    .update(untrackedList)
+    .update('\0')
+    .update(untrackedHashes)
+    .digest('hex');
+}
+
+/**
+ * Cache lives inside the git dir (never tracked, per worktree): `.git/prepush-check-cache.json`.
+ *
+ * @param {{ cwd?: string, spawnSyncFn?: typeof spawnSync }} [opts]
+ * @returns {string | null}
+ */
+export function resolvePrepushCacheFile(opts = {}) {
+  const cwd = opts.cwd ?? ROOT;
+  const spawnSyncFn = opts.spawnSyncFn ?? spawnSync;
+  const gitDir = gitText(spawnSyncFn, cwd, ['rev-parse', '--absolute-git-dir'])?.trim();
+  if (!gitDir) return null;
+  return path.join(gitDir, 'prepush-check-cache.json');
+}
+
+/**
+ * @param {unknown} data
+ * @param {string} key
+ * @returns {boolean}
+ */
+export function isPrepushCacheValid(data, key) {
+  return (
+    Boolean(data) &&
+    typeof data === 'object' &&
+    /** @type {{ version?: unknown, key?: unknown }} */ (data).version === PREPUSH_CACHE_VERSION &&
+    /** @type {{ key?: unknown }} */ (data).key === key
+  );
+}
+
+/**
+ * @param {{ cwd?: string, spawnSyncFn?: typeof spawnSync }} [opts]
+ * @returns {unknown}
+ */
+export function readPrepushCache(opts = {}) {
+  const file = resolvePrepushCacheFile(opts);
+  if (!file || !existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch (e) {
+    // Corrupt cache is not fatal — rerun the checks.
+    console.error('check:changed: ignoring unreadable prepush cache', e.message);
+    return null;
+  }
+}
+
+/**
+ * @param {string} key
+ * @param {{ cwd?: string, spawnSyncFn?: typeof spawnSync }} [opts]
+ */
+export function writePrepushCache(key, opts = {}) {
+  const file = resolvePrepushCacheFile(opts);
+  if (!file) return;
+  try {
+    writeFileSync(
+      file,
+      `${JSON.stringify({ version: PREPUSH_CACHE_VERSION, key, validatedAt: new Date().toISOString() }, null, 2)}\n`,
+    );
+  } catch (e) {
+    // A read-only git dir must not fail the push.
+    console.error('check:changed: could not write prepush cache', e.message);
+  }
+}
 
 /**
  * @param {typeof spawnSync} spawnSyncFn
@@ -215,7 +339,21 @@ export function runCheckChanged(opts = {}) {
 }
 
 function main() {
-  const code = runCheckChanged();
+  if (process.env.PREPUSH_CHECK_NO_CACHE === '1') {
+    process.exit(runCheckChanged());
+  }
+
+  const mergeBase = resolveOriginMainMergeBase();
+  const cacheKey = computePrepushCacheKey({ mergeBase });
+  if (isPrepushCacheValid(readPrepushCache(), cacheKey)) {
+    console.error(
+      'check:changed: skip — this exact tree already passed (PREPUSH_CHECK_NO_CACHE=1 forces a rerun)',
+    );
+    process.exit(0);
+  }
+
+  const code = runCheckChanged({ mergeBase });
+  if (code === 0) writePrepushCache(cacheKey);
   process.exit(code);
 }
 

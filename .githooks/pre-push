@@ -1,6 +1,8 @@
 #!/bin/sh
 # Branch gate before push: Prettier/ESLint/typecheck/vitest on every path changed vs main.
 # To skip in an emergency: git push --no-verify
+# Re-pushing a tree that already passed skips instantly via <git-dir>/prepush-check-cache.json;
+# force a rerun with PREPUSH_CHECK_NO_CACHE=1.
 #
 # Agents on Cursor VMs: run `git config core.hooksPath .githooks` first — the VM
 # overrides hooksPath and `.githooks/pre-commit` will not run otherwise.

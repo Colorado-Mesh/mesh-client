@@ -742,6 +742,34 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `pnpm exec github-actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
+#### Pre-push (branch gate) and why it repeats some checks
+
+`.githooks/pre-push` runs `pnpm run check:changed` (`scripts/prepush-check.mjs`) over the union of
+`origin/main…HEAD`, staged, and unstaged paths: Prettier `--check`, ESLint with the **CI shard/config**
+(`scripts/ci-eslint-shard.mjs`), full `typecheck`, and `vitest related` for the whole branch diff.
+
+It deliberately repeats work pre-commit already did, because the two gates answer different questions:
+
+- **Scope:** pre-commit only sees the files in _that_ commit. Cross-commit interactions (a later commit
+  touching a shared module whose consumers' tests were not staged) are only visible branch-wide.
+- **Invocation:** pre-push runs the same ESLint shard arguments as CI, so a staged-file local invocation
+  cannot hide a config/ignore-driven CI failure.
+- **Bypassed state:** `--no-verify`, GUI clients, agent VMs with a non-repo `core.hooksPath`, and commits
+  pulled or merged into the branch never ran _your_ pre-commit. Pre-push is the last local gate.
+- **Cost:** a red PR costs a full CI round-trip; the branch check is the cheap version of that signal.
+
+**Tree-hash cache.** The first successful branch check writes `<git-dir>/prepush-check-cache.json`, keyed by
+HEAD, the merge-base, the tracked diff vs `HEAD` (staged + unstaged), and untracked file hashes. Pushing the
+exact same tree again (push retry, second remote, no-op amend/rebase) skips instantly. Set
+`PREPUSH_CHECK_NO_CACHE=1` or delete the cache file to force a rerun. The cache lives inside the git dir —
+never tracked, per worktree — and is only written after a passing run.
+
+Emergency bypass (temporary only):
+
+```bash
+git push --no-verify
+```
+
 **Release / protected CI full suite:** `pnpm run release` (`scripts/release.sh`), merge-queue `merge_group`, `main` push, and manual [`tests.yaml`](../.github/workflows/tests.yaml) runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated `check:*` set and requires actionlint (from `pnpm install`) + yamllint. Use `pnpm run check:pr` for the comprehensive Vitest/lint/typecheck surface locally before a PR.
 
 Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (yamllint via pip/brew/apt; actionlint comes with `pnpm install`).
