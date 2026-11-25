@@ -1069,7 +1069,27 @@ function reticulumConnectionPanelLiteralIssues(enVal, val) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkReticulumConnectionPanelIssues(ctx) {
+function isReticulumQualityKey(flatKey, leafKey) {
+  const isConnectionTopLevel =
+    flatKey.startsWith('connectionPanel.') && RETICULUM_CONNECTION_PANEL_LEAF_KEYS.has(leafKey);
+  const isNetworkTopLevel =
+    flatKey.startsWith('networkPanel.') && RETICULUM_NETWORK_PANEL_TOP_LEAF_KEYS.has(leafKey);
+  const isNestedReticulum =
+    flatKey.startsWith('connectionPanel.reticulum') ||
+    flatKey.startsWith('networkPanel.reticulum') ||
+    flatKey.startsWith('adminPanel.reticulum') ||
+    flatKey.startsWith('reticulumRemote.') ||
+    flatKey.startsWith('reticulumVoice.') ||
+    flatKey.startsWith('chatPanel.rncp.');
+  return (
+    isConnectionTopLevel ||
+    isNetworkTopLevel ||
+    isNestedReticulum ||
+    flatKey === 'aria.switchToReticulum'
+  );
+}
+
+function collectReticulumTranslationIssues(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (!isReticulumUiFlatKey(flatKey)) {
@@ -1109,7 +1129,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
   if (leafKey === 'reticulumNetworkDisabled' && locale !== 'en' && /^disabled$/i.test(val)) {
     issues.push('translate reticulumNetworkDisabled — do not leave English "disabled"');
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule1(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'reticulumStackHint' && locale !== 'en') {
     for (const token of RETICULUM_STACK_HINT_PROTOCOL_TOKENS) {
       if (enVal.includes(token) && !val.includes(token)) {
@@ -1117,7 +1142,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule2(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey.endsWith('.disable') || flatKey.endsWith('.enable')) &&
     enVal === 'Disable' &&
@@ -1125,7 +1155,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
   ) {
     issues.push('reticulum disable label must not use parallax/accessibility false-friend wording');
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumInterfaces.host') && enVal === 'Host') {
     for (const { re, hint } of RETICULUM_HOST_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1133,7 +1168,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumPeers.name') && enVal === 'Peer') {
     for (const { re, hint } of RETICULUM_PEER_NAME_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1141,7 +1181,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule5(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumPeers.probe') && enVal === 'Probe') {
     for (const { re, hint } of RETICULUM_PROBE_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1154,7 +1199,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule6(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumPeers.actions') && enVal === 'Actions') {
     for (const { re, hint } of RETICULUM_PEERS_ACTIONS_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1162,7 +1212,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumStackAndPropagationIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     flatKey.endsWith('reticulumPropagation.title') &&
     enVal === 'Propagation nodes' &&
@@ -1182,8 +1237,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
-  // LXST voice Answer must be a phone-UI verb, not the noun "answer/response".
+function collectReticulumVoiceRule1(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === 'reticulumVoice.answer' && enVal === 'Answer' && locale !== 'en') {
     if (/^(Antwort|Antwoord)$/i.test(val)) {
       issues.push(
@@ -1191,6 +1250,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       );
     }
   }
+  return issues;
+}
+
+function collectReticulumVoiceRule2(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === 'reticulumVoice.capabilityUnknownShort' && enVal === '?' && locale !== 'en') {
     if (val.trim().length > 2 || /\s/.test(val) || /^\.\?/.test(val)) {
       issues.push(
@@ -1198,6 +1263,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       );
     }
   }
+  return issues;
+}
+
+function collectReticulumVoiceRule3(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === 'reticulumVoice.errors.noIdentity' && locale !== 'en') {
     if (/\bKollegen\b/i.test(val) || /\bcollega\b/i.test(val)) {
       issues.push(
@@ -1205,6 +1276,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       );
     }
   }
+  return issues;
+}
+
+function collectReticulumVoiceRule4(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.startsWith('reticulumVoice.') && locale !== 'en') {
     for (const token of ['LXST', 'Sideband', 'rsLXST', 'mesh-client', 'Ratspeak']) {
       if (enVal.includes(token) && !val.includes(token)) {
@@ -1213,7 +1290,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumActionRule1(ctx) {
+  const { locale, val, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'reticulumStopStack' && locale !== 'en') {
     for (const { re, hint } of RETICULUM_STOP_STACK_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -1221,7 +1303,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumActionRule2(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey.endsWith('.enable') || flatKey.endsWith('reticulumPropagation.enable')) &&
     enVal === 'Enable'
@@ -1232,7 +1319,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumActionRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey.endsWith('reticulumInterfaces.bleAvailable') &&
     enVal.includes('sidecar') &&
@@ -1242,7 +1334,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       'reticulum sidecar false friend: use sidecar process wording, not stroller "коляска"',
     );
   }
+  return issues;
+}
 
+function collectReticulumActionRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumStackSettings.enableTransport') && enVal.includes('other peers')) {
     for (const { re, hint } of RETICULUM_OTHER_PEERS_COLLEAGUE_RES) {
       if (re.test(val)) {
@@ -1250,7 +1347,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumHistoryRule1(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (
     flatKey === 'peerListPanel.emptyHistory' ||
     flatKey === 'peerListPanel.emptyContacts' ||
@@ -1262,7 +1364,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumHistoryRule2(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === 'peerListPanel.tabHistory' || flatKey === 'nodeListPanel.tabHistory') {
     for (const { re, hint } of HISTORY_TAB_FALSE_FRIEND_RES) {
       if (re.test(val.trim())) {
@@ -1270,7 +1377,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumHistoryRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === 'peerDetailModal.removeContact' ||
       flatKey === 'peerDetailModal.removeContactConfirmTitle') &&
@@ -1284,7 +1396,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
   for (const issue of reticulumConnectionPanelLiteralIssues(enVal, val)) {
     issues.push(issue);
   }
+  return issues;
+}
 
+function collectReticulumSidecarIssues(ctx) {
+  const { locale, val, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'reticulumSidecarMissing' || leafKey === 'reticulumSidecarCargoMissing') {
     for (const { re, hint } of RUST_PROGRAMMING_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1304,8 +1421,35 @@ function checkReticulumConnectionPanelIssues(ctx) {
   if (leafKey === 'reticulumSidecarStartFailed' && locale === 'ja' && /網膜/.test(val)) {
     issues.push('reticulumSidecarStartFailed uses 網膜 (retina) — use Reticulum stack wording');
   }
-
   return issues;
+}
+
+function checkReticulumConnectionPanelIssues(ctx) {
+  const { flatKey, leafKey } = ctx;
+  if (!isReticulumUiFlatKey(flatKey)) return [];
+  if (!isReticulumQualityKey(flatKey, leafKey)) return [];
+  return [
+    ...collectReticulumTranslationIssues(ctx),
+    ...collectReticulumIfaceRule1(ctx),
+    ...collectReticulumIfaceRule2(ctx),
+    ...collectReticulumIfaceRule3(ctx),
+    ...collectReticulumIfaceRule4(ctx),
+    ...collectReticulumIfaceRule5(ctx),
+    ...collectReticulumIfaceRule6(ctx),
+    ...collectReticulumStackAndPropagationIssues(ctx),
+    ...collectReticulumVoiceRule1(ctx),
+    ...collectReticulumVoiceRule2(ctx),
+    ...collectReticulumVoiceRule3(ctx),
+    ...collectReticulumVoiceRule4(ctx),
+    ...collectReticulumActionRule1(ctx),
+    ...collectReticulumActionRule2(ctx),
+    ...collectReticulumActionRule3(ctx),
+    ...collectReticulumActionRule4(ctx),
+    ...collectReticulumHistoryRule1(ctx),
+    ...collectReticulumHistoryRule2(ctx),
+    ...collectReticulumHistoryRule3(ctx),
+    ...collectReticulumSidecarIssues(ctx),
+  ];
 }
 
 /**
@@ -1318,12 +1462,18 @@ function checkReticulumConnectionPanelIssues(ctx) {
  * Top-level `reticulumPropagation.*` keys (Network section) — not under connectionPanel.
  * Catches English rewrite drift that key-parity / --audit cannot see.
  */
-function checkReticulumPropagationModeHelpIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+function checkReticulumPropagationModeHelpIssuesRule1(ctx) {
+  const { locale, flatKey } = ctx;
   const issues = [];
   if (!flatKey.startsWith('reticulumPropagation.') || locale === 'en') return issues;
 
   // Wire paths must stay English literals in hosting/sync copy.
+  return issues;
+}
+
+function checkReticulumPropagationModeHelpIssuesRule2(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === 'reticulumPropagation.localHostHint' ||
       flatKey === 'reticulumPropagation.enableLocalHostConfirmBody') &&
@@ -1338,6 +1488,12 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
   }
 
   // EN moved from "local inbox" → "local propagation node"; catch leftover mailbox copy.
+  return issues;
+}
+
+function checkReticulumPropagationModeHelpIssuesRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === 'reticulumPropagation.syncLocalSettled' ||
       flatKey === 'reticulumPropagation.modeHelpAuto' ||
@@ -1364,7 +1520,12 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumPropagationModeHelpIssuesRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === 'reticulumPropagation.modeHelpAuto' &&
     /one-time syncs the best Discovered/i.test(enVal)
@@ -1403,7 +1564,12 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumPropagationModeHelpIssuesRule5(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === 'reticulumPropagation.syncLocalLoading' && /still loading/i.test(enVal)) {
     // Split on sentence punctuation only so Japanese/Chinese clauses without whitespace still separate.
     const clauses = val
@@ -1428,7 +1594,12 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumPropagationModeHelpIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === 'reticulumPropagation.modeHelpManual' &&
     /^Manual:/i.test(enVal) &&
@@ -1441,6 +1612,17 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
   }
 
   return issues;
+}
+
+function checkReticulumPropagationModeHelpIssues(ctx) {
+  return [
+    ...checkReticulumPropagationModeHelpIssuesRule1(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule2(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule3(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule4(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule5(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule6(ctx),
+  ];
 }
 
 function checkReticulumRemoteIssues(ctx) {
@@ -2655,8 +2837,8 @@ const PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES = [
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkReticulumPeerAndPingIssues(ctx) {
-  const { locale, flatKey, val, enVal, leafKey } = ctx;
+function checkReticulumPeerAndPingIssuesRule1(ctx) {
+  const { flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
 
   if (
@@ -2670,6 +2852,12 @@ function checkReticulumPeerAndPingIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkReticulumPeerAndPingIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
 
   if (flatKey === 'reticulumPing.failed' && enVal.includes('Ping failed') && locale !== 'en') {
     if (/зв['\s]*язк|связ(и|ь)/i.test(val) && !/пінг|ping|эхо|sond|prob/i.test(val)) {
@@ -2678,59 +2866,99 @@ function checkReticulumPeerAndPingIssues(ctx) {
       );
     }
   }
-
-  if (locale !== 'en' && flatKey.startsWith('peerListPanel.paths')) {
-    if (flatKey === 'peerListPanel.pathsMedium') {
-      for (const { re, hint } of PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES) {
-        if (re.test(val)) {
-          issues.push(`peerListPanel.pathsMedium false friend: ${hint}`);
-        }
-      }
-    }
-    if (
-      (flatKey === 'peerListPanel.paths' ||
-        flatKey === 'peerListPanel.pathsActiveBadge' ||
-        flatKey === 'peerListPanel.pathsBackupBadge') &&
-      val === enVal
-    ) {
-      issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
-    }
-    if (flatKey === 'peerListPanel.pathsPreferRf' && enVal === 'RF' && locale !== 'en') {
-      // RF is a protocol token; MT must not expand the acronym alone into unrelated words
-      // (e.g. cs "regionální facilitátor"). Localized glosses that still keep "RF" are OK
-      // (e.g. pt-BR "Frequência de rádio (RF)").
-      const keepsRfToken = /\bRF\b/.test(val) || /射频|無線|무선/.test(val);
-      if (!keepsRfToken) {
-        issues.push('peerListPanel.pathsPreferRf must keep the RF protocol token');
-      }
-    }
-    if (flatKey === 'peerListPanel.pathsBackupBadge' && /Заднім ходом/i.test(val)) {
-      issues.push('peerListPanel.pathsBackupBadge must mean spare path, not reverse gear');
-    }
-  }
-
   return issues;
+}
+
+function peerListPathsMediumIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (locale === 'en' || flatKey !== 'peerListPanel.pathsMedium') return issues;
+  for (const { re, hint } of PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES) {
+    if (re.test(val)) issues.push(`peerListPanel.pathsMedium false friend: ${hint}`);
+  }
+  return issues;
+}
+
+function peerListPathsIdenticalEnglishIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en') return issues;
+  const keys = new Set([
+    'peerListPanel.paths',
+    'peerListPanel.pathsActiveBadge',
+    'peerListPanel.pathsBackupBadge',
+  ]);
+  if (keys.has(flatKey) && val === enVal) {
+    issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
+  }
+  return issues;
+}
+
+function peerListPathsPreferRfIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en' || flatKey !== 'peerListPanel.pathsPreferRf' || enVal !== 'RF') return issues;
+  // RF is a protocol token; MT must not expand the acronym alone into unrelated words
+  // (e.g. cs "regionální facilitátor"). Localized glosses that still keep "RF" are OK.
+  const keepsRfToken = /\bRF\b/.test(val) || /射频|無線|무선/.test(val);
+  if (!keepsRfToken) issues.push('peerListPanel.pathsPreferRf must keep the RF protocol token');
+  return issues;
+}
+
+function peerListPathsBackupBadgeIssues(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
+  if (flatKey === 'peerListPanel.pathsBackupBadge' && /Заднім ходом/i.test(val)) {
+    issues.push('peerListPanel.pathsBackupBadge must mean spare path, not reverse gear');
+  }
+  return issues;
+}
+
+function checkReticulumPeerAndPingIssues(ctx) {
+  return [
+    ...checkReticulumPeerAndPingIssuesRule1(ctx),
+    ...checkReticulumPeerAndPingIssuesRule2(ctx),
+    ...peerListPathsMediumIssues(ctx),
+    ...peerListPathsIdenticalEnglishIssues(ctx),
+    ...peerListPathsPreferRfIssues(ctx),
+    ...peerListPathsBackupBadgeIssues(ctx),
+  ];
 }
 
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMustTranslateAndFormFieldIssues(ctx) {
-  const { locale, flatKey, val, enVal, leafKey } = ctx;
+function checkMustTranslateAndFormFieldIssuesRule1(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
   const issues = [];
   if (locale !== 'en' && MUST_TRANSLATE_LEAF_KEYS.has(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && MODULE_PANEL_MUST_TRANSLATE_IDENTICAL_KEYS.has(flatKey) && val === enVal) {
     issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && ENVIRONMENT_TELEMETRY_MUST_TRANSLATE_KEYS.has(flatKey) && val === enVal) {
     issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule4(ctx) {
+  const { locale, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     leafKey === 'copyMeshtastic' &&
@@ -2738,7 +2966,12 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('copyMeshtastic still starts with English "Copy meshtastic"');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule5(ctx) {
+  const { locale, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     enVal.includes('remote admin docs') &&
@@ -2746,7 +2979,12 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('translate "remote admin docs" — do not leave the English phrase');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule6(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     leafKey === 'offline_gate' &&
@@ -2757,10 +2995,21 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   }
 
   // Single Latin letter (e.g. de "B") is a bad MT truncation; short CJK labels are OK.
+  return issues;
+}
+
+function checkMustTranslateAndFormFieldIssuesRule7(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'roleSecondary' && enVal.length > 5 && /^[A-Za-z]$/.test(val)) {
     issues.push('roleSecondary looks truncated');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule8(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     leafKey === 'modeAdd' &&
     val.length > 4 &&
@@ -2770,11 +3019,21 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('modeAdd must not be ALL CAPS');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule9(ctx) {
+  const { val, enVal } = ctx;
+  const issues = [];
   if (enVal.includes('{{usePreset}}') && !val.includes('{{usePreset}}')) {
     issues.push('missing {{usePreset}} interpolation from English source');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule10(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     ELLIPSIS_HYGIENE_LEAF_KEYS.has(leafKey) &&
@@ -2783,7 +3042,12 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('use Unicode ellipsis (…) instead of ASCII dots when English uses …');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule11(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     ELLIPSIS_HYGIENE_LEAF_KEYS.has(leafKey) &&
@@ -2792,7 +3056,12 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('use a single Unicode ellipsis (…), not repeated ……');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule12(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === AUTO_RECONNECT_IN_PROGRESS_KEY && locale !== 'en') {
     for (const { re, hint } of AUTO_RECONNECT_IN_PROGRESS_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -2801,6 +3070,23 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
     }
   }
   return issues;
+}
+
+function checkMustTranslateAndFormFieldIssues(ctx) {
+  return [
+    ...checkMustTranslateAndFormFieldIssuesRule1(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule2(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule3(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule4(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule5(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule6(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule7(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule8(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule9(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule10(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule11(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule12(ctx),
+  ];
 }
 
 /**
@@ -2852,7 +3138,7 @@ function checkRoomsPanelFalseFriendIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMeshAdvertAndRawPacketLogIssues(ctx) {
+function checkMeshAdvertAndRawPacketLogIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
   const shouldCheckMeshAdvertCommercial =
@@ -2864,66 +3150,103 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
-  if (flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) {
-    const packetLeaf = flatKey.split('.').pop() ?? flatKey;
-    if (RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS.has(packetLeaf) && val !== enVal) {
-      issues.push(
-        `rawPacketLog ${packetLeaf} must stay verbatim "${enVal}" (protocol filter chip)`,
-      );
-    }
-    if (RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS.has(packetLeaf)) {
-      for (const { re, hint } of RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS[locale] ?? []) {
-        if (re.test(val)) {
-          issues.push(`rawPacketLog hop tooltip false friend: ${hint}`);
-        }
-      }
-    }
-    if (RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS.has(packetLeaf)) {
-      for (const { re, hint } of FLOOD_ROUTING_FALSE_FRIENDS[locale] ?? []) {
-        if (re.test(val)) {
-          issues.push(`rawPacketLog flood-routing false friend: ${hint}`);
-        }
-      }
-    }
-    if (RAW_PACKET_LOG_SHORT_LABEL_KEYS.has(packetLeaf)) {
-      if (CAT_DOT_PADDING_RE.test(val)) {
-        issues.push('rawPacketLog short label has CAT dot-padding garbage — use a concise label');
-      }
-      if (packetLeaf === 'payloadLabel' && val.length > 24) {
-        issues.push('payloadLabel looks too long — use a short label (e.g. Payload)');
-      }
-    }
-    if (flatKey.startsWith(RAW_PACKET_LOG_RETICULUM_PREFIX)) {
-      if (
-        RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS.has(packetLeaf) &&
-        (enVal === 'RX' || enVal === 'TX') &&
-        val !== enVal
-      ) {
-        issues.push(
-          `rawPacketLog reticulum ${packetLeaf} must stay verbatim "${enVal}" (radio direction token)`,
-        );
-      }
-      if (
-        packetLeaf === 'destination' &&
-        enVal === 'Destination' &&
-        /^[:;.,!?]+$/.test(val.trim())
-      ) {
-        issues.push(
-          'rawPacketLog reticulum destination must be a label, not punctuation-only garbage',
-        );
-      }
-    }
-    if (locale === 'uk' && packetLeaf === 'transportHeading' && /Телепортувати/i.test(val)) {
-      issues.push(
-        'transportHeading must be mesh transport header label, not verb "teleport" (Телепортувати)',
-      );
-    }
-    for (const issue of meshcoreProtocolTokenIssues(flatKey, enVal, val)) {
-      issues.push(issue);
+function rawPacketLogVerbatimIssues(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS.has(packetLeaf) && val !== enVal) {
+    issues.push(`rawPacketLog ${packetLeaf} must stay verbatim "${enVal}" (protocol filter chip)`);
+  }
+  return issues;
+}
+
+function rawPacketLogHopTooltipIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS.has(packetLeaf)) {
+    for (const { re, hint } of RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) issues.push(`rawPacketLog hop tooltip false friend: ${hint}`);
     }
   }
+  return issues;
+}
 
+function rawPacketLogFloodRoutingIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS.has(packetLeaf)) {
+    for (const { re, hint } of FLOOD_ROUTING_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) issues.push(`rawPacketLog flood-routing false friend: ${hint}`);
+    }
+  }
+  return issues;
+}
+
+function rawPacketLogShortLabelIssues(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (!RAW_PACKET_LOG_SHORT_LABEL_KEYS.has(packetLeaf)) return issues;
+  if (CAT_DOT_PADDING_RE.test(val)) {
+    issues.push('rawPacketLog short label has CAT dot-padding garbage — use a concise label');
+  }
+  if (packetLeaf === 'payloadLabel' && val.length > 24) {
+    issues.push('payloadLabel looks too long — use a short label (e.g. Payload)');
+  }
+  return issues;
+}
+
+function rawPacketLogReticulumIssues(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_RETICULUM_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (
+    RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS.has(packetLeaf) &&
+    (enVal === 'RX' || enVal === 'TX') &&
+    val !== enVal
+  ) {
+    issues.push(
+      `rawPacketLog reticulum ${packetLeaf} must stay verbatim "${enVal}" (radio direction token)`,
+    );
+  }
+  if (packetLeaf === 'destination' && enVal === 'Destination' && /^[:;.,!?]+$/.test(val.trim())) {
+    issues.push('rawPacketLog reticulum destination must be a label, not punctuation-only garbage');
+  }
+  return issues;
+}
+
+function rawPacketLogTransportHeadingIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (locale === 'uk' && packetLeaf === 'transportHeading' && /Телепортувати/i.test(val)) {
+    issues.push(
+      'transportHeading must be mesh transport header label, not verb "teleport" (Телепортувати)',
+    );
+  }
+  return issues;
+}
+
+function rawPacketLogProtocolTokenIssues(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return [];
+  return meshcoreProtocolTokenIssues(flatKey, enVal, val);
+}
+
+function checkMeshAdvertAndRawPacketLogIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === RETICULUM_TOPOLOGY_SELF_KEY && enVal === 'You' && locale !== 'en') {
     if (val === 'You') {
       issues.push('reticulumTopology.self must be translated (local pronoun for "You")');
@@ -2937,7 +3260,12 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
       issues.push('reticulumTopology.self should be a short pronoun, not a multi-word phrase');
     }
   }
+  return issues;
+}
 
+function checkMeshAdvertAndRawPacketLogIssuesRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === RETICULUM_TOPOLOGY_HOP_BADGE_KEY &&
     enVal.includes('{{count}}') &&
@@ -2945,7 +3273,12 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
   ) {
     issues.push('reticulumTopology.hopBadge must preserve {{count}} placeholder');
   }
+  return issues;
+}
 
+function checkMeshAdvertAndRawPacketLogIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale === 'de' &&
     (flatKey.startsWith('radioPanel.deviceRoles') || flatKey.startsWith('roleInfo.roles.'))
@@ -2956,6 +3289,12 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkMeshAdvertAndRawPacketLogIssuesRule6(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_KEY) {
     issues.push(...channelPsksMqttOnlyIndexHintIssues(val));
   }
@@ -2963,11 +3302,28 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
   return issues;
 }
 
+function checkMeshAdvertAndRawPacketLogIssues(ctx) {
+  return [
+    ...checkMeshAdvertAndRawPacketLogIssuesRule1(ctx),
+    ...rawPacketLogVerbatimIssues(ctx),
+    ...rawPacketLogHopTooltipIssues(ctx),
+    ...rawPacketLogFloodRoutingIssues(ctx),
+    ...rawPacketLogShortLabelIssues(ctx),
+    ...rawPacketLogReticulumIssues(ctx),
+    ...rawPacketLogTransportHeadingIssues(ctx),
+    ...rawPacketLogProtocolTokenIssues(ctx),
+    ...checkMeshAdvertAndRawPacketLogIssuesRule3(ctx),
+    ...checkMeshAdvertAndRawPacketLogIssuesRule4(ctx),
+    ...checkMeshAdvertAndRawPacketLogIssuesRule5(ctx),
+    ...checkMeshAdvertAndRawPacketLogIssuesRule6(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkFlasherIssues(ctx) {
+function checkFlasherIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
   if (
@@ -2981,7 +3337,12 @@ function checkFlasherIssues(ctx) {
       'flasher noSerialPorts must express absence (aucun/pas de), not affirmative "trouvé(s):"',
     );
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === 'flasher.errors.esp32FlashStalled' &&
@@ -2997,7 +3358,12 @@ function checkFlasherIssues(ctx) {
       issues.push('esp32FlashStalled must preserve literal button labels BOOT and RESET');
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && FLASHER_FLASH_MEMORY_KEY_RE.test(flatKey)) {
     if (FLASHER_FLASH_MEMORY_FALSE_FRIENDS.get(locale)?.test(val)) {
       issues.push(
@@ -3012,7 +3378,12 @@ function checkFlasherIssues(ctx) {
       issues.push('flasher backup copy must preserve literal button labels BOOT and RESET');
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule4(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === 'flasher.errors.rnodeCommandTimeout' &&
@@ -3025,7 +3396,12 @@ function checkFlasherIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     (flatKey === 'flasher.errors.provisionWipeRequired' ||
@@ -3042,7 +3418,12 @@ function checkFlasherIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && FLASHER_CLEAR_PAIRED_DEVICES_KEYS.has(flatKey)) {
     if (FLASHER_BT_BOND_FINANCIAL_FALSE_FRIENDS.test(val)) {
       issues.push(
@@ -3059,7 +3440,12 @@ function checkFlasherIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule7(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === 'meshcore.errors.removeContactFailed' &&
@@ -3070,6 +3456,18 @@ function checkFlasherIssues(ctx) {
   }
 
   return issues;
+}
+
+function checkFlasherIssues(ctx) {
+  return [
+    ...checkFlasherIssuesRule1(ctx),
+    ...checkFlasherIssuesRule2(ctx),
+    ...checkFlasherIssuesRule3(ctx),
+    ...checkFlasherIssuesRule4(ctx),
+    ...checkFlasherIssuesRule5(ctx),
+    ...checkFlasherIssuesRule6(ctx),
+    ...checkFlasherIssuesRule7(ctx),
+  ];
 }
 
 /**
@@ -3154,8 +3552,8 @@ function mentionSyntaxBroken(enVal, val) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMqttWifiAndScriptIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+function checkMqttWifiAndScriptIssuesRule1(ctx) {
+  const { locale, flatKey, val } = ctx;
   const issues = [];
   if (isMqttProxyUiKey(flatKey)) {
     for (const { re, hint } of MQTT_PROXY_LEGAL_FALSE_FRIENDS) {
@@ -3173,11 +3571,21 @@ function checkMqttWifiAndScriptIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkMqttWifiAndScriptIssuesRule2(ctx) {
+  const { locale, val } = ctx;
+  const issues = [];
   if (locale !== 'en' && WIFI_SPACED_RE.test(val)) {
     issues.push('use "Wi-Fi" without spaces around the hyphen (not "Wi - Fi")');
   }
+  return issues;
+}
 
+function checkMqttWifiAndScriptIssuesRule3(ctx) {
+  const { locale, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && /\bI2P\b/.test(enVal) && /I\s+2\s+P/.test(val)) {
     issues.push('keep I2P as contiguous token (not "I 2 P")');
   }
@@ -3185,23 +3593,44 @@ function checkMqttWifiAndScriptIssues(ctx) {
   // Users type mentions as shown; the parsers never match "@ [Name]", "@[ Name]" or "@ nick".
   // English prose such as "@ and" must not skip the check for contiguous tokens
   // the same string also demonstrates (@silver, @[Silver Eagle], @@).
+  return issues;
+}
+
+function checkMqttWifiAndScriptIssuesRule4(ctx) {
+  const { locale, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && mentionSyntaxBroken(enVal, val)) {
     issues.push(
       'keep mention syntax contiguous: "@[Name]" and "@nickname", no space after "@" or "["',
     );
   }
+  return issues;
+}
 
+function checkMqttWifiAndScriptIssuesRule5(ctx) {
+  const { locale, val, enVal } = ctx;
+  const issues = [];
   if (!CJK_LOCALES.has(locale) && CJK_SCRIPT_RE.test(val) && !CJK_SCRIPT_RE.test(enVal)) {
     issues.push('wrong-script contamination (CJK characters in a non-CJK locale)');
   }
   return issues;
 }
 
+function checkMqttWifiAndScriptIssues(ctx) {
+  return [
+    ...checkMqttWifiAndScriptIssuesRule1(ctx),
+    ...checkMqttWifiAndScriptIssuesRule2(ctx),
+    ...checkMqttWifiAndScriptIssuesRule3(ctx),
+    ...checkMqttWifiAndScriptIssuesRule4(ctx),
+    ...checkMqttWifiAndScriptIssuesRule5(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkRoomsPanelTranslationIssues(ctx) {
+function checkRoomsPanelTranslationIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (
@@ -3212,7 +3641,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule2(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3221,7 +3655,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
   ) {
     issues.push('translate readOnlyBadge — do not leave English "(read only)"');
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === `${ROOMS_PANEL_PREFIX}loginHelp` &&
@@ -3236,7 +3675,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule4(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === `${ROOMS_PANEL_PREFIX}emptyGuestLoginHint` &&
@@ -3246,7 +3690,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
       'emptyGuestLoginHint still quotes English "Continue read-only" — use the locale continueReadOnly button label',
     );
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule5(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3262,7 +3711,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule6(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale === 'pl' &&
     flatKey === `${ROOMS_PANEL_PREFIX}unreadPosts` &&
@@ -3273,11 +3727,22 @@ function checkRoomsPanelTranslationIssues(ctx) {
   return issues;
 }
 
+function checkRoomsPanelTranslationIssues(ctx) {
+  return [
+    ...checkRoomsPanelTranslationIssuesRule1(ctx),
+    ...checkRoomsPanelTranslationIssuesRule2(ctx),
+    ...checkRoomsPanelTranslationIssuesRule3(ctx),
+    ...checkRoomsPanelTranslationIssuesRule4(ctx),
+    ...checkRoomsPanelTranslationIssuesRule5(ctx),
+    ...checkRoomsPanelTranslationIssuesRule6(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkChatPanelIssues(ctx) {
+function checkChatPanelIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (
@@ -3288,7 +3753,12 @@ function checkChatPanelIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkChatPanelIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('chatPanel.') &&
@@ -3297,7 +3767,12 @@ function checkChatPanelIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkChatPanelIssuesRule3(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('chatPanel.') &&
@@ -3309,7 +3784,12 @@ function checkChatPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkChatPanelIssuesRule4(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (locale !== 'en' && flatKey === 'chatPanel.replyRequiresPacketId') {
     if (REPLY_REQUIRES_EN_LEADING_RE.test(val)) {
       issues.push('replyRequiresPacketId still starts with English "Reply requires/richiede"');
@@ -3323,7 +3803,12 @@ function checkChatPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkChatPanelIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     (flatKey === 'chatPanel.emptySelectDm' || flatKey === 'chatPanel.noDmConversationsReticulum')
@@ -3337,11 +3822,21 @@ function checkChatPanelIssues(ctx) {
   return issues;
 }
 
+function checkChatPanelIssues(ctx) {
+  return [
+    ...checkChatPanelIssuesRule1(ctx),
+    ...checkChatPanelIssuesRule2(ctx),
+    ...checkChatPanelIssuesRule3(ctx),
+    ...checkChatPanelIssuesRule4(ctx),
+    ...checkChatPanelIssuesRule5(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkRoomsPanelMembersIssues(ctx) {
+function checkRoomsPanelMembersIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (
@@ -3352,7 +3847,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3361,7 +3861,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule3(ctx) {
+  const { locale, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'pl' &&
     leafKey === 'savedPasswordsHeading' &&
@@ -3371,7 +3876,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       'savedPasswordsHeading confuses saved passwords with browser autofill — use "Zapisane hasła"',
     );
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule4(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'zh' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3380,7 +3890,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push('use 登录 for sign-in, not 登陆 (boarding a ship)');
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule5(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'cs' &&
     (leafKey === 'legendLoggedIn' || leafKey === 'statusLoggedInSession') &&
@@ -3389,7 +3904,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push(`${leafKey} must be "Přihlášen" (logged in), not noun "Přihlášení" (login)`);
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3406,7 +3926,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule7(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}legendLoggedInTooltip` && enVal.includes('leave room')) {
     for (const re of LEGEND_LEAVE_SPACE_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -3417,7 +3942,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule8(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'fr' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3427,7 +3957,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push('roomsPanel false friend: use "salle" for MeshCore Room, not hotel "pièce"');
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule9(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale === 'tr' &&
     flatKey === `${ROOMS_PANEL_PREFIX}statusLoggedInSessionTooltip` &&
@@ -3435,7 +3970,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push('statusLoggedInSessionTooltip uses "danışan" — use "istemci" for software client');
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule10(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === ROOMS_STATUS_PASSWORD_SAVED_KEY &&
     enVal.includes('(sky marker') &&
@@ -3451,7 +3991,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule11(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === ROOMS_SIDEBAR_LEGEND_TITLE_KEY &&
     enVal.includes('marker') &&
@@ -3460,7 +4005,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push('sidebarLegendTitle must mention sidebar markers, not only room status');
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule12(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}membersHeading`) {
     for (const re of MEMBERS_HEADING_GARBAGE_RES) {
       if (re.test(val)) {
@@ -3469,7 +4019,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule13(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === `${ROOMS_PANEL_PREFIX}membersRecognizedHeading` ||
       flatKey === `${ROOMS_PANEL_PREFIX}membersRecognizedEmpty`) &&
@@ -3484,7 +4039,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule14(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === `${ROOMS_PANEL_PREFIX}membersAclFetchFailed` &&
@@ -3495,7 +4055,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       'membersAclFetchFailed must mention ACL — do not truncate to generic "could not fetch"',
     );
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule15(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}membersAclEmpty` && enVal.includes('Remote')) {
     for (const re of REMOTE_TV_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -3506,7 +4071,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule16(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}membersAclRemoteHint`) {
     for (const re of ACL_LISTING_AD_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -3517,7 +4087,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule17(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}upgradeAccess`) {
     for (const { re, hint } of UPGRADE_ACCESS_FALSE_FRIENDS) {
       if (re.test(val)) {
@@ -3525,7 +4100,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule18(ctx) {
+  const { flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
     ROOMS_PANEL_PASSWORD_PLACEHOLDER_KEYS.has(leafKey)
@@ -3543,11 +4123,34 @@ function checkRoomsPanelMembersIssues(ctx) {
   return issues;
 }
 
+function checkRoomsPanelMembersIssues(ctx) {
+  return [
+    ...checkRoomsPanelMembersIssuesRule1(ctx),
+    ...checkRoomsPanelMembersIssuesRule2(ctx),
+    ...checkRoomsPanelMembersIssuesRule3(ctx),
+    ...checkRoomsPanelMembersIssuesRule4(ctx),
+    ...checkRoomsPanelMembersIssuesRule5(ctx),
+    ...checkRoomsPanelMembersIssuesRule6(ctx),
+    ...checkRoomsPanelMembersIssuesRule7(ctx),
+    ...checkRoomsPanelMembersIssuesRule8(ctx),
+    ...checkRoomsPanelMembersIssuesRule9(ctx),
+    ...checkRoomsPanelMembersIssuesRule10(ctx),
+    ...checkRoomsPanelMembersIssuesRule11(ctx),
+    ...checkRoomsPanelMembersIssuesRule12(ctx),
+    ...checkRoomsPanelMembersIssuesRule13(ctx),
+    ...checkRoomsPanelMembersIssuesRule14(ctx),
+    ...checkRoomsPanelMembersIssuesRule15(ctx),
+    ...checkRoomsPanelMembersIssuesRule16(ctx),
+    ...checkRoomsPanelMembersIssuesRule17(ctx),
+    ...checkRoomsPanelMembersIssuesRule18(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkAppPanelReduceMotionAndBrandIssues(ctx) {
+function checkAppPanelReduceMotionAndBrandIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
   if (flatKey === REDUCE_MOTION_DESC_KEY && enVal.includes('Loading spinners')) {
@@ -3562,13 +4165,23 @@ function checkAppPanelReduceMotionAndBrandIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkAppPanelReduceMotionAndBrandIssuesRule2(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (locale === 'pt-BR' && flatKey === REDUCE_MOTION_KEY && /\bReduzam\b/.test(val)) {
     issues.push(
       'reduceMotion uses plural imperative "Reduzam" — use infinitive "Reduzir movimento"',
     );
   }
+  return issues;
+}
 
+function checkAppPanelReduceMotionAndBrandIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale === 'zh' &&
     flatKey === REDUCE_MOTION_KEY &&
@@ -3577,23 +4190,43 @@ function checkAppPanelReduceMotionAndBrandIssues(ctx) {
   ) {
     issues.push('reduceMotion uses 运动 (exercise) — use 动态效果 or 动画 for UI motion');
   }
+  return issues;
+}
 
+function checkAppPanelReduceMotionAndBrandIssuesRule4(ctx) {
+  const { val, enVal } = ctx;
+  const issues = [];
   if (enVal.includes('Mesh-Client') && MESH_CLIENT_SPACED_RE.test(val)) {
     issues.push('use "Mesh-Client" without spaces around the hyphen (not "Mesh - Client")');
   }
+  return issues;
+}
 
+function checkAppPanelReduceMotionAndBrandIssuesRule5(ctx) {
+  const { val, enVal } = ctx;
+  const issues = [];
   if (enVal.includes('mesh-client') && MESH_CLIENT_LOWERCASE_SPACED_RE.test(val)) {
     issues.push('use "mesh-client" without spaces around the hyphen (not "mesh - client")');
   }
   return issues;
 }
 
+function checkAppPanelReduceMotionAndBrandIssues(ctx) {
+  return [
+    ...checkAppPanelReduceMotionAndBrandIssuesRule1(ctx),
+    ...checkAppPanelReduceMotionAndBrandIssuesRule2(ctx),
+    ...checkAppPanelReduceMotionAndBrandIssuesRule3(ctx),
+    ...checkAppPanelReduceMotionAndBrandIssuesRule4(ctx),
+    ...checkAppPanelReduceMotionAndBrandIssuesRule5(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMeshcoreOpenWireIssues(ctx) {
-  const { locale, flatKey, val, enVal, leafKey } = ctx;
+function checkMeshcoreOpenWireIssuesRule1(ctx) {
+  const { locale, flatKey, val } = ctx;
   const issues = [];
   if (locale !== 'en' && flatKey === MESHCORE_CLI_INVALID_PRESET_KEY && typeof val === 'string') {
     for (const token of INVALID_PRESET_WIRE_TOKENS) {
@@ -3607,43 +4240,57 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkMeshcoreOpenWireIssuesRule2(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (locale !== 'en' && isMeshcoreOpenWireUiLeafKey(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule3(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (isMeshcoreOpenWireUiLeafKey(leafKey)) {
     for (const issue of meshcoreOpenWireProtocolTokenIssues(enVal, val)) {
       issues.push(`meshcoreOpenWire protocol token: ${issue}`);
     }
   }
+  return issues;
+}
 
+function openWireCompanionFalseFriends(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
-    leafKey === 'meshcoreOpenWireCompatHint' &&
-    enVal.includes('companion wire') &&
-    locale !== 'en'
+    leafKey !== 'meshcoreOpenWireCompatHint' ||
+    !enVal.includes('companion wire') ||
+    locale === 'en'
   ) {
-    for (const { re, hint } of COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES) {
-      if (re.test(val)) {
-        issues.push(`companion wire false friend: ${hint}`);
-      }
-    }
-    if (OPEN_AWARE_ENGLISH_RE.test(val)) {
-      issues.push(
-        'translate "Open-aware" — use locale wording for MeshCore Open-compatible clients',
-      );
-    }
-    if (/\br:\s*reactions\b/i.test(val)) {
-      issues.push(
-        'translate "r: reactions" — do not leave English "reactions" after wire prefix r:',
-      );
-    }
-    for (const { re, hint } of KEYED_REPLY_FALSE_FRIENDS[locale] ?? []) {
-      if (re.test(val)) {
-        issues.push(`keyed reply false friend: ${hint}`);
-      }
-    }
+    return issues;
   }
+  for (const { re, hint } of COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES) {
+    if (re.test(val)) issues.push(`companion wire false friend: ${hint}`);
+  }
+  if (OPEN_AWARE_ENGLISH_RE.test(val)) {
+    issues.push('translate "Open-aware" — use locale wording for MeshCore Open-compatible clients');
+  }
+  if (/\br:\s*reactions\b/i.test(val)) {
+    issues.push('translate "r: reactions" — do not leave English "reactions" after wire prefix r:');
+  }
+  for (const { re, hint } of KEYED_REPLY_FALSE_FRIENDS[locale] ?? []) {
+    if (re.test(val)) issues.push(`keyed reply false friend: ${hint}`);
+  }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule5(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     leafKey === 'meshcoreOpenWireExperimentalTitle' &&
     enVal.includes('Open wire') &&
@@ -3655,7 +4302,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule6(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'meshcoreGifHint' && enVal.includes('bare GIF id')) {
     if (/\bBARE GIF\b/i.test(val)) {
       issues.push('translate "bare GIF id" — do not leave English "BARE GIF"');
@@ -3666,7 +4318,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule7(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     leafKey === 'meshcoreGifButtonHint' &&
     enVal.includes('MeshCore Open g: wire') &&
@@ -3674,7 +4331,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
   ) {
     issues.push('meshcoreGifButtonHint broke "MeshCore Open" — do not translate Open as a verb');
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule8(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('appPanel.') &&
@@ -3683,7 +4345,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule9(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === DEBUG_SNAPSHOT_COPIED_KEY) {
     for (const { re, hint } of DEBUG_SNAPSHOT_COPIED_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -3691,7 +4358,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule10(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (flatKey.startsWith('appPanel.') && APP_PANEL_DEBUG_SNAPSHOT_LEAF_KEYS.has(leafKey)) {
     for (const { re, hint } of DEBUG_SNAPSHOT_MIXED_EN_SNAPSHOT_RES[locale] ?? []) {
       if (re.test(val)) {
@@ -3699,7 +4371,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule11(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale === 'de' &&
     flatKey === 'appPanel.debugSnapshotFailed' &&
@@ -3709,7 +4386,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       'debugSnapshotFailed must use "Debug-Snapshot" consistently, not "Fehlerbehebungs-Snapshot"',
     );
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule12(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale === 'id' &&
     flatKey === DEBUG_SNAPSHOT_COPIED_KEY &&
@@ -3719,6 +4401,23 @@ function checkMeshcoreOpenWireIssues(ctx) {
     issues.push('debugSnapshotCopied uses English "clipboard" — use "papan klip"');
   }
   return issues;
+}
+
+function checkMeshcoreOpenWireIssues(ctx) {
+  return [
+    ...checkMeshcoreOpenWireIssuesRule1(ctx),
+    ...checkMeshcoreOpenWireIssuesRule2(ctx),
+    ...checkMeshcoreOpenWireIssuesRule3(ctx),
+    ...openWireCompanionFalseFriends(ctx),
+    ...checkMeshcoreOpenWireIssuesRule5(ctx),
+    ...checkMeshcoreOpenWireIssuesRule6(ctx),
+    ...checkMeshcoreOpenWireIssuesRule7(ctx),
+    ...checkMeshcoreOpenWireIssuesRule8(ctx),
+    ...checkMeshcoreOpenWireIssuesRule9(ctx),
+    ...checkMeshcoreOpenWireIssuesRule10(ctx),
+    ...checkMeshcoreOpenWireIssuesRule11(ctx),
+    ...checkMeshcoreOpenWireIssuesRule12(ctx),
+  ];
 }
 
 /** Pluralized hop-count leaf keys where MT/CAT frequently swaps the routing noun
@@ -3815,7 +4514,7 @@ function checkUkrainianApostropheIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMeshcoreReactionAndConnectionIssues(ctx) {
+function checkMeshcoreReactionAndConnectionIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (
@@ -3826,7 +4525,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule2(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('chatPanel.') &&
@@ -3838,7 +4542,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === CONNECTION_BANNER_SERIAL_RESELECT_ACTION_KEY &&
@@ -3846,7 +4555,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
   ) {
     issues.push('"serialReselectAction" is still identical to English — translate the UI text');
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule4(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === CONNECTION_BANNER_SERIAL_RESELECT_ACTION_KEY) {
     for (const { re, hint } of SERIAL_RESELECT_ACTION_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -3854,7 +4568,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule5(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'it' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3863,7 +4582,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
   ) {
     issues.push('roomsPanel false friend: use "sale" for MeshCore Room list, not hotel "stanze"');
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === MESHCORE_DISTANCE_FILTER_HINT_KEY && enVal.includes('App → Appearance')) {
     if (locale !== 'en' && UNTRANSLATED_APP_APPEARANCE_NAV_RE.test(val)) {
       issues.push(
@@ -3883,12 +4607,23 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
   return issues;
 }
 
+function checkMeshcoreReactionAndConnectionIssues(ctx) {
+  return [
+    ...checkMeshcoreReactionAndConnectionIssuesRule1(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule2(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule3(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule4(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule5(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule6(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMeshcorePathHashIssues(ctx) {
-  const { locale, flatKey, val, enVal, leafKey } = ctx;
+function checkMeshcorePathHashIssuesRule1(ctx) {
+  const { val, leafKey } = ctx;
   const issues = [];
 
   if (MESHCORE_PATH_HASH_MODE_BYTE_LEAF_KEYS.has(leafKey)) {
@@ -3901,6 +4636,12 @@ function checkMeshcorePathHashIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkMeshcorePathHashIssuesRule2(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
 
   if (MESHCORE_PATH_HASH_MODE_SHORT_LEAF_KEYS.has(leafKey)) {
     if (MESHCORE_PATH_HASH_SHORT_PAREN_ONLY_RE.test(val)) {
@@ -3912,6 +4653,12 @@ function checkMeshcorePathHashIssues(ctx) {
       );
     }
   }
+  return issues;
+}
+
+function checkMeshcorePathHashIssuesRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
 
   if (flatKey === MESHCORE_PATH_HASH_HINT_KEY && enVal.includes(MESHCORE_PATH_HASH_CLI_LITERAL)) {
     if (!val.includes(MESHCORE_PATH_HASH_CLI_LITERAL)) {
@@ -3922,6 +4669,14 @@ function checkMeshcorePathHashIssues(ctx) {
   }
 
   return issues;
+}
+
+function checkMeshcorePathHashIssues(ctx) {
+  return [
+    ...checkMeshcorePathHashIssuesRule1(ctx),
+    ...checkMeshcorePathHashIssuesRule2(ctx),
+    ...checkMeshcorePathHashIssuesRule3(ctx),
+  ];
 }
 
 /**
@@ -3944,7 +4699,7 @@ function checkReticulumDefaultHubKeyIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkRepeatersCliIssues(ctx) {
+function checkRepeatersCliIssuesRule1(ctx) {
   const { locale, flatKey, val } = ctx;
   const issues = [];
   if (flatKey === REPEATERS_CLI_MULTI_HOP_HINT_KEY && locale !== 'en') {
@@ -3957,6 +4712,12 @@ function checkRepeatersCliIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkRepeatersCliIssuesRule2(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === REPEATERS_CLI_AUTO_PING_FAILED_KEY && locale !== 'en') {
     for (const { re, hint } of REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -3964,6 +4725,12 @@ function checkRepeatersCliIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkRepeatersCliIssuesRule3(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY) {
     if (locale !== 'en' && val.trim() === REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN) {
       issues.push('cliDangerConfirmAction must be translated, not left as English');
@@ -3975,6 +4742,14 @@ function checkRepeatersCliIssues(ctx) {
     }
   }
   return issues;
+}
+
+function checkRepeatersCliIssues(ctx) {
+  return [
+    ...checkRepeatersCliIssuesRule1(ctx),
+    ...checkRepeatersCliIssuesRule2(ctx),
+    ...checkRepeatersCliIssuesRule3(ctx),
+  ];
 }
 
 const RETICULUM_MAP_REACHABLE_KEY = 'reticulumMap.reachable';
@@ -4001,17 +4776,18 @@ const RETICULUM_MAP_BACKBONE_FALSE_FRIENDS = [
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkReticulumMapIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+function checkReticulumMapIssuesRule1(ctx) {
+  const { flatKey, val } = ctx;
   const issues = [];
-  if (!flatKey.startsWith('reticulumMap.') && !flatKey.startsWith('reticulumRmapDiscovery.')) {
-    return issues;
-  }
-
   if (flatKey === RETICULUM_MAP_OPEN_GLOBAL_KEY && /^\[.*\?]$/.test(val)) {
     issues.push('reticulumMap.openGlobalMap must not use CAT […?] placeholder');
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule2(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     (flatKey === RETICULUM_MAP_OPEN_GLOBAL_KEY ||
       flatKey === 'connectionPanel.reticulumRmap.openGlobalMap' ||
@@ -4022,14 +4798,24 @@ function checkReticulumMapIssues(ctx) {
       issues.push('openGlobalMap must name the global map, not a yes/no attribute question');
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule3(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (
     (flatKey === 'reticulumRmapDiscovery.hint' || flatKey === 'reticulumMap.empty.hint') &&
     /(?:discoverable|detectable)\s*=\s*yes|descobr[ií]vel\s*=\s*sim/i.test(val)
   ) {
     issues.push('RMAP hint must describe publishing in plain language, not raw discoverable=yes');
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule4(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === 'connectionPanel.reticulumIdentity.importLabel' &&
     enVal.includes('BIP-39') &&
@@ -4038,13 +4824,23 @@ function checkReticulumMapIssues(ctx) {
   ) {
     issues.push('reticulumIdentity.importLabel must retain BIP-39 when English does');
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === 'connectionPanel.reticulumIdentity.invalidMnemonic' && locale === 'ja') {
     if (/12\s*文字/.test(val)) {
       issues.push('invalidMnemonic in ja must use 12 words (語), not 12 characters (文字)');
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === RETICULUM_MAP_REACHABLE_KEY && locale !== 'en') {
     if (val === enVal) {
       issues.push('reticulumMap.reachable must be translated');
@@ -4055,11 +4851,21 @@ function checkReticulumMapIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule7(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === RETICULUM_MAP_HEARD_ONLY_KEY && locale !== 'en' && val === enVal) {
     issues.push('reticulumMap.heardOnly must be translated');
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule8(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === RETICULUM_MAP_OPEN_NODE_ARIA_KEY &&
     enVal.includes('{{name}}') &&
@@ -4075,7 +4881,12 @@ function checkReticulumMapIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule9(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === RETICULUM_MAP_FILTER_BACKBONE_KEY) {
     for (const { re, hint } of RETICULUM_MAP_BACKBONE_FALSE_FRIENDS) {
       if (re.test(val)) {
@@ -4083,7 +4894,12 @@ function checkReticulumMapIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule10(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     flatKey === 'reticulumRmapDiscovery.gpsRequiredTitle' &&
     locale === 'ru' &&
@@ -4093,6 +4909,24 @@ function checkReticulumMapIssues(ctx) {
   }
 
   return issues;
+}
+
+function checkReticulumMapIssues(ctx) {
+  const { flatKey } = ctx;
+  if (!flatKey.startsWith('reticulumMap.') && !flatKey.startsWith('reticulumRmapDiscovery.'))
+    return [];
+  return [
+    ...checkReticulumMapIssuesRule1(ctx),
+    ...checkReticulumMapIssuesRule2(ctx),
+    ...checkReticulumMapIssuesRule3(ctx),
+    ...checkReticulumMapIssuesRule4(ctx),
+    ...checkReticulumMapIssuesRule5(ctx),
+    ...checkReticulumMapIssuesRule6(ctx),
+    ...checkReticulumMapIssuesRule7(ctx),
+    ...checkReticulumMapIssuesRule8(ctx),
+    ...checkReticulumMapIssuesRule9(ctx),
+    ...checkReticulumMapIssuesRule10(ctx),
+  ];
 }
 
 /**
@@ -4109,11 +4943,16 @@ const BACKBONE_ANATOMY_FALSE_FRIENDS = [
   { re: /\bkręgosłup/i, hint: 'use magistrala/sieć szkieletowa, not kręgosłup' },
 ];
 
-function checkPreReleaseLocaleAccuracyIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+function checkPreReleaseLocaleAccuracyIssuesRule1(ctx) {
+  const { locale } = ctx;
   const issues = [];
   if (locale === 'en') return issues;
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule2(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (/\bbackbone/i.test(enVal) || /\bbackbone/i.test(flatKey)) {
     for (const { re, hint } of BACKBONE_ANATOMY_FALSE_FRIENDS) {
       if (re.test(val)) {
@@ -4121,7 +4960,12 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule3(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (
     flatKey === 'connectionPanel.reticulumInterfaces.defaultHubsPickerTitle' &&
     /network hub|netzwerk-hub|concentrator|集线器|ネットワークハブ|hub jaringan|ağ hub/i.test(val)
@@ -4130,7 +4974,12 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
       'defaultHubsPickerTitle must use backbone wording aligned with addDefaultHubs, not network hubs',
     );
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === 'nomadNetwork.pageLoadingCountdown' ||
       flatKey === 'nomadNetwork.pageLoadingRetryCountdown' ||
@@ -4147,11 +4996,21 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === 'nodeListPanel.tabAll' && locale === 'zh' && /食谱/.test(val)) {
     issues.push('nodeListPanel.tabAll must mean all nodes, not recipes (食谱)');
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule6(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     (flatKey === 'connectionPanel.reticulumInterfaces.purpose.i2p' ||
       flatKey === 'connectionPanel.reticulumInterfaces.backboneEnableGuidanceBody' ||
@@ -4161,7 +5020,12 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
   ) {
     issues.push(`${flatKey}: keep I2P as contiguous token (not "I 2 P")`);
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule7(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     flatKey === 'networkPanel.reticulumStackSettings.pathMediumPreference' &&
     locale === 'es' &&
@@ -4171,6 +5035,18 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
   }
 
   return issues;
+}
+
+function checkPreReleaseLocaleAccuracyIssues(ctx) {
+  return [
+    ...checkPreReleaseLocaleAccuracyIssuesRule1(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule2(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule3(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule4(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule5(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule6(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule7(ctx),
+  ];
 }
 
 /** RRC chat rooms — not hotel rooms; slash commands must stay wire tokens. */
