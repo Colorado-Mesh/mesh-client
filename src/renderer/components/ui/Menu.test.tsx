@@ -285,7 +285,10 @@ describe('Menu placement in a short window', () => {
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
       this: HTMLElement,
     ) {
-      return this.getAttribute('role') === 'menu' ? opts.menuHeight : 0;
+      if (this.getAttribute('role') !== 'menu') return 0;
+      // Like a browser: an applied max-height caps the laid-out height.
+      const cap = parseFloat(this.style.maxHeight);
+      return Number.isFinite(cap) ? Math.min(opts.menuHeight, cap) : opts.menuHeight;
     });
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
       this: HTMLElement,
@@ -339,6 +342,19 @@ describe('Menu placement in a short window', () => {
     // A scroll anywhere else still closes it.
     fireEvent.scroll(window);
     expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('caps the height again when the menu is closed and opened a second time', async () => {
+    stubLayout({ height: 800, triggerTop: 250, menuHeight: 520 });
+    const user = userEvent.setup();
+    await openActions();
+    const trigger = screen.getByRole('button', { name: 'More actions for Ridge Fox' });
+    await user.click(trigger);
+    expect(screen.queryByRole('menu')).toBeNull();
+    await user.click(trigger);
+    const menu = screen.getByRole('menu');
+    expect(menu.style.top).toBe('284px');
+    expect(menu.style.maxHeight).toBe('508px');
   });
 
   it('caps the height above the trigger when there is more room above', async () => {

@@ -467,6 +467,47 @@ describe('setMeshcoreRadioContactZeroHop', () => {
     );
   });
 
+  it.each([
+    ['a 2-byte route', 0x42, 0, 0x40],
+    ['a 3-byte route', 0x81, 0, 0x80],
+    ['no route, 2-byte companion', -1, 1, 0x40],
+    ['no route, 3-byte companion', -1, 2, 0x80],
+    ['no route, 1-byte companion', -1, 0, 0],
+  ] as const)(
+    'keeps the path hash size when it writes zero hops over %s',
+    async (_label, outPathLen, companionMode, expected) => {
+      const pubKey = makePubKey(0x75);
+      const contact: MeshCoreContactRaw = {
+        publicKey: pubKey,
+        type: 2,
+        flags: 0,
+        outPathLen,
+        outPath: new Uint8Array(64),
+        advName: 'Radio Name',
+        lastAdvert: 1,
+        advLat: 0,
+        advLon: 0,
+      };
+      const addOrUpdateContact = vi.fn().mockResolvedValue(undefined);
+      const conn = {
+        getContacts: vi.fn().mockResolvedValue([contact]),
+        setContactPath: vi.fn(),
+        addOrUpdateContact,
+      };
+      await expect(
+        setMeshcoreRadioContactZeroHop(
+          conn,
+          pubkeyToNodeId(pubKey),
+          pubKey,
+          node,
+          undefined,
+          companionMode,
+        ),
+      ).resolves.toBe(expected);
+      expect(addOrUpdateContact.mock.calls[0]?.[3]).toBe(expected);
+    },
+  );
+
   it('maps ERR_CODE_TABLE_FULL to a user message and keeps the radio error as cause', async () => {
     const pubKey = makePubKey(0x73);
     const conn = {

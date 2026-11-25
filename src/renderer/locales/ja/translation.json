@@ -5491,7 +5491,7 @@
     "routeModeAuto": "自動",
     "routeModeAutoHint": "ルートを消去し、フラッドで1回再送",
     "routeModeDirect": "直接のみ",
-    "routeModeDirectHint": "同じルートで1回再送し、フラッドしない",
+    "routeModeDirectHint": "同じルートで1回再送し、フラッドでの再試行はしない",
     "routeModeZeroHop": "ゼロホップ",
     "routeModeZeroHopHint": "中継なしで常にこのリピーターへ直接送信",
     "routeModeNeedsKey": "アドバートまたはインポートした連絡先の公開鍵が必要です",

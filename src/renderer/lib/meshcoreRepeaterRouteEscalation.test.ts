@@ -33,11 +33,18 @@ describe('meshcoreRepeaterRouteEscalation', () => {
 
     const modeBody = extractUseCallbackBody(source, 'resolveAdminRouteModeForNode');
     expect(modeBody).toContain('getMeshcoreRepeaterRouteMode(bytesToHex(');
-    expect(modeBody).toContain("return 'auto'");
+    // The panel badge keys on the node's public_key_hex; the runtime must reach the same key.
+    expect(modeBody).toContain('?.public_key_hex');
+    expect(modeBody).toContain(": 'auto'");
 
     const zeroHopBody = extractUseCallbackBody(source, 'ensureZeroHopRouteForNode');
-    const writeAt = zeroHopBody.indexOf('await setMeshcoreRadioContactZeroHop(');
-    const cacheAt = zeroHopBody.indexOf('radioContactPathLenByNodeRef.current.set(id, 0)');
+    // 2- and 3-byte path hash radios report a zero-hop contact as 0x40 / 0x80, not 0.
+    expect(zeroHopBody).toContain(
+      'meshcoreRadioContactRoute(radioContactPathLenByNodeRef.current.get(id))?.hopCount === 0',
+    );
+    expect(zeroHopBody).toContain('pathHashModeRef.current');
+    const writeAt = zeroHopBody.indexOf('= await setMeshcoreRadioContactZeroHop(');
+    const cacheAt = zeroHopBody.indexOf('radioContactPathLenByNodeRef.current.set(id, written)');
     expect(writeAt).toBeGreaterThan(-1);
     // The cache follows the write so the next request skips a radio read it does not need.
     expect(cacheAt).toBeGreaterThan(writeAt);

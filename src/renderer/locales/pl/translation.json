@@ -5575,7 +5575,7 @@
     "routeModeAuto": "Automatycznie",
     "routeModeAutoHint": "Wyczyść trasę i wyślij ponownie raz przez flood",
     "routeModeDirect": "Tylko bezpośrednio",
-    "routeModeDirectHint": "Wyślij ponownie raz tą samą trasą, nigdy przez flood",
+    "routeModeDirectHint": "Wyślij ponownie raz tą samą trasą, bez ponowienia przez flood",
     "routeModeZeroHop": "Bez przeskoków",
     "routeModeZeroHopHint": "Zawsze wysyłaj bezpośrednio do tego przemiennika, bez przekazywania",
     "routeModeNeedsKey": "Wymaga klucza publicznego z ogłoszenia lub zaimportowanego kontaktu",

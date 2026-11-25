@@ -5491,7 +5491,7 @@
     "routeModeAuto": "Otomatik",
     "routeModeAutoHint": "Rotayı temizle ve bir kez flood ile yeniden gönder",
     "routeModeDirect": "Yalnızca doğrudan",
-    "routeModeDirectHint": "Aynı rotadan bir kez yeniden gönder, asla flood yapma",
+    "routeModeDirectHint": "Aynı rotadan bir kez yeniden gönder, flood ile yeniden deneme yok",
     "routeModeZeroHop": "Sıfır atlama",
     "routeModeZeroHopHint": "Her zaman bu tekrarlayıcıya doğrudan gönder, aktarma yok",
     "routeModeNeedsKey": "Bir duyurudan veya içe aktarılan kişiden açık anahtar gerekir",

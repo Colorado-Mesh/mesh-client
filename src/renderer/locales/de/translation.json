@@ -5491,7 +5491,7 @@
     "routeModeAuto": "Automatisch",
     "routeModeAutoHint": "Route löschen und einmal per Flooding erneut senden",
     "routeModeDirect": "Nur direkt",
-    "routeModeDirectHint": "Einmal auf derselben Route erneut senden, nie fluten",
+    "routeModeDirectHint": "Einmal auf derselben Route erneut senden, kein Flood-Wiederholversuch",
     "routeModeZeroHop": "Ohne Hops",
     "routeModeZeroHopHint": "Immer direkt an diesen Repeater senden, ohne Weiterleitung",
     "routeModeNeedsKey": "Benötigt den öffentlichen Schlüssel aus einem Advert oder importierten Kontakt",

@@ -6964,31 +6964,46 @@ export function useMeshcoreRuntime() {
 
   /** Per-repeater route mode (issue 1566); a node with no known public key stays on Auto. */
   const resolveAdminRouteModeForNode = useCallback((nodeId: number): MeshcoreRepeaterRouteMode => {
-    const pubKey = pubKeyMapRef.current.get(nodeId >>> 0);
-    if (!pubKey) return 'auto';
-    return getMeshcoreRepeaterRouteMode(bytesToHex(pubKey));
+    const id = nodeId >>> 0;
+    const pubKey = pubKeyMapRef.current.get(id);
+    if (pubKey) return getMeshcoreRepeaterRouteMode(bytesToHex(pubKey));
+    // Same key the Repeaters badge reads, for a node whose key map entry is not loaded yet.
+    const nodeKeyHex = getIdentityNode(meshcoreIdentityIdRef.current, id)?.public_key_hex;
+    return nodeKeyHex ? getMeshcoreRepeaterRouteMode(nodeKeyHex) : 'auto';
   }, []);
 
   /**
-   * Zero-hop route mode: point the radio contact at the node with `out_path_len` 0 before a send.
-   * Skips the radio round trip when the radio is already known to hold a zero-hop route.
+   * Zero-hop route mode: point the radio contact at the node with a zero-hop route before a send.
+   * Skips the radio round trip when the radio is already known to hold one: zero hops in its
+   * packed length (0x00, 0x40 or 0x80 by path hash size) and no relays in the stored path.
    * Failure point: no connection, key or node, or a radio error, rejects and nothing is sent.
    */
   const ensureZeroHopRouteForNode = useCallback(
     async (nodeId: number): Promise<void> => {
       const id = nodeId >>> 0;
+      const node = getIdentityNode(meshcoreIdentityIdRef.current, id);
       const stored = outPathMapRef.current.get(id);
-      if (radioContactPathLenByNodeRef.current.get(id) === 0 && (stored?.length ?? 0) === 0) {
+      if (
+        meshcoreRadioContactRoute(radioContactPathLenByNodeRef.current.get(id))?.hopCount === 0 &&
+        (stored === undefined || resolveMeshcoreAdminHopsAway(node, stored) === 0)
+      ) {
         return;
       }
       const conn = resolveMeshcoreConn();
       if (!conn) throw new Error(MESHCORE_ERR_NOT_CONNECTED);
       const pubKey = pubKeyMapRef.current.get(id) ?? (await ensureNodePubKey(id)) ?? undefined;
-      const node = getIdentityNode(meshcoreIdentityIdRef.current, id);
       if (!pubKey || !node) throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
-      await setMeshcoreRadioContactZeroHop(conn, id, pubKey, node, repeaterRemoteRpcRef.current);
+      const written = await setMeshcoreRadioContactZeroHop(
+        conn,
+        id,
+        pubKey,
+        node,
+        repeaterRemoteRpcRef.current,
+        // Same resolution Ping sizes its seed from (live mode, else the synced setting).
+        resolveMeshcoreCompanionPathHashMode(pathHashModeRef.current),
+      );
       outPathMapRef.current.set(id, new Uint8Array(0));
-      radioContactPathLenByNodeRef.current.set(id, 0);
+      radioContactPathLenByNodeRef.current.set(id, written);
     },
     [ensureNodePubKey, resolveMeshcoreConn],
   );

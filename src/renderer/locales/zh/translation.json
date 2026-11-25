@@ -5491,7 +5491,7 @@
     "routeModeAuto": "自动",
     "routeModeAutoHint": "清除路由并以泛洪重发一次",
     "routeModeDirect": "仅直连",
-    "routeModeDirectHint": "沿同一路由重发一次，绝不泛洪",
+    "routeModeDirectHint": "沿同一路由重发一次，不以泛洪重试",
     "routeModeZeroHop": "零跳",
     "routeModeZeroHopHint": "始终直接发送到此中继，不经转发",
     "routeModeNeedsKey": "需要来自广播或导入联系人的公钥",

@@ -106,6 +106,10 @@ export function Menu({
     setPosition(computePosition(anchor, menu, align));
     // With every item disabled, focus the menu itself so Escape and Tab still reach its handler.
     (itemButtons()[0] ?? menu).focus();
+    // Forget the placement on close: the next open must measure the menu without an old cap.
+    return () => {
+      setPosition(null);
+    };
   }, [open, align, anchorRef]);
 
   useEffect(() => {

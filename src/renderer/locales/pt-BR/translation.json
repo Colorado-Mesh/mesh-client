@@ -5491,7 +5491,7 @@
     "routeModeAuto": "Automático",
     "routeModeAutoHint": "Limpar a rota e reenviar uma vez como flood",
     "routeModeDirect": "Somente direto",
-    "routeModeDirectHint": "Reenviar uma vez pela mesma rota, nunca como flood",
+    "routeModeDirectHint": "Reenviar uma vez pela mesma rota, sem nova tentativa como flood",
     "routeModeZeroHop": "Sem saltos",
     "routeModeZeroHopHint": "Sempre enviar direto a este repetidor, sem retransmissão",
     "routeModeNeedsKey": "Precisa da chave pública de um anúncio ou de um contato importado",

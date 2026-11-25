@@ -5491,7 +5491,7 @@
     "routeModeAuto": "자동",
     "routeModeAutoHint": "경로를 지우고 플러드로 한 번 재전송",
     "routeModeDirect": "직접만",
-    "routeModeDirectHint": "같은 경로로 한 번 재전송, 플러드 안 함",
+    "routeModeDirectHint": "같은 경로로 한 번 재전송, 플러드 재시도 없음",
     "routeModeZeroHop": "제로 홉",
     "routeModeZeroHopHint": "중계 없이 항상 이 리피터로 직접 전송",
     "routeModeNeedsKey": "advert 또는 가져온 연락처의 공개 키가 필요합니다",

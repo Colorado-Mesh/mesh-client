@@ -5491,7 +5491,7 @@
     "routeModeAuto": "Otomatis",
     "routeModeAutoHint": "Hapus rute dan kirim ulang sekali secara flood",
     "routeModeDirect": "Hanya langsung",
-    "routeModeDirectHint": "Kirim ulang sekali lewat rute yang sama, tanpa flood",
+    "routeModeDirectHint": "Kirim ulang sekali lewat rute yang sama, tanpa percobaan ulang flood",
     "routeModeZeroHop": "Tanpa hop",
     "routeModeZeroHopHint": "Selalu kirim langsung ke repeater ini, tanpa relai",
     "routeModeNeedsKey": "Perlu kunci publik dari advert atau kontak yang diimpor",

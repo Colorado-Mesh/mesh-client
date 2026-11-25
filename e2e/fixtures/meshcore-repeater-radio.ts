@@ -87,6 +87,7 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
   const repeaterOutPath = Buffer.alloc(64);
   let client: RepeaterClient | null = null;
   let pingMode: 'answer' | 'silent' | 'reject' = 'answer';
+  let refuseContactUpdates = false;
   let lastCompanionTimestamp = 0;
 
   const log = (event: Omit<RepeaterRadioEvent, 'atMs'>) => {
@@ -270,6 +271,11 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
           break;
         case 9: {
           // CMD_ADD_UPDATE_CONTACT: pubkey(32) type flags out_path_len(int8) out_path(64) ...
+          if (refuseContactUpdates) {
+            log({ kind: 'contactUpdate', detail: 'refused' });
+            send(Buffer.from([1, 3])); // ERR_CODE_TABLE_FULL
+            break;
+          }
           if (command.subarray(1, 33).equals(repeaterKey)) {
             contactPathLen = command.readInt8(35);
             log({ kind: 'contactUpdate', detail: `pathLen=${contactPathLen}` });
@@ -516,6 +522,10 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
     /** 'silent' sends the trace and never answers; 'reject' has the companion refuse it. */
     setPingMode: (value: 'answer' | 'silent' | 'reject') => {
       pingMode = value;
+    },
+    /** When true the companion refuses CMD_ADD_UPDATE_CONTACT with ERR_CODE_TABLE_FULL. */
+    setRefuseContactUpdates: (value: boolean) => {
+      refuseContactUpdates = value;
     },
     count: (kind: RepeaterRadioEvent['kind']) => events.filter((e) => e.kind === kind).length,
     close: async () => {

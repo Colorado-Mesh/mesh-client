@@ -5537,7 +5537,7 @@
     "routeModeAuto": "Automaticky",
     "routeModeAutoHint": "Smazat trasu a jednou poslat znovu jako flood",
     "routeModeDirect": "Jen přímo",
-    "routeModeDirectHint": "Jednou poslat znovu stejnou trasou, nikdy jako flood",
+    "routeModeDirectHint": "Jednou poslat znovu stejnou trasou, bez opakování jako flood",
     "routeModeZeroHop": "Bez skoků",
     "routeModeZeroHopHint": "Vždy posílat přímo tomuto opakovači, bez přeposílání",
     "routeModeNeedsKey": "Vyžaduje veřejný klíč z oznámení nebo importovaného kontaktu",

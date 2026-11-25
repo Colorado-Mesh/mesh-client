@@ -197,6 +197,63 @@ test('Zero-hop points a flooding contact at the repeater before the status reque
   expect(radio.getContactPathLen()).toBe(0);
 });
 
+test('Zero-hop leaves a 2-byte path hash contact that is already zero hops alone', async () => {
+  test.setTimeout(120_000);
+  const page = await start(
+    (fixture) => {
+      fixture.setRepeaterClient({ admin: true, returnPath: 'good' });
+      fixture.setContactPathLen(0x40); // zero hops, 2-byte hashes
+    },
+    { pathHashMode: 1 },
+  );
+  await chooseRouteMode(page, 'Zero-hop');
+
+  expect(await request(page, 'Request status', 'status', 'none')).toEqual([
+    'status:direct',
+    'reply:direct:status',
+  ]);
+  expect(radio.getContactPathLen()).toBe(0x40);
+});
+
+test('Zero-hop keeps the 2-byte path hash size of a contact routed through a relay', async () => {
+  test.setTimeout(120_000);
+  const page = await start(
+    (fixture) => {
+      fixture.setRepeaterClient({ admin: true, returnPath: 'good' });
+      fixture.setContactPathLen(0x41); // one hop, 2-byte hashes
+    },
+    { pathHashMode: 1 },
+  );
+  await chooseRouteMode(page, 'Zero-hop');
+
+  expect(await request(page, 'Request status', 'status', 'none')).toEqual([
+    'contactUpdate',
+    'status:direct',
+    'reply:direct:status',
+  ]);
+  expect(radio.getContactPathLen()).toBe(0x40);
+});
+
+test('Zero-hop sends nothing when the radio refuses the route write', async () => {
+  test.setTimeout(120_000);
+  const page = await start((fixture) => {
+    fixture.setRepeaterClient({ admin: true, returnPath: 'good' });
+    fixture.setContactPathLen(-1);
+    fixture.setRefuseContactUpdates(true);
+  });
+  await chooseRouteMode(page, 'Zero-hop');
+
+  const before = radio.events.length;
+  await startRequest(page, 'Request status', 'none');
+  await page.getByRole('button', { name: `More actions for ${radio.repeaterName}` }).click();
+  await expect(page.getByRole('menuitem', { name: 'Request status' })).toContainText(/error/i, {
+    timeout: 30_000,
+  });
+  await page.keyboard.press('Escape');
+  expect(trace(radio.events.slice(before))).toEqual(['contactUpdate']);
+  expect(radio.getContactPathLen()).toBe(-1);
+});
+
 for (const scenario of [
   { name: 'status', menuItem: 'Request status', kind: 'status' },
   { name: 'neighbors', menuItem: 'Neighbors', kind: 'binary' },
