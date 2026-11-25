@@ -65,12 +65,40 @@ import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
 import { useMessageStore } from '../stores/messageStore';
 import { mirrorMqttStatusForProtocol } from '../stores/mqttConnectionMirror';
 import {
+  type NodeRecord,
   patchNodeFavorited,
   removeNode,
   upsertNodeRecord,
   useNodeStore,
 } from '../stores/nodeStore';
 import type { ProtocolRuntime } from './protocolRuntime';
+
+function meshcomFavoriteSeedName(existing: NodeRecord | undefined, callsign?: string): string {
+  return (
+    normalizeMeshcomCallsign(existing?.longName ?? '') ||
+    callsign ||
+    normalizeMeshcomCallsign(existing?.shortName ?? '')
+  );
+}
+
+function seedMeshcomFavoriteNode(
+  identityId: IdentityId,
+  nodeId: number,
+  favorited: boolean,
+  existing: NodeRecord | undefined,
+  seedName: string,
+): void {
+  upsertNodeRecord(identityId, {
+    nodeId,
+    longName: existing?.longName || seedName || undefined,
+    shortName: existing?.shortName || (seedName ? seedName.slice(0, 4) : undefined),
+    lastHeardAt: existing?.lastHeardAt,
+    latitude: existing?.latitude,
+    longitude: existing?.longitude,
+    batteryLevel: existing?.batteryLevel,
+    favorited,
+  });
+}
 
 function isMeshcomAutoSettimeEnabled(): boolean {
   const parsed = parseStoredJson<{ meshcomAutoSettime?: unknown }>(
@@ -817,21 +845,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         }
         // Seed every sync slot (UI / session / offline) so Contacts sees the star even when
         // the only prior copy was a history stub or a divergent identity bucket.
-        const seedName =
-          normalizeMeshcomCallsign(existing?.longName ?? '') ||
-          callsign ||
-          normalizeMeshcomCallsign(existing?.shortName ?? '');
+        const seedName = meshcomFavoriteSeedName(existing, callsign);
         if (!seedName && !existing) continue;
-        upsertNodeRecord(id, {
-          nodeId,
-          longName: existing?.longName || seedName || undefined,
-          shortName: existing?.shortName || (seedName ? seedName.slice(0, 4) : undefined),
-          lastHeardAt: existing?.lastHeardAt,
-          latitude: existing?.latitude,
-          longitude: existing?.longitude,
-          batteryLevel: existing?.batteryLevel,
-          favorited,
-        });
+        seedMeshcomFavoriteNode(id, nodeId, favorited, existing, seedName);
       }
     },
     [],
@@ -841,10 +857,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     async (nodeId: number, favorited: boolean) => {
       const sessionId = resolveIdentityId();
       const { existing, syncIdentityIds } = resolveMeshcomContactIdentity(nodeId, sessionId);
-      const callsign =
-        normalizeMeshcomCallsign(existing?.longName ?? '') ||
-        meshcomCallForNodeId(nodeId) ||
-        normalizeMeshcomCallsign(existing?.shortName ?? '');
+      const callsign = meshcomFavoriteSeedName(existing, meshcomCallForNodeId(nodeId));
       if (!callsign) {
         // Still patch when the row exists so Contacts does not look inert; DB needs a callsign.
         if (existing) {
@@ -881,10 +894,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     async (nodeId: number) => {
       const sessionId = resolveIdentityId();
       const { existing, syncIdentityIds } = resolveMeshcomContactIdentity(nodeId, sessionId);
-      const callsign =
-        normalizeMeshcomCallsign(existing?.longName ?? '') ||
-        meshcomCallForNodeId(nodeId) ||
-        normalizeMeshcomCallsign(existing?.shortName ?? '');
+      const callsign = meshcomFavoriteSeedName(existing, meshcomCallForNodeId(nodeId));
       if (!callsign) {
         console.warn(`mcL1188 [useMeshcomRuntime] deleteNode: no callsign for node ${nodeId}`);
         return;
