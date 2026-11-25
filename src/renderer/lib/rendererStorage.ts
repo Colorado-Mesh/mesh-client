@@ -15,7 +15,7 @@ import {
 
 import { errLikeToLogString } from './errLikeToLogString';
 
-interface RendererStorageEnvironment {
+export interface RendererStorageEnvironment {
   storage: Pick<Storage, 'length' | 'key' | 'getItem' | 'setItem' | 'removeItem'>;
   origin: () => string;
   createId: () => string;

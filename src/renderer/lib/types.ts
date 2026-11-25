@@ -6,7 +6,6 @@ import {
 import type { MeshtasticLoraConfig } from '@/shared/meshtasticUrlEncoder';
 import type { ReticulumCachedAttachment } from '@/shared/reticulumCachedAttachment';
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
-import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
 import type {
   MeshtasticAckProofStatus,
@@ -15,8 +14,6 @@ import type {
 
 export type { MeshProtocol };
 export { isMeshProtocol, REGISTERED_MESH_PROTOCOLS };
-
-export type { TAKClientInfo, TAKServerStatus, TAKSettings };
 
 export type ConnectionType = 'ble' | 'serial' | 'http' | 'tcp' | 'udp' | 'netconsole';
 
@@ -121,7 +118,7 @@ export interface RfDiagnosticRow {
 
 export type DiagnosticRow = RoutingDiagnosticRow | RfDiagnosticRow;
 
-export function routingRowId(nodeId: number): string {
+function routingRowId(nodeId: number): string {
   return `routing:${nodeId}`;
 }
 
@@ -398,18 +395,6 @@ export interface MQTTSettings {
 
 export type MQTTStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
-/** Node record from the main-process MQTT active node cache (getCachedNodes). */
-export interface CachedNode {
-  node_id: number;
-  long_name: string;
-  short_name: string;
-  hw_model: string;
-  last_heard: number;
-  latitude?: number | null;
-  longitude?: number | null;
-  altitude?: number | null;
-}
-
 export interface ChatMessage {
   id?: number;
   /**
@@ -579,11 +564,7 @@ export interface DeviceState {
   batteryCharging?: boolean;
 }
 
-export type {
-  GattBleConnectResult,
-  GattBleDevice,
-  GattBleSessionId,
-} from '@/shared/electron-api.types';
+export type { GattBleDevice, GattBleSessionId } from '@/shared/electron-api.types';
 
 export interface SerialPortInfo {
   portId: string;
@@ -591,12 +572,6 @@ export interface SerialPortInfo {
   portName: string;
   vendorId?: string;
   productId?: string;
-}
-
-export interface LinuxBleCapabilityStatus {
-  platform: 'linux' | 'other';
-  hasCapNetRaw: boolean;
-  detail: string;
 }
 
 /** Axis-aligned geofence box in degrees (Meshtastic 2.8 Waypoint.bounding_box). */

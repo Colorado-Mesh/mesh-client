@@ -24,7 +24,7 @@ import { useSvgPanZoom } from '@/renderer/lib/useSvgPanZoom';
 import { TopologyHopFilterControls } from './TopologyHopFilterControls';
 import { TopologyVisibleLimitNote } from './TopologyVisibleLimitNote';
 
-interface PeerGraphPanelProps {
+export interface PeerGraphPanelProps {
   nodes: Map<number, MeshNode>;
   myNodeId: number;
   /** Protocol hop-limit max (Meshtastic 7, MeshCore 64). Drives Max hops presets. */

@@ -68,7 +68,7 @@ function coerce(v: unknown): unknown {
   return v;
 }
 
-interface RunResult {
+export interface RunResult {
   changes: number | bigint;
   lastInsertRowid: number | bigint;
 }
@@ -77,7 +77,7 @@ interface RunResult {
  * Wraps a StatementSync to silently drop extra keys in bound objects.
  * better-sqlite3 ignores unknown keys; node:sqlite throws ERR_INVALID_STATE.
  */
-class WrappedStatement {
+export class WrappedStatement {
   private readonly stmt: StatementSyncType;
   private readonly paramKeys: Set<string>;
 

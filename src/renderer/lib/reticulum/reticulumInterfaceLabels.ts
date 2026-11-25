@@ -19,7 +19,7 @@ export function reticulumIfaceTypeLabel(type: string): string {
   return RETICULUM_IFACE_TYPE_LABELS[type] ?? type;
 }
 
-export function reticulumIfaceStatusKey(status: string): string {
+function reticulumIfaceStatusKey(status: string): string {
   return `connectionPanel.reticulumInterfaces.status.${status}`;
 }
 

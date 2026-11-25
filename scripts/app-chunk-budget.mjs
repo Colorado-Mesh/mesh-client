@@ -41,7 +41,7 @@ export function isAppEntryChunk(output, fileName = '') {
  * @param {string | undefined | null} code
  * @returns {number}
  */
-export function chunkSizeKbFromCode(code) {
+function chunkSizeKbFromCode(code) {
   return Buffer.byteLength(code ?? '', 'utf8') / 1000;
 }
 
@@ -49,7 +49,7 @@ export function chunkSizeKbFromCode(code) {
  * @param {string} absolutePath
  * @returns {number}
  */
-export function chunkSizeKbFromFile(absolutePath) {
+function chunkSizeKbFromFile(absolutePath) {
   return Buffer.byteLength(readFileSync(absolutePath)) / 1000;
 }
 
@@ -58,7 +58,7 @@ export function chunkSizeKbFromFile(absolutePath) {
  * @param {number} limitKb
  * @returns {string | null}
  */
-export function formatAppEntryBudgetError(matches, limitKb = APP_ENTRY_CHUNK_BUDGET_KB) {
+function formatAppEntryBudgetError(matches, limitKb = APP_ENTRY_CHUNK_BUDGET_KB) {
   if (matches.length === 0) {
     return 'App entry chunk was not found in the renderer bundle (budget check)';
   }

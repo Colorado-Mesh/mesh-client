@@ -4,7 +4,7 @@ import { useCallback, useEffect } from 'react';
 
 import { useReduceMotion } from '@/renderer/lib/icons/iconMotionContext';
 
-interface ConnectIconProps extends HTMLAttributes<HTMLDivElement> {
+export interface ConnectIconProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
   /** When true, holds the plug/socket connect pose (e.g. header while connecting). */
   animated?: boolean;

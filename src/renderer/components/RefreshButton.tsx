@@ -6,7 +6,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon } from '@/renderer/lib/icons/spinnerIcon';
 
-interface RefreshButtonProps {
+export interface RefreshButtonProps {
   onRefresh: () => Promise<void>;
   disabled?: boolean;
   minimumAnimationMs?: number;

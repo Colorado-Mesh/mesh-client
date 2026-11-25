@@ -10,7 +10,7 @@ import { topologyHopFilterOptions } from '@/renderer/lib/topologyGraphLimits';
 import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 /** Default Meshtastic-shaped presets when callers omit hopOptions. */
-export const TOPOLOGY_HOP_FILTER_OPTIONS = topologyHopFilterOptions(7);
+const TOPOLOGY_HOP_FILTER_OPTIONS = topologyHopFilterOptions(7);
 
 export interface TopologyHopFilterControlsProps {
   maxHops: number | null;

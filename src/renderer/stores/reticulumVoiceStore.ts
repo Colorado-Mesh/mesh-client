@@ -14,7 +14,7 @@ export interface VoiceCallStats {
 
 export type VoiceTerminalReason = string | null;
 
-interface ReticulumVoiceStoreState {
+export interface ReticulumVoiceStoreState {
   enabled: boolean;
   running: boolean;
   microphoneMuted: boolean;

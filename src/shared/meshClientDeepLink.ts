@@ -190,7 +190,7 @@ function classifyMeshcoreUri(trimmed: string): MeshClientDeepLink {
 }
 
 /** True when an `lxm://` host+path looks like an encrypted paper blob (not contact/identity). */
-export function looksLikeLxmPaperBlob(hostAndPath: string): boolean {
+function looksLikeLxmPaperBlob(hostAndPath: string): boolean {
   const blob = hostAndPath.replace(/^\/*/, '').replace(/\/*$/, '');
   return LXM_PAPER_BLOB_RE.test(blob);
 }

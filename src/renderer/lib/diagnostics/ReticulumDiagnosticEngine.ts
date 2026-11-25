@@ -33,7 +33,7 @@ import { isDecommissionedReticulumTcpInterfaceRow } from '@/shared/reticulumDeco
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 /** Enabled default backbone presets above this count emit a Diagnostics warning. */
-export const RETICULUM_TOO_MANY_DEFAULT_BACKBONES_THRESHOLD = 3;
+const RETICULUM_TOO_MANY_DEFAULT_BACKBONES_THRESHOLD = 3;
 
 export interface ReticulumDiagnosticsSnapshot {
   rns_ready?: boolean;
@@ -59,7 +59,7 @@ export interface ReticulumAnnounceWsDiagnostics {
 /** How long announce-bus pressure signals stay actionable in Diagnostics. */
 export const RETICULUM_ANNOUNCE_BUS_PRESSURE_TTL_MS = 5 * MS_PER_MINUTE;
 /** Minimum WS frames skipped before lag alone opens the announce-bus pressure row. */
-export const RETICULUM_ANNOUNCE_BUS_PRESSURE_MIN_SKIPPED = 8;
+const RETICULUM_ANNOUNCE_BUS_PRESSURE_MIN_SKIPPED = 8;
 
 /** Propagation sync snapshot for diagnostics (derived from reticulumPropagationStore). */
 export interface ReticulumPropagationDiagnosticsInput {
@@ -151,7 +151,7 @@ export const RETICULUM_ANNOUNCE_BUS_PRESSURE_TIP_I18N_KEYS = [
 ] as const;
 
 /** Sidecar must stay unhealthy this long before emitting an error diagnostic. */
-export const RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS = 60_000;
+const RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS = 60_000;
 
 /** Build Reticulum-native diagnostic rows (interface/path/LXMF — not LoRa RF). */
 export function buildReticulumDiagnosticRows(

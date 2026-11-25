@@ -32,7 +32,7 @@ export class WindowsBlePairingError extends Error {
  * failure (`internal` messages from `windows_pairing`) must not fall through to connect.
  * Sidecar-down and `unsupported` stay `unknown`.
  */
-export function isWindowsPairStateHardFailure(code: string, error: string): boolean {
+function isWindowsPairStateHardFailure(code: string, error: string): boolean {
   if (code === 'connect_timeout') return true;
   return code === 'internal' && /^windows\b/i.test(error.trim());
 }

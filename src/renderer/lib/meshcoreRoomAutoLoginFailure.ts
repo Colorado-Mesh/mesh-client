@@ -1,6 +1,6 @@
 /** In-memory auto-login failure state per room (survives radio disconnect until cleared). */
 
-type AutoLoginFailureListener = () => void;
+export type AutoLoginFailureListener = () => void;
 
 interface AutoLoginFailureEntry {
   message: string;

@@ -69,7 +69,7 @@ function hasReleaseVisibilityFields(release) {
  * @param {{ includeDrafts?: boolean, includePrereleases?: boolean }} [opts]
  * @returns {string | null}
  */
-export function releaseGitTagFromRow(release, opts = {}) {
+function releaseGitTagFromRow(release, opts = {}) {
   if (!release) {
     return null;
   }
@@ -178,23 +178,3 @@ export function pickLatestPublishedReleaseTag(releases, excludeTag) {
  * @param {string} [excludeTag]
  * @returns {{ tag: string, version: string, releaseUrl: string } | null}
  */
-export function pickLatestPublishedRelease(releases, excludeTag) {
-  if (!Array.isArray(releases)) {
-    return null;
-  }
-  /** @type {Array<{ tag: string, version: string, releaseUrl: string }>} */
-  const candidates = [];
-  for (const release of releases) {
-    const tag = publishedReleaseGitTag(release);
-    if (!tag) continue;
-    if (excludeTag && tag === excludeTag) continue;
-    const releaseUrl = typeof release.html_url === 'string' ? release.html_url : null;
-    if (!releaseUrl) continue;
-    candidates.push({ tag, version: versionFromTrustedTag(tag), releaseUrl });
-  }
-  if (candidates.length === 0) {
-    return null;
-  }
-  candidates.sort((a, b) => compareReleaseTags(b.tag, a.tag));
-  return candidates[0];
-}

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import { isLauncherShortcut, pinnedShortcutPosition } from '@/renderer/lib/panelLauncher';
 
-interface Options {
+export interface Options {
   /** `window.electronAPI.getPlatform()`: Cmd on darwin, Ctrl elsewhere. */
   platform: string;
   onToggleLauncher: () => void;

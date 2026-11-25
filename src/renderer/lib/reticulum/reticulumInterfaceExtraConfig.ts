@@ -4,7 +4,7 @@
  * `KNOWN_IFACE_CONFIG_KEYS` for structured fields; pipe `command` is omitted so
  * it can survive via `extra_config` until modeled.
  */
-export const KNOWN_IFACE_UI_KEYS: ReadonlySet<string> = new Set([
+const KNOWN_IFACE_UI_KEYS: ReadonlySet<string> = new Set([
   'type',
   'enabled',
   'interface_enabled',

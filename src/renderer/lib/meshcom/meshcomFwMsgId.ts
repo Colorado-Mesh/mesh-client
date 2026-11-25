@@ -3,8 +3,8 @@
  * `msgid_counter.h`): `msg_id = ((gwId & 0x3FFFFF) << 10) | (seq & 0x3FF)`.
  */
 
-export const MESHCOM_MSG_SEQ_MASK = 0x3ff;
-export const MESHCOM_GW_ID_PREFIX_MASK = 0x3fffff;
+const MESHCOM_MSG_SEQ_MASK = 0x3ff;
+const MESHCOM_GW_ID_PREFIX_MASK = 0x3fffff;
 
 /** Fold 0..999 like firmware `msgIdAdvance` / `kMsgIdMax`. */
 export function meshcomMsgIdAdvance(current: number): number {

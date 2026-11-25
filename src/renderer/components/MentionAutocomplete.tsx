@@ -8,7 +8,7 @@ export interface MentionCandidate {
   name: string;
 }
 
-interface Props {
+export interface Props {
   candidates: MentionCandidate[];
   selectedIdx: number;
   onSelect: (name: string) => void;

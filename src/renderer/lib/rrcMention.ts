@@ -77,7 +77,7 @@ export function isRrcWhisperRoom(room: string | null | undefined): boolean {
   return isRrcDmRoom(room) || isRrcLegacyWhispersRoom(room);
 }
 
-export function isRrcDirectMessage(msg: Pick<RrcChatMessage, 'room' | 'dst_hash'>): boolean {
+function isRrcDirectMessage(msg: Pick<RrcChatMessage, 'room' | 'dst_hash'>): boolean {
   if (msg.dst_hash?.trim()) return true;
   return isRrcWhisperRoom(msg.room);
 }

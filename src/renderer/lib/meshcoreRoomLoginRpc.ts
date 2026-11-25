@@ -39,7 +39,7 @@ export interface MeshcoreRoomLoginResponse {
 }
 
 /** Accept Uint8Array and other array-likes from meshcore.js push payloads. */
-export const normalizeLoginPubKeyPrefix = normalizePubKeyPrefix;
+const normalizeLoginPubKeyPrefix = normalizePubKeyPrefix;
 
 export { buildSendLoginFrame } from './meshcoreRepeaterRpcCommon';
 

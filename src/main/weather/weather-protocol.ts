@@ -27,7 +27,7 @@ export interface WeatherProtocolDeps extends WeatherFetchDeps {
   getAppVersion: () => string;
 }
 
-interface ParsedWeatherTile {
+export interface ParsedWeatherTile {
   kind: 'radar' | 'coverage';
   provider: 'rainviewer' | 'iem';
   frameId: string;

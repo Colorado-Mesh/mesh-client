@@ -37,7 +37,7 @@ function hasRetireInbound(transport: unknown): transport is RetireInboundTranspo
  * still needs. BLE/TCP/HTTP use one main-process session (IPC has no per-device owner);
  * serial is shared only when both MeshDevices wrap the same SerialPort instance.
  */
-export function staleDeviceSharesLiveTransport(
+function staleDeviceSharesLiveTransport(
   currentDevice: MeshDevice | null,
   staleDevice: MeshDevice,
 ): boolean {

@@ -1,6 +1,6 @@
 /** Display framebuffer → PNG data URL (ported from rnode-flasher). */
 
-export function frameBufferToCanvas(
+function frameBufferToCanvas(
   framebuffer: number[],
   width: number,
   height: number,

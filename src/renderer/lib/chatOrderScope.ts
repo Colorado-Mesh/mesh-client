@@ -71,12 +71,3 @@ export function migrateLegacyChatOrderScope(protocol: string, nodeScope: string)
     }
   }
 }
-
-export function chatOrderScopeKey(
-  protocol: string,
-  nodeScope: string | null,
-  kind: 'channels' | 'dms',
-): string | null {
-  if (nodeScope == null) return null;
-  return `${protocol}:${nodeScope}:${kind}`;
-}

@@ -65,7 +65,7 @@ interface PointPulse {
   startedAt: number;
 }
 
-interface PacketColors {
+export interface PacketColors {
   line: string;
   outline: string;
 }

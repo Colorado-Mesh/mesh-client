@@ -7,7 +7,7 @@ import type { GlobalMessageSearchHit } from './globalMessageSearch';
 import type { ChatMessage } from './types';
 
 /** Newest-first cap so a very long history never renders thousands of rows. */
-export const UNIFIED_INBOX_LIMIT = 200;
+const UNIFIED_INBOX_LIMIT = 200;
 
 /** Max dismissed keys kept in localStorage (oldest dropped first). */
 export const UNIFIED_INBOX_DISMISSED_LIMIT = 2000;

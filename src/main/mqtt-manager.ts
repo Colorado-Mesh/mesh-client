@@ -271,7 +271,7 @@ export interface CachedNode {
   altitude?: number | null;
 }
 
-interface MqttPublishOptions {
+export interface MqttPublishOptions {
   text: string;
   from: number;
   channel: number;

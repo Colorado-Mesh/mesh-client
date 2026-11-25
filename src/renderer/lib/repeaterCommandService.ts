@@ -49,8 +49,8 @@ interface SettledCliReply {
 }
 
 /** Floor for direct (0-hop) repeater CLI response wait. */
-export const REPEATER_CLI_BASE_TIMEOUT_MS = 30_000;
-export const REPEATER_CLI_PER_HOP_TIMEOUT_MS = 2_000;
+const REPEATER_CLI_BASE_TIMEOUT_MS = 30_000;
+const REPEATER_CLI_PER_HOP_TIMEOUT_MS = 2_000;
 /** Align multi-hop CLI ceiling with admin receipt-derived reply cap. */
 export const REPEATER_CLI_MAX_TIMEOUT_MS = MESHCORE_REPEATER_REPLY_CAP_MS;
 /** Max repeater CLI command length before send (BLE to-radio payload cap). */
@@ -155,10 +155,6 @@ export class RepeaterCommandService {
     const next = Math.max(wall, last + 1);
     this.lastCliTimestampByNode.set(id, next);
     return next;
-  }
-
-  clearCliTimestamps(): void {
-    this.lastCliTimestampByNode.clear();
   }
 
   /**
@@ -396,10 +392,6 @@ export class RepeaterCommandService {
   }
 
   /** @deprecated Timeouts are now self-managed via internal setTimeout in registerPendingCommand. */
-  clearTimeouts(): void {
-    // no-op: each pending command self-rejects via its own setTimeout
-  }
-
   clear(): void {
     for (const pending of this.pendingCommands.values()) {
       clearTimeout(pending.timerId);

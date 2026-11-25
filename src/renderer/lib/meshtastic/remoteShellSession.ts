@@ -40,8 +40,8 @@ export const REMOTE_SHELL_OPEN_TIMEOUT_MS = 45 * MS_PER_SECOND;
 export const REMOTE_SHELL_IDLE_TIMEOUT_MS = 10 * MS_PER_MINUTE;
 /** Trailing ACK delay: coalesces bursts of OUTPUT frames into one airtime-cheap ACK. */
 export const REMOTE_SHELL_ACK_DELAY_MS = 1500;
-export const REMOTE_SHELL_DEFAULT_COLS = 80;
-export const REMOTE_SHELL_DEFAULT_ROWS = 24;
+const REMOTE_SHELL_DEFAULT_COLS = 80;
+const REMOTE_SHELL_DEFAULT_ROWS = 24;
 const REMOTE_ERROR_DETAIL_MAX = 160;
 
 let sender: RemoteShellSendFn | null = null;
@@ -162,16 +162,6 @@ export function sendRemoteShellInput(text: string): boolean {
       }),
     );
   }
-  return true;
-}
-
-export function resizeRemoteShell(cols: number, rows: number): boolean {
-  const s = useRemoteShellStore.getState();
-  if (s.phase !== 'open') return false;
-  const frame: RemoteShellFrame = { ...nextFrame('resize', s.sessionId), cols, rows };
-  void send(frame).catch((err: unknown) => {
-    console.debug('[remoteShellSession] RESIZE send failed ' + errLikeToLogString(err));
-  });
   return true;
 }
 

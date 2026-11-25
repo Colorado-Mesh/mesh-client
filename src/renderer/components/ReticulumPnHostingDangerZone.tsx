@@ -7,7 +7,7 @@ import { type PnHostingPolicy } from '@/shared/pnHostingPolicy';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from './Toast';
 
-interface ReticulumPnHostingDangerZoneProps {
+export interface ReticulumPnHostingDangerZoneProps {
   disabled?: boolean;
 }
 

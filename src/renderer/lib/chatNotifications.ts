@@ -80,7 +80,7 @@ export type ChatNotificationType =
   /** New error-severity diagnostic row (opt-in via App → ops alerts). */
   | 'diagnosticError';
 
-type SoundProfile =
+export type SoundProfile =
   | { kind: 'single'; freq: number; dur: number; gain?: number }
   | {
       kind: 'dual';

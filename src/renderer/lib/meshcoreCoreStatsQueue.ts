@@ -9,7 +9,7 @@
  * next-frame `RESP_CODE_STATS` (`0x18`) rather than `queue_len`.
  */
 /** RESP_CODE_STATS — seen as TCP padding / framing leak at payload byte 8. */
-export const MESHCORE_STATS_RESP_CODE = 0x18;
+const MESHCORE_STATS_RESP_CODE = 0x18;
 
 export function queueLenFromMeshCoreCoreStatsRaw(
   raw: Uint8Array | undefined,

@@ -76,7 +76,7 @@ export function MeshtasticRfPathIcon({ className }: { className?: string }) {
 }
 
 /** Sky (not purple) so the globe does not read as stale in the node list legend. */
-export const MESHTASTIC_MQTT_PATH_ICON_CLASS = 'h-3 w-3 text-sky-400';
+const MESHTASTIC_MQTT_PATH_ICON_CLASS = 'h-3 w-3 text-sky-400';
 
 export function MeshtasticMqttPathIcon({ className }: { className?: string }) {
   const trigger = useIconTrigger();

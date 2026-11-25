@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 import { type MeshcomRuntime, useMeshcomRuntime } from './useMeshcomRuntime';
 
-interface MeshcomRuntimeActiveProps {
+export interface MeshcomRuntimeActiveProps {
   onRuntime: (runtime: MeshcomRuntime) => void;
 }
 

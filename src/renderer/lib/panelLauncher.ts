@@ -61,14 +61,14 @@ export function toggleLauncherPin(pins: readonly TabSlotId[], slot: TabSlotId): 
  * `process.platform` value from `electronAPI.getPlatform()`. Apple platforms (`darwin`, and `ios`
  * for a future mobile build with a hardware keyboard) use Cmd; everything else uses Ctrl.
  */
-type ShortcutPlatform = string;
+export type ShortcutPlatform = string;
 
 /** True where the platform shortcut modifier is Cmd rather than Ctrl. */
 export function usesCommandModifier(platform: ShortcutPlatform): boolean {
   return platform === 'darwin' || platform === 'ios';
 }
 
-type ShortcutKeyEvent = Pick<
+export type ShortcutKeyEvent = Pick<
   KeyboardEvent,
   'key' | 'code' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'
 >;

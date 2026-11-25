@@ -10,7 +10,7 @@ export interface LazyDefaultExport<P extends object> {
 
 export type LazyLoader<P extends object> = () => Promise<LazyDefaultExport<P>>;
 
-interface RetryableLazyProps<P extends object> {
+export interface RetryableLazyProps<P extends object> {
   loader: LazyLoader<P>;
   fallback: ReactNode;
   /** Compact fixed strip (always-on overlays). Default is a centered dialog-style card. */

@@ -13,8 +13,6 @@ function canonicalizeHubList(hubs: string[]): string[] {
 }
 
 /** Soft cap — must match sidecar MAX_HUB_SESSIONS. */
-export const MAX_RRC_HUB_SESSIONS = 8;
-
 export function loadRrcHubAutoJoin(): string[] {
   return loadCanonicalStringList(HUB_AUTO_JOIN_KEY, canonicalizeHubList);
 }

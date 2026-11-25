@@ -7,9 +7,11 @@ import { MESHCOM_WIRE_MAX_BYTES } from '@/shared/meshcomConstants';
 
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
 import { meshcomOutboundDest } from './meshcomChannel';
-import { MESHCOM_EXTUDP_MSG_MAX_LEN } from './meshcomExtUdpCodec';
 
 export { MESHCOM_WIRE_MAX_BYTES };
+
+/** Firmware EXTUDP `msg` gate: reject when `strlen(msg) > 150` (UTF-8 bytes). */
+export const MESHCOM_EXTUDP_MSG_MAX_LEN = 150;
 
 const wireTextEncoder = new TextEncoder();
 

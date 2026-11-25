@@ -114,7 +114,7 @@ export function getDeviceFlashBoardById(id: string): DeviceFlashBoard | null {
   return DEVICE_FLASH_BOARDS.find((board) => board.id === id) ?? null;
 }
 
-export function isDeviceFlashProtocol(protocol: string): protocol is DeviceFlashProtocol {
+function isDeviceFlashProtocol(protocol: string): protocol is DeviceFlashProtocol {
   return protocol === 'meshtastic' || protocol === 'meshcore';
 }
 

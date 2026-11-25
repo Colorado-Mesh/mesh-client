@@ -17,7 +17,7 @@ import path from 'node:path';
  * `default.metallib` (and related assets). Keep in sync with
  * `src/main/ai/os/mlxHelperInstall.ts` (`MLX_HELPER_SIDE_BUNDLES`).
  */
-export const MLX_HELPER_SIDE_BUNDLES = [
+const MLX_HELPER_SIDE_BUNDLES = [
   'mlx-swift_Cmlx.bundle',
   'swift-transformers_Hub.bundle',
   'swift-crypto_Crypto.bundle',
@@ -71,7 +71,7 @@ export function isMlxHelperInstallComplete(binaryPath) {
  * @param {string} bundleName
  * @returns {string | null}
  */
-export function findMlxSideBundle(packageRoot, bundleName) {
+function findMlxSideBundle(packageRoot, bundleName) {
   const buildRoot = path.join(packageRoot, '.build');
   /** @type {string[]} */
   const candidates = [
@@ -113,7 +113,7 @@ export function coLocateMlxSideBundles(binaryPath, packageRoot) {
  * @param {string} packageRoot
  * @returns {string | null}
  */
-export function findMlxSwiftCheckout(packageRoot) {
+function findMlxSwiftCheckout(packageRoot) {
   const checkouts = path.join(packageRoot, '.build', 'checkouts');
   if (!existsSync(checkouts)) return null;
   for (const entry of readdirSync(checkouts, { withFileTypes: true })) {

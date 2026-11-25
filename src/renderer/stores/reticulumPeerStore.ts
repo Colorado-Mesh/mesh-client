@@ -43,7 +43,7 @@ import type { NodeRecord } from './nodeStore';
 /** Batch window for optimistic announce / peers_updated patches. */
 export const RETICULUM_PEER_PATCH_FLUSH_MS = 50;
 
-interface ReticulumDestinationDbRow {
+export interface ReticulumDestinationDbRow {
   destination_hash: string;
   display_name?: string | null;
   last_heard?: number | null;
@@ -62,7 +62,7 @@ export interface ReticulumPeerAppearance {
   icon_color?: string | null;
 }
 
-interface ReticulumPeerStoreState {
+export interface ReticulumPeerStoreState {
   peers: Map<string, ReticulumPeer>;
   /** Explicit saved contacts (Contacts tab). */
   contacts: Map<string, ReticulumContact>;

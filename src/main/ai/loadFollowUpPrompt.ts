@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 
 import type { AiFollowUpPromptInput } from '../../shared/aiFollowUpPrompt';
 
-type BuildAiFollowUpPrompt = (input: AiFollowUpPromptInput) => {
+export type BuildAiFollowUpPrompt = (input: AiFollowUpPromptInput) => {
   system: string;
   user: string;
   included: number;

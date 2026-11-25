@@ -28,7 +28,7 @@ import { useToast } from './Toast';
 import { INPUT_BOX_CLASS, NOTICE_CLASS } from './ui/formClasses';
 import { Switch } from './ui/Switch';
 
-interface Props {
+export interface Props {
   channels: readonly { index: number; name: string; secret?: Uint8Array }[];
   disabled: boolean;
   onSetChannel: (index: number, name: string, secret: Uint8Array) => Promise<void>;

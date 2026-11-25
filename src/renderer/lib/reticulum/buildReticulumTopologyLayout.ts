@@ -149,12 +149,6 @@ export function shouldUseReticulumStarFallbackEdges(
   );
 }
 
-export function buildReticulumStarFallbackEdges(
-  peers: ReticulumTopologyNodeInput[],
-): ReticulumTopologyEdgeInput[] {
-  return peers.map((peer) => ({ source: SELF_ID, target: peer.destination_hash }));
-}
-
 /** Build edges from path-table `via_hash` when the API returns nodes but no edge list. */
 export function buildReticulumViaHashEdges(
   peers: readonly ReticulumTopologyNodeInput[],

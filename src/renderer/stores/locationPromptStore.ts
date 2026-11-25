@@ -4,7 +4,7 @@ import { create } from 'zustand';
  * Per-session location confirmation state. Deliberately not persisted: every launch must
  * re-confirm a movable saved location (home vs. emergency operations center).
  */
-interface LocationPromptState {
+export interface LocationPromptState {
   /** Saved location id the user confirmed (or picked) this session. */
   confirmedLocationId: string | null;
   /** User dismissed the startup strip; the Diagnostics card still shows. */

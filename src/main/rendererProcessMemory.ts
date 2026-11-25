@@ -1,6 +1,6 @@
 import type { ProcessMetric } from 'electron';
 
-type ProcessMemoryMetric = Pick<ProcessMetric, 'pid' | 'type'> & {
+export type ProcessMemoryMetric = Pick<ProcessMetric, 'pid' | 'type'> & {
   memory: Pick<ProcessMetric['memory'], 'workingSetSize'>;
 };
 

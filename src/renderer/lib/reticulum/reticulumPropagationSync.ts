@@ -10,10 +10,10 @@ export const RETICULUM_PROPAGATION_SYNC_STALL_MS = 45_000;
 export const RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS = 60 * 60 * 1000;
 
 /** Hard ceiling for any in-flight propagation sync (includes transfer). */
-export const RETICULUM_PROPAGATION_SYNC_CEILING_MS = 180_000;
+const RETICULUM_PROPAGATION_SYNC_CEILING_MS = 180_000;
 
 /** Match sidecar Establishing (~10) — do not cancel once negotiation/transfer starts. */
-export const RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS = 15;
+const RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS = 15;
 
 export interface PropagationSyncStuckInput {
   syncActive: boolean;
@@ -22,7 +22,7 @@ export interface PropagationSyncStuckInput {
 }
 
 /** True while progress is still in the Establishing band. */
-export function isPropagationSyncStillEstablishing(progress: number): boolean {
+function isPropagationSyncStillEstablishing(progress: number): boolean {
   return progress < RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS;
 }
 
@@ -51,18 +51,18 @@ export function isPropagationSyncSupersedeMessage(message: string | null | undef
   return message === PROPAGATION_SYNC_SUPERSEDED;
 }
 
-export function isPropagationSyncCancelledMessage(message: string | null | undefined): boolean {
+function isPropagationSyncCancelledMessage(message: string | null | undefined): boolean {
   return typeof message === 'string' && /propagation sync cancelled/i.test(message);
 }
 const SYNC_IDENTITY_UNKNOWN_KEY = 'reticulumPropagation.syncIdentityUnknown';
 const SYNC_TARGET_NOT_PN_KEY = 'reticulumPropagation.syncTargetNotPropagationNode';
 const SYNC_PATH_UNKNOWN_KEY = 'reticulumPropagation.syncPathUnknown';
 const SYNC_PEERAGE_STAMP_FAILED_KEY = 'reticulumPropagation.syncPeeringStampFailed';
-export const SYNC_ESTABLISH_IDENTITY_KEY = 'reticulumPropagation.syncEstablishIdentityMissing';
-export const SYNC_ESTABLISH_INVALID_KEY = 'reticulumPropagation.syncEstablishInvalidProof';
-export const SYNC_ESTABLISH_NO_PROOF_KEY = 'reticulumPropagation.syncEstablishNoLinkProof';
+const SYNC_ESTABLISH_IDENTITY_KEY = 'reticulumPropagation.syncEstablishIdentityMissing';
+const SYNC_ESTABLISH_INVALID_KEY = 'reticulumPropagation.syncEstablishInvalidProof';
+const SYNC_ESTABLISH_NO_PROOF_KEY = 'reticulumPropagation.syncEstablishNoLinkProof';
 /** Link establishment timed out — PN slow/unreachable; cascade may try other remotes. */
-export const SYNC_ESTABLISH_TIMEOUT_KEY = 'reticulumPropagation.syncEstablishTimeout';
+const SYNC_ESTABLISH_TIMEOUT_KEY = 'reticulumPropagation.syncEstablishTimeout';
 const SYNC_REQUEST_FAILED_KEY = 'reticulumPropagation.syncRequestFailed';
 const SYNC_OFFER_NO_IDENTITY_KEY = 'reticulumPropagation.syncOfferNoIdentity';
 const SYNC_OFFER_NO_ACCESS_KEY = 'reticulumPropagation.syncOfferNoAccess';
@@ -136,7 +136,7 @@ function mapPropagationSyncErrorBySubstring(error: string): string | null {
 }
 
 /** Soft-defer codes: clear lastSyncError, skip 15‑min backoff, cascade may retry. */
-export const PROPAGATION_SYNC_SOFT_DEFER_ERRORS = [
+const PROPAGATION_SYNC_SOFT_DEFER_ERRORS = [
   'PROPAGATION_SYNC_OUTBOUND_BUSY',
   'PROPAGATION_RETRIEVE_BUSY',
   'PROPAGATION_STACK_NOT_LIVE',
@@ -226,8 +226,7 @@ export type PropagationAttemptOutcome = 'success' | 'failed' | 'cancelled' | 'de
  * Backstop for {@link awaitPropagationSyncSettled}. The stall/ceiling watchdogs settle a
  * real attempt well before this; it only covers a dropped websocket stream.
  */
-export const RETICULUM_PROPAGATION_SYNC_SETTLE_TIMEOUT_MS =
-  RETICULUM_PROPAGATION_SYNC_CEILING_MS + 15_000;
+const RETICULUM_PROPAGATION_SYNC_SETTLE_TIMEOUT_MS = RETICULUM_PROPAGATION_SYNC_CEILING_MS + 15_000;
 
 function classifySettledPropagationSync(lastSyncError: string | null): PropagationAttemptOutcome {
   if (lastSyncError == null) return 'success';

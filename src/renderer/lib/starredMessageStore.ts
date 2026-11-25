@@ -17,7 +17,7 @@ export function starredStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:starred:${protocol}`;
 }
 
-type StarredListener = (protocol: MeshProtocol) => void;
+export type StarredListener = (protocol: MeshProtocol) => void;
 const listeners = new Set<StarredListener>();
 
 /** Called after every `updateStarred` write for a protocol. Returns an unsubscribe function. */

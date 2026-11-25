@@ -35,7 +35,7 @@ export interface LauncherSettingItem {
   search: string;
 }
 
-export const LAUNCHER_DESTINATION_LIMIT = 8;
+const LAUNCHER_DESTINATION_LIMIT = 8;
 
 export interface LauncherMatches<T> {
   matches: T[];

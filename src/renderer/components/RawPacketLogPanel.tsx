@@ -627,7 +627,7 @@ function ReticulumRow({
   );
 }
 
-interface MeshcoreProps {
+export interface MeshcoreProps {
   variant: 'meshcore';
   packets: RxPacketEntry[];
   onClear: () => void;
@@ -641,7 +641,7 @@ interface MeshcoreProps {
   floodScopeHashtag?: string;
 }
 
-interface MeshtasticProps {
+export interface MeshtasticProps {
   variant: 'meshtastic';
   packets: MeshtasticRawPacketEntry[];
   onClear: () => void;
@@ -649,14 +649,14 @@ interface MeshtasticProps {
   onNodeClick?: (nodeId: number) => void;
 }
 
-interface ReticulumProps {
+export interface ReticulumProps {
   variant: 'reticulum';
   packets: ReticulumRawPacketEntry[];
   onClear: () => void;
   getNodeLabel: (nodeId: number) => string;
 }
 
-type Props = MeshcoreProps | MeshtasticProps | ReticulumProps;
+export type Props = MeshcoreProps | MeshtasticProps | ReticulumProps;
 
 export default function RawPacketLogPanel(props: Props) {
   const { variant, packets, onClear, getNodeLabel } = props;

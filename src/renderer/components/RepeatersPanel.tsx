@@ -189,7 +189,7 @@ const CLI_QUICK_COMMAND_LABELS: Partial<Record<string, CliQuickCommandLabel>> = 
   },
 };
 
-interface Props {
+export interface Props {
   nodes: Map<number, MeshNode>;
   meshcoreNodeStatus: Map<number, MeshCoreRepeaterStatus>;
   meshcoreStatusErrors?: Map<number, string>;

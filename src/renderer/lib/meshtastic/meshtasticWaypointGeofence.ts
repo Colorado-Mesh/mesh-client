@@ -27,11 +27,11 @@ export interface WaypointGeofenceFields {
 
 const DEG_SCALE = 1e7;
 
-export function degToCoordI(deg: number): number {
+function degToCoordI(deg: number): number {
   return Math.round(deg * DEG_SCALE);
 }
 
-export function coordIToDeg(value: number): number {
+function coordIToDeg(value: number): number {
   return value / DEG_SCALE;
 }
 

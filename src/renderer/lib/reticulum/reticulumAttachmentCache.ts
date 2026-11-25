@@ -3,7 +3,7 @@ import type { ReticulumCachedAttachment } from '@/shared/reticulumCachedAttachme
 
 import type { ReticulumLxmfPayload } from '../ingest/reticulumIngest';
 
-type WireAttachment = NonNullable<ReticulumLxmfPayload['attachment']>;
+export type WireAttachment = NonNullable<ReticulumLxmfPayload['attachment']>;
 
 async function cacheOneInboundAttachment(
   fileName: string,

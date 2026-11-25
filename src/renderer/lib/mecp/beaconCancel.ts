@@ -31,7 +31,7 @@ export function ownSenderIdSet(ids: Iterable<number | null | undefined>): Readon
   return set;
 }
 
-export function incidentOriginatedLocally(
+function incidentOriginatedLocally(
   incident: Pick<EmergencyIncident, 'senderId' | 'localOrigin'>,
   ownSenderIds: ReadonlySet<string>,
 ): boolean {

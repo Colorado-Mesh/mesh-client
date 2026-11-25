@@ -58,7 +58,7 @@ export interface EspFlashImage {
   data: Uint8Array;
 }
 
-interface PlanBase {
+export interface PlanBase {
   board: DeviceFlashBoard;
   /** Release/version label parsed from the asset name (may be empty). */
   releaseLabel: string;
@@ -92,14 +92,14 @@ export interface FirmwareFileEntry {
 
 export type ReadZipEntries = (bytes: Uint8Array) => Promise<FirmwareFileEntry[]>;
 
-export const ESP_IMAGE_MAGIC = 0xe9;
+const ESP_IMAGE_MAGIC = 0xe9;
 /** `chip_id` field of the extended ESP image header (offset 12, uint16 LE). */
 export const ESP_IMAGE_CHIP_ID: Record<'esp32' | 'esp32s3', number> = {
   esp32: 0x0000,
   esp32s3: 0x0009,
 };
 /** Full-flash images are always several hundred KiB; anything smaller is not a factory image. */
-export const MIN_ESP32_FULL_IMAGE_BYTES = 0x20000;
+const MIN_ESP32_FULL_IMAGE_BYTES = 0x20000;
 const ESP32_CLASSIC_BOOTLOADER_OFFSET = 0x1000;
 const ESP_FLASH_ADDRESS_FULL_IMAGE = 0x0;
 

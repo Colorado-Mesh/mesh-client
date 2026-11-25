@@ -12,7 +12,7 @@ import { MESHCORE_FLOOD_SCOPE_HASHTAG_MAX_LEN } from './meshcoreUtils';
 import { parseStoredJson } from './parseStoredJson';
 
 export const MESHCORE_DISCOVERED_REGIONS_SETTING_KEY = 'meshcoreDiscoveredRegions';
-export const MESHCORE_DISCOVERED_REGIONS_VERSION = 1 as const;
+const MESHCORE_DISCOVERED_REGIONS_VERSION = 1 as const;
 export const MESHCORE_DISCOVERED_REGIONS_MAX_RADIOS = 8;
 export const MESHCORE_DISCOVERED_REGIONS_MAX_ENTRIES = 128;
 export const MESHCORE_DISCOVERED_REGIONS_STALE_MS = 7 * MS_PER_DAY;

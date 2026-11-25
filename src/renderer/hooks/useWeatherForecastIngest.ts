@@ -15,13 +15,10 @@ import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import { useWeatherForecastStore } from '../stores/weatherForecastStore';
 
 /** LoRa protocols whose weather bots feed the shared forecast layer (shown on every map). */
-export const WEATHER_FORECAST_SOURCE_PROTOCOLS: readonly MeshProtocol[] = [
-  'meshtastic',
-  'meshcore',
-];
+const WEATHER_FORECAST_SOURCE_PROTOCOLS: readonly MeshProtocol[] = ['meshtastic', 'meshcore'];
 const SCAN_DEBOUNCE_MS = 500;
 
-export function buildForecastSnapshots(): ForecastProtocolSnapshot[] {
+function buildForecastSnapshots(): ForecastProtocolSnapshot[] {
   const { messages } = useMessageStore.getState();
   const { nodes } = useNodeStore.getState();
   const { history } = usePositionHistoryStore.getState();

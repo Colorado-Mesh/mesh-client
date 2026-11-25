@@ -96,7 +96,7 @@ export interface MeshcoreRfRxDeps {
 }
 
 /** Node lookup + identity refs shared by Meshtastic-sender and hops-away RF updates. */
-type MeshcoreRfRxNodeLookupDeps = Pick<
+export type MeshcoreRfRxNodeLookupDeps = Pick<
   MeshcoreRfRxDeps,
   'myNodeNumRef' | 'meshcoreIdentityIdRef' | 'readNodes' | 'pubKeyMapRef'
 >;
@@ -169,7 +169,7 @@ function persistMeshcoreContactLastRf(
 }
 
 /** Min interval between hop-history DB samples per node (burst throttle). */
-export const MESHCORE_HOP_HISTORY_MIN_INTERVAL_MS = 30_000;
+const MESHCORE_HOP_HISTORY_MIN_INTERVAL_MS = 30_000;
 
 const lastHopHistoryWriteByNode = new Map<number, number>();
 
@@ -194,10 +194,6 @@ function persistMeshcoreRfHopHistory(
 }
 
 /** Test-only: clear hop-history throttle map. */
-export function resetMeshcoreRfHopHistoryThrottleForTests(): void {
-  lastHopHistoryWriteByNode.clear();
-}
-
 function updateKnownMeshtasticSenderNode(
   senderId: number,
   now: number,
@@ -228,7 +224,7 @@ function updateKnownMeshtasticSenderNode(
 }
 
 /** Builds the RX device-log suffix and, for known Meshtastic-class senders, bumps last_heard. */
-export function resolveMeshcoreRfSenderInfo(
+function resolveMeshcoreRfSenderInfo(
   rawU8: Uint8Array | null,
   loraPacketClass: PacketClass | null,
   now: number,

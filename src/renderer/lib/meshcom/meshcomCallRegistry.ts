@@ -39,14 +39,6 @@ export function meshcomCallForNodeId(nodeId: number): string | undefined {
   return callByNodeId.get(nodeId);
 }
 
-export function meshcomNodeIdForCall(callsign: string): number {
-  const call = normalizeMeshcomCallsign(callsign);
-  if (!call) return 0;
-  const existing = nodeIdByCall.get(call);
-  if (existing != null) return existing;
-  return registerMeshcomCallsign(call);
-}
-
 /** Test / disconnect cleanup. */
 export function clearMeshcomCallRegistry(): void {
   callByNodeId.clear();

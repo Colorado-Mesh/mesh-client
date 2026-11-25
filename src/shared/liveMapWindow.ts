@@ -1,8 +1,7 @@
 import type { RegionalFeedProvider } from './beacon';
 
 /** Protocols with a live traffic view. Reticulum keeps its own map and has no pop-out. */
-export const LIVE_MAP_PROTOCOLS = ['meshtastic', 'meshcore'] as const;
-export type LiveMapProtocol = (typeof LIVE_MAP_PROTOCOLS)[number];
+export type LiveMapProtocol = 'meshtastic' | 'meshcore';
 
 export function isLiveMapProtocol(value: unknown): value is LiveMapProtocol {
   return value === 'meshtastic' || value === 'meshcore';

@@ -6,8 +6,6 @@ import type { RnshSessionStatus } from '@/shared/remote-types';
 export const MAX_RNSH_SESSIONS = 8;
 
 /** Default cap for auto-reconnect attempts after an unexpected `rnsh.closed` / `rnsh.error`. */
-export const DEFAULT_RNSH_MAX_RECONNECT_ATTEMPTS = 5;
-
 export type RnshOutputStream = 'stdout' | 'stderr';
 
 export interface RnshOutputChunk {
@@ -49,7 +47,7 @@ function decodeBase64ToBytes(base64: string): Uint8Array {
   }
 }
 
-interface RnshSessionStoreState {
+export interface RnshSessionStoreState {
   sessions: Map<string, RnshSessionState>;
   focusedSessionId: string | null;
   /** Per-session stdout/stderr fan-out — panels subscribe imperatively instead of storing scrollback in state. */

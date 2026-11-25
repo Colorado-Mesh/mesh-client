@@ -202,7 +202,7 @@ function InterfaceGlyph({
   }
 }
 
-interface ReticulumTopologyPanelProps {
+export interface ReticulumTopologyPanelProps {
   onPeerClick?: (peerHash: string) => void;
 }
 

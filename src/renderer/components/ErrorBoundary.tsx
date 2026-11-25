@@ -9,7 +9,7 @@ export interface ErrorBoundaryFallbackProps {
   resetError: () => void;
 }
 
-interface Props {
+export interface Props {
   children: ReactNode;
   /** When any value changes after an error, clear the error state (re-mount children). */
   resetKeys?: readonly unknown[];
@@ -19,7 +19,7 @@ interface Props {
   onReset?: () => void;
 }
 
-interface State {
+export interface State {
   hasError: boolean;
   error: Error | null;
 }

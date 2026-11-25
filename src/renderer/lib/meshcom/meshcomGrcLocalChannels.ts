@@ -7,7 +7,7 @@ import { parseMeshcomGrcIdList } from './meshcomGrcGroups';
 
 const STORAGE_KEY = 'mesh-client:meshcomGrcLocalChannels';
 
-type Listener = () => void;
+export type Listener = () => void;
 
 const listeners = new Set<Listener>();
 let cached: number[] | null = null;
@@ -60,12 +60,6 @@ export function addMeshcomGrcLocalChannel(id: number): void {
 }
 
 /** Remove a GRC id from the local chat pill list. */
-export function removeMeshcomGrcLocalChannel(id: number): void {
-  const cur = readRaw();
-  if (!cur.includes(id)) return;
-  write(cur.filter((x) => x !== id));
-}
-
 /** Replace the entire local list (tests / clear). Uncapped (not device `--setgrc`). */
 export function setMeshcomGrcLocalChannels(ids: readonly number[]): void {
   write(parseMeshcomGrcIdList(ids.join(';')));

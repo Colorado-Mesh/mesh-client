@@ -11,7 +11,7 @@ import {
 import { sanitizeMeshcomWireLine } from './meshcomWireSanitize';
 
 /** Official APP shortcut words → equivalent `--` command. */
-export const MESHCOM_APP_SHORTCUTS: Readonly<Record<string, string>> = {
+const MESHCOM_APP_SHORTCUTS: Readonly<Record<string, string>> = {
   GATEWAY: '--gateway',
   GPS: '--gps',
   BUTTON: '--button',

@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 
-interface SignalPoint {
+export interface SignalPoint {
   ts: number;
   snr: number;
 }
 
-interface RepeaterSignalState {
+export interface RepeaterSignalState {
   history: Map<number, SignalPoint[]>;
   recordSignal: (nodeId: number, snr: number, ts?: number) => void;
   getHistory: (nodeId: number) => SignalPoint[];

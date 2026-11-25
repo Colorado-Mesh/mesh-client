@@ -243,7 +243,7 @@ function resolveTraceRouteFields(p: TraceRouteMeshPacket): DecodedTraceRouteFiel
  * takes the handle as a parameter. Lifecycle (watchdog, reconnect) lives in
  * `ConnectionDriver`, not here.
  */
-export class MeshtasticProtocol implements Protocol {
+class MeshtasticProtocol implements Protocol {
   readonly type = 'meshtastic';
   readonly capabilities: ProtocolCapabilities = MESHTASTIC_CAPABILITIES;
 

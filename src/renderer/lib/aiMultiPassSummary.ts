@@ -4,7 +4,6 @@ import type {
   AiLocalJob,
   AiProviderStatus,
   AiSummaryMessage,
-  AiSummaryPassMode,
   AiSummaryRequest,
 } from '@/shared/ai-types';
 import {
@@ -321,5 +320,3 @@ export async function runMultiPassSummary(input: {
     throw error;
   }
 }
-
-export type { AiSummaryPassMode };

@@ -1,4 +1,4 @@
-export const INSTANT_TOOLTIP_MARGIN = 8;
+const INSTANT_TOOLTIP_MARGIN = 8;
 const SIDE_GAP = 8;
 
 /**

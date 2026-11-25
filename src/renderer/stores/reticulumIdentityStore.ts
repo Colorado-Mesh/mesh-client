@@ -9,7 +9,7 @@ export interface ReticulumIdentityStatus {
   public_key?: string | null;
 }
 
-interface ReticulumIdentityState {
+export interface ReticulumIdentityState {
   identity: ReticulumIdentityStatus | null;
   setIdentity: (identity: ReticulumIdentityStatus | null) => void;
 }

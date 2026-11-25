@@ -26,7 +26,7 @@ import { isRrcLink } from '@/renderer/lib/rrcLink';
 
 import { Button } from './ui/Button';
 
-interface NomadMicronPageViewProps {
+export interface NomadMicronPageViewProps {
   content: string;
   defaultPagePath: string;
   /** Actual path of the page whose content is rendered. */

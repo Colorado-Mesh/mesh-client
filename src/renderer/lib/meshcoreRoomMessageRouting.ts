@@ -27,8 +27,6 @@ import {
 } from './meshcoreChannelText';
 import { sanitizeMeshcoreChatWireText } from './meshcoreUtils';
 
-export { MESHCORE_CONTACT_TYPE_ROOM } from '@/shared/meshcoreContactHwLabels';
-
 const PRINTABLE_ASCII_MIN = 32;
 const PRINTABLE_ASCII_MAX = 126;
 const REPLACEMENT_CHAR = 0xfffd;

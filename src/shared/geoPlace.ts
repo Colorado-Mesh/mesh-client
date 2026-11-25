@@ -1,8 +1,8 @@
 /** IPC contract for `geo:resolvePlace` (weather forecast place lookup). */
 
-export const GEO_PLACE_NAME_MAX_LENGTH = 80;
-export const GEO_PLACE_QUALIFIER_MAX_LENGTH = 64;
-export const GEO_PLACE_MAX_QUALIFIERS = 4;
+const GEO_PLACE_NAME_MAX_LENGTH = 80;
+const GEO_PLACE_QUALIFIER_MAX_LENGTH = 64;
+const GEO_PLACE_MAX_QUALIFIERS = 4;
 
 export interface GeoResolvePlaceRequest {
   name: string;

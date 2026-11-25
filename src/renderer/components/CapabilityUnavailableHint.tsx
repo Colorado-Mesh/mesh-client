@@ -6,7 +6,7 @@ import {
   getCapabilityUnavailableReason,
 } from '@/renderer/lib/radio/capabilityUnavailable';
 
-interface Props {
+export interface Props {
   feature: CapabilityFeatureId;
   capabilities?: ProtocolCapabilities;
   /** Handler for the action is not wired even if the capability flag is on. */

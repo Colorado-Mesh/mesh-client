@@ -40,7 +40,7 @@ export function resolveAppLocale(value: unknown): SupportedLocale {
  * SupportedLocale) so RTL document plumbing works before ar/he ship as
  * selectable languages with translated bundles.
  */
-export const RTL_LANGUAGE_BASES = ['ar', 'he'] as const;
+const RTL_LANGUAGE_BASES = ['ar', 'he'] as const;
 
 export type TextDirection = 'ltr' | 'rtl';
 

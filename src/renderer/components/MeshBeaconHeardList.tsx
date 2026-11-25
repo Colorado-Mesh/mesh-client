@@ -21,7 +21,7 @@ import { formatTimeAgo } from './moduleConfigControls';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
 
-interface Props {
+export interface Props {
   beacons: ReadonlyMap<number, HeardMeshBeacon>;
   getNodeName: (nodeNum: number) => string;
   channelConfigs: readonly MeshBeaconChannelConfig[];

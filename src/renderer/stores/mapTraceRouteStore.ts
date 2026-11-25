@@ -2,14 +2,14 @@ import { create } from 'zustand';
 
 import type { IdentityId, MeshProtocol } from '@/renderer/lib/types';
 
-export interface MapTraceRouteRoute {
+interface MapTraceRouteRoute {
   nodeIds: number[];
   labels?: string[];
   protocol: MeshProtocol;
   identityId: IdentityId | null;
 }
 
-export interface MapTraceRouteState {
+interface MapTraceRouteState {
   route: MapTraceRouteRoute | null;
   setRoute: (
     nodeIds: number[],

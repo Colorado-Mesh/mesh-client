@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 /** Poll interval while Sniffer/Stats is mounted (wire_packet no longer streams on WS). */
-export const RETICULUM_RAW_PACKET_POLL_MS = 2_000;
+const RETICULUM_RAW_PACKET_POLL_MS = 2_000;
 
 export interface UseReticulumRawPacketPollOptions {
   /** When false, polling pauses (panel not mounted or stack stopped). */

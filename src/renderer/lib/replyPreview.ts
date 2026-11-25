@@ -1,4 +1,4 @@
-import { meshcoreMessageMatchesReplyKey } from './meshcoreChannelText';
+import { meshcoreMessageMatchesReplyKey } from './meshcoreReplyKey';
 import { perfSpanSync } from './perfTrace';
 import {
   normalizeReticulumMessageHash,

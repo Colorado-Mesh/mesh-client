@@ -143,7 +143,7 @@ const CATEGORY_STYLES: Record<string, string> = {
 
 const TRACE_TIMEOUT_MS = 30_000;
 
-interface Props {
+export interface Props {
   nodes: Map<number, MeshNode>;
   myNodeNum: number;
   onTraceRoute: (nodeNum: number) => Promise<boolean | undefined>;

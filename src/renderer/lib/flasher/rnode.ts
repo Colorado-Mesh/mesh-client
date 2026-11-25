@@ -19,22 +19,9 @@ export class RNode {
   static readonly KISS_TFEND = 0xdc;
   static readonly KISS_TFESC = 0xdd;
 
-  static readonly CMD_FREQUENCY = 0x01;
-  static readonly CMD_BANDWIDTH = 0x02;
-  static readonly CMD_TXPOWER = 0x03;
-  static readonly CMD_SF = 0x04;
-  static readonly CMD_CR = 0x05;
-  static readonly CMD_RADIO_STATE = 0x06;
-  static readonly CMD_STAT_RX = 0x21;
-  static readonly CMD_STAT_TX = 0x22;
-  static readonly CMD_STAT_RSSI = 0x23;
-  static readonly CMD_STAT_SNR = 0x24;
-  static readonly CMD_BOARD = 0x47;
   static readonly CMD_PLATFORM = 0x48;
-  static readonly CMD_MCU = 0x49;
   static readonly CMD_RESET = 0x55;
   static readonly CMD_RESET_BYTE = 0xf8;
-  static readonly CMD_DEV_HASH = 0x56;
   static readonly CMD_FW_VERSION = 0x50;
   static readonly CMD_ROM_READ = 0x51;
   static readonly CMD_ROM_WRITE = 0x52;
@@ -44,7 +31,6 @@ export class RNode {
   static readonly CMD_UNLOCK_ROM = 0x59;
   static readonly ROM_UNLOCK_BYTE = 0xf8;
   static readonly CMD_HASHES = 0x60;
-  static readonly CMD_FW_UPD = 0x61;
   static readonly CMD_DISP_ROT = 0x67;
   static readonly CMD_DISP_RCND = 0x68;
   static readonly CMD_BT_CTRL = 0x46;
@@ -62,9 +48,6 @@ export class RNode {
   static readonly CMD_DETECT = 0x08;
   static readonly DETECT_REQ = 0x73;
   static readonly DETECT_RESP = 0x46;
-  static readonly RADIO_STATE_OFF = 0x00;
-  static readonly RADIO_STATE_ON = 0x01;
-  static readonly HASH_TYPE_TARGET_FIRMWARE = 0x01;
   static readonly HASH_TYPE_FIRMWARE = 0x02;
 
   private readonly reader: ReadableStreamDefaultReader<Uint8Array>;
@@ -331,26 +314,6 @@ export class RNode {
     return response[0] ?? 0;
   }
 
-  async getMcu(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_MCU, [0x00]);
-    return response[0] ?? 0;
-  }
-
-  async getBoard(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_BOARD, [0x00]);
-    return response[0] ?? 0;
-  }
-
-  async getDeviceHash(): Promise<number[]> {
-    return this.sendCommand(RNode.CMD_DEV_HASH, [0x01]);
-  }
-
-  async getTargetFirmwareHash(): Promise<number[]> {
-    const response = await this.sendCommand(RNode.CMD_HASHES, [RNode.HASH_TYPE_TARGET_FIRMWARE]);
-    const [, ...targetHash] = response;
-    return targetHash;
-  }
-
   async getFirmwareHash(): Promise<number[]> {
     const response = await this.sendCommand(RNode.CMD_HASHES, [RNode.HASH_TYPE_FIRMWARE]);
     const [, ...firmwareHash] = response;
@@ -359,71 +322,6 @@ export class RNode {
 
   async getRom(): Promise<number[]> {
     return this.sendCommand(RNode.CMD_ROM_READ, [0x00]);
-  }
-
-  async getFrequency(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_FREQUENCY, [0x00, 0x00, 0x00, 0x00]);
-    return (
-      ((response[0] ?? 0) << 24) |
-      ((response[1] ?? 0) << 16) |
-      ((response[2] ?? 0) << 8) |
-      (response[3] ?? 0)
-    );
-  }
-
-  async getBandwidth(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_BANDWIDTH, [0x00, 0x00, 0x00, 0x00]);
-    return (
-      ((response[0] ?? 0) << 24) |
-      ((response[1] ?? 0) << 16) |
-      ((response[2] ?? 0) << 8) |
-      (response[3] ?? 0)
-    );
-  }
-
-  async getTxPower(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_TXPOWER, [0xff]);
-    return response[0] ?? 0;
-  }
-
-  async getSpreadingFactor(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_SF, [0xff]);
-    return response[0] ?? 0;
-  }
-
-  async getCodingRate(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_CR, [0xff]);
-    return response[0] ?? 0;
-  }
-
-  async getRadioState(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_RADIO_STATE, [0xff]);
-    return response[0] ?? 0;
-  }
-
-  async getRxStat(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_STAT_RX, [0x00]);
-    return (
-      ((response[0] ?? 0) << 24) |
-      ((response[1] ?? 0) << 16) |
-      ((response[2] ?? 0) << 8) |
-      (response[3] ?? 0)
-    );
-  }
-
-  async getTxStat(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_STAT_TX, [0x00]);
-    return (
-      ((response[0] ?? 0) << 24) |
-      ((response[1] ?? 0) << 16) |
-      ((response[2] ?? 0) << 8) |
-      (response[3] ?? 0)
-    );
-  }
-
-  async getRssiStat(): Promise<number> {
-    const response = await this.sendCommand(RNode.CMD_STAT_RSSI, [0x00]);
-    return response[0] ?? 0;
   }
 
   async disableBluetooth(): Promise<void> {

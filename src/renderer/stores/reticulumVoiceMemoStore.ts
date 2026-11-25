@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export type VoiceMemoPhase =
   'idle' | 'starting' | 'recording' | 'stopping' | 'ready' | 'sending' | 'error';
 
-interface ReticulumVoiceMemoStoreState {
+export interface ReticulumVoiceMemoStoreState {
   phase: VoiceMemoPhase;
   sessionId: string | null;
   /** Duration of the recorded memo in milliseconds (from sidecar stop response). */

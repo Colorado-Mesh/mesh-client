@@ -17,7 +17,7 @@ import {
 import type { IdentityId } from '../lib/types';
 
 export const MAX_CAYENNE_POINTS_PER_SERIES = 200;
-export const MAX_CAYENNE_SERIES_PER_NODE = 32;
+const MAX_CAYENNE_SERIES_PER_NODE = 32;
 export const MAX_CAYENNE_NODES = 64;
 
 export interface CayennePoint {

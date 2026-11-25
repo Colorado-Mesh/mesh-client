@@ -72,7 +72,7 @@ const LOCKDOWN_STATE_NAMES = new Map<number, MeshtasticLockdownState>(
   ]),
 );
 
-type Listener = (status: MeshtasticLockdownStatus | null) => void;
+export type Listener = (status: MeshtasticLockdownStatus | null) => void;
 
 let current: MeshtasticLockdownStatus | null = null;
 const listeners = new Set<Listener>();

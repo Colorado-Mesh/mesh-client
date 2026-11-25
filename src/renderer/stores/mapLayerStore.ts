@@ -69,7 +69,7 @@ function loadPersisted(): {
   };
 }
 
-interface MapLayerState {
+export interface MapLayerState {
   basemapId: MapBasemapId;
   showNodes: boolean;
   showWaypoints: boolean;

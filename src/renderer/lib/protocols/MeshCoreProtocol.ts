@@ -56,16 +56,6 @@ const EVENT_DISCONNECTED = 'disconnected';
 
 // --- Canonical MeshCore types live in meshcoreHookTypes; re-export for legacy imports ---
 
-export type {
-  CayenneLppEntry,
-  MeshCoreContactRaw,
-  MeshCoreNeighborEntry,
-  MeshCoreNeighborResult,
-  MeshCoreNodeTelemetry,
-  MeshCoreRepeaterStatus,
-  RxPacketEntry,
-} from '../meshcore/meshcoreHookTypes';
-
 interface MeshCoreEventBus {
   on(event: string | number, cb: (...args: unknown[]) => void): void;
   off(event: string | number, cb: (...args: unknown[]) => void): void;
@@ -81,7 +71,7 @@ interface MeshCoreEventBus {
  * path throw `UnsupportedOperation` — UI must gate with `ProtocolCapabilities`
  * and call `useMeshcorePanelActions` instead until step 2d lands in Protocol.
  */
-export class MeshCoreProtocol implements Protocol {
+class MeshCoreProtocol implements Protocol {
   readonly type = 'meshcore';
   readonly capabilities: ProtocolCapabilities = MESHCORE_CAPABILITIES;
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface ReticulumUiState {
+export interface ReticulumUiState {
   pendingInterfaceEditId: string | null;
   requestInterfaceEdit: (id: string) => void;
   clearPendingInterfaceEdit: () => void;

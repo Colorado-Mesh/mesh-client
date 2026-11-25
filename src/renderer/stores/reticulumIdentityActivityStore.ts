@@ -15,7 +15,7 @@ export interface ReticulumIdentityActivityRow {
   hops?: number | null;
 }
 
-interface ReticulumIdentityActivityStoreState {
+export interface ReticulumIdentityActivityStoreState {
   byDestination: Map<string, ReticulumIdentityActivityRow[]>;
   loadForDestination: (destinationHash: string) => Promise<ReticulumIdentityActivityRow[]>;
   loadForIdentity: (identityHash: string) => Promise<ReticulumIdentityActivityRow[]>;

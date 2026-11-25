@@ -93,13 +93,13 @@ export interface DiscoveredPropagationRow {
   medium?: 'rf' | 'network' | null;
 }
 
-interface PropagationSyncState {
+export interface PropagationSyncState {
   active: boolean;
   progress: number;
   message?: string | null;
 }
 
-interface ReticulumPropagationStoreState {
+export interface ReticulumPropagationStoreState {
   nodes: PropagationNodeRow[];
   discovered: DiscoveredPropagationRow[];
   /** Destination hashes Auto must never sync or deposit on (sidecar-persisted). */

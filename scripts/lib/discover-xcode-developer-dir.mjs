@@ -33,11 +33,3 @@ export function discoverXcodeDeveloperDir(applicationsDir = '/Applications') {
  * @param {string} [applicationsDir]
  * @returns {'ready' | 'xcodeNotFound' | 'xcodeIncomplete'}
  */
-export function classifyXcodeDeveloperDir(applicationsDir = '/Applications') {
-  const primaryApp = path.join(applicationsDir, 'Xcode.app');
-  const alt =
-    existsSync(applicationsDir) &&
-    readdirSync(applicationsDir).some((entry) => /^Xcode.*\.app$/i.test(entry));
-  if (!existsSync(primaryApp) && !alt) return 'xcodeNotFound';
-  return discoverXcodeDeveloperDir(applicationsDir) ? 'ready' : 'xcodeIncomplete';
-}

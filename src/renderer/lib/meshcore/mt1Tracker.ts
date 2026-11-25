@@ -22,7 +22,7 @@ export interface Mt1Fix {
   battery?: number;
 }
 
-export const MT1_PREFIX = '!MT1;';
+const MT1_PREFIX = '!MT1;';
 const MT1_FIELD_MAX = 24;
 const ID8_RE = /^[0-9a-fA-F]{8}$/;
 

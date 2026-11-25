@@ -326,7 +326,7 @@ if [ "$manifest_only" -eq 0 ]; then
   else
     pnpm run check:i18n:branch || fail 'pnpm run check:i18n:branch'
   fi
-  pnpm exec fallow audit --staged --quiet || fail 'fallow audit'
+  pnpm exec fallow audit --type-aware --staged --quiet || fail 'fallow audit'
 else
   skip_manifest_only 'check:console-log, check:silent-catches, check:log-ids, check:semgrep, check:url-hostname-sanitization, check:xss-patterns, check:protocol-string-gates, check:log-panel-filter, check:i18n:branch, fallow'
 fi

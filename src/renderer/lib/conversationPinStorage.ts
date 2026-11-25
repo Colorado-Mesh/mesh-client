@@ -12,7 +12,7 @@ import type { MeshProtocol } from './types';
  * an empty list; writes return false and leave the previous document untouched so callers can
  * keep their in-memory state unchanged.
  */
-export const CONVERSATION_PINS_KEY_PREFIX = 'mesh-client:conversationPins:v1';
+const CONVERSATION_PINS_KEY_PREFIX = 'mesh-client:conversationPins:v1';
 const DEFAULT_SCOPE = 'default';
 const MAX_VIEW_KEYS = 500;
 const MAX_VIEW_KEY_LENGTH = 128;
@@ -23,11 +23,6 @@ export interface ConversationPrefs {
   /** View keys hidden from the tab strip unless "show archived" is on. */
   archived: string[];
 }
-
-export const EMPTY_CONVERSATION_PREFS: ConversationPrefs = Object.freeze({
-  pinned: [],
-  archived: [],
-});
 
 export function conversationPrefsStorageKey(
   protocol: MeshProtocol,
@@ -74,7 +69,7 @@ export function loadConversationPrefs(
   }
 }
 
-type PrefsListener = (protocol: MeshProtocol, identityId: string | null) => void;
+export type PrefsListener = (protocol: MeshProtocol, identityId: string | null) => void;
 const listeners = new Set<PrefsListener>();
 
 export function subscribeConversationPrefs(listener: PrefsListener): () => void {

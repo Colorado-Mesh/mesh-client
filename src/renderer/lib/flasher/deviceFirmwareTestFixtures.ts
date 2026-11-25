@@ -2,7 +2,7 @@
 import type { FirmwareFileEntry } from './deviceFirmwareImage';
 import { nrf52DfuCrc16 } from './nrf52DfuFlasher';
 
-export const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04];
+const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04];
 
 export interface EspImageOptions {
   chipId: number;

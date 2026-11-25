@@ -12,7 +12,7 @@ export const MQTT_RECONNECT_BACKLOG_MS = 30_000;
 export const SF_AUTO_HISTORY_MESSAGE_CAP = 50;
 
 /** Aggressive catch-up message cap (user opt-in via App settings). */
-export const SF_AUTO_HISTORY_MESSAGE_CAP_AGGRESSIVE = 75;
+const SF_AUTO_HISTORY_MESSAGE_CAP_AGGRESSIVE = 75;
 
 /** Max messages for manual “catch up” CLIENT_HISTORY. */
 export const SF_MANUAL_HISTORY_MESSAGE_CAP = 100;
@@ -21,13 +21,13 @@ export const SF_MANUAL_HISTORY_MESSAGE_CAP = 100;
 export const SF_AUTO_HISTORY_COOLDOWN_MS = 15 * MS_PER_MINUTE;
 
 /** Aggressive catch-up cooldown (user opt-in). */
-export const SF_AUTO_HISTORY_COOLDOWN_AGGRESSIVE_MS = 10 * MS_PER_MINUTE;
+const SF_AUTO_HISTORY_COOLDOWN_AGGRESSIVE_MS = 10 * MS_PER_MINUTE;
 
 /** Require RF to have been disconnected at least this long before auto-fetch. */
 export const SF_AUTO_HISTORY_OFFLINE_MIN_MS = 5 * MS_PER_MINUTE;
 
 /** Aggressive offline gate (user opt-in). */
-export const SF_AUTO_HISTORY_OFFLINE_MIN_AGGRESSIVE_MS = 2 * MS_PER_MINUTE;
+const SF_AUTO_HISTORY_OFFLINE_MIN_AGGRESSIVE_MS = 2 * MS_PER_MINUTE;
 
 export interface StoreForwardHistoryTuning {
   cooldownMs: number;
@@ -453,8 +453,6 @@ export function resetSfHistoryWirePacketsForTests(): void {
 export {
   decodeStoreForwardTextPayload,
   isLikelyReadableChatText,
-  MESHTASTIC_CHAT_CONTROL_BYTE_RATIO_MAX,
-  type ResolvedMeshtasticTextPayload,
   resolveMeshtasticTextMessagePayload,
 } from '@/shared/meshtasticTextMessagePayload';
 
@@ -471,7 +469,7 @@ export function setRemoteAdminReadsActive(active: boolean): void {
   }
 }
 
-export function isRemoteAdminReadsActive(): boolean {
+function isRemoteAdminReadsActive(): boolean {
   return remoteAdminReadsActiveCount > 0;
 }
 

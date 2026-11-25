@@ -48,7 +48,7 @@ export interface LaunchedApp {
   didFailLoad: boolean;
 }
 
-type ResolveLocalElectronBin = (
+export type ResolveLocalElectronBin = (
   platform?: NodeJS.Platform,
   fileExists?: (p: string) => boolean,
 ) => string;
@@ -63,7 +63,7 @@ export async function loadResolveLocalElectronBin(): Promise<ResolveLocalElectro
 }
 
 /** Throw if the production main bundle under `dist-electron/` is missing. */
-export function assertProductionBuildPresent(): void {
+function assertProductionBuildPresent(): void {
   if (!existsSync(MAIN_ENTRY)) {
     throw new Error(
       `Missing ${MAIN_ENTRY}. Run \`pnpm run test:e2e:build\` (or \`pnpm run build\` first).`,
@@ -374,7 +374,7 @@ export async function stubSaveDialogCanceled(
 }
 
 /** Known-benign renderer console noise for window-lifecycle allow-list (expand after CI pilot). */
-export const RENDERER_CONSOLE_ERROR_ALLOWLIST: RegExp[] = [
+const RENDERER_CONSOLE_ERROR_ALLOWLIST: RegExp[] = [
   /Download the React DevTools/i,
   /Autofill\.(enable|disable)/i,
   // Chromium reports failed map-tile/CDN/subresource fetches as console errors; not app regressions.

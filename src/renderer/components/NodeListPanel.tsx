@@ -114,7 +114,7 @@ import { SegmentedControl } from './ui/SegmentedControl';
 import { SortIndicator } from './ui/SortIndicator';
 import { StatusDot } from './ui/StatusDot';
 
-interface ImportContactsResult {
+export interface ImportContactsResult {
   imported: number;
   skipped: number;
   errors: string[];

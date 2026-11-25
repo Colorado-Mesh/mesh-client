@@ -33,12 +33,6 @@ const PROFILES: ReticulumRnodeRfProfile[] = (
 ).profiles;
 
 const PROFILE_BY_ID = new Map(PROFILES.map((p) => [p.id, p]));
-
-/** All known RNode RF profiles (coordinated, fallback, legacy). */
-export function listReticulumRnodeRfProfiles(): readonly ReticulumRnodeRfProfile[] {
-  return PROFILES;
-}
-
 export function getReticulumRnodeRfProfile(id: string): ReticulumRnodeRfProfile | undefined {
   return PROFILE_BY_ID.get(id);
 }
@@ -48,11 +42,6 @@ export function reticulumRnodeProfilesByTier(
 ): ReticulumRnodeRfProfile[] {
   return PROFILES.filter((p) => p.tier === tier);
 }
-
-export function reticulumRnodeProfilesForRegion(regionId: string): ReticulumRnodeRfProfile[] {
-  return PROFILES.filter((p) => p.tier === 'coordinated' && p.region === regionId);
-}
-
 function paramsEqual(a: ReticulumRnodeRfParams, profile: ReticulumRnodeRfProfile): boolean {
   return (
     a.frequency === profile.frequency &&
@@ -116,6 +105,3 @@ export function forceApplyReticulumRnodePresetDefaults(
     txpower: 17,
   };
 }
-
-/** Preset ids recognized for RNode INI expansion / repair. */
-export const RETICULUM_RNODE_KNOWN_PRESET_IDS: readonly string[] = PROFILES.map((p) => p.id);

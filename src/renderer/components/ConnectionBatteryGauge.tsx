@@ -6,7 +6,7 @@ import {
   batteryGaugeTier,
 } from '@/renderer/lib/batteryGaugeUtils';
 
-interface Props {
+export interface Props {
   percent: number;
   charging?: boolean;
 }

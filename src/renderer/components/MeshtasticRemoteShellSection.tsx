@@ -17,7 +17,7 @@ import {
 import { Button } from './ui/Button';
 import { INPUT_CLASS } from './ui/formClasses';
 
-interface Props {
+export interface Props {
   /** Protocol exception: REMOTE_SHELL_APP is a Meshtastic firmware port only. */
   capabilities?: ProtocolCapabilities;
   /** Radio link is up (the shell needs the local radio to relay frames). */

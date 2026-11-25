@@ -51,7 +51,7 @@ export interface RrcMecpInboundArgs {
  * hash, including whitespace, counts as present, and nicknames are not trimmed.
  * A present hash that does not match is never own.
  */
-export function rrcMecpSenderIsOwn(args: {
+function rrcMecpSenderIsOwn(args: {
   senderHash: string | null;
   nickname: string | null;
   localIdentityHash: string | null;
@@ -73,7 +73,7 @@ export function rrcMecpSenderIsOwn(args: {
  * keyed by nickname, or by message id when there is no nickname, so they do
  * not share one `unknown` bucket.
  */
-export function rrcMecpSenderBucket(args: {
+function rrcMecpSenderBucket(args: {
   senderHash: string | null;
   nickname: string | null;
   messageId: string;

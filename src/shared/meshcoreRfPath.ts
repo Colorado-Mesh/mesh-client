@@ -6,33 +6,33 @@
 export const MESHCORE_TYPE_MASK = 0x3c;
 /** Payload type nibble is in bits 2–5 of header byte 0. */
 export const MESHCORE_TYPE_SHIFT = 2;
-export const MESHCORE_ROUTE_MASK = 0x03;
+const MESHCORE_ROUTE_MASK = 0x03;
 
-export const PAYLOAD_TYPE_PATH = 0x08;
-export const PAYLOAD_TYPE_TRACE = 0x09;
+const PAYLOAD_TYPE_PATH = 0x08;
+const PAYLOAD_TYPE_TRACE = 0x09;
 /** Header payload-type nibble value for node advertisement (`PAYLOAD_TYPE_ADVERT`). */
 export const MESHCORE_PAYLOAD_TYPE_ADVERT_NIBBLE = 4;
 /** Align with `@liamcottle/meshcore.js` `Packet.PAYLOAD_TYPE_GRP_TXT` (0x05). */
 export const MESHCORE_PAYLOAD_TYPE_GRP_TXT_NIBBLE = 5;
 /** Group datagram payload type nibble (0x06). */
-export const MESHCORE_PAYLOAD_TYPE_GRP_DATA_NIBBLE = 6;
+const MESHCORE_PAYLOAD_TYPE_GRP_DATA_NIBBLE = 6;
 /** Response to REQ_RESP or ANON_REQ (nibble 1). Inner: dest_hash(1)|src_hash(1)|mac(2)|ciphertext. */
 export const MESHCORE_PAYLOAD_TYPE_RESPONSE_NIBBLE = 1;
 /** Anonymous request with plaintext sender pubkey (nibble 7). Inner: dest_hash(1)|sender_pubkey(32)|mac(2)|ciphertext. */
 export const MESHCORE_PAYLOAD_TYPE_ANON_REQ_NIBBLE = 7;
 /** Multipart payload type nibble (0x0a). */
-export const MESHCORE_PAYLOAD_TYPE_MULTIPART_NIBBLE = 10;
+const MESHCORE_PAYLOAD_TYPE_MULTIPART_NIBBLE = 10;
 /** Control payload type nibble (0x0b). */
 export const MESHCORE_PAYLOAD_TYPE_CONTROL_NIBBLE = 11;
 /** Raw custom payload type nibble (0x0f). */
-export const MESHCORE_PAYLOAD_TYPE_RAW_CUSTOM_NIBBLE = 15;
+const MESHCORE_PAYLOAD_TYPE_RAW_CUSTOM_NIBBLE = 15;
 
 const ROUTE_TYPE_TRANSPORT_FLOOD = 0x00;
 const ROUTE_TYPE_TRANSPORT_DIRECT = 0x03;
 const TRANSPORT_CODES_SIZE = 4;
 
 /** Route bits 0–1 of the first header byte (see MeshCore `docs/packet_format.md`). */
-export type MeshCoreRouteBits = 0 | 1 | 2 | 3;
+type MeshCoreRouteBits = 0 | 1 | 2 | 3;
 
 /**
  * Decode path hashes and return the byte offset where the inner application payload begins
@@ -102,7 +102,7 @@ export function meshCorePayloadTypeNibble(byte0: number): number {
   return (byte0 & MESHCORE_TYPE_MASK) >> MESHCORE_TYPE_SHIFT;
 }
 
-export function meshCoreRouteBits(byte0: number): MeshCoreRouteBits {
+function meshCoreRouteBits(byte0: number): MeshCoreRouteBits {
   return (byte0 & MESHCORE_ROUTE_MASK) as MeshCoreRouteBits;
 }
 
@@ -170,22 +170,3 @@ export function isMeshCoreTracePacketByte0(byte0: number): boolean {
  * True when `decodeMeshCorePathPrefix` succeeds and the header looks like intentional MeshCore RF
  * (not arbitrary bytes that accidentally parse). Used after Meshtastic heuristics miss.
  */
-export function shouldClassifyRfPayloadAsMeshCoreFromPathDecode(raw: Uint8Array): boolean {
-  let decoded: { hops: number; pathEndOffset: number };
-  try {
-    decoded = decodeMeshCorePathPrefix(raw);
-  } catch {
-    return false;
-  }
-  const byte0 = raw.at(0);
-  if (byte0 === undefined) return false;
-  const nibble = meshCorePayloadTypeNibble(byte0);
-  const route = byte0 & MESHCORE_ROUTE_MASK;
-  const hasTransportCodes =
-    route === ROUTE_TYPE_TRANSPORT_FLOOD || route === ROUTE_TYPE_TRANSPORT_DIRECT;
-  if (hasTransportCodes) return true;
-  if (decoded.hops > 0) return true;
-  if (nibble === MESHCORE_PAYLOAD_TYPE_ADVERT_NIBBLE) return true;
-  if (nibble === PAYLOAD_TYPE_PATH || nibble === PAYLOAD_TYPE_TRACE) return true;
-  return false;
-}

@@ -182,6 +182,7 @@ export class MeshcomKissSession {
   }
 
   /** Flush any data waiting for RxMeta (e.g. on disconnect). */
+  // fallow-ignore-next-line unused-class-member
   flush(): MeshcomKissEvent[] {
     if (!this.pendingData) return [];
     const frame = this.pendingData;
@@ -189,6 +190,7 @@ export class MeshcomKissSession {
     return [{ type: 'data', frame }];
   }
 
+  // fallow-ignore-next-line unused-class-member
   reset(): void {
     this.deframer.reset();
     this.pendingSrcInfo = null;

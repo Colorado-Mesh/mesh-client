@@ -99,21 +99,6 @@ export function addTransport(id: IdentityId, transport: TransportRef): void {
   });
 }
 
-export function updateTransport(
-  id: IdentityId,
-  transportId: string,
-  updates: Partial<TransportRef>,
-): void {
-  useIdentityStore.setState((s) => {
-    const existing = s.identities[id];
-    if (!existing) return s;
-    const next = existing.transports.map((t) =>
-      t.transportId === transportId ? { ...t, ...updates } : t,
-    );
-    return { identities: { ...s.identities, [id]: { ...existing, transports: next } } };
-  });
-}
-
 export function removeTransport(id: IdentityId, transportId: string): void {
   useIdentityStore.setState((s) => {
     const existing = s.identities[id];

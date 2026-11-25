@@ -77,21 +77,10 @@ export function decode(input: string): ParsedMessage {
 }
 
 /**
- * Check if a string is an MECP message (starts with "MECP/")
- */
-export function isMECP(input: string): boolean {
-  return input.startsWith(MECP_PREFIX);
-}
-
-/**
  * Get the category letter from a code string.
  * @param code - e.g., "M01"
  * @returns The category letter, e.g., "M"
  */
-export function getCategory(code: string): string {
-  return code.charAt(0);
-}
-
 /**
  * Check if codes contain B01 (automated distress beacon active).
  */

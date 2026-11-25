@@ -1,7 +1,7 @@
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 /** Establish-class sync errors — reverse path / LRPROOF on this client, not a bad PN. */
-export const CLIENT_LOCAL_PROPAGATION_ESTABLISH_ERROR_KEYS = [
+const CLIENT_LOCAL_PROPAGATION_ESTABLISH_ERROR_KEYS = [
   'reticulumPropagation.syncEstablishNoLinkProof',
   'reticulumPropagation.syncEstablishIdentityMissing',
   'reticulumPropagation.syncEstablishInvalidProof',

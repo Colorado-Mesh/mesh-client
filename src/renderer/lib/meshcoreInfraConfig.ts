@@ -193,7 +193,7 @@ export async function readInfraConfig(
   return { values, unavailable };
 }
 
-export function validateInfraConfigValue(field: InfraConfigField, value: string): void {
+function validateInfraConfigValue(field: InfraConfigField, value: string): void {
   if (/[\r\n\0]/.test(value)) throw configError('infraConfig.invalidValue');
   if (field.maxBytes != null && new TextEncoder().encode(value).length > field.maxBytes)
     throw configError('infraConfig.invalidValue');

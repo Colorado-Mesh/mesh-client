@@ -47,7 +47,7 @@ import { createIpcRateLimiter } from '../ipcRateLimit';
 import { sanitizeLogMessage } from '../sanitize-log-message';
 import { assertIpcSender } from '../validate-ipc-sender';
 
-interface Dependencies {
+export interface Dependencies {
   getSetting: (key: string) => string | undefined;
   setSetting: (key: string, value: string) => void;
   getWebContents: () => WebContents | undefined;

@@ -5,7 +5,7 @@ import { MQTT_PROFILE_NAME_MAX_LENGTH, type MqttProfile } from '../lib/mqttProfi
 import { Button } from './ui/Button';
 import { INPUT_BOX_SM_CLASS } from './ui/formClasses';
 
-interface Props {
+export interface Props {
   /** Saved profile matching the current settings, when one does. */
   activeProfile: MqttProfile | undefined;
   onSave: (name: string) => void;

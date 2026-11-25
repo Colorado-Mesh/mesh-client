@@ -7,7 +7,7 @@ import { rssiToSignalLevel } from '../lib/signal';
 
 // Exported for reuse wherever a "directly connected" indicator is needed
 
-export function LinkIcon({ className }: { className?: string }) {
+function LinkIcon({ className }: { className?: string }) {
   const trigger = useIconTrigger();
   return (
     <Link2
@@ -19,7 +19,7 @@ export function LinkIcon({ className }: { className?: string }) {
   );
 }
 
-interface Props {
+export interface Props {
   rssi?: number | null | undefined;
   /**
    * Explicit 0–4 bar level (e.g. IP RTT mapping). When set, overrides `rssi`.

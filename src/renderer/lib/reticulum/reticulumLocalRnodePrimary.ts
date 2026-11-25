@@ -1,12 +1,3 @@
-export {
-  countEnabledLocallyConnectedSerialInterfaces,
-  isReticulumLocallyConnectedSerialInterface,
-  isReticulumLocalSerialInterfaceType,
-  pickDefaultPrimaryLocalSerialInterfaceId,
-  resolveEffectivePrimaryLocalSerialInterfaceId,
-  type ReticulumLocalSerialInterfaceRow,
-} from '@/shared/reticulumLocalRnodePrimary';
-
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
 export async function setReticulumPrimaryLocalSerialInterface(

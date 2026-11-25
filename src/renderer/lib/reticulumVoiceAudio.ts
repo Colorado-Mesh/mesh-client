@@ -57,7 +57,7 @@ export function decodeF32LeBase64(samplesB64: string): Float32Array {
  * Linear-resample mono (or mix-down) PCM to a fixed frame size / sample rate.
  * Returns null when input is empty.
  */
-export function resampleMonoToFixedFrame(
+function resampleMonoToFixedFrame(
   input: Float32Array,
   inputSampleRateHz: number,
   outSamples: number,

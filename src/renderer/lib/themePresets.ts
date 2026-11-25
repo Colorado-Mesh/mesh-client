@@ -222,8 +222,8 @@ const SURFACE_TOKEN_STEPS = {
   messageActionButtonHover: 400,
 } as const satisfies Partial<Record<ThemeColorKey, InkStep>>;
 
-type SurfaceTokenKey = keyof typeof SURFACE_TOKEN_STEPS;
-type AccentTokenKey = Exclude<ThemeColorKey, SurfaceTokenKey>;
+export type SurfaceTokenKey = keyof typeof SURFACE_TOKEN_STEPS;
+export type AccentTokenKey = Exclude<ThemeColorKey, SurfaceTokenKey>;
 
 export function themeSurface(id: ThemeSurfaceId): ThemeSurface {
   return THEME_SURFACES.find((s) => s.id === id) ?? THEME_SURFACES[0];

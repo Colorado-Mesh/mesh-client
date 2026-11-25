@@ -4,7 +4,7 @@ import type { MeshNode } from '../types';
 import type { MeshCoreConnection, MeshcoreContactDbRow } from './meshcoreHookTypes';
 
 /** MeshCore firmware contact type for repeaters (`ADV_TYPE_REPEATER`). */
-export const MESHCORE_CONTACT_TYPE_REPEATER = 2;
+const MESHCORE_CONTACT_TYPE_REPEATER = 2;
 
 export interface ClearMeshcoreRepeatersDeps {
   /** Live radio connection; `null` when disconnected (DB/UI-only clear). */

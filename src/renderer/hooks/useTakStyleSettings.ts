@@ -4,7 +4,7 @@ import type { TakStyleSettings } from '@/shared/tak-types';
 
 import { takIpcErrorMessage } from './useTakRemoteRelay';
 
-interface UseTakStyleSettingsResult {
+export interface UseTakStyleSettingsResult {
   /** Saved settings; undefined until loaded. */
   settings: TakStyleSettings | undefined;
   isSaving: boolean;

@@ -36,7 +36,7 @@ function parseChannel(channel: string | null): number {
 }
 
 /** Last relay sender id that parses as a finite node number (e.g. Reticulum dest). */
-export function pickRelayDmToNode(relaySenderIds: readonly string[] | undefined): number | null {
+function pickRelayDmToNode(relaySenderIds: readonly string[] | undefined): number | null {
   if (relaySenderIds == null || relaySenderIds.length === 0) return null;
   for (let i = relaySenderIds.length - 1; i >= 0; i--) {
     const n = Number(relaySenderIds[i]);
@@ -83,7 +83,7 @@ export function resolveIncidentAckRoute(
 }
 
 /** Prefix for Incident Command ACK outbox rows (`ackIncident:<id>:…`). */
-export const INCIDENT_ACK_VIEW_KEY_PREFIX = 'ackIncident:';
+const INCIDENT_ACK_VIEW_KEY_PREFIX = 'ackIncident:';
 
 /** Build a viewKey that tags the row as an incident ACK for App-level drain + recordAck. */
 export function incidentAckViewKey(

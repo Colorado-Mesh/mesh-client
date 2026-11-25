@@ -1,13 +1,13 @@
 import type { WeatherPrecipUnit, WeatherTempUnit, WeatherUnits, WeatherWindUnit } from './types';
 
 export const WEATHER_GRID_MAX_POINTS = 64;
-export const WEATHER_GRID_MIN_STEP_DEG = 0.05;
-export const WEATHER_GRID_MAX_STEP_DEG = 10;
+const WEATHER_GRID_MIN_STEP_DEG = 0.05;
+const WEATHER_GRID_MAX_STEP_DEG = 10;
 export const WEATHER_JSON_MAX_BYTES = 2 * 1024 * 1024;
 export const WEATHER_TILE_MAX_BYTES = 2 * 1024 * 1024;
 export const WEATHER_RADAR_MAX_ZOOM = 18;
-export const WEATHER_MAX_LAT = 90;
-export const WEATHER_MAX_LON = 180;
+const WEATHER_MAX_LAT = 90;
+const WEATHER_MAX_LON = 180;
 
 export interface LatLonBounds {
   north: number;
@@ -93,8 +93,4 @@ export function normalizeLon(lon: number): number {
 export function clampZoom(zoom: number): number {
   if (!Number.isFinite(zoom)) return 0;
   return Math.min(WEATHER_RADAR_MAX_ZOOM, Math.max(0, Math.floor(zoom)));
-}
-
-export function isIsoDateString(value: unknown): value is string {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }

@@ -7,7 +7,7 @@
 import { isValidBlockedContactHash, normalizeBlockedHash } from './blockedContactHash';
 
 /** Shape written by export; `blocked` is also accepted on import. */
-export interface BlockedContactsFilePayload {
+interface BlockedContactsFilePayload {
   version: 1;
   protocol: string;
   exported_at: string;

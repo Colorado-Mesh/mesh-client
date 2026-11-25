@@ -5,7 +5,7 @@ import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 
 const REDUCE_MOTION_INIT_KEY = 'mesh-client:reduceMotionInitialized';
 
-type ReduceMotionListener = () => void;
+export type ReduceMotionListener = () => void;
 const listeners = new Set<ReduceMotionListener>();
 
 function applyDocumentDataset(enabled: boolean): void {

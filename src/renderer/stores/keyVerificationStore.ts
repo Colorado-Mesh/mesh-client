@@ -20,7 +20,7 @@ import {
 import type { IdentityId } from '../lib/types';
 import { patchNodeKeyManuallyVerified, useNodeStore } from './nodeStore';
 
-export type KeyVerificationPhase =
+type KeyVerificationPhase =
   /** INITIATE sent; waiting for the remote node's reply (radio will ask for the number). */
   | 'initiating'
   /** Responder: show this security number to the initiator out-of-band. */
@@ -35,9 +35,9 @@ export type KeyVerificationPhase =
   | 'rejected'
   | 'error';
 
-export type KeyVerificationErrorCode = 'send_failed' | 'invalid_number' | 'missing_node';
+type KeyVerificationErrorCode = 'send_failed' | 'invalid_number' | 'missing_node';
 
-export interface KeyVerificationSession {
+interface KeyVerificationSession {
   identityId: IdentityId;
   phase: KeyVerificationPhase;
   /** Handshake nonce; 0n until the radio reports one. */

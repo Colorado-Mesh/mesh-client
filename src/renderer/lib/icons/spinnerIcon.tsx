@@ -2,7 +2,7 @@ import { Loader } from 'lucide-react-motion';
 
 import { ICON_SM } from '@/renderer/lib/icons/iconClass';
 
-interface SpinnerIconProps {
+export interface SpinnerIconProps {
   className?: string;
   /** When false, icon is hidden (RefreshButton idle state). */
   active?: boolean;

@@ -45,7 +45,7 @@ function preferences(): TranslationPreferences {
   };
 }
 
-interface TranslationStore {
+export interface TranslationStore {
   preferences: TranslationPreferences;
   status: TranslationStatus | null;
   generation: number;
@@ -123,9 +123,6 @@ export const useTranslationStore = create<TranslationStore>((set, get) => ({
   },
 }));
 
-export function getMessageTranslation(key: string): MessageTranslationState {
-  return useTranslationStore.getState().messages.get(key) ?? IDLE;
-}
 export const IDLE_MESSAGE_TRANSLATION = IDLE;
 export async function refreshTranslationStatus(fresh = false): Promise<void> {
   if (!window.electronAPI?.translation) return;

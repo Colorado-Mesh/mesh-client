@@ -24,7 +24,7 @@ export const RETICULUM_IMAGE_MAX_BYTES = 240 * 1024;
 /** Longest accepted source photo before downscale (guards renderer memory). */
 export const RETICULUM_PHOTO_SOURCE_MAX_BYTES = 25 * 1024 * 1024;
 /** File-name cap after sanitisation (chars). */
-export const RETICULUM_ATTACHMENT_NAME_MAX_CHARS = 96;
+const RETICULUM_ATTACHMENT_NAME_MAX_CHARS = 96;
 
 /** Native LXMF image formats the sidecar accepts for `FIELD_IMAGE`. */
 export type ReticulumImageWireFormat = 'png' | 'jpeg' | 'webp' | 'gif';
@@ -32,14 +32,7 @@ export type ReticulumImageWireFormat = 'png' | 'jpeg' | 'webp' | 'gif';
 export interface LxmfFileAttachmentWire {
   file_name: string;
   data_base64: string;
-}
-
-export interface LxmfImageWire {
-  format: ReticulumImageWireFormat;
-  data_base64: string;
-}
-
-/** Stable sidecar error prefixes (text before the first `:`). */
+} /** Stable sidecar error prefixes (text before the first `:`). */
 export type ReticulumAttachmentErrorCode =
   | 'attachment_count_exceeded'
   | 'attachment_too_large'
@@ -81,7 +74,7 @@ export function parseReticulumAttachmentErrorCode(
  * received copies are quarantined (`reticulum/attachments/quarantine/*.quarantine`, mode 0600)
  * and can only be saved explicitly.
  */
-export const RISKY_ATTACHMENT_EXTENSIONS: ReadonlySet<string> = new Set([
+const RISKY_ATTACHMENT_EXTENSIONS: ReadonlySet<string> = new Set([
   'app',
   'appimage',
   'apk',
@@ -117,7 +110,7 @@ export const RISKY_ATTACHMENT_EXTENSIONS: ReadonlySet<string> = new Set([
 ]);
 
 /** Suffix appended to quarantined risky files so they cannot be double-click executed. */
-export const RETICULUM_QUARANTINE_SUFFIX = '.quarantine';
+const RETICULUM_QUARANTINE_SUFFIX = '.quarantine';
 /** Sub-directory of `reticulum/attachments/` holding quarantined files (inside the path jail). */
 export const RETICULUM_QUARANTINE_DIRNAME = 'quarantine';
 
@@ -163,16 +156,7 @@ export function sanitizeReticulumAttachmentFileName(raw: string): string {
     cleaned = `${chars.slice(0, keep).join('')}${ext}`;
   }
   return cleaned;
-}
-
-/** Lower-case extension without the dot (`''` when none). */
-export function reticulumAttachmentExtension(fileName: string): string {
-  const name = sanitizeReticulumAttachmentFileName(fileName);
-  const dot = name.lastIndexOf('.');
-  return dot > 0 ? name.slice(dot + 1).toLowerCase() : '';
-}
-
-/**
+} /**
  * True when the extension (or any dotted segment, e.g. `report.pdf.exe`) can execute on open.
  */
 export function isRiskyReticulumAttachmentFileName(fileName: string): boolean {

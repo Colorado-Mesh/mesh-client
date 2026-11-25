@@ -7,7 +7,7 @@ import type { ConfigTargetContext } from '@/renderer/lib/types';
 import { useToast } from './Toast';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 
-interface Props {
+export interface Props {
   configTarget?: ConfigTargetContext;
   isConnected: boolean;
   onXmodemUpload?: () => Promise<void>;

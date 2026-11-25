@@ -19,7 +19,7 @@ function savedFeedUrl(provider: RegionalFeedProvider): string {
   return typeof saved === 'string' ? saved : (getRegionalFeedPresets(provider)[0]?.baseUrl ?? '');
 }
 
-interface ConnectionControlsProps {
+export interface ConnectionControlsProps {
   feed: ReturnType<typeof useBeaconTraffic>;
   provider?: RegionalFeedProvider;
   /** Server region of a session continued from another window. */

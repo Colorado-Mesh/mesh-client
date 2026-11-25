@@ -24,7 +24,7 @@ export const FOREIGN_LORA_RF_CONDITIONS = new Set([
  * RF conditions removed from the engine but that may still appear in persisted snapshots.
  * Drop on load so they no longer contribute to Diagnostics Attention.
  */
-export const RETIRED_RF_CONDITIONS = new Set(['Excessive Flooding']);
+const RETIRED_RF_CONDITIONS = new Set(['Excessive Flooding']);
 
 /** Remove RF rows for conditions the engine no longer emits. */
 export function filterRetiredRfDiagnosticRows(rows: DiagnosticRow[]): DiagnosticRow[] {
@@ -107,7 +107,7 @@ export function meshHasRoutingAnomaliesFromRows(rows: DiagnosticRow[]): boolean 
   return false;
 }
 
-export function rfDiagnosesToRows(nodeId: number, findings: RFDiagnosis[]): RfDiagnosticRow[] {
+function rfDiagnosesToRows(nodeId: number, findings: RFDiagnosis[]): RfDiagnosticRow[] {
   const now = Date.now();
   return findings.map((f) => ({
     kind: 'rf' as const,

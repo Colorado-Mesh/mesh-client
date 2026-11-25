@@ -10,7 +10,7 @@ import { useTeamRosterStore } from '@/renderer/stores/teamRosterStore';
 import type { TeamMember } from '@/shared/teamRosterTypes';
 import { rosterLinksOf, TEAM_UNIT_ID_MAX, TEAM_UNIT_ID_MIN } from '@/shared/teamRosterTypes';
 
-interface TeamContactEditorDialogProps {
+export interface TeamContactEditorDialogProps {
   /** Null = create mode. */
   member: TeamMember | null;
   /** Optional created unit id when create-mode save succeeds. */

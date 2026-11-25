@@ -17,9 +17,9 @@ import {
   setInternetWeatherEnabled,
 } from '../lib/appSettingsStorage';
 
-type Status = 'idle' | 'loading' | 'ready' | 'error';
+export type Status = 'idle' | 'loading' | 'ready' | 'error';
 
-interface InternetWeatherState {
+export interface InternetWeatherState {
   enabled: boolean;
   radarProvider: 'auto' | RadarProviderId;
   radarOpacity: number;

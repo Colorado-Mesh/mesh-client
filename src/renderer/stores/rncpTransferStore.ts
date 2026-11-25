@@ -37,7 +37,7 @@ export interface RncpPendingOfferRecord {
   receivedAt: number;
 }
 
-interface RncpTransferStoreState {
+export interface RncpTransferStoreState {
   transfers: Map<string, RncpTransferRecord>;
   pendingOffers: Map<string, RncpPendingOfferRecord>;
   listener: RncpListenerStatus | null;

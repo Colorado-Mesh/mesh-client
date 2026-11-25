@@ -438,7 +438,7 @@ function loadMeshcomMqttSettings(): MQTTSettings {
   return loadProtocolMqttSettings('meshcom');
 }
 
-interface Props {
+export interface Props {
   state: DeviceState;
   onConnect: RfConnectFn;
   onAutoConnect: RfConnectAutomaticFn;

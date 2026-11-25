@@ -7,7 +7,7 @@ export const WEB_MERCATOR_MAX_LAT = 85.05112878;
 export const TILE_CACHE_MAX_BYTES = 1024 * 1024 * 1024;
 
 /** Average PNG tile size used only for UI estimates. */
-export const OFFLINE_MAP_AVG_TILE_BYTES = 10 * 1024;
+const OFFLINE_MAP_AVG_TILE_BYTES = 10 * 1024;
 
 /**
  * Soft size estimate cap for one download job.
@@ -40,7 +40,7 @@ export interface WebMercatorTile {
   y: number;
 }
 
-export function clampLat(lat: number): number {
+function clampLat(lat: number): number {
   return Math.max(-WEB_MERCATOR_MAX_LAT, Math.min(WEB_MERCATOR_MAX_LAT, lat));
 }
 

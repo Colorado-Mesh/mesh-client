@@ -39,13 +39,13 @@ import { decodeStoreForwardPlusPlus, mergeSfppPhase } from './meshtasticStoreFor
 import { decodeRemoteShellFrame } from './remoteShell';
 import { abandonRemoteShellForIdentity, handleRemoteShellFrame } from './remoteShellSession';
 
-interface RawModuleMessage {
+export interface RawModuleMessage {
   from: number;
   data: Uint8Array;
   timestamp: number;
 }
 
-type RawMessageMapSetter = Dispatch<SetStateAction<Map<number, RawModuleMessage[]>>>;
+export type RawMessageMapSetter = Dispatch<SetStateAction<Map<number, RawModuleMessage[]>>>;
 const MAX_SINGLE_ENTRY_MAP_NODES = 128;
 
 function setBoundedMapEntry<T>(previous: Map<number, T>, key: number, value: T): Map<number, T> {

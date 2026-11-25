@@ -4,7 +4,7 @@ import type { TAKContact, TAKContactsUpdate } from '@/shared/tak-types';
 
 const EMPTY_CONTACTS: ReadonlyMap<string, TAKContact> = new Map();
 
-interface TakContactState {
+export interface TakContactState {
   /** Inbound CoT contacts keyed by uid; replaced (not mutated) on every change. */
   contacts: ReadonlyMap<string, TAKContact>;
   replaceAll: (contacts: readonly TAKContact[]) => void;

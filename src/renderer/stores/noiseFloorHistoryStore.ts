@@ -8,7 +8,7 @@ import {
 
 const EMPTY_SERIES: readonly NoiseFloorSample[] = [];
 
-interface NoiseFloorHistoryState {
+export interface NoiseFloorHistoryState {
   history: Map<number, readonly NoiseFloorSample[]>;
   /**
    * Record a noise-floor reading for one node. Invalid / deduped samples are ignored.

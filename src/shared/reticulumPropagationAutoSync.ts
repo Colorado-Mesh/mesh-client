@@ -12,18 +12,8 @@ export const RETICULUM_PROPAGATION_AUTO_SYNC_INTERVALS_SEC = [
   (24 * MS_PER_HOUR) / MS_PER_SECOND,
 ] as const;
 
-export type ReticulumPropagationAutoSyncIntervalSec =
-  (typeof RETICULUM_PROPAGATION_AUTO_SYNC_INTERVALS_SEC)[number];
-
 /** Default background propagation sync interval: every hour. */
 export const RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC = MS_PER_HOUR / MS_PER_SECOND;
-
-export function isReticulumPropagationAutoSyncIntervalSec(
-  value: number,
-): value is ReticulumPropagationAutoSyncIntervalSec {
-  return (RETICULUM_PROPAGATION_AUTO_SYNC_INTERVALS_SEC as readonly number[]).includes(value);
-}
-
 export function reticulumPropagationAutoSyncOptionKey(sec: number): string {
   switch (sec) {
     case 0:

@@ -22,12 +22,11 @@ import {
   normalizeReticulumMessageHash,
   reticulumMessageHashesEqual,
 } from '@/renderer/lib/reticulum/reticulumMessageHash';
-import { reticulumDbRowToMessageRecord } from '@/renderer/lib/storeRecordAdapters';
 import { relayDirectMessageToTak } from '@/renderer/lib/tak/takDirectMessages';
 import type { IdentityId } from '@/renderer/lib/types';
 import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
-import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
+import { upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
 import { upsertNodeRecordsForIdentity, useNodeStore } from '@/renderer/stores/nodeStore';
 import {
   reticulumContactToNodeRecordPreservingLabel,
@@ -240,7 +239,7 @@ export function ingestReticulumLxmfPayload(
   return true;
 }
 
-export async function persistReticulumMessageToDb(
+async function persistReticulumMessageToDb(
   identityId: IdentityId,
   p: ReticulumLxmfPayload,
   attachmentPath?: string | null,
@@ -364,7 +363,7 @@ export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload
 }
 
 /** Persist peer avatar from LXMF FIELD_ICON_APPEARANCE (MeshChat wire compat). */
-export async function persistReticulumIconFromPayload(p: ReticulumLxmfPayload): Promise<void> {
+async function persistReticulumIconFromPayload(p: ReticulumLxmfPayload): Promise<void> {
   if (!p.sender_hash || p.direction === 'outbound') return;
   const appearance = parseReticulumIconAppearanceFromPayload(p);
   if (!appearance || isDefaultReticulumProfileIcon(appearance.icon_name, appearance.icon_color)) {
@@ -403,24 +402,6 @@ export function ingestReticulumLxmfPayloadWithSideEffects(
   // History stamp only — Contacts require explicit Save as contact.
   void persistReticulumHistoryFromPayload(p, identityId);
   return true;
-}
-
-export function ingestReticulumDbRows(
-  identityId: IdentityId,
-  rows: {
-    sender_id: string;
-    sender_name?: string | null;
-    payload: string;
-    timestamp: number;
-    to_hash?: string | null;
-    reply_to_hash?: string | null;
-    message_hash?: string | null;
-    received_via?: string | null;
-  }[],
-): void {
-  for (const row of rows) {
-    addMessage(identityId, reticulumDbRowToMessageRecord(row));
-  }
 }
 
 function mapMessageStatusToDeliveryStatus(status: MessageStatus): string {

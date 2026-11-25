@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { INPUT_BOX_CLASS } from '../ui/formClasses';
 
-export type RNodeWifiMode = 'off' | 'ap' | 'station';
-
 export interface WifiConfigProps {
   disabled?: boolean;
   configSummary: string | null;

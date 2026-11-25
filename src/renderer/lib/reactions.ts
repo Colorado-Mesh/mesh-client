@@ -1,7 +1,7 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 /** Unicode codepoints for the 12 reaction emojis, in display order (matches ChatPanel REACTION_EMOJIS). */
-export const REACTION_EMOJI_CODES = [
+const REACTION_EMOJI_CODES = [
   128077, 10084, 128514, 128078, 127881, 128558, 128546, 128075, 128591, 128293, 9989, 129300,
 ] as const;
 

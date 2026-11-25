@@ -63,7 +63,7 @@ import {
 import { useToast } from './Toast';
 import { SELECT_BOX_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 
-interface PacketMessage {
+export interface PacketMessage {
   from: number;
   data: Uint8Array;
   timestamp: number;
@@ -73,7 +73,7 @@ function storeForwardRecordsFromCfg(cfg: Record<string, unknown>): number {
   return cfgNum(cfg.records ?? cfg.numRecords, 0);
 }
 
-interface Props {
+export interface Props {
   configTarget?: ConfigTargetContext;
   /** Display map (may include last-known modules for visibility during rehydrate). */
   moduleConfigs: Record<string, unknown>;

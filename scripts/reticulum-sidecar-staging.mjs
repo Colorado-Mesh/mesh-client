@@ -6,7 +6,7 @@ import { joinUnderRoot } from './lib/path-under-root.mjs';
 /** @typedef {'win32' | 'linux' | 'darwin'} ElectronPlatform */
 /** @typedef {'x64' | 'arm64'} SidecarArchKey */
 
-export const SIDECAR_BINARY_BASENAME = 'mesh-client-reticulum';
+const SIDECAR_BINARY_BASENAME = 'mesh-client-reticulum';
 export const MIN_SIDECAR_BYTES = 1024 * 1024;
 
 /** @type {Record<ElectronPlatform, { cargoTarget: string; archKey: SidecarArchKey }[]>} */
@@ -47,7 +47,7 @@ export function archKeyFromElectronBuilder(arch) {
  * @param {ElectronPlatform} platform
  * @param {SidecarArchKey} archKey
  */
-export function stagedSidecarDir(projectRoot, platform, archKey) {
+function stagedSidecarDir(projectRoot, platform, archKey) {
   return joinUnderRoot(
     projectRoot,
     'resources',

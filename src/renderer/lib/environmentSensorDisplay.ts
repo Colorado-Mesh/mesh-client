@@ -89,11 +89,11 @@ export function sensorColorForValue(metric: MapSensorMetric, value: number | und
   return SENSOR_COLOR_NEUTRAL;
 }
 
-export function celsiusToFahrenheit(celsius: number): number {
+function celsiusToFahrenheit(celsius: number): number {
   return (celsius * 9) / 5 + 32;
 }
 
-type Translate = (key: string, opts: Record<string, unknown>) => string;
+export type Translate = (key: string, opts: Record<string, unknown>) => string;
 
 /** Localized value with unit; temperature input is always °C. */
 export function formatSensorMetric(

@@ -1,3 +1,5 @@
+import '../hooks/meshcore/meshcoreHookPreamble';
+
 import type { Connection } from '@liamcottle/meshcore.js';
 import { CayenneLpp } from '@liamcottle/meshcore.js';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -671,25 +673,6 @@ import {
 import { useNoiseFloorHistoryStore } from '../stores/noiseFloorHistoryStore';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
-
-export {
-  MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
-  MESHCORE_PING_NO_ROUTE_ERROR_MSG,
-  meshcorePingNoRouteErrorExpiryUpdate,
-  serializeErrorLike,
-} from '../hooks/meshcore/meshcoreHookPreamble';
-export type {
-  CayenneLppEntry,
-  MeshCoreContactRaw,
-  MeshCoreNeighborEntry,
-  MeshCoreNeighborResult,
-  MeshCoreNodeTelemetry,
-  MeshCoreRepeaterStatus,
-  MeshCoreSelfInfo,
-  RxPacketEntry,
-} from '../lib/meshcore/meshcoreHookTypes';
-export type { CliHistoryEntry } from '../lib/repeaterCommandService';
-
 /** Wait for companion OK (event 0) / ERR (event 1) after sending a config frame. */
 async function awaitMeshcoreCompanionConfigAck(
   conn: Pick<Connection, 'once' | 'off' | 'sendToRadioFrame'>,

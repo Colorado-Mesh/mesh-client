@@ -3,8 +3,8 @@ import { MQTT_DEFAULT_RECONNECT_ATTEMPTS } from '@/shared/meshtasticMqttReconnec
 
 import { MQTT_PACKET_TOO_LARGE_MESSAGE_RE } from './meshcoreMqttUserHint';
 
-export const MESHTASTIC_OFFICIAL_BROKER_HOST = 'mqtt.meshtastic.org';
-export const LIAM_BROKER_HOST = 'mqtt.meshtastic.liamcottle.net';
+const MESHTASTIC_OFFICIAL_BROKER_HOST = 'mqtt.meshtastic.org';
+const LIAM_BROKER_HOST = 'mqtt.meshtastic.liamcottle.net';
 
 const MESHTASTIC_OFFICIAL_SHARED: Pick<
   MQTTSettings,

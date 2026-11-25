@@ -1,13 +1,6 @@
 import type { ReticulumSidecarEvent } from '../../shared/reticulum-types';
 import type { OurPosition } from '../lib/gpsSource';
-import type {
-  ChatMessage,
-  DeviceState,
-  IdentityId,
-  MeshNode,
-  MeshWaypoint,
-  NeighborInfoRecord,
-} from '../lib/types';
+import type { ChatMessage, DeviceState, IdentityId, MeshNode, MeshWaypoint } from '../lib/types';
 import type { MessageTransport } from '../stores/messageStore';
 
 /** Device queue depth from radio/SDK when available. */
@@ -143,5 +136,3 @@ export interface ProtocolRuntime {
     failedChannelIndices?: number[];
   } | null;
 }
-
-export type { NeighborInfoRecord };

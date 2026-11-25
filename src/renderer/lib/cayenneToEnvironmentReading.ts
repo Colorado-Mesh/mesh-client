@@ -14,7 +14,7 @@ import {
 import type { CayenneKind, CayenneReading } from './meshtastic/cayenneLpp';
 
 /** MeshCore / Cayenne LPP type id for temperature (shared with @liamcottle/meshcore.js). */
-export const CAYENNE_LPP_TEMPERATURE_TYPE = 103;
+const CAYENNE_LPP_TEMPERATURE_TYPE = 103;
 
 const MAPPABLE_KINDS: ReadonlySet<CayenneKind> = new Set([
   'temperature',

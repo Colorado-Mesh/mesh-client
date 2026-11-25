@@ -58,7 +58,7 @@ export interface GlobalMessageSearchHit {
   packetId: number | null;
 }
 
-interface MeshtasticSearchRow {
+export interface MeshtasticSearchRow {
   id?: number;
   sender_id?: number;
   sender_name?: string | null;
@@ -72,7 +72,7 @@ interface MeshtasticSearchRow {
   packet_id?: number | null;
 }
 
-interface MeshcoreSearchRow {
+export interface MeshcoreSearchRow {
   id?: number;
   sender_id?: number;
   sender_name?: string | null;
@@ -83,7 +83,7 @@ interface MeshcoreSearchRow {
   to_node?: number | null;
 }
 
-interface ReticulumSearchRow {
+export interface ReticulumSearchRow {
   id?: number;
   sender_id?: string | null;
   sender_name?: string | null;
@@ -118,7 +118,7 @@ function asString(value: unknown): string {
 }
 
 /** DM counterparty: `to` only when we sent the row; otherwise the sender is the peer. */
-export function resolveLoRaDmPeer(
+function resolveLoRaDmPeer(
   senderId: number | null,
   toNode: number | null,
   ownNodeIds?: ReadonlySet<number>,

@@ -18,7 +18,7 @@ function notify(): void {
 }
 
 /** Firmware matches `memcmp(payload, "{CET}", 5)` — prefix only, not mid-message substrings. */
-export function isMeshcomNetworkTimeBeacon(text: string): boolean {
+function isMeshcomNetworkTimeBeacon(text: string): boolean {
   return text.startsWith(NETWORK_TIME_TAG);
 }
 

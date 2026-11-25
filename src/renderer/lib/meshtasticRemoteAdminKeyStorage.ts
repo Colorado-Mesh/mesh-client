@@ -8,7 +8,7 @@ import { parseStoredJson } from './parseStoredJson';
 export { MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX };
 
 /** Legacy JSON blob key (read for migration only). */
-export const MESHTASTIC_REMOTE_ADMIN_KEY_BY_NODE_SETTING = 'meshtasticRemoteAdminKeyByNode';
+const MESHTASTIC_REMOTE_ADMIN_KEY_BY_NODE_SETTING = 'meshtasticRemoteAdminKeyByNode';
 
 export function meshtasticRemoteAdminKeySettingForNode(nodeNum: number): string {
   return `${MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX}${String(nodeNum >>> 0)}`;

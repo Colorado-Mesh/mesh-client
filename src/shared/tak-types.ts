@@ -389,7 +389,7 @@ export const TAK_GEOCHAT_ROOM_MAX_LEN = 64;
 export const TAK_GEOCHAT_CALLSIGN_MAX_LEN = 64;
 
 /** Tracker role tags (MeshCoreTracker `k=`) and how each is drawn. */
-export const TAK_TRACKER_ROLES = ['k9', 'veh', 'per', 'fw', 'ems', 'cmd'] as const;
+const TAK_TRACKER_ROLES = ['k9', 'veh', 'per', 'fw', 'ems', 'cmd'] as const;
 export type TakTrackerRole = (typeof TAK_TRACKER_ROLES)[number];
 
 export function isTakTrackerRole(value: string): value is TakTrackerRole {

@@ -17,7 +17,7 @@ import { savedLocationDisplayName, SavedLocationForm } from './SetLocationCard';
 import { buttonClassName, IconButton } from './ui/Button';
 import { INPUT_BOX_SM_CLASS } from './ui/formClasses';
 
-interface SavedLocationsSectionProps {
+export interface SavedLocationsSectionProps {
   /** Re-resolve our position in the active runtime after the active location changes. */
   onLocationChanged?: () => void;
 }

@@ -12,17 +12,17 @@
  * @see meshcore-dev/MeshCore src/helpers/sensors/LPPDataHelpers.h (getDataSize, getMultiplier)
  */
 
-export const MESHCORE_REQ_TYPE_TELEMETRY_SUBSCRIBE = 0x08;
-export const MESHCORE_REQ_TYPE_TELEMETRY_UNSUBSCRIBE = 0x09;
+const MESHCORE_REQ_TYPE_TELEMETRY_SUBSCRIBE = 0x08;
+const MESHCORE_REQ_TYPE_TELEMETRY_UNSUBSCRIBE = 0x09;
 
 /** `ClientInfo.extra.sensor.min_deltas[14]` on the sensor. */
-export const MESHCORE_TELEMETRY_PUSH_MIN_DELTAS_MAX_BYTES = 14;
+const MESHCORE_TELEMETRY_PUSH_MIN_DELTAS_MAX_BYTES = 14;
 /** Firmware ignores min-delta blocks shorter than one entry (channel, type, 1-byte value). */
 export const MESHCORE_TELEMETRY_PUSH_MIN_DELTAS_MIN_BYTES = 3;
 export const MESHCORE_TELEMETRY_PUSH_MAX_TIMEOUT_SECS = 0xffff;
 export const MESHCORE_TELEMETRY_PUSH_MIN_TIMEOUT_SECS = 60;
 /** Re-subscribe this far into the granted window so pushes never lapse. */
-export const MESHCORE_TELEMETRY_PUSH_RESUBSCRIBE_FRACTION = 0.8;
+const MESHCORE_TELEMETRY_PUSH_RESUBSCRIBE_FRACTION = 0.8;
 
 export type MeshcoreTelemetryPushMetric = 'temperature' | 'humidity' | 'pressure' | 'voltage';
 

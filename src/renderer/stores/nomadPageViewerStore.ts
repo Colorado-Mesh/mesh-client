@@ -55,7 +55,7 @@ export interface NomadPageLoadOptions {
   requestData?: NomadPageRequestData;
 }
 
-interface NomadPageViewerState {
+export interface NomadPageViewerState {
   selectedHash: string | null;
   pagePath: string;
   pageRequestData: NomadPageRequestData | undefined;

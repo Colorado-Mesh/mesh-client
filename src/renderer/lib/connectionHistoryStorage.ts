@@ -1,5 +1,5 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
+import { setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import { parseConnectHostPort } from '@/shared/connectHost';
 import {
   MESHCOM_EXTUDP_PORT,
@@ -53,10 +53,7 @@ export function isConnectionHistoryProtocol(
 }
 
 /** Default port matching connection dispatch when the stored address omits one. */
-export function defaultPortForConnectionHistory(
-  type: ConnectionType,
-  protocol?: MeshProtocol,
-): number {
+function defaultPortForConnectionHistory(type: ConnectionType, protocol?: MeshProtocol): number {
   if (type === 'tcp') return MESHTASTIC_NATIVE_TCP_PORT;
   if (type === 'udp') return MESHCOM_EXTUDP_PORT;
   if (type === 'netconsole') return MESHCOM_NETCONSOLE_PORT;
@@ -342,16 +339,6 @@ export function deleteConnectionHistory(
 }
 
 /** Clear the entire history list and the lastConnection MRU for the protocol. */
-export function clearConnectionHistory(protocol: MeshProtocol): void {
-  if (!isConnectionHistoryProtocol(protocol)) return;
-  try {
-    removeRendererStorageItem(connectionHistoryStorageKey(protocol));
-  } catch (e: unknown) {
-    console.debug('[connectionHistoryStorage] clearConnectionHistory ' + errLikeToLogString(e));
-  }
-  clearLastConnection(protocol);
-}
-
 /** Primary label for a saved/last connection row (BLE name, host:port, or serial path). */
 export function savedConnectionPrimaryLabel(conn: LastConnection): string | null {
   if (conn.type === 'ble') {

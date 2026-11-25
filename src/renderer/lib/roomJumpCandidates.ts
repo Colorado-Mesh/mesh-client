@@ -11,7 +11,7 @@ export interface RoomJumpCandidate {
   key: string;
 }
 
-export interface RoomJumpChannelSlot {
+interface RoomJumpChannelSlot {
   index: number;
   name: string;
   channelKey?: string;

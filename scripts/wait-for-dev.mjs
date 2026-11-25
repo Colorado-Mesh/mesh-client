@@ -63,7 +63,7 @@ export function areElectronBundlesReady(paths = DEV_ELECTRON_BUNDLE_PATHS, statS
 }
 
 /** @param {string} host @param {number} port */
-export function isVitePortOpen(host = HOST, port = PORT) {
+function isVitePortOpen(host = HOST, port = PORT) {
   return new Promise((resolve) => {
     const socket = net.connect(port, host);
     socket.on('connect', () => {

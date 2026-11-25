@@ -3,7 +3,7 @@
  * Source: https://icssw.org/en/meshcom-2-0-protokoll/ MeshCom hardware table.
  */
 
-export interface MeshcomHwInfo {
+interface MeshcomHwInfo {
   id: number;
   abbreviation: string;
   hwType: string;
@@ -12,7 +12,7 @@ export interface MeshcomHwInfo {
   version?: string;
 }
 
-export const MESHCOM_HW_IDS: Readonly<Record<number, MeshcomHwInfo>> = {
+const MESHCOM_HW_IDS: Readonly<Record<number, MeshcomHwInfo>> = {
   1: {
     id: 1,
     abbreviation: 'TLORA',
@@ -330,7 +330,7 @@ const MESHCOM_BUILD_MONTH_ABBR: Readonly<Record<string, number>> = {
  * Convert a device build stamp into the GitHub release calendar suffix (`.MM.DD`).
  * Accepts BLE `BDATE` (`YYYYMMDD-HHMMSS`) or serial `(build: Nov 22 2026 / …)` text.
  */
-export function meshcomBuildStampToReleaseSuffix(stamp: string | null | undefined): string | null {
+function meshcomBuildStampToReleaseSuffix(stamp: string | null | undefined): string | null {
   const raw = typeof stamp === 'string' ? stamp.trim() : '';
   if (!raw) return null;
   // BDATE: YYYYMMDD or YYYYMMDD-HHMMSS (split to avoid nested-optional regex).

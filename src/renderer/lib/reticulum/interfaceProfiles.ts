@@ -11,8 +11,8 @@ import {
   RETICULUM_SHARED_INSTANCE_NAME,
 } from '@/renderer/lib/reticulum/reticulumSharedInstanceNames';
 
-export const INTERFACE_PROFILES_STORAGE_KEY = 'mesh-client:reticulumInterfaceProfiles';
-export const INTERFACE_PROFILES_VERSION = 1;
+const INTERFACE_PROFILES_STORAGE_KEY = 'mesh-client:reticulumInterfaceProfiles';
+const INTERFACE_PROFILES_VERSION = 1;
 
 /** Runtime-only shared-instance rows are not config-toggleable (e.g. rns-0). */
 export function isSystemManagedInterfaceProfileName(name: string): boolean {
@@ -124,7 +124,7 @@ export function enabledInterfaceNames(
   );
 }
 
-export function membersExisting(
+function membersExisting(
   profile: InterfaceProfile,
   interfaceNames: ReadonlySet<string>,
 ): Set<string> {

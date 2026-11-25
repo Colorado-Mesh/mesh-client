@@ -2,11 +2,11 @@
  * Product qualifiers for known RNS announce aspects (Peer details inventory).
  */
 
-export const LXMF_DELIVERY_ASPECT = 'lxmf.delivery';
-export const LXST_TELEPHONY_ASPECT = 'lxst.telephony';
-export const NOMAD_NODE_ASPECT = 'nomadnetwork.node';
-export const RRC_HUB_ASPECT = 'rrc.hub';
-export const LXMF_PROPAGATION_ASPECT = 'lxmf.propagation';
+const LXMF_DELIVERY_ASPECT = 'lxmf.delivery';
+const LXST_TELEPHONY_ASPECT = 'lxst.telephony';
+const NOMAD_NODE_ASPECT = 'nomadnetwork.node';
+const RRC_HUB_ASPECT = 'rrc.hub';
+const LXMF_PROPAGATION_ASPECT = 'lxmf.propagation';
 
 export type ReticulumAnnounceAspectQualifier =
   'chat' | 'voice' | 'nomad' | 'rrc' | 'propagation' | 'unknown';

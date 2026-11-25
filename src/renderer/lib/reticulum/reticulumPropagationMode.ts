@@ -128,10 +128,10 @@ export function isSlowRfPropagationTarget(
  * Matches the practical clamp used for Reticulum link initiator hops.
  * Mirrored by sidecar `pn_cascade::MAX_PLAUSIBLE_PROPAGATION_HOPS` for Auto deposit.
  */
-export const MAX_PLAUSIBLE_PROPAGATION_HOPS = 32;
+const MAX_PLAUSIBLE_PROPAGATION_HOPS = 32;
 
 /** True when hops came from the path table (not “unknown” / Infinity). */
-export function hasFinitePropagationHops(hops: number): boolean {
+function hasFinitePropagationHops(hops: number): boolean {
   return Number.isFinite(hops) && hops >= 0 && hops <= MAX_PLAUSIBLE_PROPAGATION_HOPS;
 }
 

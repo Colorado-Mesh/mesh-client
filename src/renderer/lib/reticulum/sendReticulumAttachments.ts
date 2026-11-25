@@ -39,7 +39,7 @@ import { RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION } from '@/shared/reticulum-
 /** Poll interval for sidecar outbound progress while a transfer chip is visible. */
 export const RETICULUM_ATTACHMENT_PROGRESS_POLL_MS = 1_000;
 /** Stop tracking (chip + polling) after this long; delivery status still lands on the row. */
-export const RETICULUM_ATTACHMENT_TRACK_MAX_MS = 15 * 60_000;
+const RETICULUM_ATTACHMENT_TRACK_MAX_MS = 15 * 60_000;
 
 export type SendReticulumAttachmentsFailure =
   | ReticulumAttachmentErrorCode

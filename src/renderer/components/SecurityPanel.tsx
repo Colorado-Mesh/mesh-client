@@ -24,7 +24,7 @@ import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_SM_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 import { SettingsSection } from './ui/SettingsSection';
 
-interface SecurityConfig {
+export interface SecurityConfig {
   publicKey: Uint8Array;
   privateKey?: Uint8Array;
   adminKey: Uint8Array[];
@@ -35,7 +35,7 @@ interface SecurityConfig {
   packetSignaturePolicy?: number;
 }
 
-interface Props {
+export interface Props {
   configTarget?: ConfigTargetContext;
   onSetConfig: (config: unknown) => Promise<void>;
   onCommit: () => Promise<void>;

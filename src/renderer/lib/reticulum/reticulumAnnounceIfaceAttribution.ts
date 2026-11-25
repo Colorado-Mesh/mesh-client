@@ -4,11 +4,11 @@ import type { ReticulumLocalInterfaceInput } from '@/renderer/lib/reticulum/reti
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 /** Sliding window for peers_updated interface-name samples. */
-export const RETICULUM_PEER_IFACE_CHURN_WINDOW_MS = 5 * MS_PER_MINUTE;
+const RETICULUM_PEER_IFACE_CHURN_WINDOW_MS = 5 * MS_PER_MINUTE;
 /** Minimum named samples before majority attribution. */
 export const RETICULUM_PEER_IFACE_CHURN_MIN_SAMPLES = 20;
 /** Share of samples a single interface must exceed to be "hot" (strict majority). */
-export const RETICULUM_PEER_IFACE_CHURN_MAJORITY = 0.5;
+const RETICULUM_PEER_IFACE_CHURN_MAJORITY = 0.5;
 
 interface PeerIfaceSample {
   name: string;

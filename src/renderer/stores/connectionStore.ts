@@ -50,7 +50,7 @@ export interface ConnectionRecord {
   lastRfSelfNodeNum?: number;
 }
 
-interface ConnectionStoreState {
+export interface ConnectionStoreState {
   connections: Record<IdentityId, ConnectionRecord>;
 }
 

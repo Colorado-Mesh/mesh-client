@@ -37,12 +37,6 @@ export function meshcoreRadioContactPathLenSaysMultiHop(
  * Hash size for path seeds from companion `outPathLen`.
  * Packed path_length bytes encode size in the high 2 bits; plain 0..61 lengths do not.
  */
-export function meshcoreHashSizeFromRadioContactPathLen(
-  radioContactPathLen: number | null | undefined,
-): 1 | 2 | 3 {
-  return meshcoreRadioContactRoute(radioContactPathLen)?.hashSizeBytes ?? 1;
-}
-
 /**
  * Hash size of a contact's route for trace/ping.
  * A route the radio knows (1+ hops) is read at the size its own length byte packs: a plain
@@ -201,7 +195,7 @@ export function meshcoreTraceStoredPathFromOutbound(
  * Most entries a trace path may hold: the companion rejects `SendTracePath` above
  * `MAX_PATH_SIZE` (64) entries, and each forward appends one SNR byte to a 64-byte buffer.
  */
-export const MESHCORE_TRACE_MAX_PATH_ENTRIES = 64;
+const MESHCORE_TRACE_MAX_PATH_ENTRIES = 64;
 
 /**
  * Expand outbound relay hashes into a TRACE path that returns to the initiator.

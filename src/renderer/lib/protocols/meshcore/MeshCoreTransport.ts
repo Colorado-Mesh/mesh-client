@@ -233,7 +233,7 @@ async function connectTcp(hostAddr: string): Promise<Connection> {
 // ─── Serial ───────────────────────────────────────────────────────────────────
 
 /** WebSerialConnection instance — meshcore.js assigns `.writable` for frame writes. */
-type MeshcoreWebSerialConn = Connection & { writable: WritableStream<Uint8Array> };
+export type MeshcoreWebSerialConn = Connection & { writable: WritableStream<Uint8Array> };
 
 /**
  * MeshCore's WebSerialConnection calls `this.writable.getWriter()` per frame write with no

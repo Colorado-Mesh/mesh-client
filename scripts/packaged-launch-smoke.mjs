@@ -23,15 +23,15 @@ export const STARTUP_ALIVE_MS = 20_000;
 /** How long to wait for the renderer-loaded log line to appear (ms). */
 export const LOG_WAIT_MS = 25_000;
 /** Poll interval while waiting for the log file (ms). */
-export const LOG_POLL_MS = 500;
+const LOG_POLL_MS = 500;
 /** Grace period for a clean kill before SIGKILL (ms). */
-export const KILL_GRACE_MS = 5_000;
+const KILL_GRACE_MS = 5_000;
 /**
  * Extra settle after Windows taskkill before callers delete `--user-data-dir`.
  * Chromium LevelDB files (e.g. declarative_performance_observer.db) can stay
  * EBUSY briefly after the process tree exits.
  */
-export const WIN32_USERDATA_SETTLE_MS = 500;
+const WIN32_USERDATA_SETTLE_MS = 500;
 /** Keep only the tail of a child's stdio so a noisy boot cannot grow without bound. */
 const STDIO_TAIL_MAX = 64 * 1024;
 
@@ -97,7 +97,7 @@ export function baseLaunchArgs(userDataDir) {
  * @param {string} command
  * @returns {string}
  */
-export function assertSmokeSpawnCommand(command) {
+function assertSmokeSpawnCommand(command) {
   if (path.isAbsolute(command)) return command;
   if (command === 'node') return command;
   fail(`refusing to spawn non-absolute command: ${command}`);

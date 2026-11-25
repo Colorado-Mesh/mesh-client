@@ -9,11 +9,6 @@ import {
   MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
 } from '../../shared/messageTimestampSkew';
 
-export {
-  isUnreasonablyFutureMessageTimestampMs,
-  MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC,
-} from '../../shared/messageTimestampSkew';
-
 // Time thresholds for node freshness
 const STALE_MS = 2 * 3_600_000; // 2 hours
 const OFFLINE_MS = 7 * 24 * 3_600_000; // 7 days

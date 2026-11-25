@@ -92,5 +92,3 @@ export function lxmface(seed: string, size: number): string {
     `<g clip-path="url(#${clipId})">${rects}</g></svg>`
   );
 }
-
-export default lxmface;

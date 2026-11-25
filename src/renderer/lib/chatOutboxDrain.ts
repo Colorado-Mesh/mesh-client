@@ -1,6 +1,6 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
-type DrainListener = () => void;
+export type DrainListener = () => void;
 
 const listeners = new Map<MeshProtocol, Set<DrainListener>>();
 

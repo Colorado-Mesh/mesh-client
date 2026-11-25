@@ -7,7 +7,7 @@ export interface MqttNetworkPresetOption {
   label: string;
 }
 
-interface MqttNetworkPresetSelectProps {
+export interface MqttNetworkPresetSelectProps {
   id: string;
   /** id of the visible label element for `aria-labelledby`. */
   labelledById: string;

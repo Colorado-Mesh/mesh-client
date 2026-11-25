@@ -12,15 +12,7 @@ export interface MeshcoreRadioConnection {
   once(event: string | number, cb: (...args: unknown[]) => void): void;
   sendToRadioFrame(data: Uint8Array): Promise<void>;
 }
-
-/** @deprecated Use MeshcoreRadioConnection */
-export type MeshcoreRepeaterRpcConnection = MeshcoreRadioConnection;
-
 export {
-  MC_CMD_SEND_BINARY_REQ,
-  MC_CMD_SEND_LOGIN,
-  MC_CMD_SEND_STATUS_REQ,
-  MC_CMD_SEND_TELEMETRY_REQ,
   MC_PUSH_BINARY_RESPONSE,
   MC_PUSH_LOGIN_FAIL,
   MC_PUSH_LOGIN_SUCCESS,

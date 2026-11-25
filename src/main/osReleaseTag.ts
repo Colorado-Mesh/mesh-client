@@ -9,7 +9,7 @@ import { release as nodeOsRelease } from 'node:os';
 
 import { sanitizeLogMessage } from './sanitize-log-message';
 
-interface OsReleaseObservation {
+export interface OsReleaseObservation {
   tag: string;
   /** Windows UBR from the same registry read used to build `tag`, when available. */
   ubr: number | null;

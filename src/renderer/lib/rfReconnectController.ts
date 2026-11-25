@@ -11,9 +11,6 @@
  */
 
 export type RfReconnectPhase = 'idle' | 'backoff' | 'opening';
-
-export type RfReconnectDelayResult = 'done' | 'aborted' | 'suspended';
-
 export interface RfReconnectControllerOptions {
   /** Prefix for console.debug lines (e.g. useMeshcoreRuntime). */
   logTag: string;

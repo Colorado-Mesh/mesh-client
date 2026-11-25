@@ -101,7 +101,7 @@ export interface MeshtasticCrossTransportUpgradeResult {
  * Wire reply_id uses firmware RF packet ids. MQTT uplink echoes carry broker-assigned ids —
  * never let those replace an RF id or a pending device-ack row id.
  */
-export function resolveMeshtasticCrossTransportPacketId(
+function resolveMeshtasticCrossTransportPacketId(
   existing: ChatMessage,
   incoming: ChatMessage,
 ): number | undefined {

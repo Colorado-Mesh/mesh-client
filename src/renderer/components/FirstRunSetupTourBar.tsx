@@ -14,7 +14,7 @@ const TOUR_HINT_KEY: Record<MeshProtocol, string> = {
   meshcom: 'firstRun.tourHint.meshcom',
 };
 
-interface Props {
+export interface Props {
   protocols: readonly MeshProtocol[];
   step: number;
   onNext: () => void;

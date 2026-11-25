@@ -35,7 +35,7 @@ export interface TakEnrollmentRequest {
   trustedCa?: string;
 }
 
-interface HttpResponse {
+export interface HttpResponse {
   status: number;
   body: string;
 }

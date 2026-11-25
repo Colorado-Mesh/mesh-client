@@ -3,46 +3,18 @@
  * Commands are `--`-prefixed; chat inject uses `{CALL}text` or plain lines.
  */
 
-import { MESHCOM_SERIAL_BAUD } from '@/shared/meshcomConstants';
-
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
 import { meshcomBodyBudgetBytes, truncateToWireBytes } from './meshcomWireLimits';
 import { sanitizeMeshcomWireLine } from './meshcomWireSanitize';
 
-export { MESHCOM_SERIAL_BAUD };
-
 /** Max buffered serial console bytes before reset (DoS guard). */
-export const MESHCOM_SERIAL_LINE_BUFFER_MAX = 128 * 1024;
+const MESHCOM_SERIAL_LINE_BUFFER_MAX = 128 * 1024;
 
 /** Build a console line (CRLF terminated). */
 export function encodeMeshcomSerialLine(command: string): Uint8Array {
   const safe = sanitizeMeshcomWireLine(command);
   const line = safe.endsWith('\n') ? safe : `${safe}\r\n`;
   return new TextEncoder().encode(line);
-}
-
-export function meshcomSerialSetCall(callsign: string): Uint8Array {
-  const call = normalizeMeshcomCallsign(callsign);
-  return encodeMeshcomSerialLine(`--setcall ${call}`);
-}
-
-export function meshcomSerialInfo(): Uint8Array {
-  return encodeMeshcomSerialLine('--info');
-}
-
-export function meshcomSerialEnableExtUdp(clientIp?: string): Uint8Array[] {
-  const cmds = [encodeMeshcomSerialLine('--extudp on')];
-  if (clientIp?.trim()) {
-    cmds.push(encodeMeshcomSerialLine(`--extudpip ${clientIp.trim()}`));
-  }
-  return cmds;
-}
-
-export function meshcomSerialEnableKiss(opts?: { tx?: boolean; meta?: boolean }): Uint8Array[] {
-  const cmds = [encodeMeshcomSerialLine('--kiss on')];
-  if (opts?.tx !== false) cmds.push(encodeMeshcomSerialLine('--kiss tx on'));
-  if (opts?.meta) cmds.push(encodeMeshcomSerialLine('--kiss meta on'));
-  return cmds;
 }
 
 /** Outbound chat over serial: `{DST}text` for directed, plain text for ALL. */

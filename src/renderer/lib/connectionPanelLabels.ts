@@ -95,10 +95,10 @@ export function connectionPanelTakStatusLabel(
   return t('connectionPanel.tiles.stopped');
 }
 
-export type TakRemoteLabelState = 'connected' | 'connecting' | 'error';
+type TakRemoteLabelState = 'connected' | 'connecting' | 'error';
 
 /** Remote relay state worth showing, or null while it is off without an error. */
-export function takRemoteLabelState(
+function takRemoteLabelState(
   remote: Pick<TAKRemoteStatus, 'state' | 'error'>,
 ): TakRemoteLabelState | null {
   if (remote.state === 'connected') return 'connected';

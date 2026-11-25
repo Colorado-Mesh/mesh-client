@@ -3,7 +3,7 @@
  * collapsed `<details>` around it, scroll it to mid-viewport, flash it and focus its first control.
  */
 
-export const SETTING_ANCHOR_ATTR = 'data-setting-anchor';
+const SETTING_ANCHOR_ATTR = 'data-setting-anchor';
 export const SETTING_ANCHOR_FLASH_ATTR = 'data-setting-flash';
 export const SETTING_ANCHOR_FLASH_MS = 2400;
 export const SETTING_ANCHOR_QUERY_TIMEOUT_MS = 600;

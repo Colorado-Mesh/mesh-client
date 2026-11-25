@@ -1,4 +1,3 @@
-import { LAST_HEARD_MS_THRESHOLD } from '../../shared/lastHeardUnits';
 import { compareChatReceiveOrder } from './chatReceiveOrder';
 import { normalizeMeshcoreGifOutboundWire } from './meshcoreGifWire';
 import { orderMeshcoreDmsWithinSecond } from './meshcoreMessageOrder';
@@ -6,12 +5,15 @@ import {
   buildMeshcoreOpenReactionIncomingMessage,
   parseMeshcoreOpenReactionWire,
 } from './meshcoreOpenReaction';
+import { meshcoreMessageMatchesReplyKey } from './meshcoreReplyKey';
 import {
   meshcoreChatStubNodeIdFromDisplayName,
   sanitizeMeshcoreChatWireText,
 } from './meshcoreUtils';
 import { isReactionPickerEmojiGlyph, normalizeReactionEmoji } from './reactions';
 import { truncateReplyPreviewText } from './replyPreview';
+
+export { meshcoreMessageMatchesReplyKey };
 import type { ChatMessage, MeshNode } from './types';
 
 export interface MeshcoreNormalizedText {
@@ -268,7 +270,7 @@ export interface MeshcoreParentResolveOpts {
 }
 
 /** Alphanumeric tokens for callsign matching (emoji/punctuation stripped). */
-export function meshcoreDisplayNameTokens(name: string): string[] {
+function meshcoreDisplayNameTokens(name: string): string[] {
   const stripped = name.replace(/\p{Extended_Pictographic}/gu, ' ');
   const tokens: string[] = [];
   for (const part of stripped.toLowerCase().split(/\s+/)) {
@@ -414,34 +416,9 @@ function meshcoreThreadMatchesForReply(
   return true;
 }
 
-const MESHCORE_REPLY_KEY_MS_THRESHOLD = LAST_HEARD_MS_THRESHOLD;
-
 /** Canonical parent key for replyId storage and quote jump (`packetId` preferred). */
-export function meshcoreCanonicalReplyKey(msg: ChatMessage): number {
+function meshcoreCanonicalReplyKey(msg: ChatMessage): number {
   return msg.packetId ?? msg.timestamp;
-}
-
-/**
- * True when wire reply key matches a stored row (exact, firmware seconds ↔ stored ms, or packetId).
- * Official clients often embed `senderTimestamp` (Unix seconds) in `@[Name#key]`.
- */
-export function meshcoreMessageMatchesReplyKey(msg: ChatMessage, replyKey: number): boolean {
-  if (!Number.isFinite(replyKey) || replyKey <= 0) return false;
-  if (msg.packetId === replyKey || msg.timestamp === replyKey) return true;
-
-  const keyLooksSec = replyKey < MESHCORE_REPLY_KEY_MS_THRESHOLD;
-  if (keyLooksSec && msg.timestamp >= MESHCORE_REPLY_KEY_MS_THRESHOLD) {
-    if (Math.floor(msg.timestamp / 1000) === replyKey) return true;
-    if (msg.timestamp === replyKey * 1000) return true;
-  }
-
-  if (msg.packetId != null && msg.packetId !== replyKey) {
-    if (keyLooksSec && msg.packetId >= MESHCORE_REPLY_KEY_MS_THRESHOLD) {
-      if (Math.floor(msg.packetId / 1000) === replyKey) return true;
-    }
-  }
-
-  return false;
 }
 
 /** Resolve quoted parent for MeshCore (`packetId` or `timestamp` keys) with thread/chronology guards. */
@@ -967,7 +944,7 @@ function meshcoreFindParentFromReplyPayloadHint(
 }
 
 /** Historical / hydrated-row repair only (see {@link parseMeshcoreChannelIncomingFromThread}). */
-export function applyMeshcoreReplyParentRefresh(
+function applyMeshcoreReplyParentRefresh(
   msg: ChatMessage,
   prior: readonly ChatMessage[],
 ): ChatMessage {
@@ -1118,7 +1095,7 @@ function refreshMeshcoreReplyParent(
   };
 }
 
-export function repairMeshcoreDisplayMessages(
+function repairMeshcoreDisplayMessages(
   messages: readonly ChatMessage[],
   opts: MeshcoreDisplayRepairOpts = {},
 ): ChatMessage[] {

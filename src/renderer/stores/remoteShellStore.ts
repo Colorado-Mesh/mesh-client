@@ -18,7 +18,7 @@ export type RemoteShellErrorCode =
   'open_timeout' | 'idle_timeout' | 'send_failed' | 'remote_error' | 'no_radio';
 
 /** Output buffer ceiling. The oldest lines are dropped first; a notice flag tells the UI. */
-export const REMOTE_SHELL_MAX_OUTPUT_CHARS = 64 * 1024;
+const REMOTE_SHELL_MAX_OUTPUT_CHARS = 64 * 1024;
 
 export interface RemoteShellState {
   phase: RemoteShellPhase;
@@ -64,7 +64,7 @@ const CONTROL_CHARS = /[\u0000-\u0008\u000b-\u001f\u007f]/g;
  * Make remote output safe to show in a `<pre>`: strip ANSI/OSC sequences and control bytes, and
  * normalize CRLF/CR. The remote side is untrusted; this is never interpreted as a terminal.
  */
-export function sanitizeRemoteShellOutput(text: string): string {
+function sanitizeRemoteShellOutput(text: string): string {
   return text
     .replace(ANSI_OSC, '')
     .replace(ANSI_CSI, '')
@@ -74,7 +74,7 @@ export function sanitizeRemoteShellOutput(text: string): string {
 }
 
 /** Append and trim to the cap at a line boundary when possible. */
-export function appendBoundedOutput(
+function appendBoundedOutput(
   current: string,
   chunk: string,
   max = REMOTE_SHELL_MAX_OUTPUT_CHARS,

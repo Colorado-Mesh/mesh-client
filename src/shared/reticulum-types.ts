@@ -110,12 +110,7 @@ export interface ReticulumConfigValidateIssue {
   interface_name?: string | null;
   message: string;
   repair_kind?: string | null;
-}
-
-/** Alias — prefer this name when mapping audit/validate issues in shared code. */
-export type ReticulumConfigAuditIssueDto = ReticulumConfigValidateIssue;
-
-/** Result of `reticulum:validateConfig` (bundled sidecar one-shot). */
+} /** Result of `reticulum:validateConfig` (bundled sidecar one-shot). */
 export interface ReticulumConfigValidateResult {
   ok: boolean;
   issues: ReticulumConfigValidateIssue[];
@@ -171,16 +166,6 @@ export function hasReticulumHistory(peer: ReticulumPeer | undefined): peer is Re
   return typeof heard === 'number' && Number.isFinite(heard) && heard > 0;
 }
 
-/**
- * @deprecated Use {@link hasReticulumHistory}. Name historically meant “has last_heard”.
- */
-export const isReticulumContact = hasReticulumHistory;
-
-/** Saved contact for Contacts tab (`is_contact === true`). */
-export function isReticulumSavedContact(peer: ReticulumPeer | undefined): boolean {
-  return peer != null && 'is_contact' in peer && (peer as ReticulumContact).is_contact === true;
-}
-
 /** Sidecar wire row for GET /api/v1/peers */
 export interface ReticulumPeerWireRow {
   destination_hash: string;
@@ -191,14 +176,7 @@ export interface ReticulumPeerWireRow {
   path_hash?: string | null;
   via_hash?: string | null;
   public_key?: string | null;
-}
-
-export interface ReticulumTopologyEdge {
-  source: string;
-  target: string;
-}
-
-/** Sidecar wire row for GET /api/v1/packets and WS wire_packet events. */
+} /** Sidecar wire row for GET /api/v1/packets and WS wire_packet events. */
 export interface ReticulumWirePacketRow {
   ts: number;
   direction: string;

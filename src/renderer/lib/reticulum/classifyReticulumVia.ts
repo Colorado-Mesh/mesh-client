@@ -43,7 +43,7 @@ export function classifyReticulumInterfaceRow(
 }
 
 /** Map a path-table interface name onto a local interface row when possible. */
-export function classifyReticulumPathInterfaceName(
+function classifyReticulumPathInterfaceName(
   pathInterfaceName: string,
   interfaces: readonly Pick<ReticulumSidecarInterfaceRow, 'type' | 'name' | 'id' | 'serial_port'>[],
 ): ReticulumVia {

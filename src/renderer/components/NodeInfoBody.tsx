@@ -62,7 +62,7 @@ import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import SnrIndicator from './SnrIndicator';
 import { CopyButton } from './ui/CopyButton';
 
-export const CATEGORY_STYLES: Record<string, string> = {
+const CATEGORY_STYLES: Record<string, string> = {
   Configuration: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
   Physical: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
   Hardware: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
@@ -71,7 +71,7 @@ export const CATEGORY_STYLES: Record<string, string> = {
 
 const EMPTY_HOP_HISTORY: HopHistoryPoint[] = [];
 
-export function formatTime(ts: number, t: TFunction): string {
+function formatTime(ts: number, t: TFunction): string {
   return formatRelativeOrIsoDateTime(ts, t, normalizeLastHeardMs);
 }
 
@@ -82,7 +82,7 @@ export function formatSecondsAgo(seconds: number, t: TFunction): string {
   return t('common.daysAgo', { count: Math.floor(seconds / 86400) });
 }
 
-export function InfoRow({
+function InfoRow({
   label,
   value,
   className,

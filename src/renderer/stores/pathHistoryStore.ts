@@ -85,7 +85,7 @@ export function computeScore(
   return { reliability, latency, freshness, routeWeight, total };
 }
 
-interface PathHistoryState {
+export interface PathHistoryState {
   /** In-memory records keyed by nodeId. Each contact has a list of known paths. */
   records: Map<number, PathRecord[]>;
   /** LRU order: most recently accessed nodeId is last. Oldest is first. */

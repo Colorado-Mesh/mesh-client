@@ -73,7 +73,7 @@ export function isPeerMecpNetworkAck(ours: MecpParsed, incoming: MecpParsed): bo
   );
 }
 
-type TransportVerdict = 'acked' | 'failed' | undefined;
+export type TransportVerdict = 'acked' | 'failed' | undefined;
 
 /** Per-protocol "heard by the network" verdict for the tracked outbound record. */
 export function readTransportVerdict(

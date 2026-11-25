@@ -21,26 +21,20 @@ import type { IncidentSnapshot } from '@/shared/incidentTypes';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import { MS_PER_HOUR, MS_PER_MINUTE } from '@/shared/timeConstants';
 
-export type {
-  EmergencyIncident,
-  IncidentCoordsSource,
-  IncidentEvent,
-  IncidentEventKind,
-  IncidentStatus,
-} from '@/renderer/lib/mecp/incidentTypes';
+export type { EmergencyIncident } from '@/renderer/lib/mecp/incidentTypes';
 export { INCIDENT_STORE_KEY } from '@/shared/incidentStorage';
 export const MAX_INCIDENTS = 200;
-export const MAX_MESSAGE_IDS_PER_INCIDENT = 50;
+const MAX_MESSAGE_IDS_PER_INCIDENT = 50;
 /** Bound the timeline per incident, preserving the original report and newest events. */
 export const MAX_EVENTS_PER_INCIDENT = 500;
 /** Copies arriving shortly after Resolve (e.g. rebroadcast echoes) must not reopen the incident. */
 export const INCIDENT_REOPEN_GRACE_MS = 5 * MS_PER_MINUTE;
 /** Bridged copies from a different sender id merge when payload matches within this window. */
-export const CROSS_PROTOCOL_MERGE_WINDOW_MS = 10 * MS_PER_MINUTE;
+const CROSS_PROTOCOL_MERGE_WINDOW_MS = 10 * MS_PER_MINUTE;
 /** Hydration seed ignores MECP older than this (avoids resurrecting ancient MAYDAYs). */
 export const INCIDENT_SEED_MAX_AGE_MS = 24 * MS_PER_HOUR;
 /** Cap tombstone map size (oldest resolvedAt pruned first). */
-export const MAX_RESOLVED_TOMBSTONES = 500;
+const MAX_RESOLVED_TOMBSTONES = 500;
 
 export interface MecpIncidentInput {
   protocol: MeshProtocol;
@@ -68,7 +62,7 @@ export interface MecpIncidentInput {
   quiet?: boolean;
 }
 
-interface IncidentStoreState {
+export interface IncidentStoreState {
   incidents: Record<string, EmergencyIncident>;
   /**
    * Fingerprints (or ids) of resolved/pruned incidents so hydration cannot reopen them.

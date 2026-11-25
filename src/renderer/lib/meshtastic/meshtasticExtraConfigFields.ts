@@ -505,7 +505,7 @@ export interface RemoteHardwarePinView {
   type: number;
 }
 
-export const REMOTE_HARDWARE_PIN_TYPE_OPTIONS: readonly ExtraFieldOption[] = enumOptions(
+const REMOTE_HARDWARE_PIN_TYPE_OPTIONS: readonly ExtraFieldOption[] = enumOptions(
   ModuleConfig.RemoteHardwarePinTypeSchema,
 );
 

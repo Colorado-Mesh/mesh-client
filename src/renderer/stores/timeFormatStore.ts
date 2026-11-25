@@ -17,7 +17,7 @@ function loadUse24HourTime(): boolean {
   }
 }
 
-interface TimeFormatState {
+export interface TimeFormatState {
   use24HourTime: boolean;
   setUse24HourTime(value: boolean): void;
   /** Reconcile from SQLite `app_settings` when available (canonical after cold start). */

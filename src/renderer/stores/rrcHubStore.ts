@@ -21,7 +21,7 @@ function resolveNameSource(hub: RrcHubInfo): RrcHubNameSource {
   return 'announce';
 }
 
-export function mergeRrcHub(prev: RrcHubInfo | undefined, next: RrcHubInfo): RrcHubInfo {
+function mergeRrcHub(prev: RrcHubInfo | undefined, next: RrcHubInfo): RrcHubInfo {
   const recommended = Boolean(prev?.recommended) || Boolean(next.recommended);
 
   const prevSource = prev ? resolveNameSource(prev) : undefined;
@@ -52,7 +52,7 @@ export function mergeRrcHub(prev: RrcHubInfo | undefined, next: RrcHubInfo): Rrc
   };
 }
 
-interface RrcHubStoreState {
+export interface RrcHubStoreState {
   hubs: Map<string, RrcHubInfo>;
   lastRefreshAt: number | null;
   refreshFromSidecar: () => Promise<void>;

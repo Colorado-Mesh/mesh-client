@@ -42,7 +42,7 @@ const MAX_PARSE_BYTES_PER_SECOND = 2 * 1024 * 1024;
 const CONTROL_PARSE_RESERVE = 8;
 const MAX_CONTROL_BYTES = 1024;
 
-interface BeaconAddress {
+export interface BeaconAddress {
   address: string;
   family: 4 | 6;
 }

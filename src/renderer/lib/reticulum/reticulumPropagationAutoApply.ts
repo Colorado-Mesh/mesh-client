@@ -33,14 +33,14 @@ const MAX_DISCOVERED_SYNC_ATTEMPTS = 3;
  * stall (45s) and ceiling (180s) watchdogs; this stops a chain of slow nodes from delaying the
  * local-inbox settle for many minutes.
  */
-export const PROPAGATION_CASCADE_BUDGET_MS = 5 * MS_PER_MINUTE;
+const PROPAGATION_CASCADE_BUDGET_MS = 5 * MS_PER_MINUTE;
 
 /**
  * Per remote attempt while cascading. Remotes that get past Establishing can otherwise burn the
  * full ~120s lxmf-core timeout before failing; cascade advances (and reaches local) sooner.
  * Slack past the Establishing stall so a late WS failure still settles before we force-cancel.
  */
-export const PROPAGATION_CASCADE_ATTEMPT_TIMEOUT_MS =
+const PROPAGATION_CASCADE_ATTEMPT_TIMEOUT_MS =
   RETICULUM_PROPAGATION_SYNC_STALL_MS + 15 * MS_PER_SECOND;
 
 /** No discovered PN, no reachable configured remote, and no usable local inbox. */
@@ -207,7 +207,7 @@ async function runLocalSettle(
  * True when the sidecar reports at least one enabled interface.
  * Fail closed on read/rate-limit errors so Auto does not burn remote cascade budget.
  */
-export async function fetchHasEnabledReticulumInterfaces(): Promise<boolean> {
+async function fetchHasEnabledReticulumInterfaces(): Promise<boolean> {
   try {
     const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/interfaces')) as {
       interfaces?: { enabled?: boolean }[];

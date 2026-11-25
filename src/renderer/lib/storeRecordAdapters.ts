@@ -36,10 +36,7 @@ export interface ChatReactionRow {
 }
 
 /** Detect Reticulum LXMF tapback rows rehydrated from SQLite (emoji-only payload + parent hash). */
-export function isReticulumTapbackDbRow(row: {
-  reply_to_hash?: string | null;
-  payload: string;
-}): boolean {
+function isReticulumTapbackDbRow(row: { reply_to_hash?: string | null; payload: string }): boolean {
   if (!row.reply_to_hash) return false;
   const trimmed = row.payload.trim();
   if (!trimmed) return false;

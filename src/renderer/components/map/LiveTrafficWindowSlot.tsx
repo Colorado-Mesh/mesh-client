@@ -11,7 +11,7 @@ import { Button, IconButton } from '../ui/Button';
 
 const loadLiveTrafficPanel = () => import('./LiveTrafficPanel');
 
-interface LiveTrafficWindowSlotProps extends LiveMapSnapshotInput {
+export interface LiveTrafficWindowSlotProps extends LiveMapSnapshotInput {
   active: boolean;
   protocol: LiveMapProtocol;
   onNodeClick?: (id: number) => void;

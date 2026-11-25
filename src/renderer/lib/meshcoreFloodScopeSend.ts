@@ -22,7 +22,7 @@ export function isMeshcoreFloodScopeOverrideActive(): boolean {
  * Serialize work that must not run while a flood-scope override is in effect
  * (and serialize against other override-aware sends).
  */
-export async function withMeshcoreFloodScopeMutex<T>(fn: () => Promise<T>): Promise<T> {
+async function withMeshcoreFloodScopeMutex<T>(fn: () => Promise<T>): Promise<T> {
   const prev = floodScopeOverrideMutex;
   let release!: () => void;
   floodScopeOverrideMutex = new Promise<void>((resolve) => {

@@ -6,9 +6,7 @@ import {
   parseLegacyCredentialRaw,
 } from './meshcorePerNodeCredentialStorage';
 
-export { MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX };
-
-export interface MeshcoreRepeaterStoredCredential {
+interface MeshcoreRepeaterStoredCredential {
   password: string;
 }
 
@@ -31,10 +29,6 @@ const repeaterCredentialStorage: MeshcorePerNodeCredentialStorage<MeshcoreRepeat
     parseValue: parseCredentialValue,
     serialize: (cred) => JSON.stringify({ password: cred.password }),
   });
-
-export function meshcoreRepeaterCredentialSettingForNode(nodeId: number): string {
-  return repeaterCredentialStorage.settingKeyForNode(nodeId);
-}
 
 export const readMeshcoreRepeaterCredentialMap = repeaterCredentialStorage.readMap;
 export const getMeshcoreRepeaterCredential = repeaterCredentialStorage.get;

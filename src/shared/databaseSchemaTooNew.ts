@@ -1,6 +1,4 @@
 /** Stable IPC/log marker for schema newer than app (see DatabaseSchemaTooNewError). */
-export const DB_SCHEMA_TOO_NEW_CODE = 'DB_SCHEMA_TOO_NEW' as const;
-
 export const DB_SCHEMA_TOO_NEW_LOG_PATTERN =
   /\[db\] Database schema v(\d+) is newer than this app supports \(v(\d+)\)/;
 

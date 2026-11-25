@@ -3,15 +3,11 @@ import { gunzipSync } from 'node:zlib';
 import type { GithubReleaseRow } from '@/shared/githubReleaseVersion';
 import { GITHUB_RELEASES_FETCH_TIMEOUT_MS } from '@/shared/timeConstants';
 
-export const GITHUB_RELEASES_PAGE_SIZE = 100;
+const GITHUB_RELEASES_PAGE_SIZE = 100;
 
 /** Gzip magic bytes — Electron fetch sometimes returns a compressed body without decoding it. */
 const GZIP_MAGIC_0 = 0x1f;
 const GZIP_MAGIC_1 = 0x8b;
-
-export function githubReleasesListUrl(repo: string, page: number): string {
-  return `https://api.github.com/repos/${repo}/releases?per_page=${GITHUB_RELEASES_PAGE_SIZE}&page=${page}`;
-}
 
 function isGzipBody(bytes: Uint8Array): boolean {
   return bytes.length >= 2 && bytes[0] === GZIP_MAGIC_0 && bytes[1] === GZIP_MAGIC_1;

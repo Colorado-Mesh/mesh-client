@@ -6,9 +6,9 @@ export interface MgrsGridSquare {
   bounds: [[number, number], [number, number]];
 }
 
-export const MGRS_GRID_MAX_SQUARES = 400;
-export const MGRS_MIN_PRECISION = 0;
-export const MGRS_MAX_PRECISION = 5;
+const MGRS_GRID_MAX_SQUARES = 400;
+const MGRS_MIN_PRECISION = 0;
+const MGRS_MAX_PRECISION = 5;
 
 /** MGRS (UTM bands C–X) is undefined in the UPS polar caps. */
 const MGRS_MIN_LAT = -80;

@@ -198,7 +198,7 @@ import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_CLASS, INPUT_BOX_SM_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 import { SettingsCollapsible } from './ui/SettingsSection';
 
-interface ChannelConfig {
+export interface ChannelConfig {
   index: number;
   name: string;
   role: number;
@@ -237,7 +237,7 @@ function loadMeshcoreRadioExperimentalSettings(): {
   };
 }
 
-interface Props {
+export interface Props {
   configTarget?: ConfigTargetContext;
   onSetConfig: (config: unknown) => Promise<void>;
   onCommit: () => Promise<void>;
@@ -676,7 +676,7 @@ export function ConfigNumber({
   );
 }
 
-export function ConfigBluetoothPin({
+function ConfigBluetoothPin({
   label,
   value,
   onChange,

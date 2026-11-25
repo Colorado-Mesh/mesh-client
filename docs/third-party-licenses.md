@@ -74,6 +74,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitejs/plugin-react                  | MIT             | ^6.3.0          | 6.3.0             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
 | @vitest/coverage-v8                   | MIT             | ^4.1.12         | 4.1.12            | git+https://github.com/vitest-dev/vitest.git                                         |
 | @wllama/wllama                        | MIT             | 3.8.1           | 3.8.1             | git+https://github.com/ngxson/wllama.git                                             |
+| app-builder-lib                       | MIT             | ^26.18.0        | 26.18.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | concurrently                          | MIT             | ^9.2.5          | 9.2.5             | git+https://github.com/open-cli-tools/concurrently.git                               |
 | electron                              | MIT             | ^45.4.1         | 45.4.1            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.18.0        | 26.18.0           | git+https://github.com/electron-userland/electron-builder.git                        |
@@ -92,10 +93,13 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | eslint-plugin-simple-import-sort      | MIT             | ^13.0.0         | 13.0.0            | git+https://github.com/lydell/eslint-plugin-simple-import-sort.git                   |
 | fake-indexeddb                        | Apache-2.0      | ^6.2.8          | 6.2.8             | git://github.com/dumbmatter/fakeIndexedDB.git                                        |
 | fallow                                | MIT             | ^3.48.0         | 3.48.0            | git+https://github.com/fallow-rs/fallow.git                                          |
+| fallow-type-aware                     | MIT             | 3.48.0          | 3.48.0            | git+https://github.com/fallow-rs/fallow.git                                          |
 | github-actionlint                     | MIT             | ^1.7.12         | 1.7.12            | git+https://github.com/judeallred/github-actionlint.git                              |
+| js-yaml                               | MIT             | ^4.3.2          | 4.3.2             | git+https://github.com/nodeca/js-yaml.git                                            |
 | jsdom                                 | MIT             | ^29.1.1         | 29.1.1            | git+https://github.com/jsdom/jsdom.git                                               |
 | leaflet                               | BSD-2-Clause    | ^1.9.4          | 1.9.4             | git://github.com/Leaflet/Leaflet.git                                                 |
 | markdownlint-cli2                     | MIT             | ^0.23.3         | 0.23.3            | git+https://github.com/DavidAnson/markdownlint-cli2.git                              |
+| mqtt-packet                           | MIT             | ^9.0.2          | 9.0.2             | git+https://github.com/mqttjs/mqtt-packet.git                                        |
 | oxlint                                | MIT             | ^1.95.0         | 1.95.0            | git+https://github.com/oxc-project/oxc                                               |
 | prettier                              | MIT             | ^3.10.1         | 3.10.1            | git+https://github.com/prettier/prettier.git                                         |
 | prettier-plugin-sh                    | MIT             | ^0.18.1         | 0.18.1            | git+https://github.com/un-ts/prettier.git                                            |
