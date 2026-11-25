@@ -9541,11 +9541,14 @@ export function useMeshcoreRuntime() {
       };
       const storeId = meshcoreIdentityIdRef.current;
       const canonicalId = addMessage(tempMsg).canonicalId;
+      const logRoomPostAttempt = (mode: string, hopsAway: number): void => {
+        console.debug(
+          `[useMeshcoreRuntime] sendRoomPost mode=${mode} txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
+        );
+      };
       try {
         const hopsAway = resolveRoomLoginHopsForNode(nodeId);
-        console.debug(
-          `[useMeshcoreRuntime] sendRoomPost mode=post txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
-        );
+        logRoomPostAttempt('post', hopsAway);
         const session = meshcoreGetRoomSession(nodeId);
         const postOpts = {
           hopsAway,
@@ -9564,20 +9567,23 @@ export function useMeshcoreRuntime() {
           }
           return sendMeshcoreRoomPostWithSentWait(activeConn, pubKey, text, postOpts);
         };
-        let result: { expectedAckCrc?: number; estTimeout?: number };
-        try {
-          result = await runPostRpc(sendOnce);
-        } catch (firstErr: unknown) {
-          const postErr = meshcoreRoomPostSendErrorMessage(firstErr);
-          const adminPassword = session?.adminPassword?.trim() ?? '';
-          if (
-            adminPassword.length > 0 &&
-            meshcoreUserMessageKey(postErr) === 'meshcore.errors.roomPost.badState' &&
-            connRef.current
-          ) {
-            console.debug(
-              `[useMeshcoreRuntime] sendRoomPost mode=admin-retry txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
-            );
+        const runWithAdminRetry = async (): Promise<{
+          expectedAckCrc?: number;
+          estTimeout?: number;
+        }> => {
+          try {
+            return await runPostRpc(sendOnce);
+          } catch (firstErr: unknown) {
+            const postErr = meshcoreRoomPostSendErrorMessage(firstErr);
+            const adminPassword = session?.adminPassword?.trim() ?? '';
+            if (
+              adminPassword.length === 0 ||
+              meshcoreUserMessageKey(postErr) !== 'meshcore.errors.roomPost.badState' ||
+              !connRef.current
+            ) {
+              throw firstErr;
+            }
+            logRoomPostAttempt('admin-retry', hopsAway);
             await runPostRpc(async () => {
               const activeConn = connRef.current;
               if (!activeConn) return;
@@ -9589,11 +9595,10 @@ export function useMeshcoreRuntime() {
                 forceRelogin: true,
               });
             });
-            result = await runPostRpc(sendOnce);
-          } else {
-            throw firstErr;
+            return runPostRpc(sendOnce);
           }
-        }
+        };
+        const result = await runWithAdminRetry();
         void fetchAndUpdateLocalStats().catch((e: unknown) => {
           console.warn(
             'mcL1291 [useMeshcoreRuntime] fetchAndUpdateLocalStats (room post) error ' +

@@ -1062,6 +1062,52 @@ function meshcoreIsOwnSentMessage(
  * - Incoming `@[Name]` without `#key`: re-resolve latest target message once the full thread is loaded.
  * - Incoming keyed rows: keep a corroborated parent, but refresh stale seconds/ms keys for generic replies.
  */
+interface MeshcoreReplyResolution {
+  replyId: number;
+  parent: ChatMessage | undefined;
+}
+
+function upgradeMeshcoreReplyParent(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+  targetName: string,
+  lookupOpts: MeshcoreReplyLookupOptions,
+  parent: ChatMessage | undefined,
+): MeshcoreReplyResolution | undefined {
+  const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
+    msg,
+    prior,
+    targetName,
+    lookupOpts,
+    parent,
+  );
+  if (!upgraded) return undefined;
+  return { replyId: upgraded.replyId, parent: upgraded.parent };
+}
+
+function applyMeshcoreReplyPreview(
+  msg: ChatMessage,
+  replyId: number,
+  parent: ChatMessage | undefined,
+): ChatMessage {
+  if (!parent) {
+    if (msg.replyPreviewText || msg.replyPreviewSender) {
+      return { ...msg, replyId, replyPreviewText: undefined, replyPreviewSender: undefined };
+    }
+    return replyId !== msg.replyId ? { ...msg, replyId } : msg;
+  }
+  const preview = truncateReplyPreviewText(parent.payload);
+  const sender = parent.sender_name;
+  if (
+    replyId === msg.replyId &&
+    msg.replyPreviewText === preview &&
+    msg.replyPreviewSender === sender
+  ) {
+    return msg;
+  }
+  return { ...msg, replyId, replyPreviewText: preview, replyPreviewSender: sender };
+}
+
 function refreshMeshcoreReplyParent(
   msg: ChatMessage,
   prior: readonly ChatMessage[],
@@ -1095,56 +1141,16 @@ function refreshMeshcoreReplyParent(
       replyId = meshcoreCanonicalReplyKey(hintParent);
       parent = hintParent;
     } else if (!(explicitWireKey && !parent)) {
-      const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
-        msg,
-        prior,
-        targetName,
-        lookupOpts,
-        parent,
-      );
-      if (upgraded) {
-        replyId = upgraded.replyId;
-        parent = upgraded.parent;
-      }
+      const upgraded = upgradeMeshcoreReplyParent(msg, prior, targetName, lookupOpts, parent);
+      if (upgraded) ({ replyId, parent } = upgraded);
     }
   } else if (!keepPickedParent && !parent && targetName && !explicitWireKey) {
-    const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
-      msg,
-      prior,
-      targetName,
-      lookupOpts,
-      parent,
-    );
-    if (upgraded) {
-      replyId = upgraded.replyId;
-      parent = upgraded.parent;
-    }
+    const upgraded = upgradeMeshcoreReplyParent(msg, prior, targetName, lookupOpts, parent);
+    if (upgraded) ({ replyId, parent } = upgraded);
   }
 
   if (replyId == null) return msg;
-
-  if (!parent) {
-    if (msg.replyPreviewText || msg.replyPreviewSender) {
-      return { ...msg, replyId, replyPreviewText: undefined, replyPreviewSender: undefined };
-    }
-    return replyId !== msg.replyId ? { ...msg, replyId } : msg;
-  }
-
-  const preview = truncateReplyPreviewText(parent.payload);
-  const sender = parent.sender_name;
-  if (
-    replyId === msg.replyId &&
-    msg.replyPreviewText === preview &&
-    msg.replyPreviewSender === sender
-  ) {
-    return msg;
-  }
-  return {
-    ...msg,
-    replyId,
-    replyPreviewText: preview,
-    replyPreviewSender: sender,
-  };
+  return applyMeshcoreReplyPreview(msg, replyId, parent);
 }
 
 function repairMeshcoreDisplayMessages(
