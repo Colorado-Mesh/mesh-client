@@ -1266,6 +1266,27 @@ describe('RadioPanel MeshCore LoRa form synchronization', () => {
     }
   });
 
+  it('rounds to whole kHz so the shown frequency is the one the radio gets', async () => {
+    const { user, frequency, onApplyLoraParams } = await openMeshcoreLora();
+    const apply = screen.getByRole('button', { name: 'Apply LoRa / Radio' });
+
+    // Half-kHz remainder: the radio takes kHz, so the field must show the same rounded kHz.
+    await user.tripleClick(frequency);
+    await user.keyboard('910.5255');
+    await user.click(apply);
+    await waitFor(() => {
+      expect(onApplyLoraParams).toHaveBeenLastCalledWith(
+        expect.objectContaining({ freq: 910_526_000 }),
+      );
+    });
+    expect(frequency).toHaveValue('910.526');
+
+    await user.tripleClick(frequency);
+    await user.keyboard('433.0004');
+    await user.tab();
+    expect(frequency).toHaveValue('433.000');
+  });
+
   it('TX Power apply sends the last valid frequency while the field holds an invalid one', async () => {
     const { user, frequency, onApplyLoraParams } = await openMeshcoreLora();
 

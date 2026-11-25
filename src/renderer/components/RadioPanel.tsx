@@ -903,7 +903,8 @@ function parseMeshcoreFreqMhzToHz(text: string): number | null {
   if (!Number.isFinite(mhz) || mhz < MESHCORE_FREQ_MIN_MHZ || mhz > MESHCORE_FREQ_MAX_MHZ) {
     return null;
   }
-  return Math.round(mhz * 1e6);
+  // Whole kHz: the radio takes kHz, so the field (3 decimals) and the sent value always agree.
+  return Math.round(mhz * 1000) * 1000;
 }
 
 export default function RadioPanel({
