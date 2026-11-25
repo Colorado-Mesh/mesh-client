@@ -2377,7 +2377,7 @@ export default function ConnectionPanel({
             }
           }
         })();
-      } else if (target.type === 'http' || target.type === 'udp') {
+      } else if (target.type === 'http' || target.type === 'udp' || target.type === 'netconsole') {
         const fallbackAddress = protocol === 'meshcore' ? tcpHost : httpAddress;
         const addr = target.httpAddress ?? fallbackAddress;
         if (protocol === 'meshcore') {

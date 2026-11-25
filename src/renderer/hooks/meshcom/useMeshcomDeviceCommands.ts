@@ -9,7 +9,7 @@ import type { MeshComDeviceHandle } from '../../lib/protocols/MeshComProtocol';
 import type { IdentityId } from '../../lib/types';
 
 export interface MeshcomDeviceCommandsActions {
-  /** True when the active MeshCom link is Serial or BLE. */
+  /** True when the active MeshCom link supports device `--` commands. */
   available: boolean;
   transport: MeshComDeviceHandle['transport'] | null;
   /** Last settings snapshot read from the radio (null until first refresh). */
@@ -21,9 +21,17 @@ export interface MeshcomDeviceCommandsActions {
   refreshSettings(): Promise<MeshcomDeviceSettingsSnapshot | null>;
 }
 
+/** Transports that carry the MeshCom console / APP command channel. */
+function meshcomDeviceCommandTransport(
+  value: string | null | undefined,
+): 'serial' | 'ble' | 'netconsole' | null {
+  if (value === 'serial' || value === 'ble' || value === 'netconsole') return value;
+  return null;
+}
+
 export interface UseMeshcomDeviceCommandsDeps {
   resolveIdentityId: () => IdentityId;
-  /** Current connection transport from runtime state (udp/tcp/serial/ble). */
+  /** Current connection transport from runtime state (udp/tcp/serial/ble/netconsole). */
   connectionType: string | null | undefined;
   /** Called when a settings refresh yields a callsign / operator name. */
   onSettings?: (snap: MeshcomDeviceSettingsSnapshot) => void;
@@ -59,7 +67,8 @@ export function useMeshcomDeviceCommands(
       connectionType === 'serial' ||
       connectionType === 'ble' ||
       connectionType === 'udp' ||
-      connectionType === 'tcp'
+      connectionType === 'tcp' ||
+      connectionType === 'netconsole'
     ) {
       return connectionType;
     }
@@ -67,7 +76,7 @@ export function useMeshcomDeviceCommands(
     return handle?.transport ?? null;
   }, [connectionType, resolveIdentityId]);
 
-  const available = transport === 'serial' || transport === 'ble';
+  const available = meshcomDeviceCommandTransport(transport) != null;
   const identityId = resolveIdentityId();
   const settingsKey = connectionSettingsKey(identityId, transport);
   const activeHandle = connectionDriver.getHandle(identityId) as MeshComDeviceHandle | null;
@@ -116,7 +125,7 @@ export function useMeshcomDeviceCommands(
   const refreshSettings = useCallback(async (): Promise<MeshcomDeviceSettingsSnapshot | null> => {
     const refreshIdentityId = resolveIdentityId();
     const handle = connectionDriver.getHandle(refreshIdentityId) as MeshComDeviceHandle | null;
-    if (!handle || (handle.transport !== 'serial' && handle.transport !== 'ble')) {
+    if (!handle || meshcomDeviceCommandTransport(handle.transport) == null) {
       setSettingsByConnection({
         key: connectionSettingsKey(refreshIdentityId, handle?.transport ?? null),
         handle: null,
@@ -139,7 +148,7 @@ export function useMeshcomDeviceCommands(
         current !== handle ||
         current.transport !== startedTransport
       ) {
-        if (!current || (current.transport !== 'serial' && current.transport !== 'ble')) {
+        if (!current || meshcomDeviceCommandTransport(current.transport) == null) {
           setSettingsByConnection({
             key: connectionSettingsKey(currentIdentity, current?.transport ?? null),
             handle: null,

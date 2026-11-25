@@ -3,6 +3,7 @@
  */
 
 import {
+  concatMeshcomAuthLeftover,
   MESHCOM_AUTH_GREETING_TIMEOUT_MS,
   meshcomAuthHmacHex,
   MeshcomAuthLineBuffer,
@@ -20,18 +21,33 @@ export interface MeshcomTcpAuthIo {
 }
 
 export type MeshcomTcpAuthResult =
-  { status: 'none' } | { status: 'ok' } | { status: 'rejected'; reason: string };
+  | { status: 'none' }
+  | { status: 'ok'; leftover: Uint8Array }
+  | { status: 'rejected'; reason: string };
+
+export interface RunMeshcomTcpAuthOptions {
+  timeoutMs?: number;
+  /** Abort (e.g. TCP disconnect mid-handshake) → rejected. */
+  signal?: AbortSignal;
+}
 
 /**
  * Wait for `OK` / `NONCE:` / timeout. When a nonce arrives and `password` is set,
  * reply with HMAC-SHA256 and require `OK`. Empty password + nonce → rejected.
  * No greeting within the timeout → `{ status: 'none' }` (auth disabled on node).
+ * Timeout after a NONCE without OK → rejected (do not treat as open access).
+ * Bytes after the OK line are returned as raw `leftover` for the transport to queue.
  */
 export async function runMeshcomTcpAuth(
   io: MeshcomTcpAuthIo,
   password: string,
-  timeoutMs = MESHCOM_AUTH_GREETING_TIMEOUT_MS,
+  timeoutMsOrOpts: number | RunMeshcomTcpAuthOptions = MESHCOM_AUTH_GREETING_TIMEOUT_MS,
 ): Promise<MeshcomTcpAuthResult> {
+  const opts: RunMeshcomTcpAuthOptions =
+    typeof timeoutMsOrOpts === 'number' ? { timeoutMs: timeoutMsOrOpts } : timeoutMsOrOpts;
+  const timeoutMs = opts.timeoutMs ?? MESHCOM_AUTH_GREETING_TIMEOUT_MS;
+  const signal = opts.signal;
+
   const lineBuf = new MeshcomAuthLineBuffer();
   let settle!: (result: MeshcomTcpAuthResult) => void;
   const done = new Promise<MeshcomTcpAuthResult>((resolve) => {
@@ -43,24 +59,50 @@ export async function runMeshcomTcpAuth(
     if (gate.settled) return;
     gate.settled = true;
     clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
     unsub();
     settle(result);
   };
 
+  const onAbort = (): void => {
+    finish({ status: 'rejected', reason: 'disconnected during authentication' });
+  };
+  if (signal) {
+    if (signal.aborted) {
+      return { status: 'rejected', reason: 'disconnected during authentication' };
+    }
+    signal.addEventListener('abort', onAbort, { once: true });
+  }
+
+  let sawNonce = false;
+  let awaitingHmacReply = false;
+
   const timer = setTimeout(() => {
+    if (sawNonce || awaitingHmacReply) {
+      finish({
+        status: 'rejected',
+        reason: 'authentication timed out waiting for OK',
+      });
+      return;
+    }
     finish({ status: 'none' });
   }, timeoutMs);
-
-  let awaitingHmacReply = false;
 
   const unsub = io.onData((bytes) => {
     if (gate.settled) return;
     void (async () => {
-      for (const raw of lineBuf.push(bytes)) {
+      const lines = lineBuf.push(bytes);
+      for (let i = 0; i < lines.length; i++) {
         if (gate.settled) return;
-        const greeting = parseMeshcomAuthGreeting(raw);
+        const entry = lines[i];
+        const greeting = parseMeshcomAuthGreeting(entry.text);
         if (greeting.kind === 'ok') {
-          finish({ status: 'ok' });
+          const after: Uint8Array[] = [];
+          for (let j = i + 1; j < lines.length; j++) {
+            after.push(lines[j].rawWithNl);
+          }
+          after.push(lineBuf.takeRemainder());
+          finish({ status: 'ok', leftover: concatMeshcomAuthLeftover(after) });
           return;
         }
         if (greeting.kind === 'fail') {
@@ -68,6 +110,7 @@ export async function runMeshcomTcpAuth(
           return;
         }
         if (greeting.kind === 'nonce') {
+          sawNonce = true;
           if (!password) {
             finish({
               status: 'rejected',

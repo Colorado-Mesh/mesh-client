@@ -18,6 +18,13 @@ export type MeshcomAuthGreeting =
   | { kind: 'nonce'; nonceHex: string }
   | { kind: 'unknown'; line: string };
 
+/** One complete auth line plus the raw bytes including the trailing LF. */
+export interface MeshcomAuthBufferedLine {
+  text: string;
+  /** Line bytes including the terminating `0x0a` (no re-encode needed for leftover). */
+  rawWithNl: Uint8Array;
+}
+
 /** Parse a single auth greeting line (CRLF stripped). */
 export function parseMeshcomAuthGreeting(line: string): MeshcomAuthGreeting {
   const trimmed = line.replace(/\r$/, '').trim();
@@ -75,40 +82,74 @@ export function isMeshcomAuthHmacResponse(hex: string): boolean {
   return HEX64_RE.test(hex.trim().toLowerCase());
 }
 
+function concatUint8(parts: readonly Uint8Array[]): Uint8Array {
+  let total = 0;
+  for (const p of parts) total += p.length;
+  if (total === 0) return new Uint8Array(0);
+  const out = new Uint8Array(total);
+  let o = 0;
+  for (const p of parts) {
+    out.set(p, o);
+    o += p.length;
+  }
+  return out;
+}
+
 /**
  * Incremental line buffer for the plaintext auth phase (before KISS / ExtUDP framing).
- * Returns complete lines (without trailing LF); retains a partial tail.
+ * Works on raw bytes so leftovers after `OK` can be forwarded without re-encoding.
  */
 export class MeshcomAuthLineBuffer {
-  private buf = '';
+  private buf = new Uint8Array(0);
+  private readonly decoder = new TextDecoder('utf-8');
 
-  push(chunk: Uint8Array | string): string[] {
-    const text = typeof chunk === 'string' ? chunk : new TextDecoder('utf-8').decode(chunk);
-    this.buf += text;
-    if (this.buf.length > MESHCOM_AUTH_MAX_LINE_BYTES * 4) {
-      this.buf = this.buf.slice(-MESHCOM_AUTH_MAX_LINE_BYTES * 2);
-    }
-    const lines: string[] = [];
+  push(chunk: Uint8Array | string): MeshcomAuthBufferedLine[] {
+    const add = typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk;
+    if (add.length === 0) return [];
+    const merged = new Uint8Array(this.buf.length + add.length);
+    merged.set(this.buf);
+    merged.set(add, this.buf.length);
+    this.buf = merged;
+
+    const lines: MeshcomAuthBufferedLine[] = [];
     for (;;) {
-      const nl = this.buf.indexOf('\n');
+      const nl = this.buf.indexOf(0x0a);
       if (nl < 0) break;
-      const raw = this.buf.slice(0, nl);
-      this.buf = this.buf.slice(nl + 1);
-      if (raw.length > MESHCOM_AUTH_MAX_LINE_BYTES) {
-        lines.push(raw.slice(0, MESHCOM_AUTH_MAX_LINE_BYTES));
+      const rawWithNl = this.buf.subarray(0, nl + 1);
+      const rawLine = this.buf.subarray(0, nl);
+      this.buf = this.buf.subarray(nl + 1);
+      // Discard oversized lines in full — never emit a truncated greeting prefix.
+      if (rawLine.length > MESHCOM_AUTH_MAX_LINE_BYTES) {
         continue;
       }
-      lines.push(raw);
+      lines.push({ text: this.decoder.decode(rawLine), rawWithNl: rawWithNl.slice() });
+    }
+    // Limit only the unfinished line; drop it entirely if already oversized so a
+    // later `\n` cannot turn a suffix into a valid greeting.
+    if (this.buf.length > MESHCOM_AUTH_MAX_LINE_BYTES) {
+      this.buf = new Uint8Array(0);
     }
     return lines;
   }
 
+  /** Unfinished bytes still buffered (no trailing LF). Clears the buffer. */
+  takeRemainder(): Uint8Array {
+    const out = this.buf;
+    this.buf = new Uint8Array(0);
+    return out;
+  }
+
   /** Bytes still buffered (no trailing newline yet). */
   remainder(): string {
-    return this.buf;
+    return this.decoder.decode(this.buf);
   }
 
   clear(): void {
-    this.buf = '';
+    this.buf = new Uint8Array(0);
   }
+}
+
+/** Concatenate leftover line bytes + unfinished tail into one raw chunk. */
+export function concatMeshcomAuthLeftover(parts: readonly Uint8Array[]): Uint8Array {
+  return concatUint8(parts);
 }

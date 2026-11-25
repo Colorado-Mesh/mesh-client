@@ -65,6 +65,115 @@ function releaseCleanupFns(fns: (() => void)[]): void {
   fns.length = 0;
 }
 
+/** Shared TCP (KISS / NET Console) auth + inbound delivery with pre-onData leftover queue. */
+abstract class IpcMeshcomTcpConnectionBase implements MeshComConnection {
+  abstract readonly transport: 'tcp' | 'netconsole';
+  private _onData: ((bytes: Uint8Array) => void) | null = null;
+  onDisconnected: (() => void) | null = null;
+  protected cleanupFns: (() => void)[] = [];
+  protected authGate = false;
+  private authHandler: ((bytes: Uint8Array) => void) | null = null;
+  private authAbort: AbortController | null = null;
+  /** Raw bytes after auth OK, held until the protocol installs `onData`. */
+  private pendingInbound: Uint8Array[] = [];
+
+  constructor(
+    protected readonly host: string,
+    protected readonly port: number,
+    protected readonly authPassword: string,
+  ) {}
+
+  get onData(): ((bytes: Uint8Array) => void) | null {
+    return this._onData;
+  }
+
+  set onData(handler: ((bytes: Uint8Array) => void) | null) {
+    this._onData = handler;
+    if (!handler || this.pendingInbound.length === 0) return;
+    const queued = this.pendingInbound;
+    this.pendingInbound = [];
+    for (const chunk of queued) {
+      handler(chunk);
+    }
+  }
+
+  protected deliverInbound(frame: Uint8Array): void {
+    if (this.authGate) {
+      this.authHandler?.(frame);
+      return;
+    }
+    if (this._onData) {
+      this._onData(frame);
+      return;
+    }
+    this.pendingInbound.push(frame);
+  }
+
+  protected async runAuthHandshake(label: string): Promise<void> {
+    const offData = window.electronAPI.meshcom.tcp.onData((bytes) => {
+      const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+      this.deliverInbound(frame);
+    });
+    const offDisc = window.electronAPI.meshcom.tcp.onDisconnected(() => {
+      if (this.authGate && this.authAbort && !this.authAbort.signal.aborted) {
+        this.authAbort.abort();
+        return;
+      }
+      this.onDisconnected?.();
+    });
+    this.cleanupFns = [offData, offDisc];
+    // Own cleanup until auth finishes (incl. tcp.connect failure).
+    try {
+      await window.electronAPI.meshcom.tcp.connect(this.host, this.port);
+
+      this.authAbort = new AbortController();
+      this.authGate = true;
+      const result = await runMeshcomTcpAuth(
+        {
+          write: (b) => window.electronAPI.meshcom.tcp.write(Array.from(b)),
+          onData: (handler) => {
+            this.authHandler = handler;
+            return () => {
+              this.authHandler = null;
+            };
+          },
+        },
+        this.authPassword,
+        { signal: this.authAbort.signal },
+      );
+      if (result.status === 'rejected') {
+        throw new Error(`MeshCom ${label} auth: ${result.reason}`);
+      }
+      // Drop the auth gate before leftover delivery so bytes reach onData / the queue.
+      this.authGate = false;
+      this.authHandler = null;
+      if (result.status === 'ok' && result.leftover.length > 0) {
+        this.deliverInbound(result.leftover);
+      }
+    } catch (err) {
+      await this.close();
+      throw err;
+    } finally {
+      this.authGate = false;
+      this.authHandler = null;
+      this.authAbort = null;
+    }
+  }
+
+  async write(bytes: Uint8Array | number[]): Promise<void> {
+    await window.electronAPI.meshcom.tcp.write(Array.from(toUint8Array(bytes)));
+  }
+
+  async close(): Promise<void> {
+    if (this.authAbort && !this.authAbort.signal.aborted) {
+      this.authAbort.abort();
+    }
+    this.pendingInbound = [];
+    releaseCleanupFns(this.cleanupFns);
+    await window.electronAPI.meshcom.tcp.disconnect();
+  }
+}
+
 class IpcUdpConnection implements MeshComConnection {
   readonly transport = 'udp' as const;
   onData: ((bytes: Uint8Array) => void) | null = null;
@@ -95,66 +204,11 @@ class IpcUdpConnection implements MeshComConnection {
   }
 }
 
-class IpcKissTcpConnection implements MeshComConnection {
+class IpcKissTcpConnection extends IpcMeshcomTcpConnectionBase {
   readonly transport = 'tcp' as const;
-  onData: ((bytes: Uint8Array) => void) | null = null;
-  onDisconnected: (() => void) | null = null;
-  private cleanupFns: (() => void)[] = [];
-  /** While true, inbound chunks feed the auth handshake instead of onData. */
-  private authGate = false;
-  private authHandler: ((bytes: Uint8Array) => void) | null = null;
-
-  constructor(
-    private readonly host: string,
-    private readonly port: number,
-    private readonly authPassword: string,
-  ) {}
 
   async connect(): Promise<void> {
-    const offData = window.electronAPI.meshcom.tcp.onData((bytes) => {
-      const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-      if (this.authGate) {
-        this.authHandler?.(frame);
-        return;
-      }
-      this.onData?.(frame);
-    });
-    const offDisc = window.electronAPI.meshcom.tcp.onDisconnected(() => {
-      this.onDisconnected?.();
-    });
-    this.cleanupFns = [offData, offDisc];
-    await window.electronAPI.meshcom.tcp.connect(this.host, this.port);
-    this.authGate = true;
-    try {
-      const result = await runMeshcomTcpAuth(
-        {
-          write: (b) => window.electronAPI.meshcom.tcp.write(Array.from(b)),
-          onData: (handler) => {
-            this.authHandler = handler;
-            return () => {
-              this.authHandler = null;
-            };
-          },
-        },
-        this.authPassword,
-      );
-      if (result.status === 'rejected') {
-        await this.close();
-        throw new Error(`MeshCom KISS auth: ${result.reason}`);
-      }
-    } finally {
-      this.authGate = false;
-      this.authHandler = null;
-    }
-  }
-
-  async write(bytes: Uint8Array | number[]): Promise<void> {
-    await window.electronAPI.meshcom.tcp.write(Array.from(toUint8Array(bytes)));
-  }
-
-  async close(): Promise<void> {
-    releaseCleanupFns(this.cleanupFns);
-    await window.electronAPI.meshcom.tcp.disconnect();
+    await this.runAuthHandshake('KISS');
   }
 }
 
@@ -162,67 +216,19 @@ class IpcKissTcpConnection implements MeshComConnection {
  * NET Console (:2323) — plaintext console after HMAC; ExtUDP JSON via `--setinfo on`.
  * Reuses the MeshCom TCP IPC bridge (single socket; mutually exclusive with KISS).
  */
-class IpcNetConsoleConnection implements MeshComConnection {
+class IpcNetConsoleConnection extends IpcMeshcomTcpConnectionBase {
   readonly transport = 'netconsole' as const;
-  onData: ((bytes: Uint8Array) => void) | null = null;
-  onDisconnected: (() => void) | null = null;
-  private cleanupFns: (() => void)[] = [];
-  private authGate = false;
-  private authHandler: ((bytes: Uint8Array) => void) | null = null;
-
-  constructor(
-    private readonly host: string,
-    private readonly port: number,
-    private readonly authPassword: string,
-  ) {}
 
   async connect(): Promise<void> {
-    const offData = window.electronAPI.meshcom.tcp.onData((bytes) => {
-      const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-      if (this.authGate) {
-        this.authHandler?.(frame);
-        return;
-      }
-      this.onData?.(frame);
-    });
-    const offDisc = window.electronAPI.meshcom.tcp.onDisconnected(() => {
-      this.onDisconnected?.();
-    });
-    this.cleanupFns = [offData, offDisc];
-    await window.electronAPI.meshcom.tcp.connect(this.host, this.port);
-    this.authGate = true;
-    try {
-      const result = await runMeshcomTcpAuth(
-        {
-          write: (b) => window.electronAPI.meshcom.tcp.write(Array.from(b)),
-          onData: (handler) => {
-            this.authHandler = handler;
-            return () => {
-              this.authHandler = null;
-            };
-          },
-        },
-        this.authPassword,
-      );
-      if (result.status === 'rejected') {
-        await this.close();
-        throw new Error(`MeshCom NET Console auth: ${result.reason}`);
-      }
-    } finally {
-      this.authGate = false;
-      this.authHandler = null;
-    }
+    await this.runAuthHandshake('NET Console');
     // Enable ExtUDP-style JSON console output (gomeshcom / firmware NET Console).
-    await this.write(encodeMeshcomSerialLine('--setinfo on'));
-  }
-
-  async write(bytes: Uint8Array | number[]): Promise<void> {
-    await window.electronAPI.meshcom.tcp.write(Array.from(toUint8Array(bytes)));
-  }
-
-  async close(): Promise<void> {
-    releaseCleanupFns(this.cleanupFns);
-    await window.electronAPI.meshcom.tcp.disconnect();
+    // Retain cleanup ownership until this write succeeds.
+    try {
+      await this.write(encodeMeshcomSerialLine('--setinfo on'));
+    } catch (err) {
+      await this.close();
+      throw err;
+    }
   }
 }
 
