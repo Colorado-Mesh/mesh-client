@@ -809,22 +809,28 @@ export function meshcoreReplyBodyReferencesParent(body: string, parentPayload: s
 
   if (bodyNorm === parentNorm) return true;
 
+  if (meshcorePayloadShorterContained(bodyNorm, parentNorm)) return true;
+  const shared = meshcoreSharedTokenCount(body, parentPayload);
+  return shared >= 2 || (shared >= 1 && bodyNorm.length >= 12);
+}
+
+function meshcorePayloadShorterContained(bodyNorm: string, parentNorm: string): boolean {
   const shorter = bodyNorm.length <= parentNorm.length ? bodyNorm : parentNorm;
   const longer = bodyNorm.length <= parentNorm.length ? parentNorm : bodyNorm;
   if (shorter.length >= 8 && longer.includes(shorter)) return true;
-  if (shorter.length >= 4 && shorter.length / longer.length >= 0.4 && longer.includes(shorter)) {
-    return true;
-  }
+  return shorter.length >= 4 && shorter.length / longer.length >= 0.4 && longer.includes(shorter);
+}
 
+function meshcoreSharedTokenCount(body: string, parentPayload: string): number {
   const parentTokens = new Set(
     meshcoreDisplayNameTokens(parentPayload).filter((t) => t.length >= 4),
   );
-  if (parentTokens.size === 0) return false;
+  if (parentTokens.size === 0) return 0;
   let shared = 0;
   for (const t of meshcoreDisplayNameTokens(body)) {
     if (t.length >= 4 && parentTokens.has(t)) shared++;
   }
-  return shared >= 2 || (shared >= 1 && bodyNorm.length >= 12);
+  return shared;
 }
 
 function resolveMeshcoreLatestBracketParentKey(
@@ -1075,7 +1081,7 @@ function meshcoreIsOwnSentMessage(
  * - Incoming keyed rows: keep a corroborated parent, but refresh stale seconds/ms keys for generic replies.
  */
 interface MeshcoreReplyResolution {
-  replyId: number;
+  replyId: number | undefined;
   parent: ChatMessage | undefined;
 }
 
@@ -1120,6 +1126,22 @@ function applyMeshcoreReplyPreview(
   return { ...msg, replyId, replyPreviewText: preview, replyPreviewSender: sender };
 }
 
+function resolveMeshcoreIncomingBracketParent(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+  targetName: string,
+  lookupOpts: MeshcoreReplyLookupOptions,
+  current: MeshcoreReplyResolution,
+  explicitWireKey: boolean,
+): MeshcoreReplyResolution {
+  const hintParent = meshcoreFindParentFromReplyPayloadHint(msg, prior, targetName);
+  if (hintParent) {
+    return { replyId: meshcoreCanonicalReplyKey(hintParent), parent: hintParent };
+  }
+  if (explicitWireKey && !current.parent) return current;
+  return upgradeMeshcoreReplyParent(msg, prior, targetName, lookupOpts, current.parent) ?? current;
+}
+
 function refreshMeshcoreReplyParent(
   msg: ChatMessage,
   prior: readonly ChatMessage[],
@@ -1148,14 +1170,16 @@ function refreshMeshcoreReplyParent(
   const explicitWireKey = meshcoreWireHadExplicitReplyKey(msg);
 
   if (incomingBracket && targetName) {
-    const hintParent = meshcoreFindParentFromReplyPayloadHint(msg, prior, targetName);
-    if (hintParent) {
-      replyId = meshcoreCanonicalReplyKey(hintParent);
-      parent = hintParent;
-    } else if (!(explicitWireKey && !parent)) {
-      const upgraded = upgradeMeshcoreReplyParent(msg, prior, targetName, lookupOpts, parent);
-      if (upgraded) ({ replyId, parent } = upgraded);
-    }
+    const resolved = resolveMeshcoreIncomingBracketParent(
+      msg,
+      prior,
+      targetName,
+      lookupOpts,
+      { replyId, parent },
+      explicitWireKey,
+    );
+    if (resolved.replyId != null) replyId = resolved.replyId;
+    parent = resolved.parent;
   } else if (!keepPickedParent && !parent && targetName && !explicitWireKey) {
     const upgraded = upgradeMeshcoreReplyParent(msg, prior, targetName, lookupOpts, parent);
     if (upgraded) ({ replyId, parent } = upgraded);
