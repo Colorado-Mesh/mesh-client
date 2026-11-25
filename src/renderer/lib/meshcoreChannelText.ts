@@ -563,6 +563,105 @@ export interface BuildMeshcoreChannelIncomingOpts {
  * Build a channel `ChatMessage` from raw RF/MQTT text: tap-backs, text replies (`@[Parent] body`),
  * or plain payloads. Uses `messages` only to resolve `replyId` for bracketed lines.
  */
+type MeshcoreIncomingBase = Pick<
+  ChatMessage,
+  | 'sender_id'
+  | 'sender_name'
+  | 'channel'
+  | 'timestamp'
+  | 'status'
+  | 'receivedVia'
+  | 'rxHops'
+  | 'rxPathHashSizeBytes'
+> & { meshcoreDedupeKey: string };
+
+function meshcoreIncomingRxFields(opts: {
+  rxHops?: number | null;
+  rxPathHashSizeBytes?: 1 | 2 | 3 | null;
+}): Pick<ChatMessage, 'rxHops' | 'rxPathHashSizeBytes'> {
+  return {
+    ...(opts.rxHops != null && Number.isFinite(opts.rxHops) ? { rxHops: opts.rxHops } : {}),
+    ...(opts.rxPathHashSizeBytes === 1 ||
+    opts.rxPathHashSizeBytes === 2 ||
+    opts.rxPathHashSizeBytes === 3
+      ? { rxPathHashSizeBytes: opts.rxPathHashSizeBytes }
+      : {}),
+  };
+}
+
+function finalizeMeshcoreBracketReply(
+  base: MeshcoreIncomingBase | MeshcoreDmIncomingBase,
+  target: string,
+  parentKey: number | undefined,
+  parent: ChatMessage | undefined,
+  payload: string,
+  fallbackPayload: string,
+): ChatMessage {
+  const previewFields = parent
+    ? {
+        replyPreviewText: truncateReplyPreviewText(parent.payload),
+        replyPreviewSender: parent.sender_name,
+      }
+    : undefined;
+  if (parentKey != null && payload.length > 0) {
+    return meshcorePromoteEmojiOnlyReplyToTapback({
+      ...base,
+      payload,
+      replyId: parentKey,
+      ...previewFields,
+    });
+  }
+  return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, payload, fallbackPayload) };
+}
+
+function buildMeshcoreBracketReplyMessage(
+  messages: readonly ChatMessage[],
+  base: MeshcoreIncomingBase,
+  normalized: ReturnType<typeof normalizeMeshcoreIncomingText>,
+  beforeTimestamp: number,
+  channel: number,
+  fallbackPayload: string,
+): ChatMessage {
+  const target = normalized.bracketTargetName ?? '';
+  let parentKey: number | undefined;
+  let parent: ChatMessage | undefined;
+
+  if (normalized.wireReplyKey != null) {
+    parent = findMeshcoreParentMessageForReply(messages, normalized.wireReplyKey, {
+      beforeTimestamp,
+      channel,
+      replyPreviewSender: target,
+    });
+    if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
+  }
+
+  if (parentKey == null && normalized.wireReplyKey == null) {
+    parentKey = resolveMeshcoreBracketParentKey(messages, {
+      channel,
+      targetName: target,
+      beforeTimestamp,
+      to: undefined,
+    });
+    if (parentKey != null) {
+      parent = findMeshcoreParentMessageForReply(messages, parentKey, {
+        beforeTimestamp,
+        channel,
+        replyPreviewSender: target,
+      });
+      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
+    }
+  }
+
+  return finalizeMeshcoreBracketReply(
+    base,
+    target,
+    parentKey,
+    parent,
+    normalized.payload.trim(),
+    fallbackPayload,
+  );
+}
+
 export function buildMeshcoreChannelIncomingMessage(
   messages: readonly ChatMessage[],
   opts: BuildMeshcoreChannelIncomingOpts,
@@ -572,19 +671,9 @@ export function buildMeshcoreChannelIncomingMessage(
   const colonIdx = rawText.indexOf(':');
   const fallbackPayload = colonIdx > 0 ? rawText.slice(colonIdx + 1).trim() : rawText.trim();
 
-  const rxFields: Pick<ChatMessage, 'rxHops' | 'rxPathHashSizeBytes'> = {
-    ...(opts.rxHops != null && Number.isFinite(opts.rxHops) ? { rxHops: opts.rxHops } : {}),
-    ...(opts.rxPathHashSizeBytes === 1 ||
-    opts.rxPathHashSizeBytes === 2 ||
-    opts.rxPathHashSizeBytes === 3
-      ? { rxPathHashSizeBytes: opts.rxPathHashSizeBytes }
-      : {}),
-  };
+  const rxFields = meshcoreIncomingRxFields(opts);
 
-  const base: Pick<
-    ChatMessage,
-    'sender_id' | 'sender_name' | 'channel' | 'timestamp' | 'status' | 'receivedVia'
-  > & { meshcoreDedupeKey: string } = {
+  const base: MeshcoreIncomingBase = {
     sender_id: opts.senderId,
     sender_name: opts.displayName,
     channel: opts.channel,
@@ -613,54 +702,14 @@ export function buildMeshcoreChannelIncomingMessage(
     };
   }
   if (target) {
-    let parentKey: number | undefined;
-    let parent: ChatMessage | undefined;
-
-    if (normalized.wireReplyKey != null) {
-      parent = findMeshcoreParentMessageForReply(messages, normalized.wireReplyKey, {
-        beforeTimestamp: opts.timestamp,
-        channel: opts.channel,
-        replyPreviewSender: target,
-      });
-      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
-    }
-
-    if (parentKey == null && normalized.wireReplyKey == null) {
-      parentKey = resolveMeshcoreBracketParentKey(messages, {
-        channel: opts.channel,
-        targetName: target,
-        beforeTimestamp: opts.timestamp,
-        to: undefined,
-      });
-      if (parentKey != null) {
-        parent = findMeshcoreParentMessageForReply(messages, parentKey, {
-          beforeTimestamp: opts.timestamp,
-          channel: opts.channel,
-          replyPreviewSender: target,
-        });
-        if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
-      }
-    }
-
-    if (parentKey != null) {
-      const body = normalized.payload.trim();
-      const previewFields = parent
-        ? {
-            replyPreviewText: truncateReplyPreviewText(parent.payload),
-            replyPreviewSender: parent.sender_name,
-          }
-        : undefined;
-      if (body.length > 0) {
-        return meshcorePromoteEmojiOnlyReplyToTapback({
-          ...base,
-          payload: body,
-          replyId: parentKey,
-          ...previewFields,
-        });
-      }
-    }
-    const body = normalized.payload.trim();
-    return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, body, fallbackPayload) };
+    return buildMeshcoreBracketReplyMessage(
+      messages,
+      base,
+      normalized,
+      opts.timestamp,
+      opts.channel,
+      fallbackPayload,
+    );
   }
 
   return {
@@ -887,6 +936,29 @@ function parseMeshcoreReplyQuotedNeedle(payload: string): string | undefined {
 }
 
 /** Match incoming reply body text to a prior parent (e.g. `reply to "parent text…"`). */
+function findBestMeshcoreParentCandidate(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+  targetName: string,
+  matchesPayload: (payload: string) => boolean,
+): ChatMessage | undefined {
+  let best: ChatMessage | undefined;
+  for (const candidate of prior) {
+    if (!meshcoreThreadMatchesMessage(msg, candidate)) continue;
+    if (candidate.timestamp >= msg.timestamp) continue;
+    if (!meshcoreBracketDisplayNamesMatch(targetName, candidate.sender_name)) continue;
+    if (candidate.emoji != null && candidate.replyId != null) continue;
+    if (!matchesPayload(candidate.payload)) continue;
+    if (!best || candidate.timestamp > best.timestamp) best = candidate;
+  }
+  return best;
+}
+
+function meshcoreQuotedNeedleMatches(payload: string, quotedNeedle: string): boolean {
+  const hay = normalizePayloadMatchText(payload);
+  return hay === quotedNeedle || hay.startsWith(quotedNeedle) || quotedNeedle.startsWith(hay);
+}
+
 function meshcoreFindParentFromReplyPayloadHint(
   msg: ChatMessage,
   prior: readonly ChatMessage[],
@@ -896,15 +968,9 @@ function meshcoreFindParentFromReplyPayloadHint(
 
   const letterToken = parseMeshcoreReplyLetterRef(payload);
   if (letterToken) {
-    let best: ChatMessage | undefined;
-    for (const m of prior) {
-      if (!meshcoreThreadMatchesMessage(msg, m)) continue;
-      if (m.timestamp >= msg.timestamp) continue;
-      if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
-      if (m.emoji != null && m.replyId != null) continue;
-      if (!parentPayloadMatchesLetterRef(m.payload, letterToken)) continue;
-      if (!best || m.timestamp > best.timestamp) best = m;
-    }
+    const best = findBestMeshcoreParentCandidate(msg, prior, targetName, (candidate) =>
+      parentPayloadMatchesLetterRef(candidate, letterToken),
+    );
     if (best) return best;
   }
 
@@ -912,31 +978,17 @@ function meshcoreFindParentFromReplyPayloadHint(
 
   const quotedNeedle = parseMeshcoreReplyQuotedNeedle(payload);
   if (quotedNeedle) {
-    let best: ChatMessage | undefined;
-    for (const m of prior) {
-      if (!meshcoreThreadMatchesMessage(msg, m)) continue;
-      if (m.timestamp >= msg.timestamp) continue;
-      if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
-      if (m.emoji != null && m.replyId != null) continue;
-      const hay = normalizePayloadMatchText(m.payload);
-      if (hay === quotedNeedle || hay.startsWith(quotedNeedle) || quotedNeedle.startsWith(hay)) {
-        if (!best || m.timestamp > best.timestamp) best = m;
-      }
-    }
+    const best = findBestMeshcoreParentCandidate(msg, prior, targetName, (candidate) =>
+      meshcoreQuotedNeedleMatches(candidate, quotedNeedle),
+    );
     if (best) return best;
   }
 
   const numRef = parseMeshcoreReplyNumericRef(payload);
   if (numRef) {
-    let best: ChatMessage | undefined;
-    for (const m of prior) {
-      if (!meshcoreThreadMatchesMessage(msg, m)) continue;
-      if (m.timestamp >= msg.timestamp) continue;
-      if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
-      if (m.emoji != null && m.replyId != null) continue;
-      if (!parentPayloadMatchesNumericRef(m.payload, numRef)) continue;
-      if (!best || m.timestamp > best.timestamp) best = m;
-    }
+    const best = findBestMeshcoreParentCandidate(msg, prior, targetName, (candidate) =>
+      parentPayloadMatchesNumericRef(candidate, numRef),
+    );
     if (best) return best;
   }
 
@@ -1203,25 +1255,75 @@ export interface BuildMeshcoreDmIncomingOpts {
  * Build a DM `ChatMessage` from raw text: tapbacks `@[Name] emoji`, text replies `@[Name] body`,
  * or plain payload (no leading bracket line).
  */
+type MeshcoreDmIncomingBase = Pick<
+  ChatMessage,
+  | 'sender_id'
+  | 'sender_name'
+  | 'channel'
+  | 'timestamp'
+  | 'status'
+  | 'receivedVia'
+  | 'to'
+  | 'rxHops'
+  | 'rxPathHashSizeBytes'
+> & { meshcoreDedupeKey: string };
+
+function buildMeshcoreDmBracketReplyMessage(
+  messages: readonly ChatMessage[],
+  base: MeshcoreDmIncomingBase,
+  parsed: ReturnType<typeof parseMeshcorePlainBracketLine>,
+  opts: BuildMeshcoreDmIncomingOpts,
+  rawText: string,
+): ChatMessage {
+  const target = parsed.bracketTargetName ?? '';
+  let parentKey: number | undefined;
+  let parent: ChatMessage | undefined;
+
+  if (parsed.wireReplyKey != null) {
+    parent = findMeshcoreDmReplyParent(messages, {
+      peerNodeId: opts.peerNodeId,
+      myNodeId: opts.myNodeId,
+      replyKey: parsed.wireReplyKey,
+    });
+    if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
+  }
+
+  if (parentKey == null && parsed.wireReplyKey == null) {
+    parentKey = resolveMeshcoreBracketParentKeyDm(messages, {
+      peerNodeId: opts.peerNodeId,
+      myNodeId: opts.myNodeId,
+      targetName: target,
+      beforeTimestamp: opts.timestamp,
+    });
+    if (parentKey != null) {
+      parent = findMeshcoreDmReplyParent(messages, {
+        peerNodeId: opts.peerNodeId,
+        myNodeId: opts.myNodeId,
+        replyKey: parentKey,
+      });
+      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
+    }
+  }
+
+  return finalizeMeshcoreBracketReply(
+    base,
+    target,
+    parentKey,
+    parent,
+    parsed.payload.trim(),
+    rawText,
+  );
+}
+
 export function buildMeshcoreDmIncomingMessage(
   messages: readonly ChatMessage[],
   opts: BuildMeshcoreDmIncomingOpts,
 ): ChatMessage {
   const rawText = sanitizeMeshcoreChatWireText(opts.rawText);
   const parsed = parseMeshcorePlainBracketLine(rawText);
-  const rxFields: Pick<ChatMessage, 'rxHops' | 'rxPathHashSizeBytes'> = {
-    ...(opts.rxHops != null && Number.isFinite(opts.rxHops) ? { rxHops: opts.rxHops } : {}),
-    ...(opts.rxPathHashSizeBytes === 1 ||
-    opts.rxPathHashSizeBytes === 2 ||
-    opts.rxPathHashSizeBytes === 3
-      ? { rxPathHashSizeBytes: opts.rxPathHashSizeBytes }
-      : {}),
-  };
+  const rxFields = meshcoreIncomingRxFields(opts);
 
-  const base: Pick<
-    ChatMessage,
-    'sender_id' | 'sender_name' | 'channel' | 'timestamp' | 'status' | 'receivedVia' | 'to'
-  > & { meshcoreDedupeKey: string } = {
+  const base: MeshcoreDmIncomingBase = {
     sender_id: opts.senderId,
     sender_name: opts.displayName,
     channel: -1,
@@ -1248,56 +1350,8 @@ export function buildMeshcoreDmIncomingMessage(
     const body = parsed.payload.trim();
     return { ...base, payload: body.length > 0 ? body : rawText };
   }
-  const target = parsed.bracketTargetName;
-  if (target) {
-    let parentKey: number | undefined;
-    let parent: ChatMessage | undefined;
-
-    if (parsed.wireReplyKey != null) {
-      parent = findMeshcoreDmReplyParent(messages, {
-        peerNodeId: opts.peerNodeId,
-        myNodeId: opts.myNodeId,
-        replyKey: parsed.wireReplyKey,
-      });
-      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
-    }
-
-    if (parentKey == null && parsed.wireReplyKey == null) {
-      parentKey = resolveMeshcoreBracketParentKeyDm(messages, {
-        peerNodeId: opts.peerNodeId,
-        myNodeId: opts.myNodeId,
-        targetName: target,
-        beforeTimestamp: opts.timestamp,
-      });
-      if (parentKey != null) {
-        parent = findMeshcoreDmReplyParent(messages, {
-          peerNodeId: opts.peerNodeId,
-          myNodeId: opts.myNodeId,
-          replyKey: parentKey,
-        });
-        if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
-      }
-    }
-
-    if (parentKey != null) {
-      const body = parsed.payload.trim();
-      const previewFields = parent
-        ? {
-            replyPreviewText: truncateReplyPreviewText(parent.payload),
-            replyPreviewSender: parent.sender_name,
-          }
-        : undefined;
-      if (body.length > 0) {
-        return meshcorePromoteEmojiOnlyReplyToTapback({
-          ...base,
-          payload: body,
-          replyId: parentKey,
-          ...previewFields,
-        });
-      }
-    }
-    const body = parsed.payload.trim();
-    return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, body, rawText) };
+  if (parsed.bracketTargetName) {
+    return buildMeshcoreDmBracketReplyMessage(messages, base, parsed, opts, rawText);
   }
 
   return { ...base, payload: rawText };
