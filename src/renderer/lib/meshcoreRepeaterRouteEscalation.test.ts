@@ -4,6 +4,7 @@ import {
   clearMeshcoreRepeaterRouteEscalationStateForTests,
   isMeshcoreRepeaterTimeoutError,
   meshcoreRepeaterRouteKind,
+  type MeshcoreRepeaterRouteMode,
   withMeshcoreRepeaterLoginFallback,
   withMeshcoreRepeaterRouteEscalation,
 } from './meshcoreRepeaterRouteEscalation';
@@ -17,6 +18,30 @@ describe('meshcoreRepeaterRouteEscalation', () => {
   it('classifies a stored hash path as direct', () => {
     expect(meshcoreRepeaterRouteKind(new Uint8Array([0xab, 0xcd]), 2)).toBe('direct');
     expect(meshcoreRepeaterRouteKind(new Uint8Array([0xab]), undefined)).toBe('direct');
+  });
+
+  it('runtime hands every repeater request the per-repeater route mode and zero-hop write', () => {
+    const source = loadRuntimeSource('useMeshcoreRuntime.ts');
+    const depsAt = source.indexOf('const meshcoreRepeaterRouteEscalationSharedDeps = useMemo(');
+    expect(depsAt).toBeGreaterThan(-1);
+    const deps = source.slice(
+      depsAt,
+      source.indexOf('meshcoreRepeaterRouteEscalationSharedDepsRef.current =', depsAt),
+    );
+    expect(deps).toContain('routeMode: resolveAdminRouteModeForNode');
+    expect(deps).toContain('ensureZeroHopRoute: ensureZeroHopRouteForNode');
+
+    const modeBody = extractUseCallbackBody(source, 'resolveAdminRouteModeForNode');
+    expect(modeBody).toContain('getMeshcoreRepeaterRouteMode(bytesToHex(');
+    expect(modeBody).toContain("return 'auto'");
+
+    const zeroHopBody = extractUseCallbackBody(source, 'ensureZeroHopRouteForNode');
+    const writeAt = zeroHopBody.indexOf('await setMeshcoreRadioContactZeroHop(');
+    const cacheAt = zeroHopBody.indexOf('radioContactPathLenByNodeRef.current.set(id, 0)');
+    expect(writeAt).toBeGreaterThan(-1);
+    // The cache follows the write so the next request skips a radio read it does not need.
+    expect(cacheAt).toBeGreaterThan(writeAt);
+    expect(zeroHopBody).toContain('outPathMapRef.current.set(id, new Uint8Array(0))');
   });
 
   it('runtime marks the cached radio length unknown after a successful path reset', () => {
@@ -411,5 +436,176 @@ describe('withMeshcoreRepeaterLoginFallback', () => {
     });
     await expect(withMeshcoreRepeaterLoginFallback(17, deps, request)).rejects.toThrow(/timeout/);
     expect(order).toEqual(['request', 'login']);
+  });
+});
+
+describe('repeater route modes', () => {
+  afterEach(() => {
+    clearMeshcoreRepeaterRouteEscalationStateForTests();
+  });
+
+  function modeHarness(opts: {
+    mode: MeshcoreRepeaterRouteMode;
+    route?: 'direct' | 'flood' | 'unknown';
+    canLogin?: boolean;
+    /** Outcome of each request attempt in order; the last entry repeats. */
+    requests: ('ok' | 'timeout' | 'rejected')[];
+    zeroHopFails?: boolean;
+  }) {
+    const order: string[] = [];
+    const attempts: { escalated: boolean; sameRouteRetry: boolean }[] = [];
+    let attemptIndex = 0;
+    const routeMode = vi.fn(() => opts.mode);
+    const deps = {
+      resetContactPath: vi.fn(() => {
+        order.push('reset');
+        return Promise.resolve(true);
+      }),
+      resolveRouteKind: () => opts.route ?? 'direct',
+      nowMs: () => 1_000,
+      routeMode,
+      ensureZeroHopRoute: vi.fn(() => {
+        order.push('zeroHop');
+        return opts.zeroHopFails ? Promise.reject(new Error('radio ERR 3')) : Promise.resolve();
+      }),
+      canLogin: () => opts.canLogin ?? false,
+      login: vi.fn(() => {
+        order.push('login');
+        return Promise.resolve();
+      }),
+    };
+    const request = vi.fn((attempt: { escalated: boolean; sameRouteRetry: boolean }) => {
+      order.push('request');
+      attempts.push({ ...attempt });
+      const outcome = opts.requests[Math.min(attemptIndex, opts.requests.length - 1)];
+      attemptIndex += 1;
+      if (outcome === 'ok') return Promise.resolve('ok');
+      return Promise.reject(new Error(outcome === 'timeout' ? 'timeout' : 'radio rejected'));
+    });
+    return { deps, request, order, attempts, routeMode };
+  }
+
+  it('Direct only retries once on the same route without a reset or flood', async () => {
+    const { deps, request, order, attempts } = modeHarness({
+      mode: 'direct',
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterRouteEscalation(21, deps, request)).resolves.toBe('ok');
+    expect(order).toEqual(['request', 'request']);
+    expect(attempts).toEqual([
+      { escalated: false, sameRouteRetry: false },
+      { escalated: false, sameRouteRetry: true },
+    ]);
+    expect(deps.resetContactPath).not.toHaveBeenCalled();
+  });
+
+  it('Direct only retries a second request inside the flood cooldown', async () => {
+    const first = modeHarness({ mode: 'direct', requests: ['timeout', 'ok'] });
+    await withMeshcoreRepeaterRouteEscalation(22, first.deps, first.request);
+    const second = modeHarness({ mode: 'direct', requests: ['timeout', 'ok'] });
+    await expect(
+      withMeshcoreRepeaterRouteEscalation(22, second.deps, second.request),
+    ).resolves.toBe('ok');
+    expect(second.order).toEqual(['request', 'request']);
+  });
+
+  it('Direct only gives up after the one same-route retry', async () => {
+    const { deps, request, order } = modeHarness({
+      mode: 'direct',
+      requests: ['timeout', 'timeout'],
+    });
+    await expect(withMeshcoreRepeaterRouteEscalation(23, deps, request)).rejects.toThrow(/timeout/);
+    expect(order).toEqual(['request', 'request']);
+  });
+
+  it('Direct only does not retry a radio rejection', async () => {
+    const { deps, request, order } = modeHarness({ mode: 'direct', requests: ['rejected'] });
+    await expect(withMeshcoreRepeaterRouteEscalation(24, deps, request)).rejects.toThrow(
+      /radio rejected/,
+    );
+    expect(order).toEqual(['request']);
+  });
+
+  it('Direct only on a route the radio already floods behaves like Auto', async () => {
+    const { deps, request, order } = modeHarness({
+      mode: 'direct',
+      route: 'flood',
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterRouteEscalation(25, deps, request)).rejects.toThrow(/timeout/);
+    expect(order).toEqual(['request']);
+  });
+
+  it('Zero-hop sets a zero-hop route before the first send and before the retry', async () => {
+    const { deps, request, order, attempts } = modeHarness({
+      mode: 'zeroHop',
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterRouteEscalation(26, deps, request)).resolves.toBe('ok');
+    expect(order).toEqual(['zeroHop', 'request', 'zeroHop', 'request']);
+    expect(attempts[1]).toEqual({ escalated: false, sameRouteRetry: true });
+    expect(deps.resetContactPath).not.toHaveBeenCalled();
+  });
+
+  it('Zero-hop retries even when the radio route read as flood before the write', async () => {
+    const { deps, request, order } = modeHarness({
+      mode: 'zeroHop',
+      route: 'flood',
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterRouteEscalation(27, deps, request)).resolves.toBe('ok');
+    expect(order).toEqual(['zeroHop', 'request', 'zeroHop', 'request']);
+  });
+
+  it('Zero-hop sends nothing when the route write fails', async () => {
+    const { deps, request, order } = modeHarness({
+      mode: 'zeroHop',
+      zeroHopFails: true,
+      requests: ['ok'],
+    });
+    await expect(withMeshcoreRepeaterRouteEscalation(28, deps, request)).rejects.toThrow(
+      /radio ERR 3/,
+    );
+    expect(order).toEqual(['zeroHop']);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('reads the mode once per call', async () => {
+    const { deps, request, routeMode } = modeHarness({
+      mode: 'direct',
+      requests: ['timeout', 'ok'],
+    });
+    await withMeshcoreRepeaterRouteEscalation(29, deps, request);
+    expect(routeMode).toHaveBeenCalledTimes(1);
+  });
+
+  it('Auto keeps the reset and flood retry when a mode reader is supplied', async () => {
+    const { deps, request, order, attempts } = modeHarness({
+      mode: 'auto',
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterRouteEscalation(30, deps, request)).resolves.toBe('ok');
+    expect(order).toEqual(['request', 'reset', 'request']);
+    expect(attempts[1]).toEqual({ escalated: true, sameRouteRetry: false });
+  });
+
+  it('Direct only logs in before the same-route retry', async () => {
+    const { deps, request, order } = modeHarness({
+      mode: 'direct',
+      canLogin: true,
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterLoginFallback(31, deps, request)).resolves.toBe('ok');
+    expect(order).toEqual(['request', 'login', 'request']);
+  });
+
+  it('Zero-hop logs in once and never resets the route', async () => {
+    const { deps, request, order } = modeHarness({
+      mode: 'zeroHop',
+      canLogin: true,
+      requests: ['timeout', 'timeout'],
+    });
+    await expect(withMeshcoreRepeaterLoginFallback(32, deps, request)).rejects.toThrow(/timeout/);
+    expect(order).toEqual(['zeroHop', 'request', 'zeroHop', 'login', 'request']);
   });
 });

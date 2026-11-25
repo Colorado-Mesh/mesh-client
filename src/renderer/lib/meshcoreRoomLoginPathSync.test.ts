@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
 import {
   addMeshcoreNodeContactToRadio,
+  setMeshcoreRadioContactZeroHop,
   syncMeshcoreRoomContactPathBeforeLogin,
 } from './meshcoreRoomLoginPathSync';
 import { pubkeyToNodeId } from './meshcoreUtils';
@@ -391,5 +392,103 @@ describe('addMeshcoreNodeContactToRadio', () => {
     expect(err).toBeInstanceOf(Error);
     expect((err as Error).message).toBe('meshcore.errors.radioContactTableFull');
     expect((err as Error).cause).toEqual({ errCode: 3 });
+  });
+});
+
+describe('setMeshcoreRadioContactZeroHop', () => {
+  const node = {
+    long_name: 'Ridge Repeater',
+    hw_model: 'Repeater',
+    last_heard: 1_791_800_000,
+    latitude: 39.5,
+    longitude: -105.25,
+  };
+
+  it('rewrites the radio contact with a zero-hop route, keeping its own fields', async () => {
+    const pubKey = makePubKey(0x71);
+    const outPath = new Uint8Array(64);
+    outPath.set([0x1a, 0x2b, 0x3c]);
+    const contact: MeshCoreContactRaw = {
+      publicKey: pubKey,
+      type: 2,
+      flags: 1,
+      outPathLen: 2,
+      outPath,
+      advName: 'Radio Name',
+      lastAdvert: 1_791_700_000,
+      advLat: 1,
+      advLon: 2,
+    };
+    const addOrUpdateContact = vi.fn().mockResolvedValue(undefined);
+    const conn = {
+      getContacts: vi.fn().mockResolvedValue([contact]),
+      setContactPath: vi.fn(),
+      addOrUpdateContact,
+    };
+    await setMeshcoreRadioContactZeroHop(conn, pubkeyToNodeId(pubKey), pubKey, node);
+    expect(addOrUpdateContact).toHaveBeenCalledWith(
+      pubKey,
+      2,
+      1,
+      0,
+      new Uint8Array(64),
+      'Radio Name',
+      1_791_700_000,
+      1,
+      2,
+    );
+  });
+
+  it('adds the node with a zero-hop route when the radio has no contact for it', async () => {
+    const pubKey = makePubKey(0x72);
+    const addOrUpdateContact = vi.fn().mockResolvedValue(undefined);
+    const conn = {
+      getContacts: vi.fn().mockResolvedValue([]),
+      setContactPath: vi.fn(),
+      addOrUpdateContact,
+    };
+    let serializedCalls = 0;
+    const runSerialized = <T>(fn: () => Promise<T>): Promise<T> => {
+      serializedCalls++;
+      return fn();
+    };
+    await setMeshcoreRadioContactZeroHop(conn, pubkeyToNodeId(pubKey), pubKey, node, runSerialized);
+    expect(serializedCalls).toBe(1);
+    expect(addOrUpdateContact).toHaveBeenCalledWith(
+      pubKey,
+      2,
+      0,
+      0,
+      new Uint8Array(64),
+      'Ridge Repeater',
+      1_791_800_000,
+      39_500_000,
+      -105_250_000,
+    );
+  });
+
+  it('maps ERR_CODE_TABLE_FULL to a user message and keeps the radio error as cause', async () => {
+    const pubKey = makePubKey(0x73);
+    const conn = {
+      getContacts: vi.fn().mockResolvedValue([]),
+      setContactPath: vi.fn(),
+      addOrUpdateContact: vi.fn().mockRejectedValue({ errCode: 3 }),
+    };
+    const err = await setMeshcoreRadioContactZeroHop(
+      conn,
+      pubkeyToNodeId(pubKey),
+      pubKey,
+      node,
+    ).catch((e: unknown) => e);
+    expect((err as Error).message).toBe('meshcore.errors.radioContactTableFull');
+    expect((err as Error).cause).toEqual({ errCode: 3 });
+  });
+
+  it('rejects when the radio cannot update contacts', async () => {
+    const pubKey = makePubKey(0x74);
+    const conn = { getContacts: vi.fn().mockResolvedValue([]), setContactPath: vi.fn() };
+    await expect(
+      setMeshcoreRadioContactZeroHop(conn, pubkeyToNodeId(pubKey), pubKey, node),
+    ).rejects.toThrow('meshcore.errors.radioContactMissing');
   });
 });

@@ -366,9 +366,11 @@ import {
   type MeshcoreRepeaterRouteEscalationDeps,
   type MeshcoreRepeaterRouteKind,
   meshcoreRepeaterRouteKind,
+  type MeshcoreRepeaterRouteMode,
   withMeshcoreRepeaterLoginFallback,
   withMeshcoreRepeaterRouteEscalation,
 } from '../lib/meshcoreRepeaterRouteEscalation';
+import { getMeshcoreRepeaterRouteMode } from '../lib/meshcoreRepeaterRouteModeStorage';
 import {
   beginMeshcoreCliReplyHold,
   endMeshcoreCliReplyHold,
@@ -436,6 +438,7 @@ import {
 import {
   addMeshcoreNodeContactToRadio,
   resetMeshcoreRoomCompanionSyncSinceForCatchUp,
+  setMeshcoreRadioContactZeroHop,
   syncMeshcoreRoomContactPathBeforeLogin,
 } from '../lib/meshcoreRoomLoginPathSync';
 import { meshcoreIsRoomLoginQueued } from '../lib/meshcoreRoomLoginQueue';
@@ -959,6 +962,8 @@ export function useMeshcoreRuntime() {
       | 'escalationScope'
       | 'captureEscalationContext'
       | 'isEscalationContextCurrent'
+      | 'routeMode'
+      | 'ensureZeroHopRoute'
     >
   >({
     resetContactPath: () => Promise.resolve(false),
@@ -6957,6 +6962,37 @@ export function useMeshcoreRuntime() {
     );
   }, []);
 
+  /** Per-repeater route mode (issue 1566); a node with no known public key stays on Auto. */
+  const resolveAdminRouteModeForNode = useCallback((nodeId: number): MeshcoreRepeaterRouteMode => {
+    const pubKey = pubKeyMapRef.current.get(nodeId >>> 0);
+    if (!pubKey) return 'auto';
+    return getMeshcoreRepeaterRouteMode(bytesToHex(pubKey));
+  }, []);
+
+  /**
+   * Zero-hop route mode: point the radio contact at the node with `out_path_len` 0 before a send.
+   * Skips the radio round trip when the radio is already known to hold a zero-hop route.
+   * Failure point: no connection, key or node, or a radio error, rejects and nothing is sent.
+   */
+  const ensureZeroHopRouteForNode = useCallback(
+    async (nodeId: number): Promise<void> => {
+      const id = nodeId >>> 0;
+      const stored = outPathMapRef.current.get(id);
+      if (radioContactPathLenByNodeRef.current.get(id) === 0 && (stored?.length ?? 0) === 0) {
+        return;
+      }
+      const conn = resolveMeshcoreConn();
+      if (!conn) throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+      const pubKey = pubKeyMapRef.current.get(id) ?? (await ensureNodePubKey(id)) ?? undefined;
+      const node = getIdentityNode(meshcoreIdentityIdRef.current, id);
+      if (!pubKey || !node) throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
+      await setMeshcoreRadioContactZeroHop(conn, id, pubKey, node, repeaterRemoteRpcRef.current);
+      outPathMapRef.current.set(id, new Uint8Array(0));
+      radioContactPathLenByNodeRef.current.set(id, 0);
+    },
+    [ensureNodePubKey, resolveMeshcoreConn],
+  );
+
   const resetContactPathForEscalation = useCallback(
     async (nodeId: number): Promise<boolean> => {
       const conn = resolveMeshcoreConn();
@@ -7000,9 +7036,13 @@ export function useMeshcoreRuntime() {
       | 'escalationScope'
       | 'captureEscalationContext'
       | 'isEscalationContextCurrent'
+      | 'routeMode'
+      | 'ensureZeroHopRoute'
     > => ({
       resetContactPath: resetContactPathForEscalation,
       resolveRouteKind: resolveAdminRouteKindForNode,
+      routeMode: resolveAdminRouteModeForNode,
+      ensureZeroHopRoute: ensureZeroHopRouteForNode,
       escalationScope: meshcoreRepeaterRouteEscalationScope,
       captureEscalationContext: () => ({
         identity: meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null,
@@ -7016,6 +7056,8 @@ export function useMeshcoreRuntime() {
     [
       resetContactPathForEscalation,
       resolveAdminRouteKindForNode,
+      resolveAdminRouteModeForNode,
+      ensureZeroHopRouteForNode,
       meshcoreRepeaterRouteEscalationScope,
     ],
   );

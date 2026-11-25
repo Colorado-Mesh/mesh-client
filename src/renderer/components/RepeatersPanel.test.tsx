@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,10 @@ import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { MeshCoreRepeaterStatus } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreStoredUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import { resolveMeshcoreAdminHopsAway } from '../lib/meshcoreRepeaterAdminRouting';
+import {
+  getMeshcoreRepeaterRouteMode,
+  setMeshcoreRepeaterRouteMode,
+} from '../lib/meshcoreRepeaterRouteModeStorage';
 import {
   beginMeshcoreCliReplyHold,
   endMeshcoreCliReplyHold,
@@ -1707,5 +1711,92 @@ describe('RepeatersPanel', () => {
       .filter((b) => b.className.includes('underline'))
       .map((b) => b.textContent);
     expect(names).toEqual(['Alpha Room']);
+  });
+});
+
+describe('RepeatersPanel route on a missed reply', () => {
+  const PUBKEY_HEX = '5a'.repeat(32);
+  const keyedRepeater: MeshNode = { ...mockRepeaterNode(0xabd), public_key_hex: PUBKEY_HEX };
+
+  function keyedProps(): ComponentProps<typeof RepeatersPanel> {
+    return { ...makeBaseProps(), nodes: new Map([[keyedRepeater.node_id, keyedRepeater]]) };
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('offers Auto, Direct only and Zero-hop with Auto checked by default', async () => {
+    const user = userEvent.setup();
+    render(<RepeatersPanel {...keyedProps()} />);
+    await openRowMenu(user);
+    const group = screen.getByRole('group', { name: 'When a reply is missed' });
+    expect(within(group).getByRole('menuitemradio', { name: 'Auto' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(within(group).getByRole('menuitemradio', { name: 'Direct only' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(within(group).getByRole('menuitemradio', { name: 'Zero-hop' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(screen.queryByText('Direct only', { selector: '[data-route-mode-badge]' })).toBeNull();
+  });
+
+  it('saves Direct only for this repeater and marks the row', async () => {
+    const user = userEvent.setup();
+    render(<RepeatersPanel {...keyedProps()} />);
+    await openRowMenu(user);
+    await user.click(screen.getByRole('menuitemradio', { name: 'Direct only' }));
+    expect(getMeshcoreRepeaterRouteMode(PUBKEY_HEX)).toBe('direct');
+    const badge = screen.getByText('Direct only', { selector: '[data-route-mode-badge]' });
+    expect(badge).toHaveAttribute('title', 'When a reply is missed: Direct only');
+    await openRowMenu(user);
+    expect(screen.getByRole('menuitemradio', { name: 'Direct only' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  it('shows a saved Zero-hop choice and clears it with Auto', async () => {
+    setMeshcoreRepeaterRouteMode(PUBKEY_HEX, 'zeroHop');
+    const user = userEvent.setup();
+    render(<RepeatersPanel {...keyedProps()} />);
+    expect(screen.getByText('Zero-hop', { selector: '[data-route-mode-badge]' })).toBeVisible();
+    await openRowMenu(user);
+    await user.click(screen.getByRole('menuitemradio', { name: 'Auto' }));
+    expect(getMeshcoreRepeaterRouteMode(PUBKEY_HEX)).toBe('auto');
+    expect(screen.queryByText('Zero-hop', { selector: '[data-route-mode-badge]' })).toBeNull();
+  });
+
+  it('disables the choice while the public key is unknown', async () => {
+    const user = userEvent.setup();
+    render(<RepeatersPanel {...makeBaseProps()} />);
+    await openRowMenu(user);
+    const direct = screen.getByRole('menuitemradio', { name: 'Direct only' });
+    expect(direct).toBeDisabled();
+    expect(screen.getByRole('menuitemradio', { name: 'Auto' })).toHaveAccessibleDescription(
+      'Needs the public key from an advert or an imported contact',
+    );
+  });
+
+  it('has no axe violations with the route choice open and a badge shown', async () => {
+    setMeshcoreRepeaterRouteMode(PUBKEY_HEX, 'direct');
+    const user = userEvent.setup();
+    const { container } = render(<RepeatersPanel {...keyedProps()} />);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+    await openRowMenu(user);
+    const menu = screen.getByRole('menu');
+    hydrateAxeThemeColors(menu);
+    expect(await axe(menu)).toHaveNoViolations();
   });
 });

@@ -250,6 +250,59 @@ export async function addMeshcoreNodeContactToRadio(
 }
 
 /**
+ * Point the companion contact at `nodeId` with a zero-hop route (`out_path_len` 0), for the
+ * Repeaters "Zero-hop" route mode (issue 1566). Keeps the radio's own type, flags, name and
+ * advert fields when the contact is present; adds it from the node when it is not.
+ * Failure point: a read or write error rejects, and the caller sends nothing; TABLE_FULL maps to
+ * `meshcore.errors.radioContactTableFull` with the radio error as `cause`.
+ */
+export async function setMeshcoreRadioContactZeroHop(
+  conn: MeshcoreRoomLoginPathSyncConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+  node: Pick<MeshNode, 'long_name' | 'hw_model' | 'last_heard' | 'latitude' | 'longitude'>,
+  runSerialized?: <T>(fn: () => Promise<T>) => Promise<T>,
+): Promise<void> {
+  const addOrUpdate = conn.addOrUpdateContact;
+  if (!addOrUpdate) {
+    throw new Error(serializeMeshcoreUserMessage('meshcore.errors.radioContactMissing'));
+  }
+  const contacts = await withTimeout(
+    conn.getContacts(),
+    MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
+    'meshcoreZeroHopGetContacts',
+  );
+  const contact = findRadioContact(contacts, nodeId) ?? buildContactFromNode(pubKey, node);
+  const op = () =>
+    addOrUpdate.call(
+      conn,
+      pubKey,
+      contact.type,
+      contact.flags,
+      0,
+      new Uint8Array(64),
+      contact.advName,
+      contact.lastAdvert,
+      contact.advLat,
+      contact.advLon,
+    );
+  try {
+    await withTimeout(
+      runSerialized ? runSerialized(op) : op(),
+      MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
+      'meshcoreZeroHopContactWrite',
+    );
+  } catch (e: unknown) {
+    if (isMeshcoreTableFullError(e)) {
+      throw new Error(serializeMeshcoreUserMessage('meshcore.errors.radioContactTableFull'), {
+        cause: e,
+      });
+    }
+    throw e;
+  }
+}
+
+/**
  * Push a known multi-hop route to the companion contact table before SendLogin.
  * Failure point: radio contact has outPathLen 0 while UI shows hops — login never reaches the room.
  * Fallback: skip sync for direct (0-hop) rooms.

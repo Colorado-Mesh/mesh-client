@@ -31,6 +31,7 @@ export interface RepeaterRadioEvent {
     | 'binary'
     | 'trace'
     | 'resetPath'
+    | 'contactUpdate'
     | 'drop'
     | 'lost'
     | 'reply'
@@ -267,6 +268,15 @@ export async function startMeshcoreRepeaterRadio(selfId = 171, options: Repeater
           log({ kind: 'resetPath' });
           send(Buffer.from([0]));
           break;
+        case 9: {
+          // CMD_ADD_UPDATE_CONTACT: pubkey(32) type flags out_path_len(int8) out_path(64) ...
+          if (command.subarray(1, 33).equals(repeaterKey)) {
+            contactPathLen = command.readInt8(35);
+            log({ kind: 'contactUpdate', detail: `pathLen=${contactPathLen}` });
+          }
+          send(Buffer.from([0]));
+          break;
+        }
         case 26: {
           // CMD_SEND_LOGIN
           const supplied = command.subarray(33).toString().split('\0')[0];

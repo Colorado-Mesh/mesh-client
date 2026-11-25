@@ -1,11 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
-import { LabeledMenuButton, MenuButton, type MenuEntry, SplitButton } from './Menu';
+import { LabeledMenuButton, MenuButton, type MenuEntry, type MenuItem, SplitButton } from './Menu';
 
 function entries(onRadio = vi.fn(), onQuit = vi.fn()): MenuEntry[] {
   return [
@@ -179,6 +179,173 @@ describe('MenuButton', () => {
     expect(menu).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).toBeNull();
+  });
+});
+
+describe('Menu radio groups', () => {
+  function routeEntries(onDirect = vi.fn()): MenuEntry[] {
+    return [
+      { id: 'status', label: 'Request status', onSelect: vi.fn() },
+      'separator',
+      {
+        id: 'route',
+        label: 'When a reply is missed',
+        items: [
+          { id: 'auto', label: 'Auto', checked: true, onSelect: vi.fn() },
+          {
+            id: 'direct',
+            label: 'Direct only',
+            description: 'Resend once on the same route',
+            checked: false,
+            onSelect: onDirect,
+          },
+        ],
+      },
+    ];
+  }
+
+  async function openMenu(entries: MenuEntry[]) {
+    const user = userEvent.setup();
+    const utils = render(
+      <MenuButton
+        aria-label="More actions for Ridge Fox"
+        icon={<span aria-hidden="true">...</span>}
+        menuLabel="Actions for Ridge Fox"
+        entries={entries}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'More actions for Ridge Fox' }));
+    return { user, ...utils };
+  }
+
+  it('renders a labelled group of radio items with their checked state', async () => {
+    await openMenu(routeEntries());
+    const group = screen.getByRole('group', { name: 'When a reply is missed' });
+    const auto = within(group).getByRole('menuitemradio', { name: 'Auto' });
+    const direct = within(group).getByRole('menuitemradio', { name: 'Direct only' });
+    expect(auto).toHaveAttribute('aria-checked', 'true');
+    expect(direct).toHaveAttribute('aria-checked', 'false');
+    expect(direct).toHaveAccessibleDescription('Resend once on the same route');
+    // Plain items keep their role.
+    expect(screen.getByRole('menuitem', { name: 'Request status' })).toBeInTheDocument();
+  });
+
+  it('moves into the radio items with the arrow keys and runs the chosen one', async () => {
+    const onDirect = vi.fn();
+    const { user } = await openMenu(routeEntries(onDirect));
+    expect(screen.getByRole('menuitem', { name: 'Request status' })).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitemradio', { name: 'Auto' })).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitemradio', { name: 'Direct only' })).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(onDirect).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('skips a disabled radio item when moving with the arrow keys', async () => {
+    const entries = routeEntries();
+    const group = entries[2] as Exclude<MenuEntry, 'separator'> & { items: MenuItem[] };
+    group.items[0] = { ...group.items[0], disabled: true };
+    const { user } = await openMenu(entries);
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitemradio', { name: 'Direct only' })).toHaveFocus();
+  });
+
+  it('has no axe violations with a radio group open', async () => {
+    await openMenu(routeEntries());
+    const menu = screen.getByRole('menu');
+    hydrateAxeThemeColors(menu);
+    expect(await axe(menu)).toHaveNoViolations();
+  });
+});
+
+describe('Menu placement in a short window', () => {
+  const originalInnerHeight = window.innerHeight;
+
+  afterEach(() => {
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: originalInnerHeight,
+    });
+    vi.restoreAllMocks();
+  });
+
+  /** Lay out a trigger at `triggerTop` and a menu `menuHeight` tall in a window `height` tall. */
+  function stubLayout(opts: { height: number; triggerTop: number; menuHeight: number }) {
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: opts.height });
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      if (this.getAttribute('aria-haspopup') === 'menu') {
+        return DOMRect.fromRect({ x: 900, y: opts.triggerTop, width: 30, height: 30 });
+      }
+      return DOMRect.fromRect({ x: 0, y: 0, width: 0, height: 0 });
+    });
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.getAttribute('role') === 'menu' ? opts.menuHeight : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.getAttribute('role') === 'menu' ? 240 : 0;
+    });
+  }
+
+  async function openActions() {
+    const user = userEvent.setup();
+    render(
+      <MenuButton
+        aria-label="More actions for Ridge Fox"
+        icon={<span aria-hidden="true">...</span>}
+        menuLabel="Actions for Ridge Fox"
+        entries={[{ id: 'ping', label: 'Ping', onSelect: vi.fn() }]}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'More actions for Ridge Fox' }));
+    return screen.getByRole('menu');
+  }
+
+  it('opens below without a height cap when it fits', async () => {
+    stubLayout({ height: 800, triggerTop: 250, menuHeight: 400 });
+    const menu = await openActions();
+    expect(menu.style.top).toBe('284px');
+    expect(menu.style.maxHeight).toBe('');
+  });
+
+  it('opens above when only the space above fits', async () => {
+    stubLayout({ height: 800, triggerTop: 700, menuHeight: 400 });
+    const menu = await openActions();
+    expect(menu.style.top).toBe('296px');
+    expect(menu.style.maxHeight).toBe('');
+  });
+
+  it('caps the height and scrolls on the roomier side instead of covering the trigger', async () => {
+    // 520 px of menu, 508 px free below the trigger, 238 px above: neither fits.
+    stubLayout({ height: 800, triggerTop: 250, menuHeight: 520 });
+    const menu = await openActions();
+    expect(menu.style.top).toBe('284px');
+    expect(menu.style.maxHeight).toBe('508px');
+    expect(menu.style.overflowY).toBe('auto');
+  });
+
+  it('stays open when the capped menu scrolls its own items', async () => {
+    stubLayout({ height: 800, triggerTop: 250, menuHeight: 520 });
+    const menu = await openActions();
+    fireEvent.scroll(menu);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    // A scroll anywhere else still closes it.
+    fireEvent.scroll(window);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('caps the height above the trigger when there is more room above', async () => {
+    stubLayout({ height: 600, triggerTop: 400, menuHeight: 504 });
+    const menu = await openActions();
+    expect(menu.style.top).toBe('8px');
+    expect(menu.style.maxHeight).toBe('388px');
   });
 });
 

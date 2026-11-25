@@ -4,6 +4,22 @@ import { MESHCORE_REPEATER_ROUTE_ESCALATION_COOLDOWN_MS } from './timeConstants'
 
 export type MeshcoreRepeaterRouteKind = 'direct' | 'flood' | 'unknown';
 
+/**
+ * What a missed reply does, chosen per repeater (issue 1566).
+ * - `auto`: clear the companion route and resend once as a flood (the default).
+ * - `direct`: keep the route and resend once on it; never clear it, never flood.
+ * - `zeroHop`: write a zero-hop route before every send, then behave as `direct`.
+ */
+export type MeshcoreRepeaterRouteMode = 'auto' | 'direct' | 'zeroHop';
+
+/** One send of a repeater request. */
+export interface MeshcoreRepeaterRequestAttempt {
+  /** The companion route was cleared and this send floods. */
+  escalated: boolean;
+  /** A resend on the same route after a timeout (Direct only and Zero-hop modes). */
+  sameRouteRetry: boolean;
+}
+
 /** Identity + live connection snapshot for one admin/radio request (captured at call start). */
 export interface MeshcoreRepeaterEscalationContext {
   identity: string | null | undefined;
@@ -25,6 +41,13 @@ export interface MeshcoreRepeaterRouteEscalationDeps {
    * as stale after a successful path reset.
    */
   isEscalationContextCurrent?: (ctx: MeshcoreRepeaterEscalationContext) => boolean;
+  /** Per-repeater choice of what a timeout does; read once per call. Missing means `auto`. */
+  routeMode?: (nodeId: number) => MeshcoreRepeaterRouteMode;
+  /**
+   * Point the companion contact at the node with a zero-hop route. Called before every send in
+   * `zeroHop` mode; a rejection stops the request before anything is sent.
+   */
+  ensureZeroHopRoute?: (nodeId: number) => Promise<void>;
   nowMs?: () => number;
   cooldownMs?: number;
 }
@@ -85,13 +108,18 @@ export function isMeshcoreRepeaterTimeoutError(error: unknown): boolean {
  * Run `fn` once; on timeout only, reset the companion path and retry once when the prior
  * route was direct (or unknown with a clearable path). Never escalates on radio ERR,
  * when already flood, or during the per-node cooldown.
+ *
+ * `direct` and `zeroHop` route modes replace the reset and flood with one resend on the same
+ * route (no cooldown). Failure point: in `zeroHop` mode a failed route write rejects before any
+ * send, so the request never goes out on whatever route the radio held.
  */
 export async function withMeshcoreRepeaterRouteEscalation<T>(
   nodeId: number,
   deps: MeshcoreRepeaterRouteEscalationDeps,
-  fn: (attempt: { escalated: boolean }) => Promise<T>,
+  fn: (attempt: MeshcoreRepeaterRequestAttempt) => Promise<T>,
 ): Promise<T> {
   const normalizedId = nodeId >>> 0;
+  const mode = deps.routeMode?.(normalizedId) ?? 'auto';
   const now = deps.nowMs ?? Date.now;
   const cooldownMs = deps.cooldownMs ?? MESHCORE_REPEATER_ROUTE_ESCALATION_COOLDOWN_MS;
   const requestContext = deps.captureEscalationContext?.();
@@ -107,8 +135,15 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
     }
   };
 
+  const ensureZeroHop = async (): Promise<void> => {
+    if (mode === 'zeroHop' && deps.ensureZeroHopRoute) {
+      await deps.ensureZeroHopRoute(normalizedId);
+    }
+  };
+
+  await ensureZeroHop();
   try {
-    return await fn({ escalated: false });
+    return await fn({ escalated: false, sameRouteRetry: false });
   } catch (firstErr) {
     if (!isMeshcoreRepeaterTimeoutError(firstErr)) {
       throw firstErr;
@@ -117,6 +152,23 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
       abortIfStale();
     } catch {
       throw firstErr;
+    }
+    if (mode !== 'auto') {
+      // A Direct only route the radio already floods gets no help from a resend here; the
+      // login fallback still asks again after a login, as it does in Auto.
+      if (mode === 'direct' && deps.resolveRouteKind(normalizedId) === 'flood') {
+        throw firstErr;
+      }
+      console.warn(
+        `mcL1506 [meshcoreRepeaterRouteEscalation] timeout node=${normalizedId} mode=${mode}; resending on the same route`,
+      );
+      await ensureZeroHop();
+      try {
+        abortIfStale();
+      } catch {
+        throw firstErr;
+      }
+      return fn({ escalated: false, sameRouteRetry: true });
     }
     const routeKind = deps.resolveRouteKind(normalizedId);
     if (routeKind === 'flood') {
@@ -155,7 +207,7 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
       throw firstErr;
     }
     lastEscalationByNode.set(cooldownKey, now());
-    return fn({ escalated: true });
+    return fn({ escalated: true, sameRouteRetry: false });
   }
 }
 
@@ -172,13 +224,14 @@ export interface MeshcoreRepeaterLoginFallbackDeps extends MeshcoreRepeaterRoute
  * Repeater firmware answers Status only for a companion in its access list, and drops
  * everything else silently. Guest entries are not saved, so a reboot forgets them. The
  * first attempt stays login-free (a known companion is answered at once); after a timeout
- * the retry logs in first. Failure point: a login that gets no reply rejects with its own
- * timeout and the request is not sent again. At most one login per call.
+ * the retry logs in first (the flood resend in Auto, the same-route resend in Direct only and
+ * Zero-hop). Failure point: a login that gets no reply rejects with its own timeout and the
+ * request is not sent again. At most one login per call.
  */
 export async function withMeshcoreRepeaterLoginFallback<T>(
   nodeId: number,
   deps: MeshcoreRepeaterLoginFallbackDeps,
-  fn: (attempt: { escalated: boolean; loggedIn: boolean }) => Promise<T>,
+  fn: (attempt: MeshcoreRepeaterRequestAttempt & { loggedIn: boolean }) => Promise<T>,
 ): Promise<T> {
   const normalizedId = nodeId >>> 0;
   // Held in an object so the catch below reads the value the closure wrote.
@@ -188,9 +241,10 @@ export async function withMeshcoreRepeaterLoginFallback<T>(
     await deps.login(normalizedId);
   };
   try {
-    return await withMeshcoreRepeaterRouteEscalation(normalizedId, deps, async ({ escalated }) => {
-      if (escalated && !state.loggedIn && deps.canLogin(normalizedId)) await loginOnce();
-      return fn({ escalated, loggedIn: state.loggedIn });
+    return await withMeshcoreRepeaterRouteEscalation(normalizedId, deps, async (attempt) => {
+      const isRetry = attempt.escalated || attempt.sameRouteRetry;
+      if (isRetry && !state.loggedIn && deps.canLogin(normalizedId)) await loginOnce();
+      return fn({ ...attempt, loggedIn: state.loggedIn });
     });
   } catch (err) {
     if (state.loggedIn || !isMeshcoreRepeaterTimeoutError(err) || !deps.canLogin(normalizedId)) {
@@ -200,6 +254,6 @@ export async function withMeshcoreRepeaterLoginFallback<T>(
       `mcL0922 [meshcoreRepeaterRouteEscalation] timeout node=${normalizedId}; logging in before one more attempt`,
     );
     await loginOnce();
-    return fn({ escalated: false, loggedIn: state.loggedIn });
+    return fn({ escalated: false, sameRouteRetry: false, loggedIn: state.loggedIn });
   }
 }
