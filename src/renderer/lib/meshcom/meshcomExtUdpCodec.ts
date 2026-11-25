@@ -17,6 +17,7 @@ import {
 import { truncateToWireBytes } from './meshcomWireLimits';
 
 export { MESHCOM_EXTUDP_PORT, MESHCOM_MAX_MSG_ID_LEN };
+/** Firmware EXTUDP `msg` gate: reject when `strlen(msg) > 150` (UTF-8 bytes). */
 export const MESHCOM_EXTUDP_MSG_MAX_LEN = 150;
 /** Bound firmware / src_type / aprs metadata strings retained from EXTUDP peers. */
 const MESHCOM_EXTUDP_META_MAX_LEN = 64;

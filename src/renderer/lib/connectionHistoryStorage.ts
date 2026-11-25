@@ -1,7 +1,11 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import { parseConnectHostPort } from '@/shared/connectHost';
-import { MESHCOM_EXTUDP_PORT, MESHCOM_KISS_TCP_PORT } from '@/shared/meshcomConstants';
+import {
+  MESHCOM_EXTUDP_PORT,
+  MESHCOM_KISS_TCP_PORT,
+  MESHCOM_NETCONSOLE_PORT,
+} from '@/shared/meshcomConstants';
 
 import {
   clearLastConnection,
@@ -55,6 +59,7 @@ export function defaultPortForConnectionHistory(
 ): number {
   if (type === 'tcp') return MESHTASTIC_NATIVE_TCP_PORT;
   if (type === 'udp') return MESHCOM_EXTUDP_PORT;
+  if (type === 'netconsole') return MESHCOM_NETCONSOLE_PORT;
   if (type === 'http') {
     if (protocol === 'meshcore') return MESHCORE_COMPANION_TCP_PORT;
     if (protocol === 'meshcom') return MESHCOM_KISS_TCP_PORT;
@@ -77,7 +82,7 @@ export function connectionHistoryIdentityKey(
     const id = (conn.serialPortId ?? '').trim();
     return id ? `serial:${id}` : null;
   }
-  // Remaining: http | tcp | udp
+  // Remaining: http | tcp | udp | netconsole
   const addr = (conn.httpAddress ?? '').trim();
   if (!addr) return null;
   const { host, port } = parseConnectHostPort(
@@ -126,7 +131,14 @@ function bleHistoryEntriesConflict(a: LastConnection, b: LastConnection): boolea
 }
 
 function isConnectionType(v: unknown): v is ConnectionType {
-  return v === 'ble' || v === 'serial' || v === 'http' || v === 'tcp' || v === 'udp';
+  return (
+    v === 'ble' ||
+    v === 'serial' ||
+    v === 'http' ||
+    v === 'tcp' ||
+    v === 'udp' ||
+    v === 'netconsole'
+  );
 }
 
 /** True when a legacy lastConnection has typed fields safe for identity-key derivation. */

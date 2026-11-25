@@ -19,6 +19,13 @@ const BLE_SESSION_RE = /\[BLE:(meshtastic|meshcore|meshcom|reticulum)\]/i;
 const IPC_SIDECAR_RE = /\[IpcSidecarGattConnection:(meshtastic|meshcore|meshcom|reticulum)\]/i;
 const MAIN_GATT_SESSION_RE =
   /\[main\]\s+gatt:.*\bsession=(meshtastic|meshcore|meshcom|reticulum)\b/i;
+/**
+ * IPC invoke / channel tokens embedded in renderer errors, e.g.
+ * `Error invoking remote method 'meshcore:tcp-connect'`. Prefer these over Vite
+ * chunk filenames in `source` — shared chunks can be named for one protocol while
+ * executing another (see `connection-runtime` / historical `meshcom-runtime`).
+ */
+const IPC_INVOKE_CHANNEL_RE = /\b(meshtastic|meshcore|meshcom|reticulum):[a-z][a-z0-9_-]*\b/i;
 /** Only attribute RF auto-connect *failures*; skipped/coexistence lines stay shared. */
 const RF_AUTO_CONNECT_RE =
   /^\[useProtocolRfAutoConnect\]\s+(meshtastic|meshcore|meshcom|reticulum)\b(?=.*\b(?:timed out|failed|error)\b)/i;
@@ -86,6 +93,12 @@ export function resolveLogProtocolFromChannel(line: LogLineLike): MeshProtocol |
   const rfAuto = RF_AUTO_CONNECT_RE.exec(message.trimStart().replace(LEADING_LOG_ID_RE, ''));
   if (rfAuto?.[1]) {
     const p = parseProtocolToken(rfAuto[1]);
+    if (p) return p;
+  }
+
+  const invoke = IPC_INVOKE_CHANNEL_RE.exec(message);
+  if (invoke?.[1]) {
+    const p = parseProtocolToken(invoke[1]);
     if (p) return p;
   }
 

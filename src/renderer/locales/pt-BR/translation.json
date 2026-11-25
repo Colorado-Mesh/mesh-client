@@ -1965,7 +1965,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "Dispositivos salvos",
     "savedDevicesConnectAria": "Reconectar a {{name}}",
-    "savedDevicesDeleteAria": "Excluir dispositivo salvo {{name}}"
+    "savedDevicesDeleteAria": "Excluir dispositivo salvo {{name}}",
+    "meshcomMqttGatewayHint": "O MeshCom nacional MQTT geralmente é acessado por meio do gateway do nó (--gateway), e não por um broker de cliente direto. Expanda apenas se você tiver um broker personalizado.",
+    "kissPassword": "KISS / Senha do console NET",
+    "kissPasswordHelp": "Nó --passwd (máx. 14 caracteres). Usado quando --kiss auth está ativado ou para o Console NET. Deixe em branco quando o nó não tiver senha.",
+    "kissPasswordAria": "Senha do nó MeshCom para autenticação no KISS ou no Console NET",
+    "netConsole": "Console NET"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -9191,7 +9196,8 @@
         "dl26251": "Distrito de Rheinisch-Bergischer"
       },
       "slotsFullLocalOnly": "Os slots de escuta do nó estão cheios (6). Aberto apenas localmente — substitua um slot em Rádio → Identidade para reservar no nó."
-    }
+    },
+    "netConsoleHint": "O NET Console é TCP porta 2323 (LAN de texto simples). Ative --netconsole no nó; --passwd opcional para login HMAC."
   },
   "meshcomDeviceCommands": {
     "description": "Envie comandos do nó ICSSW (--help, --settime, --setctry, …) pela porta serial ou pelo BLE. Os comandos compatíveis com o aplicativo correspondem ao aplicativo oficial da MeshCom; os comandos exclusivos para serial precisam de um link do console USB.",

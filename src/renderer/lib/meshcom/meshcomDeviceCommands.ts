@@ -17,39 +17,42 @@ export type MeshcomDeviceCommandTransport = MeshComDeviceHandle['transport'];
 export function meshcomDeviceCommandsSupported(
   transport: MeshcomDeviceCommandTransport | null | undefined,
 ): boolean {
-  return transport === 'serial' || transport === 'ble';
+  return transport === 'serial' || transport === 'ble' || transport === 'netconsole';
 }
 
 export function encodeMeshcomDeviceCommand(
-  transport: 'serial' | 'ble',
+  transport: 'serial' | 'ble' | 'netconsole',
   command: string,
 ): Uint8Array {
   const line = normalizeMeshcomCommandInput(command);
   if (!line) {
     throw new Error('Empty MeshCom device command');
   }
-  if (transport === 'serial') {
+  if (transport === 'serial' || transport === 'netconsole') {
     return encodeMeshcomSerialLine(line);
   }
   return encodeMeshcomBleCommand(line);
 }
 
 /**
- * Write a node command to the connected Serial/BLE companion.
- * UDP/TCP do not carry the local console / APP command channel.
+ * Write a node command to the connected Serial/BLE/NET Console companion.
+ * EXTUDP/KISS do not carry the local console / APP command channel.
  */
 export async function sendMeshcomDeviceCommand(
   handle: MeshComDeviceHandle,
   command: string,
 ): Promise<{ command: string }> {
   if (!meshcomDeviceCommandsSupported(handle.transport)) {
-    throw new Error('MeshCom device commands require Serial or BLE');
+    throw new Error('MeshCom device commands require Serial, BLE, or NET Console');
   }
   const normalized = normalizeMeshcomCommandInput(command);
   if (!normalized) {
     throw new Error('Empty MeshCom device command');
   }
-  const bytes = encodeMeshcomDeviceCommand(handle.transport as 'serial' | 'ble', normalized);
+  const bytes = encodeMeshcomDeviceCommand(
+    handle.transport as 'serial' | 'ble' | 'netconsole',
+    normalized,
+  );
   await handle.connection.write(bytes);
   return { command: normalized };
 }

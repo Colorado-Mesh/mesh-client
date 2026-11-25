@@ -106,16 +106,16 @@ async function refreshViaBle(handle: MeshComDeviceHandle): Promise<MeshcomDevice
   return snapshotMeshcomDeviceSettings(handle.deviceSettings);
 }
 
-/** Read node settings over Serial (`--info` + `--wx` + `--mheard`) or BLE (`{HELLO}` / `--info` + timestamp + `--wx`). */
+/** Read node settings over Serial/NET Console (`--info` + `--wx` + `--mheard`) or BLE (`{HELLO}` / `--info` + timestamp + `--wx`). */
 export async function refreshMeshcomDeviceSettings(
   handle: MeshComDeviceHandle,
   identityId: IdentityId,
 ): Promise<MeshcomDeviceSettingsSnapshot> {
-  if (handle.transport === 'serial') {
+  if (handle.transport === 'serial' || handle.transport === 'netconsole') {
     return refreshViaSerialInfo(handle, identityId);
   }
   if (handle.transport === 'ble') {
     return refreshViaBle(handle);
   }
-  throw new Error('MeshCom device settings require Serial or BLE');
+  throw new Error('MeshCom device settings require Serial, BLE, or NET Console');
 }

@@ -1,11 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
 import { isMeshtasticAttachSupersededError } from '../lib/meshtastic/meshtasticAttachSuperseded';
-import {
-  meshcomConnectionType,
-  meshcoreConnectionType,
-  protocolTransportParams,
-} from '../lib/protocolTransportParams';
+import { meshcoreConnectionType, protocolTransportParams } from '../lib/protocolTransportParams';
 import type { RfConnectAutomaticFn, RfConnectFn } from '../lib/rfConnectionTypes';
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
 import { getMeshcomSession } from '../lib/sessions/meshcomSession';
@@ -76,8 +72,19 @@ export function useProtocolConnect(): (
       }
 
       if (protocol === 'meshcom') {
-        const mcType = meshcomConnectionType(type);
-        await getMeshcomSession().connect(mcType, httpAddress, blePeripheralId);
+        // Pass UI types through: `http` = KISS, `netconsole` = NET Console :2323.
+        // Do not map via meshcomConnectionType (that collapses http→tcp for TransportParams).
+        if (
+          type !== 'ble' &&
+          type !== 'serial' &&
+          type !== 'http' &&
+          type !== 'tcp' &&
+          type !== 'udp' &&
+          type !== 'netconsole'
+        ) {
+          throw new Error(`meshcom connect: unsupported type ${type}`);
+        }
+        await getMeshcomSession().connect(type, httpAddress, blePeripheralId);
         return;
       }
 

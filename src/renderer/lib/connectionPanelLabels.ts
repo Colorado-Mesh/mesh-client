@@ -48,6 +48,8 @@ export function connectionPanelConnectionTypeLabel(
       return t('connectionPanel.wifiHttp');
     case 'udp':
       return protocol === 'meshcom' ? t('connectionPanel.extUdp') : t('connectionPanel.udp');
+    case 'netconsole':
+      return t('connectionPanel.netConsole');
     default: {
       const _x: never = type;
       return _x;

@@ -2005,7 +2005,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "Zapisane urządzenia",
     "savedDevicesConnectAria": "Połącz się ponownie z {{name}}",
-    "savedDevicesDeleteAria": "Usuń zapisane urządzenie {{name}}"
+    "savedDevicesDeleteAria": "Usuń zapisane urządzenie {{name}}",
+    "meshcomMqttGatewayHint": "Do krajowego MeshCom MQTT zazwyczaj uzyskuje się dostęp przez bramkę węzła (--gateway), a nie bezpośrednio przez brokera klienta. Rozwiń tylko wtedy, gdy masz niestandardowego brokera.",
+    "kissPassword": "KISS / Hasło do konsoli NET",
+    "kissPasswordHelp": "Węzeł --passwd (maks. 14 znaków). Używane, gdy opcja --kiss auth jest włączona lub w przypadku konsoli NET. Pozostaw puste, jeśli węzeł nie ma hasła.",
+    "kissPasswordAria": "Hasło węzła MeshCom do uwierzytelniania w KISS lub konsoli NET",
+    "netConsole": "Konsola NET"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -9335,7 +9340,8 @@
         "dl26251": "Powiat Ren-Berg"
       },
       "slotsFullLocalOnly": "Gniazda nasłuchu węzła są zajęte (6). Otwarty tylko lokalnie – zastąp gniazdo w sekcji Radio → Tożsamość, aby zarezerwować je na węźle."
-    }
+    },
+    "netConsoleHint": "Konsola sieciowa to TCP port 2323 (sieć LAN w formie zwykłego tekstu). Włącz --netconsole na węźle; opcjonalnie --passwd do logowania HMAC."
   },
   "meshcomDeviceCommands": {
     "description": "Wysyłaj polecenia węzła ICSSW (--help, --settime, --setctry, …) przez port szeregowy lub BLE. Polecenia obsługiwane przez aplikację są zgodne z oficjalną aplikacją MeshCom; polecenia dostępne tylko przez port szeregowy wymagają połączenia z konsolą USB.",

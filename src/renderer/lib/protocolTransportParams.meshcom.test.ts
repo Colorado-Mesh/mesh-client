@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { MESHCOM_EXTUDP_PORT, MESHCOM_KISS_TCP_PORT } from '@/shared/meshcomConstants';
+import {
+  MESHCOM_EXTUDP_PORT,
+  MESHCOM_KISS_TCP_PORT,
+  MESHCOM_NETCONSOLE_PORT,
+} from '@/shared/meshcomConstants';
 
 import { meshcomConnectionType, protocolTransportParams } from './protocolTransportParams';
 
@@ -9,8 +13,9 @@ describe('meshcomConnectionType', () => {
     expect(meshcomConnectionType('http')).toBe('tcp');
   });
 
-  it('keeps udp', () => {
+  it('keeps udp and netconsole', () => {
     expect(meshcomConnectionType('udp')).toBe('udp');
+    expect(meshcomConnectionType('netconsole')).toBe('netconsole');
   });
 });
 
@@ -29,5 +34,16 @@ describe('protocolTransportParams meshcom', () => {
       httpAddress: '10.0.0.2',
     });
     expect(params).toEqual({ type: 'tcp', host: `10.0.0.2:${MESHCOM_KISS_TCP_PORT}` });
+  });
+
+  it('defaults NET Console port', () => {
+    const params = protocolTransportParams('meshcom', {
+      type: 'netconsole',
+      httpAddress: '10.0.0.3',
+    });
+    expect(params).toEqual({
+      type: 'netconsole',
+      host: `10.0.0.3:${MESHCOM_NETCONSOLE_PORT}`,
+    });
   });
 });

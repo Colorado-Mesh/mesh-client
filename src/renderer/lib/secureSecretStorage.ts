@@ -25,6 +25,8 @@ export const MESHTASTIC_MQTT_SECRET_KEY = 'mqtt:meshtastic';
 export const MESHCOM_MQTT_SECRET_KEY = 'mqtt:meshcom';
 export const MQTT_PROFILES_SECRET_KEY = 'mqtt:profiles';
 export const MESHCOM_MQTT_PROFILES_SECRET_KEY = 'mqtt:profiles:meshcom';
+/** @deprecated Use {@link meshcomNodePasswdSecretKey} — kept for legacy migrate only. */
+export const MESHCOM_NODE_PASSWD_SECRET_KEY = 'meshcom:node-passwd';
 
 const LEGACY_MESHCORE_IDENTITY_KEY = 'mesh-client:meshcoreIdentity';
 const LEGACY_MESHCORE_IDENTITY_CIPHERTEXT_KEY = 'mesh-client:meshcoreIdentityEncPK';
@@ -36,7 +38,7 @@ const LEGACY_MESHTASTIC_BACKUP_PREFIX = 'mesh-client:meshtastic-dm-key-backup:';
 const COMPATIBILITY_CREDENTIAL_PREFIX = 'mesh-client:credentialCompatibility:';
 
 function compatibilityCredentialKey(key: string): boolean {
-  return /^(?:meshcore:identity|mqtt:(?:meshcore|meshtastic|meshcom|profiles(?::meshcom)?)|meshcore:(?:room|repeater):\d{1,10})$/.test(
+  return /^(?:meshcore:identity|mqtt:(?:meshcore|meshtastic|meshcom|profiles(?::meshcom)?)|meshcore:(?:room|repeater):\d{1,10}|meshcom:node-passwd|meshcom:node-passwd:[a-f0-9]{64})$/.test(
     key,
   );
 }

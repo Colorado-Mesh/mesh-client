@@ -436,7 +436,9 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
  */
 export const MESHCOM_CAPABILITIES: ProtocolCapabilities = {
   protocol: 'meshcom',
-  composerMaxChunks: 1,
+  // App-level `[i/N]` splits (same as Meshtastic/Reticulum). MeshCore stays at 1 —
+  // its busy-repeater drop issue is not known for MeshCom.
+  composerMaxChunks: 9,
   hasHopCount: true,
   hopLimitRange: [1, 7],
   hasMqttHybrid: false,

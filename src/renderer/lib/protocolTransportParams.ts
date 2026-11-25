@@ -1,4 +1,8 @@
-import { MESHCOM_EXTUDP_PORT, MESHCOM_KISS_TCP_PORT } from '@/shared/meshcomConstants';
+import {
+  MESHCOM_EXTUDP_PORT,
+  MESHCOM_KISS_TCP_PORT,
+  MESHCOM_NETCONSOLE_PORT,
+} from '@/shared/meshcomConstants';
 
 import { meshcoreTransportParams, meshtasticTransportParams } from './meshIdentityBridge';
 import type { RfConnectionTransportOpts } from './rfConnectionTypes';
@@ -10,10 +14,24 @@ export function meshcoreConnectionType(type: ConnectionType): 'ble' | 'serial' |
   throw new Error(`meshcoreConnectionType: unsupported type ${type}`);
 }
 
-/** MeshCom KISS UI uses `'http'`; EXTUDP uses `'udp'`. */
-export function meshcomConnectionType(type: ConnectionType): 'ble' | 'serial' | 'tcp' | 'udp' {
-  if (type === 'http') return 'tcp';
-  return type;
+/** MeshCom KISS UI uses `'http'`; NET Console uses `'netconsole'`; EXTUDP uses `'udp'`. */
+export function meshcomConnectionType(
+  type: ConnectionType,
+): 'ble' | 'serial' | 'tcp' | 'udp' | 'netconsole' {
+  switch (type) {
+    case 'http':
+      return 'tcp';
+    case 'ble':
+    case 'serial':
+    case 'tcp':
+    case 'udp':
+    case 'netconsole':
+      return type;
+    default: {
+      const _exhaustive: never = type;
+      throw new Error(`meshcomConnectionType: unsupported type ${String(_exhaustive)}`);
+    }
+  }
 }
 
 function ensureHostPort(host: string, defaultPort: number): string {
@@ -41,7 +59,10 @@ export function protocolTransportParams(
   if (protocol === 'meshcom') {
     const mcType = meshcomConnectionType(opts.type);
     const rawHost =
-      opts.type === 'http' || opts.type === 'tcp' || opts.type === 'udp'
+      opts.type === 'http' ||
+      opts.type === 'tcp' ||
+      opts.type === 'udp' ||
+      opts.type === 'netconsole'
         ? (opts.httpAddress ?? '127.0.0.1')
         : undefined;
     const host =
@@ -51,8 +72,13 @@ export function protocolTransportParams(
           ? ensureHostPort(rawHost, MESHCOM_EXTUDP_PORT)
           : mcType === 'tcp'
             ? ensureHostPort(rawHost, MESHCOM_KISS_TCP_PORT)
-            : rawHost;
-    return meshtasticTransportParams(mcType, {
+            : mcType === 'netconsole'
+              ? ensureHostPort(rawHost, MESHCOM_NETCONSOLE_PORT)
+              : rawHost;
+    if (mcType === 'netconsole') {
+      return { type: 'netconsole', host: host ?? `127.0.0.1:${MESHCOM_NETCONSOLE_PORT}` };
+    }
+    return meshtasticTransportParams(mcType === 'tcp' ? 'tcp' : mcType, {
       peripheralId: opts.type === 'ble' ? opts.blePeripheralId : undefined,
       host,
       portSignature: opts.type === 'serial' ? (opts.lastSerialPortId ?? undefined) : undefined,

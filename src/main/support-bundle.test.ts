@@ -463,6 +463,27 @@ describe('buildSupportBundleZip', () => {
     });
   });
 
+  it('scrubs MeshCom --passwd from support-bundle logs', async () => {
+    await fs.promises.writeFile(
+      logPath,
+      '[DEBUG] [useMeshcomDeviceCommands] sent --passwd node-secret\n' +
+        'mcL0699 [useMeshcomDeviceCommands] --passwd node-secret failed: ETIMEDOUT\n' +
+        'keep --volt on\n',
+      'utf8',
+    );
+    const dest = path.join(workDir, 'github-meshcom-passwd.zip');
+    await buildSupportBundleZip(dest, 'github', '{"ok":true}');
+
+    const zip = await JSZip.loadAsync(await fs.promises.readFile(dest));
+    const log = await zip.file('mesh-client.log')!.async('string');
+    expect(log).not.toContain('node-secret');
+    expect(log).toBe(
+      '[DEBUG] [useMeshcomDeviceCommands] sent --passwd [redacted]\n' +
+        'mcL0699 [useMeshcomDeviceCommands] --passwd [redacted] failed: ETIMEDOUT\n' +
+        'keep --volt on\n',
+    );
+  });
+
   it('keeps the debug snapshot byte-for-byte when there is nothing to scrub', async () => {
     const snapshot = '{"ok":true}';
     const dest = path.join(workDir, 'github-clean.zip');

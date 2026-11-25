@@ -12,7 +12,7 @@ describe('refreshMeshcomDeviceSettings', () => {
       deviceSettingsWaiters: [],
     } as unknown as MeshComDeviceHandle;
     await expect(refreshMeshcomDeviceSettings(handle, 'meshcom:test')).rejects.toThrow(
-      /Serial or BLE/,
+      /Serial, BLE, or NET Console/,
     );
   });
 });

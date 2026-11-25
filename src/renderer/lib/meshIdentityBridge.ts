@@ -109,6 +109,8 @@ function buildMeshTransportParams(
       return { type: 'tcp', host: opts.host ?? '' };
     case 'udp':
       return { type: 'udp', host: opts.host ?? '' };
+    case 'netconsole':
+      return { type: 'netconsole', host: opts.host ?? '' };
     default: {
       const _exhaustive: never = type;
       throw new Error(`${caller}: unsupported connection type ${String(_exhaustive)}`);

@@ -18,13 +18,13 @@ export { isMeshProtocol, REGISTERED_MESH_PROTOCOLS };
 
 export type { TAKClientInfo, TAKServerStatus, TAKSettings };
 
-export type ConnectionType = 'ble' | 'serial' | 'http' | 'tcp' | 'udp';
+export type ConnectionType = 'ble' | 'serial' | 'http' | 'tcp' | 'udp' | 'netconsole';
 
 export type ConnectionStatus =
   'disconnected' | 'connecting' | 'connected' | 'configured' | 'stale' | 'reconnecting';
 
 /** All transports the ConnectionDriver can manage. Superset of `ConnectionType`. */
-export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'udp' | 'mqtt';
+export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'udp' | 'mqtt' | 'netconsole';
 
 export type TransportStatus =
   'connecting' | 'connected' | 'disconnected' | 'reconnecting' | 'stale';
@@ -36,6 +36,7 @@ export type TransportParams =
   | { type: 'http'; host: string }
   | { type: 'tcp'; host: string }
   | { type: 'udp'; host: string }
+  | { type: 'netconsole'; host: string }
   | { type: 'mqtt'; broker: string; topic?: string; pubkey?: string };
 
 export interface TransportRef {

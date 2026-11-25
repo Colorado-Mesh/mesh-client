@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import path from 'path';
 
 import { buildInfoForManifest, getBuildInfo } from '../shared/buildInfo';
+import { redactMeshcomSecretsInText } from '../shared/meshcomCommandSecrets';
 import {
   redactMeshcoreCliSecretsInJsonText,
   redactMeshcoreCliSecretsInText,
@@ -201,14 +202,15 @@ Contents:
 }
 
 /**
- * Scrub MeshCore CLI secrets (`set wifi.pwd`, `set pin`, `get wifi.pwd` replies, …) from a log
- * buffer. The renderer already redacts before logging; this catches older builds' lines. The
- * debug snapshot gets the JSON-string variant so it stays valid JSON.
+ * Scrub MeshCore CLI secrets (`set wifi.pwd`, `set pin`, `get wifi.pwd` replies, …) and MeshCom
+ * sensitive `--` args (`--passwd`, `--setpwd`, …) from a log buffer. The renderer already
+ * redacts before logging; this catches older builds' lines. The debug snapshot gets the
+ * MeshCore JSON-string variant so it stays valid JSON.
  */
 export function redactMeshcoreCliSecretsInLog(log: Buffer): Buffer {
   if (log.length === 0) return log;
   const text = log.toString('utf8');
-  const redacted = redactMeshcoreCliSecretsInText(text);
+  const redacted = redactMeshcomSecretsInText(redactMeshcoreCliSecretsInText(text));
   return redacted === text ? log : Buffer.from(redacted, 'utf8');
 }
 

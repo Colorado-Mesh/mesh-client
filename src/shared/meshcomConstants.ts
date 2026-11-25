@@ -4,6 +4,9 @@ export const MESHCOM_EXTUDP_PORT = 1799;
 /** MeshCom KISS/TCP companion port (AX.25 UI over KISS). */
 export const MESHCOM_KISS_TCP_PORT = 8001;
 
+/** MeshCom NET Console TCP port (HMAC console / ExtUDP JSON over TCP). */
+export const MESHCOM_NETCONSOLE_PORT = 2323;
+
 /** USB serial console baud rate. */
 export const MESHCOM_SERIAL_BAUD = 115200;
 
@@ -15,7 +18,8 @@ export const MESHCOM_MAX_TEXT_LEN = 4096;
 
 /**
  * Max UTF-8 bytes for serial/BLE chat address prefix + body (`{260}text` / `{CALL}text`).
- * EXTUDP JSON `msg` stays at 150 in `MESHCOM_EXTUDP_MSG_MAX_LEN` (EXTUDP codec).
+ * Firmware `sendMessage()` rejects length > 160. EXTUDP JSON `msg` stays at 150 in
+ * `MESHCOM_EXTUDP_MSG_MAX_LEN` (firmware `strlen(msg) > 150`).
  */
 export const MESHCOM_WIRE_MAX_BYTES = 160;
 

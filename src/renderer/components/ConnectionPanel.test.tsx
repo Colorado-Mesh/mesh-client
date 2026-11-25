@@ -1462,6 +1462,36 @@ describe('ConnectionPanel connect views', () => {
       localStorage.removeItem(lastConnKey);
     }
   });
+
+  it('MeshCom NET Console reconnect passes saved type and address to onConnect', async () => {
+    const user = userEvent.setup();
+    const lastConnKey = 'mesh-client:lastConnection:meshcom';
+    localStorage.setItem(
+      lastConnKey,
+      JSON.stringify({ type: 'netconsole', httpAddress: '10.0.0.9:2323' }),
+    );
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={onConnect}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcom"
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /Reconnect to 10\.0\.0\.9:2323/i }));
+      await waitFor(() => {
+        expect(onConnect).toHaveBeenCalledWith('netconsole', '10.0.0.9:2323');
+      });
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
 });
 
 describe('ConnectionPanel auto-reconnect banner leftover', () => {

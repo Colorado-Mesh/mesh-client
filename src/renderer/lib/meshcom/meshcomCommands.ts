@@ -57,7 +57,7 @@ export interface MeshcomCommandDescriptor {
   choices?: readonly string[];
   /** Placeholder hint for free-text / number args. */
   argHint?: string;
-  /** Redact argument in logs (WiFi password, webpwd, BLE PIN). */
+  /** Redact argument in logs (WiFi password, webpwd, BLE PIN, node --passwd). */
   sensitive?: boolean;
   /** Confirm before send (reboot / OTA / factory rotate). */
   danger?: boolean;
@@ -726,6 +726,29 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     channel: 'app',
     group: 'misc',
     argKind: 'onOff',
+  },
+  {
+    id: 'kissAuth',
+    token: '--kiss auth',
+    channel: 'app',
+    group: 'misc',
+    argKind: 'onOff',
+  },
+  {
+    id: 'netconsole',
+    token: '--netconsole',
+    channel: 'app',
+    group: 'network',
+    argKind: 'onOff',
+  },
+  {
+    id: 'passwd',
+    token: '--passwd',
+    channel: 'app',
+    group: 'network',
+    argKind: 'text',
+    argHint: 'max 14 chars; none clears',
+    sensitive: true,
   },
 ];
 

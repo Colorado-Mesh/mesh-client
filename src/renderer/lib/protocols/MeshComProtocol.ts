@@ -17,6 +17,7 @@ import {
   type MeshcomDeviceSettingsAccum,
 } from '../meshcom/meshcomDeviceSettings';
 import { parseMeshcomExtUdp, serializeMeshcomExtUdp } from '../meshcom/meshcomExtUdpCodec';
+import { extractMeshcomExtUdpConsoleJson } from '../meshcom/meshcomExtUdpConsole';
 import {
   composeMeshcomFirmwareMsgId,
   meshcomGwPrefixFromId,
@@ -35,7 +36,15 @@ import {
   parseMeshcomInfoField,
 } from '../meshcom/meshcomKissCodec';
 import { parseMeshcomMhJson } from '../meshcom/meshcomMheard';
-import { MeshcomSerialLineBuffer, meshcomSerialSendText } from '../meshcom/meshcomSerial';
+import {
+  getMeshcomNodePasswd,
+  meshcomAuthTransportFromConnectionType,
+} from '../meshcom/meshcomNodePasswd';
+import {
+  meshcomNetConsoleSendText,
+  MeshcomSerialLineBuffer,
+  meshcomSerialSendText,
+} from '../meshcom/meshcomSerial';
 import { meshcomBodyBudgetBytes, truncateToWireBytes } from '../meshcom/meshcomWireLimits';
 import { sanitizeMeshcomWireLine } from '../meshcom/meshcomWireSanitize';
 import { MESHCOM_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -96,7 +105,7 @@ function clearKissTxWaiters(handle: MeshComDeviceHandle): void {
 /** Runtime handle returned by {@link meshcomProtocol.createDevice}. */
 export interface MeshComDeviceHandle {
   connection: MeshComConnection;
-  transport: 'udp' | 'tcp' | 'serial' | 'ble';
+  transport: 'udp' | 'tcp' | 'netconsole' | 'serial' | 'ble';
   /** Operator callsign for KISS TX src (SSID 0–15). */
   operatorCallsign: string;
   /** nodeId → callsign learned from inbound traffic. */
@@ -940,7 +949,14 @@ export const meshcomProtocol: Protocol = {
   capabilities: MESHCOM_CAPABILITIES,
 
   async createDevice(params: TransportParams): Promise<MeshComDeviceHandle> {
-    const transportParams = transportParamsToMeshCom(params);
+    const authTransport = meshcomAuthTransportFromConnectionType(params.type);
+    const authHost =
+      params.type === 'tcp' || params.type === 'http' || params.type === 'netconsole'
+        ? params.host
+        : '';
+    const authPassword =
+      authTransport && authHost ? getMeshcomNodePasswd(authTransport, authHost) : '';
+    const transportParams = transportParamsToMeshCom(params, { authPassword });
     const connection = await createMeshComConnection(transportParams);
     return {
       connection,
@@ -972,11 +988,12 @@ export const meshcomProtocol: Protocol = {
     const ingestTextOrJson = (text: string): void => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      if (trimmed.startsWith('{')) {
-        if (tryIngestSettingsJson(device, trimmed, emit)) return;
-        const parsed = parseMeshcomExtUdp(trimmed);
+      const jsonCandidate = extractMeshcomExtUdpConsoleJson(trimmed) ?? trimmed;
+      if (jsonCandidate.startsWith('{')) {
+        if (tryIngestSettingsJson(device, jsonCandidate, emit)) return;
+        const parsed = parseMeshcomExtUdp(jsonCandidate);
         if (parsed) {
-          emitExtUdpEvents(device, new TextEncoder().encode(trimmed), emit);
+          emitExtUdpEvents(device, new TextEncoder().encode(jsonCandidate), emit);
           return;
         }
         emitConsoleTextLine(device, trimmed, emit);
@@ -995,7 +1012,7 @@ export const meshcomProtocol: Protocol = {
           emitKissEvents(device, events, emit);
           return;
         }
-        if (device.transport === 'serial') {
+        if (device.transport === 'serial' || device.transport === 'netconsole') {
           for (const line of serialLines.push(bytes)) {
             ingestTextOrJson(line);
           }
@@ -1115,12 +1132,16 @@ export const meshcomProtocol: Protocol = {
       }
     }
 
-    if (device.transport === 'serial') {
+    if (device.transport === 'serial' || device.transport === 'netconsole') {
       const seq = device.firmwareMsgSeq;
       advanceMeshcomOutboundMsgSeq(device);
       const packetId = allocateMeshcomOutboundPacketId({ ...device, firmwareMsgSeq: seq });
       try {
-        await device.connection.write(meshcomSerialSendText(dst, text));
+        const bytes =
+          device.transport === 'netconsole'
+            ? meshcomNetConsoleSendText(dst, text)
+            : meshcomSerialSendText(dst, text);
+        await device.connection.write(bytes);
       } catch (err) {
         device.firmwareMsgSeq = seq;
         throw err;
@@ -1129,7 +1150,7 @@ export const meshcomProtocol: Protocol = {
       return { packetId };
     }
 
-    // Remaining MeshCom transport is BLE (udp/tcp/serial handled above).
+    // Remaining MeshCom transport is BLE (udp/tcp/serial/netconsole handled above).
     // ICSSW HELLO/settings carry no authoritative outbound msg_id — seed seq=1 until
     // local TX_RESULT or echoed own traffic is observed (`noteLocalMeshcomFirmwareMsgId`).
     const seq = device.firmwareMsgSeq;
@@ -1206,8 +1227,12 @@ export const meshcomProtocol: Protocol = {
       throw new Error('meshcom setOwner: callsign required (--setcall)');
     }
     device.operatorCallsign = callsign;
-    // Persist on the radio only over Serial/BLE console; KISS/EXTUDP just need local TX src.
-    if (device.transport === 'serial' || device.transport === 'ble') {
+    // Persist on the radio only over Serial/BLE/NET Console; KISS/EXTUDP just need local TX src.
+    if (
+      device.transport === 'serial' ||
+      device.transport === 'ble' ||
+      device.transport === 'netconsole'
+    ) {
       const { sendMeshcomDeviceCommand } = await import('../meshcom/meshcomDeviceCommands');
       await sendMeshcomDeviceCommand(device, `--setcall ${callsign}`);
       const operator = sanitizeMeshcomWireLine(opts.shortName).slice(0, 19);

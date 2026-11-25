@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   encodeMeshcomSerialLine,
+  meshcomNetConsoleSendText,
   MeshcomSerialLineBuffer,
   meshcomSerialSendText,
 } from './meshcomSerial';
@@ -17,6 +18,14 @@ describe('meshcomSerial encode/decode', () => {
     expect(directed).toBe('{OE1ABC-1}hello\r\n');
     const group = new TextDecoder().decode(meshcomSerialSendText('*', 'all'));
     expect(group).toBe('all\r\n');
+  });
+
+  it('meshcomNetConsoleSendText uses :: console inject framing', () => {
+    expect(new TextDecoder().decode(meshcomNetConsoleSendText('*', 'hi'))).toBe('::hi\r\n');
+    expect(new TextDecoder().decode(meshcomNetConsoleSendText('260', 'hi'))).toBe('::{260}hi\r\n');
+    expect(new TextDecoder().decode(meshcomNetConsoleSendText('OE1ABC-1', 'hi'))).toBe(
+      '::{OE1ABC-1}hi\r\n',
+    );
   });
 
   it('meshcomSerialSendText truncates body to 160-byte address+body budget', () => {

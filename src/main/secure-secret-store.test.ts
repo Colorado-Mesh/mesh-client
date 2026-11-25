@@ -483,6 +483,11 @@ describe('SecureSecretStore', () => {
       );
       await expect(store.get('meshcore:room:-1')).rejects.toThrow(/invalid key/);
       await expect(store.get('meshcore:room:4294967296')).rejects.toThrow(/invalid key/);
+      const meshcomScoped =
+        'meshcom:node-passwd:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      await expect(store.set(meshcomScoped, 'node-pw')).resolves.toMatchObject({ verified: true });
+      expect(await store.get(meshcomScoped)).toBe('node-pw');
+      await expect(store.set('meshcom:node-passwd:deadbeef', 'x')).rejects.toThrow(/invalid key/);
     } finally {
       db.close();
     }

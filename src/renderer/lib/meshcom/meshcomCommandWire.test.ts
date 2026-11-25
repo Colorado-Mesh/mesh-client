@@ -23,5 +23,9 @@ describe('meshcomCommandWire', () => {
 
   it('redacts secrets', () => {
     expect(redactMeshcomCommandForLog('--setpwd secret')).toBe('--setpwd [redacted]');
+    expect(redactMeshcomCommandForLog('--webpwd hunter2')).toBe('--webpwd [redacted]');
+    expect(redactMeshcomCommandForLog('--btcode 123456')).toBe('--btcode [redacted]');
+    expect(redactMeshcomCommandForLog('--passwd node-secret')).toBe('--passwd [redacted]');
+    expect(redactMeshcomCommandForLog('--volt on')).toBe('--volt on');
   });
 });

@@ -82,7 +82,7 @@ describe('MeshComTransport', () => {
     connectGattWithScanBusyRetryMock.mockResolvedValue(undefined);
   });
 
-  it('transportParamsToMeshCom maps serial portSignature, ble peripheralId, and http→tcp', () => {
+  it('transportParamsToMeshCom maps serial, ble, http→tcp, and netconsole with auth', () => {
     expect(transportParamsToMeshCom({ type: 'serial', portSignature: 'port-1' })).toEqual({
       transport: 'serial',
       portSignature: 'port-1',
@@ -91,9 +91,22 @@ describe('MeshComTransport', () => {
       transport: 'ble',
       peripheralId: 'aa:bb',
     });
-    expect(transportParamsToMeshCom({ type: 'http', host: '10.0.0.1' })).toEqual({
+    expect(
+      transportParamsToMeshCom({ type: 'http', host: '10.0.0.1' }, { authPassword: 'secret' }),
+    ).toEqual({
       transport: 'tcp',
       host: '10.0.0.1',
+      authPassword: 'secret',
+    });
+    expect(
+      transportParamsToMeshCom(
+        { type: 'netconsole', host: '10.0.0.2:2323' },
+        { authPassword: 'pw' },
+      ),
+    ).toEqual({
+      transport: 'netconsole',
+      host: '10.0.0.2:2323',
+      authPassword: 'pw',
     });
   });
 
@@ -324,6 +337,99 @@ describe('MeshComTransport', () => {
     expect(openMock).toHaveBeenCalledWith(meshcomPort, 115200, 'MeshCom serial open');
     expect(conn.getSerialPort?.()).toBe(meshcomPort);
     await conn.close();
+  });
+
+  it('TCP disconnect during auth rejects and disconnects without completing later', async () => {
+    let onDataCb: ((bytes: Uint8Array) => void) | undefined;
+    let onDiscCb: (() => void) | undefined;
+    const offData = vi.fn();
+    const offDisc = vi.fn();
+    vi.mocked(window.electronAPI.meshcom.tcp.onData).mockImplementation((cb) => {
+      onDataCb = cb;
+      return offData;
+    });
+    vi.mocked(window.electronAPI.meshcom.tcp.onDisconnected).mockImplementation((cb) => {
+      onDiscCb = cb;
+      return offDisc;
+    });
+    const write = vi.mocked(window.electronAPI.meshcom.tcp.write);
+    write.mockClear();
+    const disconnect = vi.mocked(window.electronAPI.meshcom.tcp.disconnect);
+    disconnect.mockClear();
+
+    const connectPromise = createMeshComConnection({
+      transport: 'tcp',
+      host: '10.0.0.5:8001',
+      authPassword: 'secret',
+    });
+    await vi.waitFor(() => {
+      expect(window.electronAPI.meshcom.tcp.connect).toHaveBeenCalled();
+      expect(onDataCb).toBeTypeOf('function');
+    });
+    // Enter HMAC wait so authGate is latched before disconnect.
+    onDataCb?.(new TextEncoder().encode('NONCE: 3e62d1be9d352ffcbd2edcc5cfa07b36\n'));
+    await vi.waitFor(() => {
+      expect(write).toHaveBeenCalled();
+    });
+    onDiscCb?.();
+    await expect(connectPromise).rejects.toThrow(/auth/i);
+    expect(disconnect).toHaveBeenCalled();
+    expect(offData).toHaveBeenCalled();
+    expect(offDisc).toHaveBeenCalled();
+
+    // Late OK after disconnect must not revive the attempt.
+    onDataCb?.(new TextEncoder().encode('OK\n'));
+  });
+
+  it('queues post-auth leftover until onData is installed', async () => {
+    let onDataCb: ((bytes: Uint8Array) => void) | undefined;
+    vi.mocked(window.electronAPI.meshcom.tcp.onData).mockImplementation((cb) => {
+      onDataCb = cb;
+      return () => {};
+    });
+    vi.mocked(window.electronAPI.meshcom.tcp.onDisconnected).mockReturnValue(() => {});
+
+    const connectPromise = createMeshComConnection({
+      transport: 'tcp',
+      host: '10.0.0.5:8001',
+    });
+    await vi.waitFor(() => {
+      expect(onDataCb).toBeTypeOf('function');
+    });
+    onDataCb?.(new TextEncoder().encode('OK\n{"type":"msg"}\n'));
+    const conn = await connectPromise;
+
+    const onData = vi.fn();
+    conn.onData = onData;
+    expect(onData).toHaveBeenCalledTimes(1);
+    expect(new TextDecoder().decode(onData.mock.calls[0]?.[0] as Uint8Array)).toBe(
+      '{"type":"msg"}\n',
+    );
+    await conn.close();
+  });
+
+  it('NET Console setinfo failure disconnects and does not return the connection', async () => {
+    let onDataCb: ((bytes: Uint8Array) => void) | undefined;
+    vi.mocked(window.electronAPI.meshcom.tcp.onData).mockImplementation((cb) => {
+      onDataCb = cb;
+      return () => {};
+    });
+    vi.mocked(window.electronAPI.meshcom.tcp.onDisconnected).mockReturnValue(() => {});
+    const write = vi.mocked(window.electronAPI.meshcom.tcp.write);
+    write.mockRejectedValueOnce(new Error('write failed'));
+    const disconnect = vi.mocked(window.electronAPI.meshcom.tcp.disconnect);
+    disconnect.mockClear();
+
+    const connectPromise = createMeshComConnection({
+      transport: 'netconsole',
+      host: '10.0.0.9:2323',
+    });
+    await vi.waitFor(() => {
+      expect(onDataCb).toBeTypeOf('function');
+    });
+    onDataCb?.(new TextEncoder().encode('OK\n'));
+    await expect(connectPromise).rejects.toThrow(/write failed/);
+    expect(disconnect).toHaveBeenCalled();
   });
 
   it('serial does not bind another granted device when MeshCom portId is missing', async () => {

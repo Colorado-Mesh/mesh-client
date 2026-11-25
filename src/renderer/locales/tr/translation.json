@@ -1965,7 +1965,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "Kayıtlı cihazlar",
     "savedDevicesConnectAria": "{{name}} ile yeniden bağlantı kurun",
-    "savedDevicesDeleteAria": "Kaydedilen cihazı silin {{name}}"
+    "savedDevicesDeleteAria": "Kaydedilen cihazı silin {{name}}",
+    "meshcomMqttGatewayHint": "Ulusal MeshCom MQTT genellikle doğrudan bir istemci aracısı üzerinden değil, düğüm ağ geçidi (--gateway) üzerinden erişilir. Yalnızca özel bir aracıya sahipseniz genişletin.",
+    "kissPassword": "KISS / NET Konsol parolası",
+    "kissPasswordHelp": "Düğüm --passwd (maks. 14 karakter). --kiss auth açıkken veya NET Konsolu için kullanılır. Düğümün parolası yoksa boş bırakın.",
+    "kissPasswordAria": "KISS veya NET Konsol kimlik doğrulaması için MeshCom düğüm parolası",
+    "netConsole": "NET Konsolu"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -9191,7 +9196,8 @@
         "dl26251": "Rheinisch-Bergischer Bölgesi"
       },
       "slotsFullLocalOnly": "Düğüm dinleme yuvaları dolu (6). Yalnızca yerel olarak açıldı — düğümde yer ayırtmak için Radyo → Kimlik bölümündeki bir yuvanın yerini değiştirin."
-    }
+    },
+    "netConsoleHint": "NET Konsolu TCP bağlantı noktası 2323'tür (düz metin LAN). Düğümde --netconsole'u etkinleştirin; HMAC oturum açması için isteğe bağlı --passwd."
   },
   "meshcomDeviceCommands": {
     "description": "ICSSW düğüm komutlarını (--help, --settime, --setctry, …) Seri veya BLE üzerinden gönderin. Uygulamaya uygun komutlar, resmî MeshCom uygulamasıyla eşleşir; yalnızca seri bağlantı üzerinden verilen komutlar için bir USB konsol bağlantısı gerekir.",
