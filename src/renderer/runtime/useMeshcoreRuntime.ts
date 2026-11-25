@@ -1124,6 +1124,26 @@ function repairMeshcoreHydrationMessages(
   );
 }
 
+function meshcorePubKeyHexForNode(pubKey: Uint8Array | undefined, nodeId: number): string {
+  if (pubKey == null) return meshcoreSyntheticPlaceholderPubKeyHex(nodeId);
+  return Array.from(pubKey)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function patchNodeFavoritedInMap(
+  prev: Map<number, MeshNode>,
+  nodeId: number,
+  favorited: boolean,
+  fallback: MeshNode | undefined,
+): Map<number, MeshNode> {
+  const node = prev.get(nodeId) ?? fallback;
+  if (!node) return prev;
+  const next = new Map(prev);
+  next.set(nodeId, { ...node, favorited });
+  return next;
+}
+
 export function useMeshcoreRuntime() {
   // Restore tombstones before any contact/message hydration in this session.
   restoreMeshcoreLocallyDeletedContactsFromStorage();
@@ -5782,6 +5802,15 @@ export function useMeshcoreRuntime() {
     disconnect,
   });
 
+  /** True when the radio/session changed while an await was in flight. */
+  const isMeshcoreSessionStale = useCallback(
+    (setupGen: number, identityId: string | null, conn: MeshCoreConnection | null): boolean =>
+      meshcoreSetupGenerationRef.current !== setupGen ||
+      meshcoreIdentityIdRef.current !== identityId ||
+      connRef.current !== conn,
+    [],
+  );
+
   const forgetContactAdvert = useCallback(
     async (nodeId: number) => {
       const identityId = meshcoreIdentityIdRef.current;
@@ -5790,13 +5819,7 @@ export function useMeshcoreRuntime() {
       await window.electronAPI.db.forgetMeshcoreContactAdvert(nodeId);
       // Drop mutations if the radio/session changed while the DB call was in flight.
       // Do not gate on pubKeyMap object identity — a staged contacts refresh may replace the Map.
-      if (
-        meshcoreSetupGenerationRef.current !== setupGen ||
-        meshcoreIdentityIdRef.current !== identityId ||
-        connRef.current !== conn
-      ) {
-        return;
-      }
+      if (isMeshcoreSessionStale(setupGen, identityId, conn)) return;
       if (identityId) {
         useNodeStore.setState((s) => {
           const byId = s.nodes[identityId] ?? {};
@@ -5826,13 +5849,7 @@ export function useMeshcoreRuntime() {
       if (pubKey && conn) {
         try {
           const contacts = await conn.getContacts();
-          if (
-            meshcoreSetupGenerationRef.current !== setupGen ||
-            meshcoreIdentityIdRef.current !== identityId ||
-            connRef.current !== conn
-          ) {
-            return;
-          }
+          if (isMeshcoreSessionStale(setupGen, identityId, conn)) return;
           const contact = contacts.find((c) => {
             const key = c.publicKey;
             if (key?.length !== pubKey.length) return false;
@@ -5860,7 +5877,7 @@ export function useMeshcoreRuntime() {
         }
       }
     },
-    [readMeshcoreNodes],
+    [isMeshcoreSessionStale, readMeshcoreNodes],
   );
 
   const cancelPendingDmAck = useCallback((packetId: number) => {
@@ -10118,20 +10135,11 @@ export function useMeshcoreRuntime() {
       if (storeId) {
         patchNodeFavorited(storeId, nodeId, favorited);
       }
-      setNodes((prev) => {
-        const n = prev.get(nodeId) ?? localNode;
-        if (!n) return prev;
-        const next = new Map(prev);
-        next.set(nodeId, { ...n, favorited });
-        return next;
-      });
-      const pk = pubKeyMapRef.current.get(nodeId) ?? storeRecord?.publicKey;
-      const hex =
-        pk != null
-          ? Array.from(pk)
-              .map((b) => b.toString(16).padStart(2, '0'))
-              .join('')
-          : meshcoreSyntheticPlaceholderPubKeyHex(nodeId);
+      setNodes((prev) => patchNodeFavoritedInMap(prev, nodeId, favorited, localNode));
+      const hex = meshcorePubKeyHexForNode(
+        pubKeyMapRef.current.get(nodeId) ?? storeRecord?.publicKey,
+        nodeId,
+      );
       try {
         await window.electronAPI.db.updateMeshcoreContactFavorited(nodeId, favorited, hex);
       } catch (e) {
@@ -10142,13 +10150,7 @@ export function useMeshcoreRuntime() {
         if (storeId) {
           patchNodeFavorited(storeId, nodeId, prevFav);
         }
-        setNodes((prev) => {
-          const n = prev.get(nodeId) ?? localNode;
-          if (!n) return prev;
-          const next = new Map(prev);
-          next.set(nodeId, { ...n, favorited: prevFav });
-          return next;
-        });
+        setNodes((prev) => patchNodeFavoritedInMap(prev, nodeId, prevFav, localNode));
       }
     },
     [nodes, resolveMeshcoreStoreIdentityId],
