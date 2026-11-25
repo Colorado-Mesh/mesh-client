@@ -479,49 +479,13 @@ export class MQTTManager extends EventEmitter {
       this.radioChannelSessionId = sessionId;
     }
 
-    const radioTopicIndices = new Map<string, number>();
-    const radioPskByName = new Map<string, Buffer>();
-    for (const entry of entries) {
-      const name = entry.name.trim();
-      const psk = parsePsk(entry.pskBase64);
-      if (!name || !psk) continue;
-      if (entry.index !== undefined && Number.isInteger(entry.index)) {
-        const idx = entry.index >>> 0;
-        if (idx <= 7) {
-          radioTopicIndices.set(name, idx);
-        }
-      }
-      if (this.manualChannelKeyNames.has(name)) continue;
-      const existing = this.channelKeysByName.get(name);
-      if (
-        existing &&
-        isMeshtasticDefaultPublicPsk(psk) &&
-        !isMeshtasticDefaultPublicPsk(existing)
-      ) {
-        continue;
-      }
-      radioPskByName.set(name, psk);
-    }
+    const { radioTopicIndices, radioPskByName } = this.buildRadioChannelMaps(entries);
 
     const priorRadio = new Map(this.radioTopicIndexByName);
     const priorIndexes = new Set(priorRadio.values());
     const newIndexes = new Set(radioTopicIndices.values());
 
-    for (const [name, idx] of radioTopicIndices) {
-      // Slot takeover: another name must not keep this local RF slot for attribution.
-      for (const [otherName, otherIdx] of [...this.channelNameToIndex.entries()]) {
-        if (otherIdx === idx && otherName !== name) {
-          this.evictRadioChannelName(otherName);
-        }
-      }
-      for (const [otherName, otherIdx] of [...this.radioTopicIndexByName.entries()]) {
-        if (otherIdx === idx && otherName !== name) {
-          this.evictRadioChannelName(otherName);
-        }
-      }
-      this.radioTopicIndexByName.set(name, idx);
-      this.channelNameToIndex.set(name, idx);
-    }
+    this.applyRadioChannelSlots(radioTopicIndices);
 
     for (const [name, psk] of radioPskByName) {
       this.channelKeysByName.set(name, psk);
@@ -530,14 +494,7 @@ export class MQTTManager extends EventEmitter {
 
     // Evict radio names absent from this push only when every prior radio slot is covered
     // (full replace). Partial streams (OnTrail only) keep LongFast@1 / private PSKs.
-    const coversPrior = priorIndexes.size > 0 && [...priorIndexes].every((i) => newIndexes.has(i));
-    if (coversPrior) {
-      for (const oldName of priorRadio.keys()) {
-        if (!radioTopicIndices.has(oldName)) {
-          this.evictRadioChannelName(oldName);
-        }
-      }
-    }
+    this.evictChannelsAbsentFromPush(priorRadio, priorIndexes, newIndexes, radioTopicIndices);
 
     this.applyManualChannelPskLines(this.manualChannelPskLines);
     // Manual lines may reset LongFast→0 (bare LongFast= or LongFast@0=). Re-apply the
@@ -552,6 +509,61 @@ export class MQTTManager extends EventEmitter {
     console.debug(
       `[Meshtastic MQTT] channelNameToIndex updated (${this.channelNameToIndex.size}): ${mapSummary || '(empty)'}`,
     ); // log-filter-ok Meshtastic MQTT logs → App log panel
+  }
+
+  private buildRadioChannelMaps(entries: MqttChannelKeyEntry[]): {
+    radioTopicIndices: Map<string, number>;
+    radioPskByName: Map<string, Buffer>;
+  } {
+    const radioTopicIndices = new Map<string, number>();
+    const radioPskByName = new Map<string, Buffer>();
+    for (const entry of entries) {
+      const name = entry.name.trim();
+      const psk = parsePsk(entry.pskBase64);
+      if (!name || !psk) continue;
+      if (entry.index !== undefined && Number.isInteger(entry.index)) {
+        const idx = entry.index >>> 0;
+        if (idx <= 7) radioTopicIndices.set(name, idx);
+      }
+      if (this.manualChannelKeyNames.has(name)) continue;
+      const existing = this.channelKeysByName.get(name);
+      if (
+        existing &&
+        isMeshtasticDefaultPublicPsk(psk) &&
+        !isMeshtasticDefaultPublicPsk(existing)
+      ) {
+        continue;
+      }
+      radioPskByName.set(name, psk);
+    }
+    return { radioTopicIndices, radioPskByName };
+  }
+
+  private applyRadioChannelSlots(radioTopicIndices: Map<string, number>): void {
+    for (const [name, idx] of radioTopicIndices) {
+      // Slot takeover: another name must not keep this local RF slot for attribution.
+      for (const [otherName, otherIdx] of [...this.channelNameToIndex.entries()]) {
+        if (otherIdx === idx && otherName !== name) this.evictRadioChannelName(otherName);
+      }
+      for (const [otherName, otherIdx] of [...this.radioTopicIndexByName.entries()]) {
+        if (otherIdx === idx && otherName !== name) this.evictRadioChannelName(otherName);
+      }
+      this.radioTopicIndexByName.set(name, idx);
+      this.channelNameToIndex.set(name, idx);
+    }
+  }
+
+  private evictChannelsAbsentFromPush(
+    priorRadio: Map<string, number>,
+    priorIndexes: Set<number>,
+    newIndexes: Set<number>,
+    radioTopicIndices: Map<string, number>,
+  ): void {
+    const coversPrior = priorIndexes.size > 0 && [...priorIndexes].every((i) => newIndexes.has(i));
+    if (!coversPrior) return;
+    for (const oldName of priorRadio.keys()) {
+      if (!radioTopicIndices.has(oldName)) this.evictRadioChannelName(oldName);
+    }
   }
 
   /** Idempotent: Connection panel manual lines win over prior radio entries for the same name. */
