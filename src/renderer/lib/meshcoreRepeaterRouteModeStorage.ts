@@ -10,7 +10,7 @@ import type { MeshcoreRepeaterRouteMode } from './meshcoreRepeaterRouteEscalatio
  */
 export const MESHCORE_REPEATER_ROUTE_MODES_KEY = 'mesh-client:meshcoreRepeaterRouteModes:v1';
 
-type StoredModes = Readonly<Record<string, Exclude<MeshcoreRepeaterRouteMode, 'auto'>>>;
+export type StoredModes = Readonly<Record<string, Exclude<MeshcoreRepeaterRouteMode, 'auto'>>>;
 
 const PUBKEY_HEX_RE = /^[0-9a-f]{64}$/;
 const EMPTY: StoredModes = Object.freeze({});

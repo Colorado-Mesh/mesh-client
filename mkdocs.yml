@@ -177,6 +177,7 @@ nav:
           - Internet weather: development/internet-weather.md
           - Live packet map: development/live-packet-map.md
           - Settings search: development/settings-search.md
+          - Fallow health cleanup: development/fallow-health-cleanup.md
   - Project:
       - License: license.md
       - Credits: credits.md
