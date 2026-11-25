@@ -63,11 +63,18 @@ tests unchanged. One component per PR.
 
 ### 2. Runtime handlers
 
-- `useReticulumRuntime.handleSidecarEvent`
+- `useReticulumRuntime.handleSidecarEvent` (41 event types; group by prefix and
+  split `rrc.message`'s notice/error/system/msg branches in the same pass)
 - `useMeshcoreRuntime`: `runMeshcoreRepeaterRpcOnce`, `buildNodesFromContacts`,
   `initConn`, `sendMessage`
 - `useMeshtasticRuntime` reconnect/config paths
 - `PacketRouter.dispatch` (extract per-event `apply*` helpers)
+
+Already split (kept below thresholds): `PacketRouter.dispatch`, MeshCore
+`buildNodesFromContacts`, MeshCore send paths, MeshCore LPP telemetry, MeshCore
+text ingest, MECP incident upsert, CoreScope normalization, live-traffic
+scheduler update, Reticulum diagnostic row building, MeshCom settings parsers,
+and the MQTT manager's decoded/JSON paths.
 
 ### 3. CRAP-only findings
 
@@ -77,6 +84,24 @@ tests unchanged. One component per PR.
 2. Add focused branch tests for hardware-independent paths.
 3. Only then consider a per-file `health.thresholdOverrides` with a reason for
    genuinely hardware-gated code.
+
+**Measured lesson (2026-11):** extraction alone does not always reduce the
+reported count.
+
+- `fallow health` without coverage estimates CRAP from function shape, so every
+  newly extracted helper with a few branches shows up as a new CRAP finding even
+  when the same code was previously inside one big finding. Splitting a
+  140-complexity function into twelve 12-complexity helpers can _raise_ the
+  reported total while lowering severity.
+- `fallow audit --staged` (the pre-commit gate) compares against `HEAD` and
+  fails on **introduced** high/critical findings. Extract only when the new
+  helpers land at moderate severity; otherwise the gate blocks the commit until
+  the whole area is decomposed in one pass (e.g. `useReticulumRuntime.handleSidecarEvent`
+  needs its `rrc.message` branch split at the same time as the namespace grouping).
+- Functions already below every threshold contribute no findings, so prefer
+  refactors that push a function fully under `cyclomatic <= 20`,
+  `cognitive <= 15`, and estimated CRAP `<= 30` rather than moving branches into
+  new medium-sized functions.
 
 ### 4. Scripts and tooling
 
