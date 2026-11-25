@@ -92,6 +92,20 @@ describe('useMeshcoreRuntime importContacts', () => {
     expect(result.current.nodes.get(IMPORT_NODE_ID)?.hops_away).toBe(3);
   });
 
+  it('gives an imported repeater its public key so per-repeater settings can key on it', async () => {
+    vi.mocked(window.electronAPI.meshcore.openJsonFile).mockResolvedValue(
+      JSON.stringify([{ name: 'Keyed RPT', public_key: HEX32.toUpperCase() }]),
+    );
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await act(async () => {
+      await result.current.importContacts();
+    });
+
+    expect(result.current.nodes.get(IMPORT_NODE_ID)?.public_key_hex).toBe(HEX32);
+  });
+
   it('preserves last_heard on re-import when the node already exists (no stale store row)', async () => {
     const importMs = new Date('2026-05-20T12:00:00Z').getTime();
     const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(importMs);

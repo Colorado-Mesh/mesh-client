@@ -51,6 +51,12 @@ import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdmin
 import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
 import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
 import { normalizeMeshcoreCliCommand } from '../lib/meshcoreRepeaterCliQueue';
+import type { MeshcoreRepeaterRouteMode } from '../lib/meshcoreRepeaterRouteEscalation';
+import {
+  meshcoreRepeaterRouteModeKey,
+  setMeshcoreRepeaterRouteMode,
+  useMeshcoreRepeaterRouteModes,
+} from '../lib/meshcoreRepeaterRouteModeStorage';
 import {
   awaitMeshcoreCliReplyHoldClear,
   meshcoreCliReplyHoldActive,
@@ -227,6 +233,20 @@ export interface Props {
   pendingFocusNodeId?: number | null;
   onPendingFocusConsumed?: () => void;
 }
+
+const ROUTE_MODES: readonly MeshcoreRepeaterRouteMode[] = ['auto', 'direct', 'zeroHop'];
+
+const ROUTE_MODE_LABEL_KEYS = {
+  auto: 'repeatersPanel.routeModeAuto',
+  direct: 'repeatersPanel.routeModeDirect',
+  zeroHop: 'repeatersPanel.routeModeZeroHop',
+} as const satisfies Record<MeshcoreRepeaterRouteMode, string>;
+
+const ROUTE_MODE_HINT_KEYS = {
+  auto: 'repeatersPanel.routeModeAutoHint',
+  direct: 'repeatersPanel.routeModeDirectHint',
+  zeroHop: 'repeatersPanel.routeModeZeroHopHint',
+} as const satisfies Record<MeshcoreRepeaterRouteMode, string>;
 
 const REPEATER_ROW_ESTIMATE_PX = 48;
 const REPEATER_ROW_EXPANDED_EXTRA_PX = 160;
@@ -456,6 +476,7 @@ export default function RepeatersPanel({
   const [forgetConfirmKey, setForgetConfirmKey] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [sortPref, setSortPref] = useState(DEFAULT_REPEATER_SORT);
+  const routeModes = useMeshcoreRepeaterRouteModes();
   const sortKey = sortPref.key;
   const sortDir = sortPref.dir;
   const lastConsumedPendingFocusRef = useRef<number | null>(null);
@@ -1254,6 +1275,10 @@ export default function RepeatersPanel({
                   const isTelemetryExpanded = expandedTelemetry.has(node.node_id);
                   const isPathExpanded = expandedPath.has(node.node_id);
                   const isCliExpanded = expandedCli.has(node.node_id);
+                  const routeModeKey = meshcoreRepeaterRouteModeKey(node.public_key_hex);
+                  const routeMode: MeshcoreRepeaterRouteMode = routeModeKey
+                    ? (routeModes[routeModeKey] ?? 'auto')
+                    : 'auto';
                   const isCliLoading = isRepeaterAdminRpcPending(
                     meshcoreRepeaterRpcPending,
                     node.node_id,
@@ -1453,6 +1478,17 @@ export default function RepeatersPanel({
                           ) : (
                             <span className="text-muted">—</span>
                           )}
+                          {routeMode !== 'auto' ? (
+                            <span
+                              data-route-mode-badge
+                              title={t('repeatersPanel.routeModeBadgeTitle', {
+                                mode: t(ROUTE_MODE_LABEL_KEYS[routeMode]),
+                              })}
+                              className="text-2xs rounded-badge bg-ink-800 text-ink-200 ml-1.5 inline-block px-1 py-0.5 align-middle font-medium whitespace-nowrap"
+                            >
+                              {t(ROUTE_MODE_LABEL_KEYS[routeMode])}
+                            </span>
+                          ) : null}
                         </td>
                         <td
                           className="py-2 pr-4"
@@ -1680,6 +1716,26 @@ export default function RepeatersPanel({
                                       },
                                     ]
                                   : []),
+                                'separator' as const,
+                                {
+                                  id: 'route-mode',
+                                  label: t('repeatersPanel.routeModeGroup'),
+                                  items: ROUTE_MODES.map((mode) => ({
+                                    id: `route-mode-${mode}`,
+                                    label: t(ROUTE_MODE_LABEL_KEYS[mode]),
+                                    description: routeModeKey
+                                      ? t(ROUTE_MODE_HINT_KEYS[mode])
+                                      : mode === 'auto'
+                                        ? t('repeatersPanel.routeModeNeedsKey')
+                                        : undefined,
+                                    checked: routeMode === mode,
+                                    disabled: !routeModeKey,
+                                    onSelect: () => {
+                                      if (routeModeKey)
+                                        setMeshcoreRepeaterRouteMode(routeModeKey, mode);
+                                    },
+                                  })),
+                                },
                                 'separator' as const,
                                 {
                                   id: 'remove',
