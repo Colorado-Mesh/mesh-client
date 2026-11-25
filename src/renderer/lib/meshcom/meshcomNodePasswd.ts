@@ -18,6 +18,15 @@ export const MESHCOM_NODE_PASSWD_SECRET_PREFIX = 'meshcom:node-passwd:';
 
 export type MeshcomAuthTransport = 'tcp' | 'netconsole';
 
+/**
+ * In-memory one-shot claim of the legacy password. Set synchronously before return from
+ * {@link getMeshcomNodePasswd} so a second endpoint cannot inherit the secret while
+ * `setSecureSecret` / `removeSecureSecret` are still in flight. Cleared only after the
+ * claimed endpoint's migration succeeds (or that endpoint clears the password).
+ */
+let legacyClaimEndpointKey: string | null = null;
+let legacyClaimPassword: string | null = null;
+
 function bytesToHex(bytes: Uint8Array): string {
   let s = '';
   for (const b of bytes) {
@@ -46,24 +55,57 @@ export function meshcomNodePasswdSecretKey(transport: MeshcomAuthTransport, host
   return `${MESHCOM_NODE_PASSWD_SECRET_PREFIX}${bytesToHex(sha256(material))}`;
 }
 
+function clearLegacyClaimIfEndpoint(endpointKey: string): void {
+  if (legacyClaimEndpointKey === endpointKey) {
+    legacyClaimEndpointKey = null;
+    legacyClaimPassword = null;
+  }
+}
+
+/** Drop the legacy single-slot secret when present. */
+async function removeLegacyMeshcomNodePasswd(): Promise<void> {
+  if (getCachedSecureSecret(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY) != null) {
+    await removeSecureSecret(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY);
+  }
+}
+
 /**
  * Read the password for this endpoint. Migrates the legacy single-slot secret
  * into this endpoint key (and deletes the legacy key) when present.
+ * The legacy value is claimed synchronously for the first endpoint so a concurrent
+ * read for another endpoint cannot receive it.
  */
 export function getMeshcomNodePasswd(transport: MeshcomAuthTransport, host: string): string {
   const key = meshcomNodePasswdSecretKey(transport, host);
   const scoped = getCachedSecureSecret(key);
   if (scoped != null && scoped.length > 0) return scoped;
 
+  // This endpoint already claimed legacy; keep serving it across persist retries.
+  if (legacyClaimEndpointKey === key && legacyClaimPassword != null) {
+    return legacyClaimPassword;
+  }
+
+  // Another endpoint owns the one-shot legacy migrate.
+  if (legacyClaimEndpointKey != null) {
+    return '';
+  }
+
   const legacy = getCachedSecureSecret(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY);
   if (legacy == null || legacy.length === 0) return '';
 
-  // One-shot migrate into this endpoint so later B reconnects do not inherit A.
+  // Claim before any async work so B cannot race-read the same legacy slot.
+  legacyClaimEndpointKey = key;
+  legacyClaimPassword = legacy;
+
   void setSecureSecret(key, legacy)
-    .then(() => removeSecureSecret(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY))
+    .then(() => removeLegacyMeshcomNodePasswd())
+    .then(() => {
+      clearLegacyClaimIfEndpoint(key);
+    })
     .catch(() => {
-      // catch-no-log-ok migration is best-effort; in-memory connect still has `legacy`
+      // catch-no-log-ok keep claim for this endpoint's retries; do not release to others
     });
+
   return legacy;
 }
 
@@ -77,14 +119,20 @@ export async function setMeshcomNodePasswd(
   const trimmed = password.slice(0, 14);
   if (!trimmed) {
     await removeSecureSecret(key);
+    // Block re-migrate until legacy wipe completes (claim stays if wipe fails).
+    legacyClaimEndpointKey = key;
+    legacyClaimPassword = null;
+    await removeLegacyMeshcomNodePasswd();
+    clearLegacyClaimIfEndpoint(key);
     return;
   }
   await setSecureSecret(key, trimmed);
+  clearLegacyClaimIfEndpoint(key);
   // Drop legacy so it cannot answer another endpoint's challenge.
-  if (getCachedSecureSecret(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY) != null) {
-    await removeSecureSecret(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY).catch(() => {
-      // catch-no-log-ok best-effort legacy cleanup
-    });
+  try {
+    await removeLegacyMeshcomNodePasswd();
+  } catch {
+    // catch-no-log-ok best-effort legacy cleanup after a successful scoped write
   }
 }
 
@@ -93,4 +141,10 @@ export function meshcomAuthTransportFromConnectionType(type: string): MeshcomAut
   if (type === 'http' || type === 'tcp') return 'tcp';
   if (type === 'netconsole') return 'netconsole';
   return null;
+}
+
+/** Test helper — clear the in-memory legacy claim between cases. */
+export function resetMeshcomNodePasswdLegacyClaimForTests(): void {
+  legacyClaimEndpointKey = null;
+  legacyClaimPassword = null;
 }

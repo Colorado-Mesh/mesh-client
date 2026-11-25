@@ -1,17 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const cache = new Map<string, string>();
+let setSecureSecretImpl: (key: string, value: string) => Promise<{ persistent: boolean }> = (
+  key,
+  value,
+) => {
+  cache.set(key, value);
+  return Promise.resolve({ persistent: true });
+};
+let removeSecureSecretImpl: (key: string) => Promise<void> = (key) => {
+  cache.delete(key);
+  return Promise.resolve();
+};
 
 vi.mock('../secureSecretStorage', () => ({
   getCachedSecureSecret: (key: string) => cache.get(key) ?? null,
-  setSecureSecret: (key: string, value: string) => {
-    cache.set(key, value);
-    return Promise.resolve({ persistent: true });
-  },
-  removeSecureSecret: (key: string) => {
-    cache.delete(key);
-    return Promise.resolve();
-  },
+  setSecureSecret: (key: string, value: string) => setSecureSecretImpl(key, value),
+  removeSecureSecret: (key: string) => removeSecureSecretImpl(key),
 }));
 
 import {
@@ -19,12 +24,22 @@ import {
   MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY,
   meshcomNodePasswdSecretKey,
   normalizeMeshcomAuthEndpoint,
+  resetMeshcomNodePasswdLegacyClaimForTests,
   setMeshcomNodePasswd,
 } from './meshcomNodePasswd';
 
 describe('meshcomNodePasswd', () => {
   beforeEach(() => {
     cache.clear();
+    resetMeshcomNodePasswdLegacyClaimForTests();
+    setSecureSecretImpl = (key, value) => {
+      cache.set(key, value);
+      return Promise.resolve({ persistent: true });
+    };
+    removeSecureSecretImpl = (key) => {
+      cache.delete(key);
+      return Promise.resolve();
+    };
   });
 
   it('normalizes host and default ports', () => {
@@ -50,6 +65,15 @@ describe('meshcomNodePasswd', () => {
     expect(getMeshcomNodePasswd('tcp', '10.0.0.3')).toBe('');
   });
 
+  it('claims legacy synchronously so a second endpoint cannot inherit it', () => {
+    cache.set(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY, 'legacy-pw');
+
+    expect(getMeshcomNodePasswd('tcp', '192.168.1.10')).toBe('legacy-pw');
+    // No await — claim must already exclude B.
+    expect(getMeshcomNodePasswd('tcp', '192.168.1.11')).toBe('');
+    expect(getMeshcomNodePasswd('tcp', '192.168.1.10')).toBe('legacy-pw');
+  });
+
   it('migrates legacy single-slot secret into the first endpoint only', async () => {
     cache.set(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY, 'legacy-pw');
 
@@ -58,9 +82,21 @@ describe('meshcomNodePasswd', () => {
       expect(cache.has(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY)).toBe(false);
     });
 
-    // After migrate, a different endpoint must not inherit the legacy value.
     expect(getMeshcomNodePasswd('tcp', '192.168.1.11')).toBe('');
     expect(getMeshcomNodePasswd('tcp', '192.168.1.10')).toBe('legacy-pw');
+  });
+
+  it('keeps a failed migrate claimed for that endpoint only', async () => {
+    cache.set(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY, 'legacy-pw');
+    setSecureSecretImpl = () => Promise.reject(new Error('persist failed'));
+
+    expect(getMeshcomNodePasswd('tcp', '192.168.1.10')).toBe('legacy-pw');
+    expect(getMeshcomNodePasswd('tcp', '192.168.1.11')).toBe('');
+    // Flush the rejected persist so the claim remains for retries.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(getMeshcomNodePasswd('tcp', '192.168.1.10')).toBe('legacy-pw');
+    expect(getMeshcomNodePasswd('tcp', '192.168.1.11')).toBe('');
   });
 
   it('clears endpoint secret when password is empty', async () => {
@@ -68,5 +104,28 @@ describe('meshcomNodePasswd', () => {
     expect(getMeshcomNodePasswd('netconsole', '10.0.0.5:2323')).toBe('temp');
     await setMeshcomNodePasswd('netconsole', '10.0.0.5', '');
     expect(getMeshcomNodePasswd('netconsole', '10.0.0.5')).toBe('');
+  });
+
+  it('empty password also removes legacy so get cannot re-migrate it', async () => {
+    cache.set(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY, 'stale-legacy');
+    await setMeshcomNodePasswd('tcp', '10.0.0.9', '');
+    expect(cache.has(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY)).toBe(false);
+    expect(getMeshcomNodePasswd('tcp', '10.0.0.9')).toBe('');
+    expect(getMeshcomNodePasswd('tcp', '10.0.0.8')).toBe('');
+  });
+
+  it('surfaces legacy wipe failures on the empty-password path', async () => {
+    cache.set(MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY, 'stale-legacy');
+    removeSecureSecretImpl = (key) => {
+      if (key === MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY) {
+        return Promise.reject(new Error('legacy wipe failed'));
+      }
+      cache.delete(key);
+      return Promise.resolve();
+    };
+    await expect(setMeshcomNodePasswd('tcp', '10.0.0.9', '')).rejects.toThrow(/legacy wipe failed/);
+    // Claim remains so get cannot re-migrate the stale legacy into any endpoint.
+    expect(getMeshcomNodePasswd('tcp', '10.0.0.9')).toBe('');
+    expect(getMeshcomNodePasswd('tcp', '10.0.0.8')).toBe('');
   });
 });

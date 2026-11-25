@@ -57,7 +57,7 @@ export interface MeshcomCommandDescriptor {
   choices?: readonly string[];
   /** Placeholder hint for free-text / number args. */
   argHint?: string;
-  /** Redact argument in logs (WiFi password, webpwd, BLE PIN). */
+  /** Redact argument in logs (WiFi password, webpwd, BLE PIN, node --passwd). */
   sensitive?: boolean;
   /** Confirm before send (reboot / OTA / factory rotate). */
   danger?: boolean;

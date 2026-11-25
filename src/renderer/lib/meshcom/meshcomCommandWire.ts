@@ -3,6 +3,11 @@
  * Keep the full ICSSW catalog in `meshcomCommands.ts` (lazy Radio panel only).
  */
 
+import {
+  isMeshcomSensitiveCommandLine,
+  redactMeshcomCommandArgForLog,
+} from '@/shared/meshcomCommandSecrets';
+
 import { sanitizeMeshcomWireLine } from './meshcomWireSanitize';
 
 /** Official APP shortcut words → equivalent `--` command. */
@@ -48,17 +53,10 @@ export function normalizeMeshcomCommandInput(raw: string): string {
 }
 
 export function isMeshcomSensitiveCommand(command: string): boolean {
-  const lower = command.trim().toLowerCase();
-  return (
-    lower.startsWith('--setpwd') || lower.startsWith('--webpwd') || lower.startsWith('--btcode')
-  );
+  return isMeshcomSensitiveCommandLine(command);
 }
 
 /** Redact secret args for logs / console display. */
 export function redactMeshcomCommandForLog(command: string): string {
-  const trimmed = command.trim();
-  if (!isMeshcomSensitiveCommand(trimmed)) return trimmed;
-  const parts = trimmed.split(/\s+/);
-  if (parts.length < 2) return trimmed;
-  return `${parts[0]} [redacted]`;
+  return redactMeshcomCommandArgForLog(command);
 }
