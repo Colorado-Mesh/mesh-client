@@ -455,6 +455,80 @@ function meshtasticMqttPublishOpts(
   return mqttOnly ? { preferManualOverRadio: true } : undefined;
 }
 
+type MeshtasticMqttNodeUpdate = Partial<MeshNode> & {
+  node_id: number;
+  from_mqtt?: boolean;
+  protocol?: 'meshtastic' | 'meshcore';
+  positionWarning?: string | null;
+  neighbors?: MeshNeighbor[];
+  portnum?: number;
+};
+
+function applyMeshtasticMqttPositionFields(
+  node: MeshNode,
+  existing: MeshNode,
+  update: MeshtasticMqttNodeUpdate,
+): void {
+  if (update.latitude != null || update.longitude != null) {
+    const result = validateCoords(update.latitude ?? 0, update.longitude ?? 0);
+    if (!result.valid) {
+      node.latitude = existing.latitude;
+      node.longitude = existing.longitude;
+      node.lastPositionWarning = result.warning;
+    } else {
+      node.lastPositionWarning = undefined;
+    }
+  }
+  // Apply positionWarning emitted by mqtt-manager (bad coords, no position change)
+  if (update.positionWarning) {
+    node.lastPositionWarning = update.positionWarning;
+  } else if (update.positionWarning === null) {
+    node.lastPositionWarning = undefined;
+  }
+}
+
+/** Merge an MQTT node patch into the existing node without clobbering RF-only data. */
+function buildMeshtasticMqttNode(args: {
+  existing: MeshNode;
+  update: MeshtasticMqttNodeUpdate;
+  heardViaRF: boolean;
+  isActiveVirtualIdentity: boolean;
+}): MeshNode {
+  const { existing, update, heardViaRF, isActiveVirtualIdentity } = args;
+  const node: MeshNode = {
+    ...existing,
+    ...update,
+    heard_via_mqtt_only: isActiveVirtualIdentity ? true : !heardViaRF,
+    via_mqtt: true,
+    heard_via_mqtt: true,
+    source: isActiveVirtualIdentity ? 'mqtt' : heardViaRF ? 'rf' : 'mqtt',
+    last_heard: update.last_heard ?? Date.now(),
+    long_name: preferNonEmptyTrimmedString(update.long_name, existing.long_name, {
+      nodeId: update.node_id,
+    }),
+    // Explicitly handle role to ensure it's properly updated from MQTT
+    role: update.role ?? existing.role,
+    // MeshCore routing info: derive hops from path if needed
+    hops: update.hops ?? (update.path ? update.path.length : existing.hops),
+    path: update.path ?? existing.path,
+  };
+  // Keep hops_away consistent for the UI
+  node.hops_away = node.hops ?? update.hops_away ?? existing.hops_away;
+
+  // Don't overwrite RF signal data with MQTT-sourced node data
+  if (!heardViaRF) {
+    node.snr = existing.snr;
+    node.rssi = existing.rssi;
+  }
+  applyMeshtasticMqttPositionFields(node, existing, update);
+  node.short_name = meshtasticShortNameAfterClearingDefault(
+    node.long_name ?? '',
+    node.short_name ?? '',
+    node.node_id,
+  );
+  return node;
+}
+
 /** Sends a NODEINFO request to a Store & Forward router whose key is still unknown. */
 function requestStoreForwardRouterNodeInfo(args: {
   device: MeshDevice;
@@ -1672,60 +1746,14 @@ export function useMeshtasticRuntime() {
       let mqttNodeToPersist: MeshNode | undefined;
       updateNodes((prev) => {
         const existing = prev.get(nodeUpdate.node_id) ?? emptyNode(nodeUpdate.node_id);
-        const heardViaRF = rfHeardNodeIds.current.has(nodeUpdate.node_id);
-        const isActiveVirtualIdentity =
-          !deviceRef.current && nodeUpdate.node_id === virtualNodeIdRef.current;
         const updated = new Map(prev);
-        const node: MeshNode = {
-          ...existing,
-          ...nodeUpdate,
-          heard_via_mqtt_only: isActiveVirtualIdentity ? true : !heardViaRF,
-          via_mqtt: true,
-          heard_via_mqtt: true,
-          source: isActiveVirtualIdentity ? 'mqtt' : heardViaRF ? 'rf' : 'mqtt',
-          last_heard: nodeUpdate.last_heard ?? Date.now(),
-          long_name: preferNonEmptyTrimmedString(nodeUpdate.long_name, existing.long_name, {
-            nodeId: nodeUpdate.node_id,
-          }),
-          // Explicitly handle role to ensure it's properly updated from MQTT
-          role: nodeUpdate.role ?? existing.role,
-          // MeshCore routing info: derive hops from path if needed
-          hops: nodeUpdate.hops ?? (nodeUpdate.path ? nodeUpdate.path.length : existing.hops),
-          path: nodeUpdate.path ?? existing.path,
-        };
-        // Ensure hops_away is updated for UI consistency
-        node.hops_away = node.hops ?? nodeUpdate.hops_away ?? existing.hops_away;
-
-        // Don't overwrite RF signal data with MQTT-sourced node data
-        if (!heardViaRF) {
-          // MQTT-only: suppress device-local RF metrics; hops_away from binary MQTT is valid
-          node.snr = existing.snr;
-          node.rssi = existing.rssi;
-        }
-        // Validate position if the update includes coords
-        if (nodeUpdate.latitude != null || nodeUpdate.longitude != null) {
-          const lat = nodeUpdate.latitude ?? 0;
-          const lon = nodeUpdate.longitude ?? 0;
-          const r = validateCoords(lat, lon);
-          if (!r.valid) {
-            node.latitude = existing.latitude;
-            node.longitude = existing.longitude;
-            node.lastPositionWarning = r.warning;
-          } else {
-            node.lastPositionWarning = undefined;
-          }
-        }
-        // Apply positionWarning emitted by mqtt-manager (bad coords, no position change)
-        if (nodeUpdate.positionWarning) {
-          node.lastPositionWarning = nodeUpdate.positionWarning;
-        } else if (nodeUpdate.positionWarning === null) {
-          node.lastPositionWarning = undefined;
-        }
-        node.short_name = meshtasticShortNameAfterClearingDefault(
-          node.long_name ?? '',
-          node.short_name ?? '',
-          node.node_id,
-        );
+        const node = buildMeshtasticMqttNode({
+          existing,
+          update: nodeUpdate,
+          heardViaRF: rfHeardNodeIds.current.has(nodeUpdate.node_id),
+          isActiveVirtualIdentity:
+            !deviceRef.current && nodeUpdate.node_id === virtualNodeIdRef.current,
+        });
         updated.set(nodeUpdate.node_id, node);
         mqttNodeToPersist = node;
         return updated;
@@ -1784,8 +1812,7 @@ export function useMeshtasticRuntime() {
         });
       }
 
-      // Packet ID dedup (catches our own uplink echoes)
-      if (packetId !== 0 && isDuplicate(msg.sender_id, packetId)) {
+      const applyDuplicateMqttPacketUpgrade = (): void => {
         if (getStoredMeshProtocol() === 'meshtastic') {
           useDiagnosticsStore.getState().recordDuplicate(msg.sender_id);
         }
@@ -1819,6 +1846,10 @@ export function useMeshtasticRuntime() {
             );
           });
         }
+      };
+      // Packet ID dedup (catches our own uplink echoes)
+      if (packetId !== 0 && isDuplicate(msg.sender_id, packetId)) {
+        applyDuplicateMqttPacketUpgrade();
         return;
       }
 
@@ -1837,8 +1868,7 @@ export function useMeshtasticRuntime() {
       const dedupSource = getIdentityChatMessages(storeId);
       const mqttWithPreviews = enrichMeshtasticReplyPreviews(mqttMsg, dedupSource, getNodeName);
 
-      const crossDup = findMeshtasticCrossTransportDuplicate(dedupSource, mqttWithPreviews);
-      if (crossDup) {
+      const applyCrossTransportMqttUpgrade = (crossDup: ChatMessage): void => {
         setMessages((prev) => {
           const { messages: next, matched } = mapMeshtasticCrossTransportUpgrade(
             prev,
@@ -1873,13 +1903,14 @@ export function useMeshtasticRuntime() {
             );
           });
         }
+      };
+      const crossDup = findMeshtasticCrossTransportDuplicate(dedupSource, mqttWithPreviews);
+      if (crossDup) {
+        applyCrossTransportMqttUpgrade(crossDup);
         return;
       }
 
-      const sfDup = mqttWithPreviews.viaStoreForward
-        ? findMeshtasticStoreForwardDuplicate(dedupSource, mqttWithPreviews)
-        : undefined;
-      if (sfDup) {
+      const applyStoreForwardMqttUpgrade = (): void => {
         setMessages((prev) =>
           prev.map((m) =>
             meshtasticStoreForwardContentMatch(m, mqttWithPreviews)
@@ -1899,6 +1930,12 @@ export function useMeshtasticRuntime() {
             }
           }
         }
+      };
+      const sfDup = mqttWithPreviews.viaStoreForward
+        ? findMeshtasticStoreForwardDuplicate(dedupSource, mqttWithPreviews)
+        : undefined;
+      if (sfDup) {
+        applyStoreForwardMqttUpgrade();
         return;
       }
 
