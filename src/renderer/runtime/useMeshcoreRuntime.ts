@@ -736,6 +736,51 @@ function mergeMeshcorePubKeyHexFromContacts(
   };
 }
 
+interface MeshcoreDbContactRow {
+  node_id: number;
+  adv_name: string | null;
+  contact_type: number;
+  last_advert: number | null;
+  adv_lat: number | null;
+  adv_lon: number | null;
+  last_snr: number | null;
+  last_rssi: number | null;
+  favorited: number;
+  hops_away: number | null;
+}
+
+function mergeMeshcoreDbHopsAway(
+  existing: MeshNode | undefined,
+  row: MeshcoreDbContactRow,
+): number | undefined {
+  if (row.hops_away == null) return existing?.hops_away;
+  if (existing?.hops_away == null) return row.hops_away;
+  return Math.min(existing.hops_away, row.hops_away);
+}
+
+function meshcoreNodeFromDbContact(
+  row: MeshcoreDbContactRow,
+  selfId: number,
+  mergedHopsAway: number | undefined,
+): MeshNode {
+  const useStatic = shouldPreserveStaticGpsForSelfNode(row.node_id, selfId);
+  const storedStatic = useStatic ? readStoredStaticGps() : null;
+  return {
+    node_id: row.node_id,
+    long_name: row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
+    short_name: '',
+    hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
+    battery: 0,
+    snr: row.last_snr ?? 0,
+    rssi: row.last_rssi ?? 0,
+    last_heard: row.last_advert ?? 0,
+    latitude: storedStatic?.lat ?? row.adv_lat ?? null,
+    longitude: storedStatic?.lon ?? row.adv_lon ?? null,
+    favorited: row.favorited === 1,
+    ...(mergedHopsAway != null ? { hops_away: mergedHopsAway } : {}),
+  };
+}
+
 export function useMeshcoreRuntime() {
   // Restore tombstones before any contact/message hydration in this session.
   restoreMeshcoreLocallyDeletedContactsFromStorage();
@@ -10266,51 +10311,21 @@ export function useMeshcoreRuntime() {
   );
   const refreshNodesFromDb = useCallback(async () => {
     try {
-      const dbContacts = (await window.electronAPI.db.getMeshcoreContacts()) as {
-        node_id: number;
-        adv_name: string | null;
-        contact_type: number;
-        last_advert: number | null;
-        adv_lat: number | null;
-        adv_lon: number | null;
-        last_snr: number | null;
-        last_rssi: number | null;
-        favorited: number;
-        hops_away: number | null;
-      }[];
+      const dbContacts =
+        (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreDbContactRow[];
       let nextMap: Map<number, MeshNode> | null = null;
       setNodes((prev) => {
         const next = new Map(prev);
         const selfId = myNodeNumRef.current;
         for (const row of dbContacts) {
           const existing = next.get(row.node_id);
-          const mergedHopsAway =
-            row.hops_away != null
-              ? existing?.hops_away != null
-                ? Math.min(existing.hops_away, row.hops_away)
-                : row.hops_away
-              : existing?.hops_away;
+          const mergedHopsAway = mergeMeshcoreDbHopsAway(existing, row);
           if (existing) {
             if (existing.hops_away === mergedHopsAway) continue;
             next.set(row.node_id, { ...existing, hops_away: mergedHopsAway });
             continue;
           }
-          const useStatic = shouldPreserveStaticGpsForSelfNode(row.node_id, selfId);
-          const storedStatic = useStatic ? readStoredStaticGps() : null;
-          next.set(row.node_id, {
-            node_id: row.node_id,
-            long_name: row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
-            short_name: '',
-            hw_model: CONTACT_TYPE_LABELS[row.contact_type] ?? 'Unknown',
-            battery: 0,
-            snr: row.last_snr ?? 0,
-            rssi: row.last_rssi ?? 0,
-            last_heard: row.last_advert ?? 0,
-            latitude: storedStatic?.lat ?? row.adv_lat ?? null,
-            longitude: storedStatic?.lon ?? row.adv_lon ?? null,
-            favorited: row.favorited === 1,
-            ...(mergedHopsAway != null ? { hops_away: mergedHopsAway } : {}),
-          });
+          next.set(row.node_id, meshcoreNodeFromDbContact(row, selfId, mergedHopsAway));
         }
         overlayStoredStaticGpsOnSelfNode(next, selfId);
         nextMap = next;
