@@ -132,18 +132,43 @@ function notificationChannelKeys(protocol: MeshProtocol): Readonly<Record<number
   return retainedLayouts.get(device) ?? null;
 }
 
+function rrcBinding(protocol: MeshProtocol, view: string): Omit<MuteEntry, 'muted'> | null {
+  const [, hub, ...room] = view.split(':');
+  if (!hub || !room.length) return null;
+  return {
+    protocol,
+    device: hub.toLowerCase(),
+    view,
+    target: rrcRoomMatchKey(room.join(':')),
+  };
+}
+
+function bindingNodeFor(identityId: string | undefined, id: string) {
+  if (!identityId) return undefined;
+  return new Map(Object.entries(useNodeStore.getState().nodes)).get(identityId)?.[Number(id)];
+}
+
+function resolveBindingTarget(
+  protocol: MeshProtocol,
+  id: string,
+  node: ReturnType<typeof bindingNodeFor>,
+): string | null {
+  if (protocol === 'meshtastic') return id;
+  if (protocol === 'reticulum') {
+    return resolveReticulumDestinationHash(Number(id), node?.reticulumDestinationHash) ?? null;
+  }
+  const publicKeyHex = node?.publicKeyHex;
+  if (publicKeyHex && /^[0-9a-f]{64}$/i.test(publicKeyHex)) return publicKeyHex;
+  const publicKey = node?.publicKey ?? getMeshcorePubKey(Number(id));
+  if (publicKey?.length === 32) {
+    return Array.from(publicKey, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  return null;
+}
+
 function binding(protocol: MeshProtocol, view: string): Omit<MuteEntry, 'muted'> | null {
   // RRC room identity is the full hub destination plus its canonical room name.
-  if (view.startsWith('rrc:')) {
-    const [, hub, ...room] = view.split(':');
-    if (!hub || !room.length) return null;
-    return {
-      protocol,
-      device: hub.toLowerCase(),
-      view,
-      target: rrcRoomMatchKey(room.join(':')),
-    };
-  }
+  if (view.startsWith('rrc:')) return rrcBinding(protocol, view);
   const identity = getNotificationIdentity(protocol);
   const keys = notificationChannelKeys(protocol);
   const device = notificationDeviceSignature(protocol);
@@ -154,21 +179,8 @@ function binding(protocol: MeshProtocol, view: string): Omit<MuteEntry, 'muted'>
   }
   const [kind, id] = view.split(':');
   if ((kind !== 'dm' && kind !== 'room') || !id) return null;
-  const node = identity
-    ? new Map(Object.entries(useNodeStore.getState().nodes)).get(identity.id)?.[Number(id)]
-    : undefined;
-  const publicKey = node?.publicKey ?? getMeshcorePubKey(Number(id));
-  const publicKeyHex = node?.publicKeyHex;
-  const target =
-    protocol === 'meshtastic'
-      ? id
-      : protocol === 'reticulum'
-        ? resolveReticulumDestinationHash(Number(id), node?.reticulumDestinationHash)
-        : publicKeyHex && /^[0-9a-f]{64}$/i.test(publicKeyHex)
-          ? publicKeyHex
-          : publicKey?.length === 32
-            ? Array.from(publicKey, (b) => b.toString(16).padStart(2, '0')).join('')
-            : null;
+  const node = bindingNodeFor(identity?.id, id);
+  const target = resolveBindingTarget(protocol, id, node);
   return target ? { protocol, device, view, target: `${kind}:${target.toLowerCase()}` } : null;
 }
 
@@ -186,50 +198,62 @@ export function canBindConversationMute(protocol: MeshProtocol, view: string): b
   return binding(protocol, view) != null;
 }
 
+function removeProjectedLegacyViews(
+  result: Set<string>,
+  entries: readonly MuteEntry[],
+  protocol: MeshProtocol,
+): void {
+  for (const entry of entries) {
+    if (entry.protocol !== protocol) continue;
+    for (const view of legacyViews(entry)) result.delete(view);
+  }
+}
+
+function viewsForEntry(entry: MuteEntry, protocol: MeshProtocol): string[] {
+  if (!entry.view.startsWith('ch:') || protocol === 'reticulum') return [entry.view];
+  const keys = notificationChannelKeys(protocol);
+  if (!keys) return [entry.view];
+  return Object.entries(keys)
+    .filter(([, key]) => key === entry.target)
+    .map(([slot]) => `ch:${slot}`);
+}
+
+function deleteMatchingRrcViews(result: Set<string>, entry: MuteEntry): void {
+  for (const key of result) {
+    if (!key.startsWith('rrc:')) continue;
+    const [, hub, ...room] = key.split(':');
+    if (hub.toLowerCase() === entry.device && rrcRoomsMatch(room.join(':'), entry.target)) {
+      result.delete(key);
+    }
+  }
+}
+
+function shouldApplyProjectedView(entry: MuteEntry, view: string, protocol: MeshProtocol): boolean {
+  const current = binding(protocol, view);
+  // A persisted full peer key remains muted while contacts reload. Once metadata
+  // exists, verify it so an id collision cannot inherit another peer's preference.
+  const waitingForPeer =
+    !current && /^(dm|room):/.test(view) && notificationDeviceSignature(protocol) === entry.device;
+  return waitingForPeer || (current != null && sameBinding(current, entry));
+}
+
+function projectMuteEntry(result: Set<string>, entry: MuteEntry, protocol: MeshProtocol): void {
+  for (const view of viewsForEntry(entry, protocol)) {
+    if (!shouldApplyProjectedView(entry, view, protocol)) continue;
+    if (view.startsWith('rrc:')) deleteMatchingRrcViews(result, entry);
+    if (entry.muted) result.add(view);
+    else result.delete(view);
+  }
+}
+
 /** Project stable preferences into the legacy UI key space without rewriting legacy data. */
 export function projectConversationMutes(protocol: MeshProtocol, legacy: Set<string>): Set<string> {
   const result = new Set(legacy);
   try {
     const entries = readEntries();
+    removeProjectedLegacyViews(result, entries, protocol);
     for (const entry of entries) {
-      if (entry.protocol === protocol) {
-        for (const view of legacyViews(entry)) result.delete(view);
-      }
-    }
-    for (const entry of entries) {
-      if (entry.protocol !== protocol) continue;
-      let views = [entry.view];
-      if (entry.view.startsWith('ch:') && protocol !== 'reticulum') {
-        const keys = notificationChannelKeys(protocol);
-        if (keys) {
-          views = Object.entries(keys)
-            .filter(([, key]) => key === entry.target)
-            .map(([slot]) => `ch:${slot}`);
-        }
-      }
-      for (const view of views) {
-        const current = binding(protocol, view);
-        // A persisted full peer key remains muted while contacts reload. Once metadata
-        // exists, verify it so an id collision cannot inherit another peer's preference.
-        const waitingForPeer =
-          !current &&
-          /^(dm|room):/.test(view) &&
-          notificationDeviceSignature(protocol) === entry.device;
-        if (!waitingForPeer && (!current || !sameBinding(current, entry))) continue;
-        if (view.startsWith('rrc:')) {
-          for (const key of result) {
-            const [, hub, ...room] = key.split(':');
-            if (
-              key.startsWith('rrc:') &&
-              hub.toLowerCase() === entry.device &&
-              rrcRoomsMatch(room.join(':'), entry.target)
-            )
-              result.delete(key);
-          }
-        }
-        if (entry.muted) result.add(view);
-        else result.delete(view);
-      }
+      if (entry.protocol === protocol) projectMuteEntry(result, entry, protocol);
     }
   } catch (error) {
     console.warn('mcL0810 [conversationMuteStorage] read failed; preserving legacy mutes', error);
