@@ -50,16 +50,19 @@ describe('useMeshtasticRuntime Store & Forward history request (contract)', () =
     expect(reserve).toBeGreaterThan(missing);
     expect(record).toBeGreaterThan(missing);
     const branch = fn.slice(fn.indexOf('if (!destPublicKey)'), missing);
-    expect(branch).toContain('NODEINFO_APP');
+    expect(branch).toContain('requestStoreForwardRouterNodeInfo(');
     expect(branch).not.toContain('reserveStoreForwardHistoryRequest');
     expect(branch).not.toContain('recordSfHistoryFetch');
+    expect(SOURCE).toContain('Portnums.PortNum.NODEINFO_APP');
   });
 
   it('sends local owner User bytes for S&F NODEINFO requests', () => {
-    expect(SOURCE).toContain('ownerUserBytes');
-    expect(SOURCE).toContain(
-      '.sendPacket(ownerUserBytes, Portnums.PortNum.NODEINFO_APP, serverNodeId)',
-    );
+    const helper = SOURCE.slice(SOURCE.indexOf('function requestStoreForwardRouterNodeInfo('));
+    const body = helper.slice(0, helper.indexOf('\n}\n'));
+    expect(body).toContain('ownerUserBytes');
+    expect(body).toContain('Portnums.PortNum.NODEINFO_APP');
+    expect(body).toContain('.sendPacket(ownerUserBytes');
+    expect(body).toContain('args.serverNodeId');
     expect(SOURCE).toContain('radioHasMatchingDestKey');
   });
 });

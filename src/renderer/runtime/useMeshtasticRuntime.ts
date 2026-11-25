@@ -455,6 +455,125 @@ function meshtasticMqttPublishOpts(
   return mqttOnly ? { preferManualOverRadio: true } : undefined;
 }
 
+/** Sends a NODEINFO request to a Store & Forward router whose key is still unknown. */
+function requestStoreForwardRouterNodeInfo(args: {
+  device: MeshDevice;
+  myNode: number;
+  serverNodeId: number;
+  selfNode: MeshNode | undefined;
+  now: number;
+  lastNodeInfoRequestAt: Map<number, number>;
+}): void {
+  const selfLong = args.selfNode?.long_name?.trim() ?? '';
+  const selfShort = args.selfNode?.short_name?.trim() ?? '';
+  const lastNi = args.lastNodeInfoRequestAt.get(args.serverNodeId) ?? 0;
+  if (!selfLong || !selfShort || args.now - lastNi < 120_000) return;
+  args.lastNodeInfoRequestAt.set(args.serverNodeId, args.now);
+  const selfPublicKey = resolveMeshtasticDestPublicKeyBytes({
+    publicKeyHex: args.selfNode?.public_key_hex,
+  });
+  const ownerUser = createMeshtasticMessage(meshtasticMeshProtobuf.UserSchema, {
+    id: formatMeshtasticNodeId(args.myNode),
+    longName: selfLong,
+    shortName: selfShort,
+    ...(selfPublicKey ? { publicKey: selfPublicKey } : {}),
+  });
+  const ownerUserBytes = toBinary(
+    meshtasticMeshProtobuf.UserSchema,
+    ownerUser as Parameters<typeof toBinary>[1],
+  );
+  void args.device
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+    .sendPacket(ownerUserBytes, Portnums.PortNum.NODEINFO_APP, args.serverNodeId)
+    .then(() => {
+      console.debug(
+        `[useMeshtasticRuntime] NODEINFO request sent for S&F router 0x${args.serverNodeId.toString(16)}`,
+      );
+    })
+    .catch((e: unknown) => {
+      console.debug('[useMeshtasticRuntime] NODEINFO request failed ' + errLikeToLogString(e));
+    });
+}
+
+/** Pushes a SharedContact so firmware can PKI-encrypt the history request. */
+async function pushStoreForwardSharedContact(args: {
+  device: MeshDevice;
+  myNode: number;
+  serverNodeId: number;
+  serverNode: MeshNode;
+  destPublicKey: Uint8Array;
+}): Promise<boolean> {
+  if (
+    !canBuildMeshtasticSharedContact({
+      publicKeyHex: args.serverNode.public_key_hex,
+      longName: args.serverNode.long_name,
+      shortName: args.serverNode.short_name,
+    })
+  ) {
+    return false;
+  }
+  const contactPacketId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
+  registerMeshtasticNonChatWirePacketId(contactPacketId);
+  try {
+    const contactBytes = buildLocalAddContactToRadioBytes({
+      myNodeNum: args.myNode,
+      packetId: contactPacketId,
+      nodeNum: args.serverNodeId,
+      longName: args.serverNode.long_name,
+      shortName: args.serverNode.short_name,
+      publicKey: args.destPublicKey,
+    });
+    await writeToRadioWithoutQueue(args.device, contactBytes);
+    console.debug(
+      `[useMeshtasticRuntime] Store & Forward SharedContact pushed for 0x${args.serverNodeId.toString(16)}`,
+    );
+    return true;
+  } catch (e: unknown) {
+    console.debug(
+      '[useMeshtasticRuntime] Store & Forward SharedContact push failed ' + errLikeToLogString(e),
+    );
+    return false;
+  }
+}
+
+/** Auto-fetch gates for Store & Forward history; null means "may request". */
+function resolveStoreForwardAutoFetchSkip(args: {
+  historyTuning: ReturnType<typeof resolveStoreForwardHistoryTuning>;
+  now: number;
+  alreadyRequested: boolean;
+  lastFetchMs: number | null;
+  lastDisconnectMs: number | null;
+}): RequestStoreForwardHistoryResult | null {
+  const settings = parseStoredJson<Record<string, unknown>>(
+    getAppSettingsRaw(),
+    'useMeshtasticRuntime storeForwardAutoFetchHistory',
+  );
+  const sfAuto = settings?.storeForwardAutoFetchHistory;
+  const autoFetchEnabled = sfAuto !== false && sfAuto !== 'false';
+  const allowed = shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+    heartbeatSecondary: 0,
+    connectedIsStoreForwardServer: false,
+    alreadyRequestedServer: args.alreadyRequested,
+    deviceConfigured: true,
+    autoFetchEnabled,
+    now: args.now,
+    lastFetchMs: args.lastFetchMs,
+    lastDisconnectMs: args.lastDisconnectMs,
+    cooldownMs: args.historyTuning.cooldownMs,
+    offlineMinMs: args.historyTuning.offlineMinMs,
+  });
+  if (allowed) return null;
+  if (!autoFetchEnabled) return { ok: false, code: 'no_server' };
+  const { lastFetchMs, lastDisconnectMs } = args;
+  if (lastFetchMs != null && args.now - lastFetchMs < args.historyTuning.cooldownMs) {
+    return { ok: false, code: 'cooldown' };
+  }
+  if (lastDisconnectMs != null && args.now - lastDisconnectMs < args.historyTuning.offlineMinMs) {
+    return { ok: false, code: 'offline_gate' };
+  }
+  return { ok: false, code: 'no_server' };
+}
+
 export function useMeshtasticRuntime() {
   const deviceRef = useRef<MeshDevice | null>(null);
   // Track own node number in a ref so event callbacks can access it
@@ -1978,42 +2097,14 @@ export function useMeshtasticRuntime() {
       const historyTuning = resolveStoreForwardHistoryTuning(getStoreForwardHistoryProfile());
 
       if (!manual) {
-        const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
-        const settings = parseStoredJson<Record<string, unknown>>(
-          getAppSettingsRaw(),
-          'useMeshtasticRuntime storeForwardAutoFetchHistory',
-        );
-        const sfAuto = settings?.storeForwardAutoFetchHistory;
-        const autoFetchEnabled = sfAuto !== false && sfAuto !== 'false';
-        if (
-          !shouldAutoRequestStoreForwardHistoryOnHeartbeat({
-            heartbeatSecondary: 0,
-            connectedIsStoreForwardServer: false,
-            alreadyRequestedServer: alreadyRequested,
-            deviceConfigured: true,
-            autoFetchEnabled,
-            now,
-            lastFetchMs: getLastSfHistoryFetchMs(serverNodeId),
-            lastDisconnectMs: lastRfDisconnectAtRef.current,
-            cooldownMs: historyTuning.cooldownMs,
-            offlineMinMs: historyTuning.offlineMinMs,
-          })
-        ) {
-          if (!autoFetchEnabled) {
-            return { ok: false, code: 'no_server' };
-          }
-          const lastFetchMs = getLastSfHistoryFetchMs(serverNodeId);
-          if (lastFetchMs != null && now - lastFetchMs < historyTuning.cooldownMs) {
-            return { ok: false, code: 'cooldown' };
-          }
-          if (
-            lastRfDisconnectAtRef.current != null &&
-            now - lastRfDisconnectAtRef.current < historyTuning.offlineMinMs
-          ) {
-            return { ok: false, code: 'offline_gate' };
-          }
-          return { ok: false, code: 'no_server' };
-        }
+        const skip = resolveStoreForwardAutoFetchSkip({
+          historyTuning,
+          now,
+          alreadyRequested: sfHistoryRequestedServersRef.current.has(serverNodeId),
+          lastFetchMs: getLastSfHistoryFetchMs(serverNodeId),
+          lastDisconnectMs: lastRfDisconnectAtRef.current,
+        });
+        if (skip) return skip;
       }
 
       const serverNode = getIdentityNode(meshtasticIdentityIdRef.current, serverNodeId);
@@ -2023,39 +2114,14 @@ export function useMeshtasticRuntime() {
       if (!destPublicKey) {
         // Router key is missing. Ask for NODEINFO and stop. Do not reserve this
         // session or record a fetch cooldown — history was not requested.
-        const selfNode = getIdentityNode(meshtasticIdentityIdRef.current, myNode);
-        const selfLong = selfNode?.long_name?.trim() ?? '';
-        const selfShort = selfNode?.short_name?.trim() ?? '';
-        const lastNi = lastNodeInfoRequestAtRef.current.get(serverNodeId) ?? 0;
-        if (selfLong && selfShort && now - lastNi >= 120_000) {
-          lastNodeInfoRequestAtRef.current.set(serverNodeId, now);
-          const selfPublicKey = resolveMeshtasticDestPublicKeyBytes({
-            publicKeyHex: selfNode?.public_key_hex,
-          });
-          const ownerUser = createMeshtasticMessage(meshtasticMeshProtobuf.UserSchema, {
-            id: formatMeshtasticNodeId(myNode),
-            longName: selfLong,
-            shortName: selfShort,
-            ...(selfPublicKey ? { publicKey: selfPublicKey } : {}),
-          });
-          const ownerUserBytes = toBinary(
-            meshtasticMeshProtobuf.UserSchema,
-            ownerUser as Parameters<typeof toBinary>[1],
-          );
-          void activeDevice
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
-            .sendPacket(ownerUserBytes, Portnums.PortNum.NODEINFO_APP, serverNodeId)
-            .then(() => {
-              console.debug(
-                `[useMeshtasticRuntime] NODEINFO request sent for S&F router 0x${serverNodeId.toString(16)}`,
-              );
-            })
-            .catch((e: unknown) => {
-              console.debug(
-                '[useMeshtasticRuntime] NODEINFO request failed ' + errLikeToLogString(e),
-              );
-            });
-        }
+        requestStoreForwardRouterNodeInfo({
+          device: activeDevice,
+          myNode,
+          serverNodeId,
+          selfNode: getIdentityNode(meshtasticIdentityIdRef.current, myNode),
+          now,
+          lastNodeInfoRequestAt: lastNodeInfoRequestAtRef.current,
+        });
         return { ok: false, code: 'missing_router_key' };
       }
 
@@ -2067,39 +2133,17 @@ export function useMeshtasticRuntime() {
         }
       }
 
-      const canJitContact = canBuildMeshtasticSharedContact({
-        publicKeyHex: serverNode?.public_key_hex,
-        longName: serverNode?.long_name,
-        shortName: serverNode?.short_name,
-      });
-
       // Attach publicKey on CLIENT_HISTORY only after a successful SharedContact push.
       // If that push fails, omit the wire key so firmware can auto-PKI from NodeDB.
-      let radioHasMatchingDestKey = false;
-      if (canJitContact && serverNode) {
-        const contactPacketId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
-        registerMeshtasticNonChatWirePacketId(contactPacketId);
-        try {
-          const contactBytes = buildLocalAddContactToRadioBytes({
-            myNodeNum: myNode,
-            packetId: contactPacketId,
-            nodeNum: serverNodeId,
-            longName: serverNode.long_name,
-            shortName: serverNode.short_name,
-            publicKey: destPublicKey,
-          });
-          await writeToRadioWithoutQueue(activeDevice, contactBytes);
-          radioHasMatchingDestKey = true;
-          console.debug(
-            `[useMeshtasticRuntime] Store & Forward SharedContact pushed for 0x${serverNodeId.toString(16)}`,
-          );
-        } catch (e: unknown) {
-          console.debug(
-            '[useMeshtasticRuntime] Store & Forward SharedContact push failed ' +
-              errLikeToLogString(e),
-          );
-        }
-      }
+      const radioHasMatchingDestKey =
+        serverNode != null &&
+        (await pushStoreForwardSharedContact({
+          device: activeDevice,
+          myNode,
+          serverNodeId,
+          serverNode,
+          destPublicKey,
+        }));
 
       const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
       const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
