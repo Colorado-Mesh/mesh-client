@@ -16,6 +16,10 @@ Checklist / lessons for the next protocol: [adding-a-protocol.md](adding-a-proto
 
 Shared constants: `src/shared/meshcomConstants.ts`.
 
+### KISS / NET Console password auth (threat model)
+
+ICSSW companion auth is **client-proves-password** only: the TCP peer sends `NONCE:`, the client replies `HMAC-SHA256(password, nonce_bytes)`, the peer answers `OK`/`FAIL`. There is **no TLS**, no pinned node key, and no mutual proof in the firmware greeting — Mesh Client cannot authenticate the peer before returning an HMAC without breaking wire compatibility. An on-path impersonator that elicits one HMAC can offline-guess a short `--passwd` (≤14 chars) and later use it against the real node. Mitigations in-app: per-endpoint password scoping (no A→B reuse), LAN/VPN-only guidance, and treating KISS/NET Console as a **trusted-network** console — not a WAN auth boundary. Stronger peer authentication would need a firmware protocol change.
+
 ## Identity and addressing
 
 - Soft-normalize callsigns (`normalizeMeshcomCallsign`) — no hard ITU reject.
