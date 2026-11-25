@@ -256,6 +256,75 @@ function listRows(db: NodeSqliteDB): ScheduledBroadcastRow[] {
   ).map(rowFromDb);
 }
 
+function mergeScheduledStringField(
+  next: ScheduledBroadcastRow,
+  value: unknown,
+  max: number,
+  field: 'label' | 'text',
+): void {
+  if (value === undefined) return;
+  if (typeof value !== 'string' || value.length > max) fail(field);
+  next[field] = value;
+}
+
+function mergeScheduledBooleanField(next: ScheduledBroadcastRow, value: unknown): void {
+  if (value === undefined) return;
+  if (typeof value !== 'boolean') fail('enabled');
+  next.enabled = value;
+}
+
+function mergeScheduledIntervalField(next: ScheduledBroadcastRow, value: unknown): void {
+  if (value === undefined) return;
+  if (typeof value !== 'string' || !INTERVAL_SET.has(value)) fail('interval');
+  next.interval = value as ScheduledBroadcastRow['interval'];
+}
+
+function mergeScheduledBoundedIntField(
+  next: ScheduledBroadcastRow,
+  value: unknown,
+  min: number,
+  max: number,
+): void {
+  if (value === undefined) return;
+  if (!Number.isInteger(value) || (value as number) < min || (value as number) > max) {
+    fail('timeOfDayMin');
+  }
+  next.timeOfDayMin = value as number;
+}
+
+function mergeScheduledNullableIntField(
+  next: ScheduledBroadcastRow,
+  value: unknown,
+  field: 'weekday' | 'dayOfMonth',
+  min: number,
+  max: number,
+): void {
+  if (value === undefined) return;
+  if (
+    value !== null &&
+    (!Number.isInteger(value) || (value as number) < min || (value as number) > max)
+  ) {
+    fail(field);
+  }
+  next[field] = value as number | null;
+}
+
+function mergeScheduledYmdField(next: ScheduledBroadcastRow, value: unknown): void {
+  if (value === undefined) return;
+  if (value !== null && (typeof value !== 'string' || !YMD_RE.test(value))) fail('anchorYmd');
+  next.anchorYmd = value;
+}
+
+function mergeScheduledNullableFiniteField(
+  next: ScheduledBroadcastRow,
+  value: unknown,
+  field: 'nextDueAt' | 'lastAttemptAt',
+): void {
+  if (value === undefined) return;
+  if (value !== null && !Number.isFinite(value)) fail(field);
+  next[field] = value as number | null;
+}
+
 function mergeInput(
   existing: ScheduledBroadcastRow | null,
   input: ScheduledBroadcastInput,
@@ -281,72 +350,16 @@ function mergeInput(
     updatedAt: now,
   };
 
-  if (input.label !== undefined) {
-    if (typeof input.label !== 'string' || input.label.length > SCHEDULED_BROADCAST_LABEL_MAX) {
-      fail('label');
-    }
-    next.label = input.label;
-  }
-  if (input.text !== undefined) {
-    if (typeof input.text !== 'string' || input.text.length > SCHEDULED_BROADCAST_TEXT_MAX) {
-      fail('text');
-    }
-    next.text = input.text;
-  }
-  if (input.enabled !== undefined) {
-    if (typeof input.enabled !== 'boolean') fail('enabled');
-    next.enabled = input.enabled;
-  }
-  if (input.interval !== undefined) {
-    if (typeof input.interval !== 'string' || !INTERVAL_SET.has(input.interval)) fail('interval');
-    next.interval = input.interval;
-  }
-  if (input.timeOfDayMin !== undefined) {
-    if (
-      !Number.isInteger(input.timeOfDayMin) ||
-      input.timeOfDayMin < 0 ||
-      input.timeOfDayMin > 1439
-    ) {
-      fail('timeOfDayMin');
-    }
-    next.timeOfDayMin = input.timeOfDayMin;
-  }
-  if (input.weekday !== undefined) {
-    if (
-      input.weekday !== null &&
-      (!Number.isInteger(input.weekday) || input.weekday < 0 || input.weekday > 6)
-    ) {
-      fail('weekday');
-    }
-    next.weekday = input.weekday;
-  }
-  if (input.dayOfMonth !== undefined) {
-    if (
-      input.dayOfMonth !== null &&
-      (!Number.isInteger(input.dayOfMonth) || input.dayOfMonth < 1 || input.dayOfMonth > 31)
-    ) {
-      fail('dayOfMonth');
-    }
-    next.dayOfMonth = input.dayOfMonth;
-  }
-  if (input.anchorYmd !== undefined) {
-    if (
-      input.anchorYmd !== null &&
-      (typeof input.anchorYmd !== 'string' || !YMD_RE.test(input.anchorYmd))
-    ) {
-      fail('anchorYmd');
-    }
-    next.anchorYmd = input.anchorYmd;
-  }
-  if (input.nextDueAt !== undefined) {
-    if (input.nextDueAt !== null && !Number.isFinite(input.nextDueAt)) fail('nextDueAt');
-    next.nextDueAt = input.nextDueAt;
-  }
-  if (input.lastAttemptAt !== undefined) {
-    if (input.lastAttemptAt !== null && !Number.isFinite(input.lastAttemptAt))
-      fail('lastAttemptAt');
-    next.lastAttemptAt = input.lastAttemptAt;
-  }
+  mergeScheduledStringField(next, input.label, SCHEDULED_BROADCAST_LABEL_MAX, 'label');
+  mergeScheduledStringField(next, input.text, SCHEDULED_BROADCAST_TEXT_MAX, 'text');
+  mergeScheduledBooleanField(next, input.enabled);
+  mergeScheduledIntervalField(next, input.interval);
+  mergeScheduledBoundedIntField(next, input.timeOfDayMin, 0, 1439);
+  mergeScheduledNullableIntField(next, input.weekday, 'weekday', 0, 6);
+  mergeScheduledNullableIntField(next, input.dayOfMonth, 'dayOfMonth', 1, 31);
+  mergeScheduledYmdField(next, input.anchorYmd);
+  mergeScheduledNullableFiniteField(next, input.nextDueAt, 'nextDueAt');
+  mergeScheduledNullableFiniteField(next, input.lastAttemptAt, 'lastAttemptAt');
   if (input.lastResult !== undefined) {
     next.lastResult = input.lastResult === null ? null : validateLastResult(input.lastResult);
   }
