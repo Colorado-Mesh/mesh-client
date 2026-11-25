@@ -4139,11 +4139,13 @@ export function useMeshcoreRuntime() {
       // Drop prior radio's session GPS before opening a (possibly different) transport.
       clearRadioSelfPosition('meshcore');
       refreshOurPositionGenerationRef.current += 1;
-      if (type === 'ble' && bleConnectInProgressRef.current) {
+      const handleBleSupersede = (): void => {
+        if (type !== 'ble' || !bleConnectInProgressRef.current) return;
         console.debug('[useMeshcoreRuntime] prepareRfConnect BLE superseding in-flight connect');
         bleConnectInProgressRef.current = false;
         meshcoreDeferredReconnectRef.current = false;
-      }
+      };
+      handleBleSupersede();
       // BLE: keep sticky suppress MAC so Meshtastic NodeDB cannot revive the companion ghost
       // during the open gap. Non-BLE: drop suppress entirely (no MAC-derived ghost risk).
       preserveOrClearMeshcoreBleSuppression(
@@ -4152,29 +4154,33 @@ export function useMeshcoreRuntime() {
       );
       // Prefer pending (set right after openMeshCoreTransport) so a mid-open supersede can
       // disconnect the driver before attachRfSession latches driverConnected.
-      const driverIdentity =
-        meshcorePendingDriverIdentityRef.current ??
-        (meshcoreDriverConnectedRef.current ? meshcoreIdentityIdRef.current : null);
-      const staleConn = connRef.current;
-      connRef.current = null;
-      if (driverIdentity) {
-        meshcoreDriverConnectedRef.current = false;
-        meshcorePendingDriverIdentityRef.current = null;
-        void teardownMeshcoreConnEventListeners({
-          driverDisconnect: false,
-          driverIdentityId: driverIdentity,
-        });
-        await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
-          console.debug(
-            '[useMeshcoreRuntime] prepareRfConnect driver disconnect ' + errLikeToLogString(e),
-          );
-        });
-      } else if (staleConn) {
+      const teardownPreviousTransport = async (): Promise<void> => {
+        const driverIdentity =
+          meshcorePendingDriverIdentityRef.current ??
+          (meshcoreDriverConnectedRef.current ? meshcoreIdentityIdRef.current : null);
+        const staleConn = connRef.current;
+        connRef.current = null;
+        if (driverIdentity) {
+          meshcoreDriverConnectedRef.current = false;
+          meshcorePendingDriverIdentityRef.current = null;
+          void teardownMeshcoreConnEventListeners({
+            driverDisconnect: false,
+            driverIdentityId: driverIdentity,
+          });
+          await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+            console.debug(
+              '[useMeshcoreRuntime] prepareRfConnect driver disconnect ' + errLikeToLogString(e),
+            );
+          });
+          return;
+        }
+        if (!staleConn) return;
         void teardownMeshcoreConnEventListeners({ driverDisconnect: false });
         await staleConn.close().catch((e: unknown) => {
           console.debug('[useMeshcoreRuntime] prepareRfConnect close ' + errLikeToLogString(e));
         });
-      }
+      };
+      await teardownPreviousTransport();
       // Always clear the main-process TCP bridge. openMeshCoreTransport can leave
       // meshcoreTcpSocket live while driverConnected/connRef are still unset — a racing
       // BLE prepare used to orphan that socket and let TCP init continue with connectType=ble.
