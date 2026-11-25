@@ -56,4 +56,20 @@ describe('resolveLogProtocolFromChannel', () => {
       'meshtastic',
     );
   });
+
+  it('prefers IPC invoke channel tokens over protocol-named Vite chunk sources', () => {
+    expect(
+      resolveLogProtocolFromChannel({
+        source: 'renderer:meshcom-runtime-DP4Ql4pn.js:5',
+        message:
+          "mcL0994 [IpcTcpConnection] connect/onConnected error Error: Error invoking remote method 'meshcore:tcp-connect': Error: meshcore:tcp-connect: connection timeout",
+      }),
+    ).toBe('meshcore');
+    expect(
+      resolveLogProtocolFromChannel({
+        source: 'renderer:connection-runtime-abc.js:1',
+        message: "Error invoking remote method 'meshtastic:tcp-connect': getaddrinfo ENOTFOUND",
+      }),
+    ).toBe('meshtastic');
+  });
 });

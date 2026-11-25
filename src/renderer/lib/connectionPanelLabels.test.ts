@@ -52,6 +52,9 @@ describe('connectionPanelConnectionTypeLabel', () => {
     ['http', 'meshcore', 'connectionPanel.tcpIp'],
     ['ble', 'meshcore', 'connectionPanel.bluetooth'],
     ['http', 'reticulum', 'connectionPanel.wifiHttp'],
+    ['http', 'meshcom', 'connectionPanel.kissTcp'],
+    ['netconsole', 'meshcom', 'connectionPanel.netConsole'],
+    ['udp', 'meshcom', 'connectionPanel.extUdp'],
   ])('maps %s/%s to %s', (type, protocol, key) => {
     expect(connectionPanelConnectionTypeLabel(mockT(), type, protocol)).toBe(key);
   });

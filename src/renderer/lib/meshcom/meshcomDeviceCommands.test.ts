@@ -9,16 +9,19 @@ import {
 } from './meshcomDeviceCommands';
 
 describe('meshcomDeviceCommands', () => {
-  it('supports only serial and ble', () => {
+  it('supports serial, ble, and netconsole', () => {
     expect(meshcomDeviceCommandsSupported('serial')).toBe(true);
     expect(meshcomDeviceCommandsSupported('ble')).toBe(true);
+    expect(meshcomDeviceCommandsSupported('netconsole')).toBe(true);
     expect(meshcomDeviceCommandsSupported('udp')).toBe(false);
     expect(meshcomDeviceCommandsSupported('tcp')).toBe(false);
   });
 
-  it('encodes serial CRLF and BLE 0xA0 frames', () => {
+  it('encodes serial/NET Console CRLF and BLE 0xA0 frames', () => {
     const serial = encodeMeshcomDeviceCommand('serial', '--info');
     expect(new TextDecoder().decode(serial)).toBe('--info\r\n');
+    const netconsole = encodeMeshcomDeviceCommand('netconsole', '--info');
+    expect(new TextDecoder().decode(netconsole)).toBe('--info\r\n');
     const ble = encodeMeshcomDeviceCommand('ble', '--info');
     expect(ble).toEqual(encodeMeshcomBleCommand('--info'));
   });
@@ -35,6 +38,6 @@ describe('meshcomDeviceCommands', () => {
 
     await expect(
       sendMeshcomDeviceCommand({ ...handle, transport: 'udp' }, '--info'),
-    ).rejects.toThrow(/Serial or BLE/);
+    ).rejects.toThrow(/Serial, BLE, or NET Console/);
   });
 });

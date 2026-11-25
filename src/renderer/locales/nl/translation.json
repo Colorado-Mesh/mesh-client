@@ -1965,7 +1965,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "Opgeslagen apparaten",
     "savedDevicesConnectAria": "Opnieuw verbinden met {{name}}",
-    "savedDevicesDeleteAria": "Opgeslagen apparaat {{name}} verwijderen"
+    "savedDevicesDeleteAria": "Opgeslagen apparaat {{name}} verwijderen",
+    "meshcomMqttGatewayHint": "National MeshCom MQTT wordt meestal bereikt via de knooppuntgateway (--gateway), niet via een directe clientbroker. Alleen uitvouwen als u een aangepaste broker hebt.",
+    "kissPassword": "KISS / NET-consolewachtwoord",
+    "kissPasswordHelp": "Knooppunt --passwd (max. 14 tekens). Wordt gebruikt wanneer --kiss auth aan staat of voor NET Console. Laat leeg wanneer het knooppunt geen wachtwoord heeft.",
+    "kissPasswordAria": "MeshCom-knooppuntwachtwoord voor KISS of NET Console-authenticatie",
+    "netConsole": "TCP netwerk console"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -9191,7 +9196,8 @@
         "dl26251": "Rheinisch-Bergischer Kreis"
       },
       "slotsFullLocalOnly": "Luisterplaatsen van knooppunt zijn vol (6). Alleen lokaal geopend — vervang een sleuf in Radio → Identiteit om op het knooppunt te boeken."
-    }
+    },
+    "netConsoleHint": "NET Console is TCP poort 2323 (LAN in platte tekst). Schakel --netconsole in op het knooppunt; optioneel --passwd voor HMAC-login."
   },
   "meshcomDeviceCommands": {
     "description": "Verstuur ICSSW-knooppuntopdrachten (--help, --settime, --setctry, …) via Seriële verbinding of BLE. Voor de app geschikte opdrachten komen overeen met de officiële MeshCom-app; opdrachten die alleen via seriële verbinding kunnen worden uitgevoerd, hebben een USB-consolelink nodig.",

@@ -1965,7 +1965,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "已保存的设备",
     "savedDevicesConnectAria": "重新连接到{{name}}",
-    "savedDevicesDeleteAria": "删除已保存的设备{{name}}"
+    "savedDevicesDeleteAria": "删除已保存的设备{{name}}",
+    "meshcomMqttGatewayHint": "通常通过节点网关（--gateway）访问国家级 MeshCom MQTT，而不是直接通过客户端代理。仅当您有自定义代理时才展开。",
+    "kissPassword": "KISS / NET 控制台密码",
+    "kissPasswordHelp": "节点 --passwd（最多 14 个字符）。在 --kiss auth 启用时或对于 NET 控制台使用。如果节点没有密码，请留空。",
+    "kissPasswordAria": "用于KISS或NET控制台身份验证的MeshCom节点密码",
+    "netConsole": "NET 控制台"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -9191,7 +9196,8 @@
         "dl26251": "莱茵-贝格县"
       },
       "slotsFullLocalOnly": "节点监听插槽已满（6个）。仅在本地打开 — 更换“无线电”→“身份”中的一个插槽，以便在节点上预订。"
-    }
+    },
+    "netConsoleHint": "NET Console 是 TCP 端口 2323（明文 LAN）。在节点上启用 --netconsole；可选 --passwd 用于 HMAC 登录。"
   },
   "meshcomDeviceCommands": {
     "description": "通过串行或BLE发送ICSSW节点命令（--help、--settime、--setctry……）。适用于应用的命令与官方MeshCom应用相匹配；仅适用于串行端口的命令需要USB控制台链接。",

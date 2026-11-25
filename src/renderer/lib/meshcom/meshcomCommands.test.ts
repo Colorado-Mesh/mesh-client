@@ -23,6 +23,9 @@ describe('meshcomCommands catalog', () => {
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--aht20')).toBe(true);
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--aprsmc')).toBe(true);
     expect(MESHCOM_COMMANDS.some((c) => c.token === '--txpower')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--kiss auth')).toBe(true);
+    expect(MESHCOM_COMMANDS.some((c) => c.token === '--netconsole')).toBe(true);
+    expect(getMeshcomCommandById('passwd')?.sensitive).toBe(true);
     expect(getMeshcomCommandById('battcal')?.requiresRmFirmware).toBe(true);
     expect(getMeshcomCommandById('e22pa')?.requiresRmFirmware).toBe(true);
     expect(getMeshcomCommandById('txpower')?.requiresRmFirmware).toBeFalsy();

@@ -143,7 +143,7 @@ describe('ProtocolCapabilities contract', () => {
   it('MESHCOM_CAPABILITIES exact values are stable', () => {
     expect(MESHCOM_CAPABILITIES).toMatchInlineSnapshot(`
       {
-        "composerMaxChunks": 1,
+        "composerMaxChunks": 9,
         "dedupeQueueBadgeForLocalSending": false,
         "defaultContactsGroupFilterId": null,
         "hasAtakPlugin": false,

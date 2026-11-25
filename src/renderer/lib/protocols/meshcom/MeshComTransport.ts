@@ -3,11 +3,17 @@
  */
 
 import { formatHostForSocket, parseConnectHostPort } from '@/shared/connectHost';
-import { MESHCOM_KISS_TCP_PORT, MESHCOM_SERIAL_BAUD } from '@/shared/meshcomConstants';
+import {
+  MESHCOM_KISS_TCP_PORT,
+  MESHCOM_NETCONSOLE_PORT,
+  MESHCOM_SERIAL_BAUD,
+} from '@/shared/meshcomConstants';
 
 import { connectGattWithScanBusyRetry } from '../../bleReconnectHelper';
 import { closeSerialPortIfOpen } from '../../connection';
 import { encodeMeshcomBleCommand, MESHCOM_BLE_HELLO } from '../../meshcom/meshcomBleFrame';
+import { encodeMeshcomSerialLine } from '../../meshcom/meshcomSerial';
+import { runMeshcomTcpAuth } from '../../meshcom/meshcomTcpAuth';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { noteSerialTransportLoss } from '../../serialDeliveryHealth';
 import {
@@ -18,7 +24,7 @@ import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity } from '../../serialPortSignature';
 import type { TransportParams } from '../../types';
 
-export type MeshComTransportKind = 'udp' | 'tcp' | 'serial' | 'ble';
+export type MeshComTransportKind = 'udp' | 'tcp' | 'netconsole' | 'serial' | 'ble';
 
 export interface MeshComConnection {
   readonly transport: MeshComTransportKind;
@@ -38,6 +44,8 @@ export interface MeshComConnectionParams {
   peripheralId?: string;
   /** Gesture-free serial reconnect: Chromium portId or USB signature hint. */
   portSignature?: string | null;
+  /** Node `--passwd` for KISS auth / NET Console HMAC (empty = open access). */
+  authPassword?: string;
 }
 
 function toUint8Array(bytes: Uint8Array | number[]): Uint8Array {
@@ -92,15 +100,23 @@ class IpcKissTcpConnection implements MeshComConnection {
   onData: ((bytes: Uint8Array) => void) | null = null;
   onDisconnected: (() => void) | null = null;
   private cleanupFns: (() => void)[] = [];
+  /** While true, inbound chunks feed the auth handshake instead of onData. */
+  private authGate = false;
+  private authHandler: ((bytes: Uint8Array) => void) | null = null;
 
   constructor(
     private readonly host: string,
     private readonly port: number,
+    private readonly authPassword: string,
   ) {}
 
   async connect(): Promise<void> {
     const offData = window.electronAPI.meshcom.tcp.onData((bytes) => {
       const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+      if (this.authGate) {
+        this.authHandler?.(frame);
+        return;
+      }
       this.onData?.(frame);
     });
     const offDisc = window.electronAPI.meshcom.tcp.onDisconnected(() => {
@@ -108,6 +124,96 @@ class IpcKissTcpConnection implements MeshComConnection {
     });
     this.cleanupFns = [offData, offDisc];
     await window.electronAPI.meshcom.tcp.connect(this.host, this.port);
+    this.authGate = true;
+    try {
+      const result = await runMeshcomTcpAuth(
+        {
+          write: (b) => window.electronAPI.meshcom.tcp.write(Array.from(b)),
+          onData: (handler) => {
+            this.authHandler = handler;
+            return () => {
+              this.authHandler = null;
+            };
+          },
+        },
+        this.authPassword,
+      );
+      if (result.status === 'rejected') {
+        await this.close();
+        throw new Error(`MeshCom KISS auth: ${result.reason}`);
+      }
+    } finally {
+      this.authGate = false;
+      this.authHandler = null;
+    }
+  }
+
+  async write(bytes: Uint8Array | number[]): Promise<void> {
+    await window.electronAPI.meshcom.tcp.write(Array.from(toUint8Array(bytes)));
+  }
+
+  async close(): Promise<void> {
+    releaseCleanupFns(this.cleanupFns);
+    await window.electronAPI.meshcom.tcp.disconnect();
+  }
+}
+
+/**
+ * NET Console (:2323) — plaintext console after HMAC; ExtUDP JSON via `--setinfo on`.
+ * Reuses the MeshCom TCP IPC bridge (single socket; mutually exclusive with KISS).
+ */
+class IpcNetConsoleConnection implements MeshComConnection {
+  readonly transport = 'netconsole' as const;
+  onData: ((bytes: Uint8Array) => void) | null = null;
+  onDisconnected: (() => void) | null = null;
+  private cleanupFns: (() => void)[] = [];
+  private authGate = false;
+  private authHandler: ((bytes: Uint8Array) => void) | null = null;
+
+  constructor(
+    private readonly host: string,
+    private readonly port: number,
+    private readonly authPassword: string,
+  ) {}
+
+  async connect(): Promise<void> {
+    const offData = window.electronAPI.meshcom.tcp.onData((bytes) => {
+      const frame = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+      if (this.authGate) {
+        this.authHandler?.(frame);
+        return;
+      }
+      this.onData?.(frame);
+    });
+    const offDisc = window.electronAPI.meshcom.tcp.onDisconnected(() => {
+      this.onDisconnected?.();
+    });
+    this.cleanupFns = [offData, offDisc];
+    await window.electronAPI.meshcom.tcp.connect(this.host, this.port);
+    this.authGate = true;
+    try {
+      const result = await runMeshcomTcpAuth(
+        {
+          write: (b) => window.electronAPI.meshcom.tcp.write(Array.from(b)),
+          onData: (handler) => {
+            this.authHandler = handler;
+            return () => {
+              this.authHandler = null;
+            };
+          },
+        },
+        this.authPassword,
+      );
+      if (result.status === 'rejected') {
+        await this.close();
+        throw new Error(`MeshCom NET Console auth: ${result.reason}`);
+      }
+    } finally {
+      this.authGate = false;
+      this.authHandler = null;
+    }
+    // Enable ExtUDP-style JSON console output (gomeshcom / firmware NET Console).
+    await this.write(encodeMeshcomSerialLine('--setinfo on'));
   }
 
   async write(bytes: Uint8Array | number[]): Promise<void> {
@@ -418,7 +524,15 @@ export async function createMeshComConnection(
       if (!params.host) throw new Error('MeshCom KISS/TCP requires host');
       const { host, port } = parseConnectHostPort(params.host, MESHCOM_KISS_TCP_PORT);
       const socketHost = formatHostForSocket(host);
-      const conn = new IpcKissTcpConnection(socketHost, port);
+      const conn = new IpcKissTcpConnection(socketHost, port, params.authPassword ?? '');
+      await conn.connect();
+      return conn;
+    }
+    case 'netconsole': {
+      if (!params.host) throw new Error('MeshCom NET Console requires host');
+      const { host, port } = parseConnectHostPort(params.host, MESHCOM_NETCONSOLE_PORT);
+      const socketHost = formatHostForSocket(host);
+      const conn = new IpcNetConsoleConnection(socketHost, port, params.authPassword ?? '');
       await conn.connect();
       return conn;
     }
@@ -441,20 +555,28 @@ export async function createMeshComConnection(
 }
 
 /** Map ConnectionDriver {@link TransportParams} onto MeshCom transport params. */
-export function transportParamsToMeshCom(params: TransportParams): MeshComConnectionParams {
+export function transportParamsToMeshCom(
+  params: TransportParams,
+  opts?: { authPassword?: string },
+): MeshComConnectionParams {
+  const authPassword = opts?.authPassword ?? '';
   switch (params.type) {
     case 'udp':
       return { transport: 'udp', host: params.host };
     case 'tcp':
-      return { transport: 'tcp', host: params.host };
+      return { transport: 'tcp', host: params.host, authPassword };
     case 'http':
       // KISS UI uses `'http'` like MeshCore companion TCP.
-      return { transport: 'tcp', host: params.host };
+      return { transport: 'tcp', host: params.host, authPassword };
+    case 'netconsole':
+      return { transport: 'netconsole', host: params.host, authPassword };
     case 'serial':
       return { transport: 'serial', portSignature: params.portSignature };
     case 'ble':
       return { transport: 'ble', peripheralId: params.peripheralId };
     default:
-      throw new Error(`MeshCom unsupported TransportParams type: ${params.type}`);
+      throw new Error(
+        `MeshCom unsupported TransportParams type: ${(params as { type: string }).type}`,
+      );
   }
 }

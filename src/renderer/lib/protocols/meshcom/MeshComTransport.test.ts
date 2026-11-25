@@ -82,7 +82,7 @@ describe('MeshComTransport', () => {
     connectGattWithScanBusyRetryMock.mockResolvedValue(undefined);
   });
 
-  it('transportParamsToMeshCom maps serial portSignature, ble peripheralId, and http→tcp', () => {
+  it('transportParamsToMeshCom maps serial, ble, http→tcp, and netconsole with auth', () => {
     expect(transportParamsToMeshCom({ type: 'serial', portSignature: 'port-1' })).toEqual({
       transport: 'serial',
       portSignature: 'port-1',
@@ -91,9 +91,22 @@ describe('MeshComTransport', () => {
       transport: 'ble',
       peripheralId: 'aa:bb',
     });
-    expect(transportParamsToMeshCom({ type: 'http', host: '10.0.0.1' })).toEqual({
+    expect(
+      transportParamsToMeshCom({ type: 'http', host: '10.0.0.1' }, { authPassword: 'secret' }),
+    ).toEqual({
       transport: 'tcp',
       host: '10.0.0.1',
+      authPassword: 'secret',
+    });
+    expect(
+      transportParamsToMeshCom(
+        { type: 'netconsole', host: '10.0.0.2:2323' },
+        { authPassword: 'pw' },
+      ),
+    ).toEqual({
+      transport: 'netconsole',
+      host: '10.0.0.2:2323',
+      authPassword: 'pw',
     });
   });
 

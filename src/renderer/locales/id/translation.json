@@ -1965,7 +1965,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "Perangkat tersimpan",
     "savedDevicesConnectAria": "Sambungkan kembali ke {{name}}",
-    "savedDevicesDeleteAria": "Hapus perangkat tersimpan {{name}}"
+    "savedDevicesDeleteAria": "Hapus perangkat tersimpan {{name}}",
+    "meshcomMqttGatewayHint": "National MeshCom MQTT biasanya dijangkau melalui gateway node (--gateway), bukan broker klien langsung. Perluas hanya jika Anda memiliki broker khusus.",
+    "kissPassword": "KISS / Kata sandi Konsol NET",
+    "kissPasswordHelp": "Node --passwd (maksimal 14 karakter). Digunakan saat --kiss auth aktif atau untuk Konsol NET. Biarkan kosong jika node tidak memiliki kata sandi.",
+    "kissPasswordAria": "Kata sandi node MeshCom untuk KISS atau autentikasi Konsol NET",
+    "netConsole": "Konsol NET"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -9191,7 +9196,8 @@
         "dl26251": "Distrik Rheinisch-Bergischer"
       },
       "slotsFullLocalOnly": "Slot dengar node penuh (6). Hanya dibuka secara lokal — ganti slot di Radio → Identitas untuk memesan di node."
-    }
+    },
+    "netConsoleHint": "Konsol NET adalah TCP port 2323 (LAN teks biasa). Aktifkan --netconsole pada node; --passwd opsional untuk login HMAC."
   },
   "meshcomDeviceCommands": {
     "description": "Kirim perintah node ICSSW (--help, --settime, --setctry, …) melalui Serial atau BLE. Perintah yang memenuhi syarat APLIKASI sesuai dengan aplikasi MeshCom resmi; perintah khusus serial memerlukan tautan konsol USB.",

@@ -223,7 +223,7 @@ describe('computeComposerLimitStatus', () => {
     expect(status.totalMaxChars).toBe(status.singleMessageLimit);
   });
 
-  it('meshcom body limit reserves address prefix bytes and blocks over-budget text', () => {
+  it('meshcom body limit reserves address prefix bytes and splits over one packet', () => {
     expect(getComposerPayloadLimit({ protocol: 'meshcom', meshcomWireDest: '*' })).toBe(160);
     expect(getComposerPayloadLimit({ protocol: 'meshcom', meshcomWireDest: '260' })).toBe(155);
     expect(getComposerPayloadLimit({ protocol: 'meshcom', meshcomWireDest: 'SP5DH-1' })).toBe(151);
@@ -235,12 +235,13 @@ describe('computeComposerLimitStatus', () => {
     expect(ok.singleMessageLimit).toBe(155);
     expect(ok.phase).not.toBe('overMax');
 
-    const over = computeComposerLimitStatus('a'.repeat(156), 'meshcom', {
+    // MeshCom allows up to 9 `[i/N]` parts (unlike MeshCore single-packet).
+    const split = computeComposerLimitStatus('a'.repeat(156), 'meshcom', {
       meshcomWireDest: '260',
       useWireByteCount: true,
     });
-    expect(over.phase).toBe('overMax');
-    expect(over.chunkCount).toBe(0);
+    expect(split.phase).toBe('split');
+    expect(split.chunkCount).toBe(2);
   });
 
   it('returns overMax when text exceeds total max chars', () => {
@@ -258,9 +259,10 @@ describe('getMaxChunks', () => {
     expect(getMaxChunks('meshcore')).toBe(1);
   });
 
-  it('returns MAX_CHUNKS for meshtastic and reticulum', () => {
+  it('returns MAX_CHUNKS for meshtastic, reticulum, and meshcom', () => {
     expect(getMaxChunks('meshtastic')).toBe(MAX_CHUNKS);
     expect(getMaxChunks('reticulum')).toBe(MAX_CHUNKS);
+    expect(getMaxChunks('meshcom')).toBe(MAX_CHUNKS);
   });
 });
 

@@ -1965,7 +1965,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "保存されたデバイス",
     "savedDevicesConnectAria": "{{name}}に再接続する",
-    "savedDevicesDeleteAria": "保存したデバイス{{name}}を削除"
+    "savedDevicesDeleteAria": "保存したデバイス{{name}}を削除",
+    "meshcomMqttGatewayHint": "National MeshCom MQTTには、通常、直接クライアントブローカーではなく、ノードゲートウェイ（--gateway）を介してアクセスします。カスタムブローカーがある場合にのみ展開してください。",
+    "kissPassword": "KISS / NETコンソールパスワード",
+    "kissPasswordHelp": "ノード --passwd（最大14文字）。--kiss authがオンの場合、またはNETコンソールで使用されます。ノードにパスワードがない場合は空のままにします。",
+    "kissPasswordAria": "KISSまたはNETコンソールの認証用MeshComノードパスワード",
+    "netConsole": "NETコンソール"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -9191,7 +9196,8 @@
         "dl26251": "ライン＝ベルギッシュ郡"
       },
       "slotsFullLocalOnly": "ノードのリスニングスロットがいっぱいです（6）。ローカルでのみ開いています — ノードを予約するには、[無線] → [ID]のスロットを置き換えてください。"
-    }
+    },
+    "netConsoleHint": "NETコンソールはTCPポート2323（プレーンテキストLAN）です。ノードで--netconsoleを有効にします。HMACログインにはオプションの--passwdを使用します。"
   },
   "meshcomDeviceCommands": {
     "description": "ICSSWノードコマンド（--help、--settime、--setctry、…）をシリアルまたはBLE経由で送信します。アプリ対応コマンドは、公式のMeshComアプリと一致します。シリアル専用コマンドには、USBコンソールリンクが必要です。",

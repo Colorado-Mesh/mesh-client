@@ -126,6 +126,7 @@ import {
   getMeshcomNetworkTime,
   subscribeMeshcomNetworkTime,
 } from '../lib/meshcom/meshcomNetworkTime';
+import { shouldOpenMeshcomMqttPanel } from '../lib/meshcomMqttPanelOpen';
 import { MESHCOM_MQTT_SETTINGS_KEY } from '../lib/meshcomMqttSettingsStorage';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
@@ -183,6 +184,11 @@ import {
   sortPickerItems,
   useDebouncedPickerSort,
 } from '../lib/pickerListSort';
+import {
+  getCachedSecureSecret,
+  MESHCOM_NODE_PASSWD_SECRET_KEY,
+  setSecureSecret,
+} from '../lib/secureSecretStorage';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { isWeakBleRssi } from '../lib/signal';
@@ -239,6 +245,7 @@ import { LabelValue, LabelValueGrid } from './ui/LabelValue';
 import { type MenuEntry, SplitButton } from './ui/Menu';
 import { Panel } from './ui/Panel';
 import { SegmentedControl, type SegmentedOption } from './ui/SegmentedControl';
+import { SettingsCollapsible } from './ui/SettingsSection';
 import { Stepper } from './ui/Stepper';
 import { Switch } from './ui/Switch';
 // ─── Last Connection (localStorage) ───────────────────────────────
@@ -560,6 +567,10 @@ export default function ConnectionPanel({
   const [meshcomMqttSettings, setMeshcomMqttSettings] =
     useState<MQTTSettings>(loadMeshcomMqttSettings);
   const [showMqttPassword, setShowMqttPassword] = useState(false);
+  const [meshcomNodePassword, setMeshcomNodePassword] = useState(
+    () => getCachedSecureSecret(MESHCOM_NODE_PASSWD_SECRET_KEY) ?? '',
+  );
+  const [showMeshcomNodePassword, setShowMeshcomNodePassword] = useState(false);
   const [mqttError, setMqttError] = useState<string | null>(null);
   const [mqttWarning, setMqttWarning] = useState<string | null>(null);
   const [channelPskWarn, setChannelPskWarn] = useState<string | null>(null);
@@ -1244,7 +1255,10 @@ export default function ConnectionPanel({
       // KISS is stored as `http`; mistyped tcp with a usable address rehydrates as http.
       // Meshtastic-only tcp bleed is ignored.
       const kissAddr = loaded ? resolveMeshcomKissReconnectAddress(loaded) : null;
-      if (kissAddr) {
+      if (loaded?.type === 'netconsole' && loaded.httpAddress) {
+        setHttpAddress(loaded.httpAddress);
+        setConnectionType('netconsole');
+      } else if (kissAddr) {
         setHttpAddress(kissAddr);
         setConnectionType('http');
       } else if (loaded?.type === 'udp' && loaded.httpAddress) {
@@ -1363,10 +1377,11 @@ export default function ConnectionPanel({
         if (
           state.connectionType === 'http' ||
           state.connectionType === 'tcp' ||
-          state.connectionType === 'udp'
+          state.connectionType === 'udp' ||
+          state.connectionType === 'netconsole'
         ) {
           // Prefer the address field for the configured transport (not UI radio selection).
-          // MeshCom KISS/EXTUDP never use Meshtastic native TCP (`tcpAddress` / :4403).
+          // MeshCom KISS/EXTUDP/NET Console never use Meshtastic native TCP (`tcpAddress` / :4403).
           conn.httpAddress =
             protocol === 'meshcore'
               ? `${tcpHost}:${tcpPort}`
@@ -1953,12 +1968,27 @@ export default function ConnectionPanel({
 
     try {
       console.debug('[ConnectionPanel] handleConnect', connectionType, activeHostAddress);
+      if (
+        protocol === 'meshcom' &&
+        (connectionType === 'http' || connectionType === 'netconsole')
+      ) {
+        void setSecureSecret(MESHCOM_NODE_PASSWD_SECRET_KEY, meshcomNodePassword).catch(
+          (err: unknown) => {
+            console.warn(
+              'mcL0413 [ConnectionPanel] MeshCom node password persist failed ' +
+                errLikeToLogString(err),
+            );
+          },
+        );
+      }
       if (connectionType === 'http') {
         await onConnect('http', activeHostAddress);
       } else if (connectionType === 'tcp') {
         await onConnect('tcp', activeHostAddress);
       } else if (connectionType === 'udp') {
         await onConnect('udp', activeHostAddress);
+      } else if (connectionType === 'netconsole') {
+        await onConnect('netconsole', activeHostAddress);
       } else {
         await onConnect('serial');
       }
@@ -1973,7 +2003,8 @@ export default function ConnectionPanel({
       } else if (
         connectionType === 'http' ||
         connectionType === 'tcp' ||
-        connectionType === 'udp'
+        connectionType === 'udp' ||
+        connectionType === 'netconsole'
       ) {
         errorMsg = humanizeHttpError(activeHostAddress, err, t);
       } else {
@@ -1984,7 +2015,15 @@ export default function ConnectionPanel({
       setConnecting(false);
       setConnectionStage('');
     }
-  }, [clearPendingHistoryReplace, connectionType, activeHostAddress, onConnect, protocol, t]);
+  }, [
+    clearPendingHistoryReplace,
+    connectionType,
+    activeHostAddress,
+    meshcomNodePassword,
+    onConnect,
+    protocol,
+    t,
+  ]);
 
   const handleCancelConnection = useCallback(() => {
     cancelProtocolRfAutoConnect(protocol);
@@ -3666,6 +3705,27 @@ export default function ConnectionPanel({
       </Panel>
     );
 
+  // MeshCom national brokers are typically node-gateway only — collapse the MQTT panel
+  // unless the user already has broker data or an active MQTT session.
+  const hasMeshcomMqttData = shouldOpenMeshcomMqttPanel({
+    server: meshcomMqttSettings.server,
+    profileCount: meshcomMqttProfiles.length,
+    mqttStatus,
+  });
+  const mqttSectionWrapped =
+    protocol === 'meshcom' ? (
+      <SettingsCollapsible
+        title={t('connectionPanel.mqttConnection')}
+        description={t('connectionPanel.meshcomMqttGatewayHint')}
+        defaultOpen={hasMeshcomMqttData}
+        anchorId="connection.mqtt.meshcom"
+      >
+        {mqttSection}
+      </SettingsCollapsible>
+    ) : (
+      mqttSection
+    );
+
   // Portal to body: MeshCore ConnectionPanel stays mounted under a `hidden` ancestor when
   // another protocol tab is active — without a portal the gate would never paint.
   const coloradoRegionGateModal =
@@ -3821,7 +3881,7 @@ export default function ConnectionPanel({
       <div data-panel-anchor="Connection" className="w-full space-y-4">
         {statusTiles}
         {connectingProgressView}
-        {mqttSection}
+        {mqttSectionWrapped}
         {coloradoRegionGateModal}
       </div>
     );
@@ -4062,7 +4122,7 @@ export default function ConnectionPanel({
             </div>
           </Panel>
 
-          {mqttSection}
+          {mqttSectionWrapped}
         </div>
         {coloradoRegionGateModal}
       </div>
@@ -4074,7 +4134,7 @@ export default function ConnectionPanel({
     protocol === 'meshtastic'
       ? (['ble', 'serial', 'http', 'tcp'] as const)
       : protocol === 'meshcom'
-        ? (['udp', 'http', 'ble', 'serial'] as const) // http UI = MeshCom KISS/TCP :8001
+        ? (['udp', 'http', 'netconsole', 'ble', 'serial'] as const) // http = KISS :8001
         : (['ble', 'serial', 'http'] as const)
   ).map((type) => ({
     value: type,
@@ -4222,7 +4282,8 @@ export default function ConnectionPanel({
               </div>
             )}
             {(connectionType === 'udp' ||
-              (connectionType === 'http' && protocol === 'meshcom')) && (
+              (connectionType === 'http' && protocol === 'meshcom') ||
+              (connectionType === 'netconsole' && protocol === 'meshcom')) && (
               <div
                 data-setting-anchor="connection.radio.meshcomHost"
                 className="max-w-md space-y-1"
@@ -4237,14 +4298,65 @@ export default function ConnectionPanel({
                   onChange={(e) => {
                     setHttpAddress(e.target.value);
                   }}
-                  placeholder={connectionType === 'udp' ? '192.168.1.x' : '192.168.1.x:8001'}
+                  placeholder={
+                    connectionType === 'udp'
+                      ? '192.168.1.x'
+                      : connectionType === 'netconsole'
+                        ? '192.168.1.x:2323'
+                        : '192.168.1.x:8001'
+                  }
                   className={INPUT_CLASS}
                   autoComplete="off"
                   aria-label={t('connectionPanel.deviceAddress')}
                 />
                 <p className="text-muted text-xs">
-                  {connectionType === 'udp' ? t('meshcom.extUdpHint') : t('meshcom.kissTcpHint')}
+                  {connectionType === 'udp'
+                    ? t('meshcom.extUdpHint')
+                    : connectionType === 'netconsole'
+                      ? t('meshcom.netConsoleHint')
+                      : t('meshcom.kissTcpHint')}
                 </p>
+                {(connectionType === 'http' || connectionType === 'netconsole') && (
+                  <div
+                    data-setting-anchor="connection.radio.meshcomNodePassword"
+                    className="space-y-1 pt-2"
+                  >
+                    <label htmlFor="connection-meshcom-passwd" className="text-muted text-xs">
+                      {t('connectionPanel.kissPassword')}
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="connection-meshcom-passwd"
+                        type={showMeshcomNodePassword ? 'text' : 'password'}
+                        value={meshcomNodePassword}
+                        onChange={(e) => {
+                          setMeshcomNodePassword(e.target.value.slice(0, 14));
+                        }}
+                        className={INPUT_CLASS}
+                        autoComplete="off"
+                        aria-label={t('connectionPanel.kissPasswordAria')}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        aria-label={
+                          showMeshcomNodePassword
+                            ? t('connectionPanel.hidePassword')
+                            : t('connectionPanel.showPassword')
+                        }
+                        onClick={() => {
+                          setShowMeshcomNodePassword((v) => !v);
+                        }}
+                      >
+                        {showMeshcomNodePassword
+                          ? t('connectionPanel.hidePassword')
+                          : t('connectionPanel.showPassword')}
+                      </Button>
+                    </div>
+                    <p className="text-muted text-xs">{t('connectionPanel.kissPasswordHelp')}</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -4312,7 +4424,7 @@ export default function ConnectionPanel({
           </div>
         </Panel>
 
-        {mqttSection}
+        {mqttSectionWrapped}
       </div>
       {coloradoRegionGateModal}
     </div>

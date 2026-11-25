@@ -2005,7 +2005,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "Збережені пристрої",
     "savedDevicesConnectAria": "Повторно під'єднатися до {{name}}",
-    "savedDevicesDeleteAria": "Видалити збережений пристрій {{name}}"
+    "savedDevicesDeleteAria": "Видалити збережений пристрій {{name}}",
+    "meshcomMqttGatewayHint": "До національної мережі MeshCom MQTT зазвичай здійснюється доступ через шлюз вузла (--gateway), а не через прямого клієнтського брокера. Розгортайте лише за наявності спеціального брокера.",
+    "kissPassword": "Пароль консолі KISS / NET",
+    "kissPasswordHelp": "Вузол --passwd (максимум 14 символів). Використовується, коли ввімкнено --kiss auth або для консолі NET. Залиште порожнім, якщо вузол не має пароля.",
+    "kissPasswordAria": "Пароль вузла MeshCom для автентифікації KISS або NET Console",
+    "netConsole": "Консоль NET"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -9335,7 +9340,8 @@
         "dl26251": "Rheinisch-Bergischer Kreis"
       },
       "slotsFullLocalOnly": "Слоти прослуховування вузла заповнені (6). Відкрито лише локально – замініть слот у розділі «Радіо» → «Ідентифікатор», щоб забронювати його на вузлі."
-    }
+    },
+    "netConsoleHint": "NET Console – це TCP порт 2323 (LAN із відкритим текстом). Увімкніть --netconsole на вузлі; необов'язково --passwd для входу за допомогою HMAC."
   },
   "meshcomDeviceCommands": {
     "description": "Надсилайте команди вузла ICSSW (--help, --settime, --setctry, …) через послідовний інтерфейс або BLE. Команди, сумісні з застосунком, відповідають офіційному застосунку MeshCom; для команд, які підтримуються лише через послідовний інтерфейс, потрібне з'єднання з консоллю USB.",

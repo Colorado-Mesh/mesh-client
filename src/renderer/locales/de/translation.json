@@ -1965,7 +1965,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "Gespeicherte Geräte",
     "savedDevicesConnectAria": "Erneut mit {{name}} verbinden",
-    "savedDevicesDeleteAria": "Gespeichertes Gerät {{name}} löschen"
+    "savedDevicesDeleteAria": "Gespeichertes Gerät {{name}} löschen",
+    "meshcomMqttGatewayHint": "National MeshCom MQTT wird in der Regel über das Knotengateway (--gateway) erreicht, nicht über einen direkten Client-Broker. Nur erweitern, wenn Sie einen benutzerdefinierten Broker haben.",
+    "kissPassword": "KISS / NET-Konsolenpasswort",
+    "kissPasswordHelp": "Knoten --passwd (max. 14 Zeichen). Wird verwendet, wenn --kiss auth aktiviert ist oder für die NET-Konsole. Leer lassen, wenn der Knoten kein Passwort hat.",
+    "kissPasswordAria": "MeshCom-Knotenpasswort für KISS oder NET-Konsolenauthentifizierung",
+    "netConsole": "NET-Konsole"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -9191,7 +9196,8 @@
         "dl26251": "Rheinisch-Bergischer Kreis, 6]"
       },
       "slotsFullLocalOnly": "Die Abhör-Slots des Knotens sind voll (6). Nur lokal geöffnet – ersetzen Sie einen Slot unter Funk → Identität, um ihn auf dem Knoten zu buchen."
-    }
+    },
+    "netConsoleHint": "NET-Konsole ist TCP Port 2323 (LAN im Klartext). Aktivieren Sie --netconsole auf dem Knoten; optional --passwd für die HMAC-Anmeldung."
   },
   "meshcomDeviceCommands": {
     "description": "Senden Sie ICSSW-Knotenbefehle (--help, --settime, --setctry, …) über Serial oder BLE. Für die App geeignete Befehle stimmen mit der offiziellen MeshCom-App überein; Befehle, die nur über die serielle Schnittstelle ausgeführt werden können, benötigen eine USB-Konsolenverbindung.",

@@ -2612,7 +2612,14 @@ export function useMeshtasticRuntime() {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded during configure');
         }
-        if (!(await verifyGattRfLink(params.type === 'udp' ? 'tcp' : params.type, 'meshtastic'))) {
+        if (
+          !(await verifyGattRfLink(
+            params.type === 'ble' || params.type === 'serial' || params.type === 'http'
+              ? params.type
+              : 'tcp',
+            'meshtastic',
+          ))
+        ) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('RF link lost after reconnect configure');
         }

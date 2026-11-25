@@ -93,7 +93,6 @@ const asyncNoop = async (): Promise<void> => {};
 const syncNoop = (): void => {};
 
 function toUiConnectionType(type: MeshcomRfTransportType): ConnectionType {
-  if (type === 'http') return 'http';
   return type;
 }
 
@@ -588,7 +587,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         opened = await openMeshComTransport(type, {
           blePeripheralId,
           host:
-            type === 'udp' || type === 'tcp' || type === 'http'
+            type === 'udp' || type === 'tcp' || type === 'http' || type === 'netconsole'
               ? resolveHost(httpAddress)
               : undefined,
           portSignature: meshcomSerialPortId,
@@ -602,7 +601,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         connectionParamsRef.current = {
           rfType: type,
           httpAddress:
-            type === 'udp' || type === 'tcp' || type === 'http'
+            type === 'udp' || type === 'tcp' || type === 'http' || type === 'netconsole'
               ? resolveHost(httpAddress)
               : undefined,
           blePeripheralId,
@@ -620,7 +619,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
 
   const connectAutomatic = useCallback(
     async (
-      type: 'ble' | 'serial' | 'http' | 'udp' | 'tcp',
+      type: 'ble' | 'serial' | 'http' | 'udp' | 'tcp' | 'netconsole',
       httpAddress?: string,
       lastSerialPortId?: string | null,
       blePeripheralId?: string,
@@ -649,7 +648,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         }
         return;
       }
-      const rfType: MeshcomRfTransportType = type === 'http' ? 'http' : type;
+      const rfType: MeshcomRfTransportType = type;
       await connect(rfType, httpAddress);
     },
     [attachRfSession, connect, handleRfConnectFailure, prepareRfConnect],
@@ -1083,7 +1082,12 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       blePeripheralId?: string,
     ) => {
       const rfType: MeshcomRfTransportType =
-        type === 'tcp' || type === 'udp' || type === 'ble' || type === 'serial' || type === 'http'
+        type === 'tcp' ||
+        type === 'udp' ||
+        type === 'ble' ||
+        type === 'serial' ||
+        type === 'http' ||
+        type === 'netconsole'
           ? type
           : 'udp';
       await connect(rfType, httpAddress, blePeripheralId);
@@ -1121,21 +1125,36 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       onPowerResume,
       prepareRfConnect: ((type: ConnectionType) => {
         const rfType: MeshcomRfTransportType =
-          type === 'tcp' || type === 'udp' || type === 'ble' || type === 'serial' || type === 'http'
+          type === 'tcp' ||
+          type === 'udp' ||
+          type === 'ble' ||
+          type === 'serial' ||
+          type === 'http' ||
+          type === 'netconsole'
             ? type
             : 'udp';
         return prepareRfConnect(rfType);
       }) as ProtocolRuntime['prepareRfConnect'],
       attachRfSession: ((driverIdentityId: string, type: ConnectionType) => {
         const rfType: MeshcomRfTransportType =
-          type === 'tcp' || type === 'udp' || type === 'ble' || type === 'serial' || type === 'http'
+          type === 'tcp' ||
+          type === 'udp' ||
+          type === 'ble' ||
+          type === 'serial' ||
+          type === 'http' ||
+          type === 'netconsole'
             ? type
             : 'udp';
         return attachRfSession(driverIdentityId, rfType);
       }) as ProtocolRuntime['attachRfSession'],
       handleRfConnectFailure: ((type: ConnectionType, driverIdentityId?: string) => {
         const rfType: MeshcomRfTransportType =
-          type === 'tcp' || type === 'udp' || type === 'ble' || type === 'serial' || type === 'http'
+          type === 'tcp' ||
+          type === 'udp' ||
+          type === 'ble' ||
+          type === 'serial' ||
+          type === 'http' ||
+          type === 'netconsole'
             ? type
             : 'udp';
         return handleRfConnectFailure(rfType, driverIdentityId);

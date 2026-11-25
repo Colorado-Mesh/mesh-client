@@ -70,7 +70,26 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     slot: 'Connection',
     labelKey: 'connectionPanel.deviceAddress',
     sectionKey: RADIO,
-    keywords: ['meshcom', 'udp', 'extudp', 'kiss', 'tcp', 'host', '1799', '8001'],
+    keywords: [
+      'meshcom',
+      'udp',
+      'extudp',
+      'kiss',
+      'tcp',
+      'netconsole',
+      'host',
+      '1799',
+      '8001',
+      '2323',
+    ],
+    visible: hasMeshcomHost,
+  },
+  {
+    id: 'connection.radio.meshcomNodePassword',
+    slot: 'Connection',
+    labelKey: 'connectionPanel.kissPassword',
+    sectionKey: RADIO,
+    keywords: ['meshcom', 'kiss', 'netconsole', 'passwd', 'hmac', 'auth', 'password'],
     visible: hasMeshcomHost,
   },
   {
@@ -128,6 +147,14 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     sectionKey: MQTT,
     keywords: ['mqtt', 'profile', 'switch'],
     visible: hasMeshtasticMqtt,
+  },
+  {
+    id: 'connection.mqtt.meshcom',
+    slot: 'Connection',
+    labelKey: 'connectionPanel.mqttConnection',
+    sectionKey: MQTT,
+    keywords: ['mqtt', 'meshcom', 'gateway', 'broker', 'custom'],
+    visible: hasMeshcomMqtt,
   },
   {
     id: 'connection.mqtt.meshcomSwitchProfile',
@@ -281,6 +308,10 @@ export const connectionSurface: SettingsSearchSurface = {
   exempt: {
     'meshcom.extUdpHint': 'help text under the indexed MeshCom host field',
     'meshcom.kissTcpHint': 'help text under the indexed MeshCom host field',
+    'meshcom.netConsoleHint': 'help text under the indexed MeshCom host field',
+    'connectionPanel.kissPasswordHelp': 'help text under the indexed MeshCom node password',
+    'connectionPanel.kissPasswordAria':
+      'accessible-name variant of the indexed MeshCom node password',
     'connectionPanel.*Hint': 'help text under a control; the control is indexed',
     'connectionPanel.*Placeholder': 'placeholder of an indexed field',
     'connectionPanel.*Warning': 'warning text, not a control',

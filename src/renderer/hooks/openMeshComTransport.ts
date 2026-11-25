@@ -7,7 +7,7 @@ export interface OpenMeshComTransportResult {
   handle: unknown;
 }
 
-export type MeshcomOpenTransportType = 'ble' | 'serial' | 'tcp' | 'udp' | 'http';
+export type MeshcomOpenTransportType = 'ble' | 'serial' | 'tcp' | 'udp' | 'http' | 'netconsole';
 
 function meshcomTransportParams(
   type: MeshcomOpenTransportType,
@@ -17,6 +17,9 @@ function meshcomTransportParams(
     portSignature?: string | null;
   },
 ): TransportParams {
+  if (type === 'netconsole') {
+    return { type: 'netconsole', host: opts.host ?? '' };
+  }
   // KISS UI uses `'http'` like MeshCore companion TCP; map to `'tcp'` params.
   const connectionType: ConnectionType = type === 'http' ? 'tcp' : type;
   return meshtasticTransportParams(connectionType, {

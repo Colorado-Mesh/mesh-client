@@ -1989,7 +1989,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "Uložená zařízení",
     "savedDevicesConnectAria": "Znovu se připojit k {{name}}",
-    "savedDevicesDeleteAria": "Odstranit uložené zařízení {{name}}"
+    "savedDevicesDeleteAria": "Odstranit uložené zařízení {{name}}",
+    "meshcomMqttGatewayHint": "Národní MeshCom MQTT je obvykle dosažitelný prostřednictvím brány uzlu (--gateway), nikoli prostřednictvím přímého klientského brokera. Rozbalte pouze v případě, že máte vlastního brokera.",
+    "kissPassword": "KISS / Heslo konzole NET",
+    "kissPasswordHelp": "Uzel --passwd (max. 14 znaků). Používá se, když je zapnuto --kiss auth nebo pro konzoli NET. Pokud uzel nemá heslo, ponechte prázdné.",
+    "kissPasswordAria": "Heslo uzlu MeshCom pro ověření KISS nebo konzole NET",
+    "netConsole": "Konzole NET"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -9276,7 +9281,8 @@
         "dl26251": "Okres Rheinisch-Bergischer Kreis"
       },
       "slotsFullLocalOnly": "Sloty pro poslech uzlu jsou plné (6). Otevřeno pouze lokálně – nahraďte slot v části Rádio → Identita a rezervujte si místo na uzlu."
-    }
+    },
+    "netConsoleHint": "NET Console je TCP port 2323 (nešifrovaná LAN). Povolte --netconsole na uzlu; volitelné --passwd pro přihlášení HMAC."
   },
   "meshcomDeviceCommands": {
     "description": "Odesílejte příkazy uzlu ICSSW (--help, --settime, --setctry, …) přes sériové rozhraní nebo BLE. Příkazy kompatibilní s aplikací odpovídají oficiální aplikaci MeshCom; příkazy pouze pro sériové rozhraní vyžadují odkaz na konzoli USB.",

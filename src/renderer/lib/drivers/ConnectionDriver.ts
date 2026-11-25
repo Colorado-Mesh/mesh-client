@@ -19,7 +19,6 @@ import { errLikeToLogString } from '../errLikeToLogString';
 import { flushNodeWrites } from '../ingest/coalescedNodeWrites';
 import { mergeOfflineStoreIntoIdentity } from '../mergeOfflineIdentityStore';
 import { tryReuseOfflineProtocolIdentity } from '../offlineProtocolIdentities';
-import { ensureMeshcomProtocolLoaded } from '../protocols/meshcomProtocolLoader';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { DiscoveryInfo, DomainEvent, Protocol } from '../protocols/Protocol';
 import { getProtocolForType } from '../protocols/protocolRegistry';
@@ -165,6 +164,10 @@ export class ConnectionDriver {
     opts?: { skipDiscoverSelf?: boolean },
   ): Promise<IdentityId> {
     if (protocolType === 'meshcom') {
+      // Dynamic import: a static edge to meshcomProtocolLoader pulled ConnectionDriver +
+      // MeshCore/Meshtastic protocols into the meshcom-runtime Rolldown group (mis-attributed
+      // log sourceIds). Keep MeshCom registration lazy and out of the shared driver chunk.
+      const { ensureMeshcomProtocolLoaded } = await import('../protocols/meshcomProtocolLoader');
       await ensureMeshcomProtocolLoaded();
     }
     const protocol = getProtocolForType(protocolType);

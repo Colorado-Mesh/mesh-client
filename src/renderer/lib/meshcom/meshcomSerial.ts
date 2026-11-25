@@ -60,6 +60,23 @@ export function meshcomSerialSendText(dst: string, text: string): Uint8Array {
 }
 
 /**
+ * NET Console interactive TX (`::` prefix — gomeshcom / firmware ExtUDP console).
+ * Same address+body UTF-8 budget as serial.
+ */
+export function meshcomNetConsoleSendText(dst: string, text: string): Uint8Array {
+  const dest = dst.trim();
+  const body = truncateToWireBytes(text, meshcomBodyBudgetBytes(dest));
+  if (!dest || dest === '*') {
+    return encodeMeshcomSerialLine(`::${body}`);
+  }
+  if (/^\d+$/.test(dest)) {
+    return encodeMeshcomSerialLine(`::{${dest}}${body}`);
+  }
+  const call = normalizeMeshcomCallsign(dest);
+  return encodeMeshcomSerialLine(`::{${call}}${body}`);
+}
+
+/**
  * Streaming line splitter for serial console RX.
  */
 export class MeshcomSerialLineBuffer {

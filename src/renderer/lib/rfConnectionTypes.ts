@@ -6,7 +6,8 @@ export type RfConnectionTransportOpts =
   | { type: 'serial'; lastSerialPortId?: string | null }
   | { type: 'http'; httpAddress?: string }
   | { type: 'tcp'; httpAddress?: string }
-  | { type: 'udp'; httpAddress?: string };
+  | { type: 'udp'; httpAddress?: string }
+  | { type: 'netconsole'; httpAddress?: string };
 
 export function rfConnectionTransportOpts(
   type: ConnectionType,
@@ -27,6 +28,8 @@ export function rfConnectionTransportOpts(
       return { type: 'tcp', httpAddress: fields.httpAddress };
     case 'udp':
       return { type: 'udp', httpAddress: fields.httpAddress };
+    case 'netconsole':
+      return { type: 'netconsole', httpAddress: fields.httpAddress };
     default: {
       const _exhaustive: never = type;
       throw new Error(`rfConnectionTransportOpts: unsupported type ${String(_exhaustive)}`);
@@ -38,7 +41,11 @@ export function rfConnectionTransportOpts(
 export interface RfConnectFn {
   (type: 'ble', httpAddress?: undefined, blePeripheralId?: string): Promise<void>;
   (type: 'serial', httpAddress?: undefined, blePeripheralId?: undefined): Promise<void>;
-  (type: 'http' | 'tcp' | 'udp', httpAddress?: string, blePeripheralId?: undefined): Promise<void>;
+  (
+    type: 'http' | 'tcp' | 'udp' | 'netconsole',
+    httpAddress?: string,
+    blePeripheralId?: undefined,
+  ): Promise<void>;
 }
 
 /** Type-safe auto-connect; serial stores port id, BLE stores peripheral id. */

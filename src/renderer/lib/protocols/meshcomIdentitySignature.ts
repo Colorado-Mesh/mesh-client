@@ -14,6 +14,8 @@ export function meshcomIdentitySignature(params: TransportParams): string {
       return `meshcom:tcp:${params.host}`;
     case 'http':
       return `meshcom:http:${params.host}`;
+    case 'netconsole':
+      return `meshcom:netconsole:${params.host}`;
     case 'mqtt':
       return `meshcom:mqtt:${params.broker}`;
     default: {

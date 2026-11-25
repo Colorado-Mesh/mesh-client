@@ -1,5 +1,5 @@
 /** MeshCom RF / EXTUDP / KISS transport types for session attach. */
-export type MeshcomRfTransportType = 'ble' | 'serial' | 'tcp' | 'udp' | 'http';
+export type MeshcomRfTransportType = 'ble' | 'serial' | 'tcp' | 'udp' | 'http' | 'netconsole';
 
 /** RF session lifecycle API registered by the MeshCom runtime mount. */
 export interface MeshcomSessionApi {
@@ -22,7 +22,7 @@ export interface MeshcomSessionApi {
   latchExplicitDisconnect?: () => boolean;
   clearExplicitDisconnectLatch?: () => void;
   connectAutomatic: (
-    type: 'ble' | 'serial' | 'http' | 'udp' | 'tcp',
+    type: 'ble' | 'serial' | 'http' | 'udp' | 'tcp' | 'netconsole',
     httpAddress?: string,
     lastSerialPortId?: string | null,
     blePeripheralId?: string,

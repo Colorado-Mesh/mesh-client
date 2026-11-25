@@ -727,6 +727,29 @@ export const MESHCOM_COMMANDS: readonly MeshcomCommandDescriptor[] = [
     group: 'misc',
     argKind: 'onOff',
   },
+  {
+    id: 'kissAuth',
+    token: '--kiss auth',
+    channel: 'app',
+    group: 'misc',
+    argKind: 'onOff',
+  },
+  {
+    id: 'netconsole',
+    token: '--netconsole',
+    channel: 'app',
+    group: 'network',
+    argKind: 'onOff',
+  },
+  {
+    id: 'passwd',
+    token: '--passwd',
+    channel: 'app',
+    group: 'network',
+    argKind: 'text',
+    argHint: 'max 14 chars; none clears',
+    sensitive: true,
+  },
 ];
 
 export const MESHCOM_COMMAND_GROUPS: readonly MeshcomCommandGroup[] = [

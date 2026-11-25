@@ -39,6 +39,8 @@ We were inspired by features from these projects:
 - [MECP](https://mecp.radio/) ([protocol](https://github.com/mecp-org/MECP), [engine/app](https://github.com/mecp-org/mecp-app)): Mesh Emergency Communication Protocol — structured emergency text for LoRa mesh (engine GPLv3; language packs CC BY 4.0; protocol CC0)
 - [MeshCoreTracker](https://github.com/CopIXus/MeshCoreTracker): GPS tracker firmware for MeshCore radios; inspired parsing of compact tracker-fix messages (`!MT1`) with role tags and rename-safe, identity-based TAK marker IDs
 - [MeshcoreToTAK](https://github.com/CopIXus/MeshcoreToTAK): MeshCore-to-TAK gateway firmware; inspired role-based CoT styling, ordered unit-name filters, MeshCore channel to TAK GeoChat mirroring, and MIL-STD-2525 contact symbology
+- [MeshcomWebDesk](https://github.com/DH1FR/MeshcomWebDesk): MeshCom desktop companion; EXTUDP + KISS/TCP, NET Console, and HMAC challenge-response auth
+- [gomeshcom-client](https://github.com/logocomune/gomeshcom-client): MeshCom web companion; EXTUDP / serial / NETConsole protocol docs and transport behavior
 
 ### Bundled binaries
 

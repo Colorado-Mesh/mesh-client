@@ -139,6 +139,14 @@ export default defineConfig({
               priority: 30,
             },
             {
+              // Shared connect/protocol stack. Name must not contain a protocol token —
+              // Electron console sourceId is the chunk filename, and log protocol stamping
+              // falls back to LOG_SOURCE_PROTOCOL_RE on that path.
+              name: 'connection-runtime',
+              test: /[\\/](ConnectionDriver|protocolRegistry|MeshCoreProtocol|MeshCoreTransport|MeshtasticProtocol)\.[tj]sx?$/,
+              priority: 25,
+            },
+            {
               // Keep MeshCom runtime shell out of App-*.js (1000 kB entry budget).
               name: 'meshcom-runtime',
               test: /[\\/](useMeshcomRuntime|openMeshComTransport|useMeshcomDeviceCommands|meshcomSession|meshcomProtocolLoader|meshcomIdentitySignature)\.[tj]sx?$/,

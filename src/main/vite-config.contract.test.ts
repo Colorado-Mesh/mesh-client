@@ -65,10 +65,14 @@ describe('vite build config', () => {
       'meshcore',
       'meshcore-decoder',
       'esptool-js',
+      'connection-runtime',
       'meshcom-runtime',
     ]) {
       expect(VITE_CONFIG).toContain(`name: '${name}'`);
     }
+    // Chunk filenames become Electron console sourceIds; protocol tokens in the name
+    // mis-stamp [proto=…] when shared code (e.g. MeshCore TCP) lands in that chunk.
+    expect(VITE_CONFIG).toMatch(/must not contain a protocol token/);
   });
 
   it('uses import.meta.dirname for native ESM configLoader compatibility', () => {

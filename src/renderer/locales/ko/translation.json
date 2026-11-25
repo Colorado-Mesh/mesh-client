@@ -1965,7 +1965,12 @@
     "kissTcp": "KISS/TCP",
     "savedDevicesLabel": "저장된 기기",
     "savedDevicesConnectAria": "{{name}}에 다시 연결",
-    "savedDevicesDeleteAria": "저장된 기기({{name}}) 삭제"
+    "savedDevicesDeleteAria": "저장된 기기({{name}}) 삭제",
+    "meshcomMqttGatewayHint": "National MeshCom MQTT은 일반적으로 직접 클라이언트 브로커가 아닌 노드 게이트웨이(--gateway)를 통해 연결됩니다. 사용자 지정 브로커가 있는 경우에만 확장하세요.",
+    "kissPassword": "KISS / NET 콘솔 비밀번호",
+    "kissPasswordHelp": "노드 --passwd(최대 14자). --kiss auth가 켜져 있거나 NET 콘솔에서 사용됩니다. 노드에 비밀번호가 없는 경우 비워 두세요.",
+    "kissPasswordAria": "KISS 또는 NET 콘솔 인증을 위한 MeshCom 노드 비밀번호",
+    "netConsole": "NET 콘솔"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -9191,7 +9196,8 @@
         "dl26251": "라인-베르기셔크라이스"
       },
       "slotsFullLocalOnly": "노드 수신 슬롯이 가득 찼습니다(6). 로컬에서만 열림 — 노드에 예약하려면 라디오 → ID에서 슬롯을 교체하세요."
-    }
+    },
+    "netConsoleHint": "NET 콘솔은 TCP 포트 2323(일반 텍스트 LAN)입니다. 노드에서 --netconsole을 활성화합니다. HMAC 로그인을 위한 --passwd는 선택 사항입니다."
   },
   "meshcomDeviceCommands": {
     "description": "직렬 또는 BLE을 통해 ICSSW 노드 명령(--help, --settime, --setctry, …)을 전송합니다. 앱에서 사용할 수 있는 명령은 공식 MeshCom 앱과 일치합니다. 직렬 전용 명령은 USB 콘솔 링크가 필요합니다.",
