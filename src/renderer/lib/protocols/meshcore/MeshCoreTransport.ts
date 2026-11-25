@@ -6,6 +6,7 @@ import {
 } from '@liamcottle/meshcore.js';
 
 import { formatHostForSocket } from '@/shared/connectHost';
+import type { GattBleSessionId } from '@/shared/electron-api.types';
 
 import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
@@ -31,7 +32,6 @@ import {
   selectGrantedSerialPort,
 } from '../../serialPortSignature';
 import { MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS } from '../../timeConstants';
-import type { GattBleSessionId } from '../../types';
 
 // ─── Public params type ───────────────────────────────────────────────────────
 

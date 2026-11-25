@@ -322,11 +322,7 @@ import type {
   RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
-import {
-  mirrorMqttStatusForProtocol,
-  setConnection,
-  useConnectionStore,
-} from '../stores/connectionStore';
+import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
@@ -338,6 +334,7 @@ import {
   upsertMessage,
   useMessageStore,
 } from '../stores/messageStore';
+import { mirrorMqttStatusForProtocol } from '../stores/mqttConnectionMirror';
 import {
   patchNodeFavorited,
   removeNode,

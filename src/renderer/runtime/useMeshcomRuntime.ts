@@ -60,13 +60,10 @@ import type {
   MQTTStatus,
   TelemetryPoint,
 } from '../lib/types';
-import {
-  getConnection,
-  mirrorMqttStatusForProtocol,
-  setConnection,
-} from '../stores/connectionStore';
+import { getConnection, setConnection } from '../stores/connectionStore';
 import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
 import { useMessageStore } from '../stores/messageStore';
+import { mirrorMqttStatusForProtocol } from '../stores/mqttConnectionMirror';
 import {
   patchNodeFavorited,
   removeNode,

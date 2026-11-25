@@ -34,6 +34,8 @@
     "@typescript-eslint/eslint-plugin",
     "@typescript-eslint/parser",
     "concurrently",
+    // Imported by the vendored Micron parser (ignored above), not by first-party source.
+    "dompurify",
   ],
   "ignoreBinaries": [
     // Provided by the host/CI image, not npm.

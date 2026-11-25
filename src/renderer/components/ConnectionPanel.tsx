@@ -37,6 +37,7 @@ import {
   MESHTASTIC_DOCS_URL,
   troubleshootingDocsUrl,
 } from '@/shared/docsSite';
+import type { GattBleDevice } from '@/shared/electron-api.types';
 import {
   clampMqttMaxRetries,
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
@@ -195,7 +196,6 @@ import { isWeakBleRssi } from '../lib/signal';
 import type {
   ConnectionType,
   DeviceState,
-  GattBleDevice,
   MeshProtocol,
   MQTTSettings,
   MQTTStatus,

@@ -391,8 +391,8 @@ export class RepeaterCommandService {
     return this.lookupPending(token, senderNodeId) != null;
   }
 
-  /** @deprecated Timeouts are now self-managed via internal setTimeout in registerPendingCommand. */
-  clear(): void {
+  /** Cancel all in-flight CLI commands and reject their promises (session teardown). */
+  cancelPending(): void {
     for (const pending of this.pendingCommands.values()) {
       clearTimeout(pending.timerId);
       pending.reject(new Error('CLI command cancelled'));

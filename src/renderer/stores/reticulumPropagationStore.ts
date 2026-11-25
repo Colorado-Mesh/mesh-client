@@ -8,12 +8,14 @@ import {
   writeReticulumPropagationMode,
 } from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import {
-  clearPropagationSyncStallWatchdog,
   isPropagationSyncSoftDeferError,
+  isPropagationSyncStillEstablishing,
   mapPropagationSyncError,
+  RETICULUM_PROPAGATION_SYNC_CEILING_MS,
   RETICULUM_PROPAGATION_SYNC_IDLE,
-  schedulePropagationSyncStallWatchdog,
-} from '@/renderer/lib/reticulum/reticulumPropagationSync';
+  RETICULUM_PROPAGATION_SYNC_STALL_MS,
+  SYNC_TIMED_OUT_KEY,
+} from '@/renderer/lib/reticulum/reticulumPropagationSyncShared';
 import {
   isReticulumSidecarExpectedProxyError,
   isReticulumSidecarRunning,
@@ -638,3 +640,39 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     return false;
   },
 }));
+
+let syncStallTimer: ReturnType<typeof setTimeout> | null = null;
+let syncCeilingTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function clearPropagationSyncStallWatchdog(): void {
+  if (syncStallTimer) {
+    clearTimeout(syncStallTimer);
+    syncStallTimer = null;
+  }
+  if (syncCeilingTimer) {
+    clearTimeout(syncCeilingTimer);
+    syncCeilingTimer = null;
+  }
+}
+
+export function schedulePropagationSyncStallWatchdog(): void {
+  clearPropagationSyncStallWatchdog();
+  syncStallTimer = setTimeout(() => {
+    syncStallTimer = null;
+    const { sync } = useReticulumPropagationStore.getState();
+    if (!sync.active) return;
+    // Progress past Establishing means link+offer are in flight; lxmf-core owns the
+    // remaining timeout (120s). Canceling here aborts healthy multi-hop syncs.
+    if (!isPropagationSyncStillEstablishing(sync.progress)) {
+      return;
+    }
+    void useReticulumPropagationStore.getState().cancelSync({ reasonKey: SYNC_TIMED_OUT_KEY });
+  }, RETICULUM_PROPAGATION_SYNC_STALL_MS);
+
+  syncCeilingTimer = setTimeout(() => {
+    syncCeilingTimer = null;
+    const { sync } = useReticulumPropagationStore.getState();
+    if (!sync.active) return;
+    void useReticulumPropagationStore.getState().cancelSync({ reasonKey: SYNC_TIMED_OUT_KEY });
+  }, RETICULUM_PROPAGATION_SYNC_CEILING_MS);
+}

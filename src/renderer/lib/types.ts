@@ -564,8 +564,6 @@ export interface DeviceState {
   batteryCharging?: boolean;
 }
 
-export type { GattBleDevice, GattBleSessionId } from '@/shared/electron-api.types';
-
 export interface SerialPortInfo {
   portId: string;
   displayName: string;

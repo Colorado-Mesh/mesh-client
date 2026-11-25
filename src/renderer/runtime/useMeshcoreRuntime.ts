@@ -656,7 +656,7 @@ import type {
   MQTTStatus,
   TelemetryPoint,
 } from '../lib/types';
-import { mirrorMqttStatusForProtocol, setConnection } from '../stores/connectionStore';
+import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
 import {
@@ -664,6 +664,7 @@ import {
   upsertMessageRecordsForIdentity,
   useMessageStore,
 } from '../stores/messageStore';
+import { mirrorMqttStatusForProtocol } from '../stores/mqttConnectionMirror';
 import {
   patchMeshcoreNodeLastHeardAt,
   patchNodeFavorited,
@@ -3627,7 +3628,7 @@ export function useMeshcoreRuntime() {
       resetMeshcoreWaitingMessagesDrainSchedule();
       resetMeshcoreRepeaterRpcInFlightOnDisconnect();
       setMeshcoreRepeaterRpcPending(new Map());
-      repeaterCommandServiceRef.current?.clear();
+      repeaterCommandServiceRef.current?.cancelPending();
       resetMeshcoreRoomAutoLoginSingleFlight();
       // Owner-info cache is connection-scoped; a new prepare replaces the session.
       setMeshcoreOwnerInfo(new Map());
@@ -3893,7 +3894,7 @@ export function useMeshcoreRuntime() {
         clearTimeout(e.timeoutId);
       }
       pendingAcksRef.current.clear();
-      repeaterCommandServiceRef.current?.clear();
+      repeaterCommandServiceRef.current?.cancelPending();
 
       const usedDriverConnect = meshcoreDriverConnectedRef.current;
       const disconnectConn = connRef.current;
@@ -4290,7 +4291,7 @@ export function useMeshcoreRuntime() {
     resetMeshcoreWaitingMessagesDrainSchedule();
     resetMeshcoreRepeaterRpcInFlightOnDisconnect();
     setMeshcoreRepeaterRpcPending(new Map());
-    repeaterCommandServiceRef.current?.clear();
+    repeaterCommandServiceRef.current?.cancelPending();
     resetMeshcoreRoomAutoLoginSingleFlight();
     // Connection-lost reconnect replaces the session — drop owner-info cache (not only finalize).
     setMeshcoreOwnerInfo(new Map());

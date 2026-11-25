@@ -2,6 +2,7 @@ import { MeshDevice } from '@meshtastic/core';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
 import { formatHostForSocket, formatHostForUrl, parseConnectHostPort } from '@/shared/connectHost';
+import type { GattBleSessionId } from '@/shared/electron-api.types';
 
 import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
 import { connectGattWithScanBusyRetry } from './bleReconnectHelper';
@@ -35,7 +36,7 @@ import {
 import { TransportHttpIpc } from './transportHttpIpc';
 import { TransportSidecarGatt } from './transportSidecarGatt';
 import { TransportTcpIpc } from './transportTcpIpc';
-import type { ConnectionType, GattBleSessionId } from './types';
+import type { ConnectionType } from './types';
 
 // HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
 const HTTP_CONNECT_TIMEOUT_MS = 15_000;

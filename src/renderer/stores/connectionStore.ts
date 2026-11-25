@@ -1,17 +1,6 @@
 import { create } from 'zustand';
 
-import {
-  resolveIdentityIdForProtocol,
-  resolvePrimaryIdentityIdForProtocol,
-} from '../lib/identityByProtocol';
-import type {
-  ConnectionStatus,
-  ConnectionType,
-  IdentityId,
-  MeshProtocol,
-  MQTTStatus,
-} from '../lib/types';
-import { useIdentityStore } from './identityStore';
+import type { ConnectionStatus, ConnectionType, IdentityId, MQTTStatus } from '../lib/types';
 import { omitRecordKey } from './storeUtils';
 
 export type { ConnectionStatus };
@@ -116,15 +105,4 @@ export function selectAnyLinkUp(s: ConnectionStoreState): boolean {
   return Object.values(s.connections).some(
     (c) => LINK_UP_STATUSES.has(c.status) || c.mqttStatus === 'connected',
   );
-}
-
-/** Mirror MQTT IPC status onto every identity bucket the UI may read for a protocol tab. */
-export function mirrorMqttStatusForProtocol(protocol: MeshProtocol, status: MQTTStatus): void {
-  const { identities, activeIdentityId } = useIdentityStore.getState();
-  const resolved = resolveIdentityIdForProtocol(identities, activeIdentityId, protocol);
-  const primary = resolvePrimaryIdentityIdForProtocol(identities, activeIdentityId, protocol);
-  const targets = new Set([resolved, primary].filter(Boolean));
-  for (const id of targets) {
-    setConnection(id!, { mqttStatus: status });
-  }
 }

@@ -30,7 +30,7 @@ describe('RepeaterCommandService', () => {
         await vi.advanceTimersByTimeAsync(10);
         await rejected;
         expect(service.redactResponseForHistory('CD|> private-secret')).toBe('[redacted]');
-        service.clear();
+        service.cancelPending();
         expect(service.redactResponseForHistory('CD|> private-secret')).toBe('[redacted]');
       } finally {
         vi.useRealTimers();
@@ -346,7 +346,7 @@ describe('RepeaterCommandService', () => {
       });
       expect(service.ingestResponse('A1|ok', 0x1234).kind).toBe('resolved');
       await promise;
-      service.clear();
+      service.cancelPending();
       expect(service.ingestResponse('A1|ok', 0x1234)).toEqual({
         kind: 'unmatched',
         historyText: 'ok',
@@ -388,7 +388,7 @@ describe('RepeaterCommandService', () => {
       p1.catch(() => {});
       p2.catch(() => {});
 
-      service.clear();
+      service.cancelPending();
 
       expect(service.hasPendingCommand('00')).toBe(false);
       expect(service.hasPendingCommand('01')).toBe(false);
@@ -398,7 +398,7 @@ describe('RepeaterCommandService', () => {
       const { promise } = service.registerPendingCommand('cmd', []);
       // Suppress unhandled rejection warning
       promise.catch(() => {});
-      service.clear();
+      service.cancelPending();
       await expect(promise).rejects.toThrow('CLI command cancelled');
     });
   });
@@ -506,7 +506,7 @@ describe('RepeaterCommandService', () => {
     it('should cancel timer on clear()', async () => {
       const { promise } = service.registerPendingCommand('cmd', [], { timeoutMs: 1000 });
       promise.catch(() => {});
-      service.clear();
+      service.cancelPending();
 
       // Advancing past timeout should not cause a second rejection
       vi.advanceTimersByTime(2000);
