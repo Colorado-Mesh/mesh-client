@@ -1144,6 +1144,77 @@ function patchNodeFavoritedInMap(
   return next;
 }
 
+/** Tears down an open transport that lost the setup-generation race. */
+async function disconnectSupersededMeshcoreOpen(
+  driverIdentityId: string,
+  type: 'ble' | 'serial' | 'tcp',
+): Promise<void> {
+  await connectionDriver.disconnect(driverIdentityId).catch((e: unknown) => {
+    console.debug('[useMeshcoreRuntime] connect superseded disconnect ' + errLikeToLogString(e));
+  });
+  if (type !== 'tcp') return;
+  await window.electronAPI.meshcore.tcp.disconnect().catch((e: unknown) => {
+    console.debug(
+      '[useMeshcoreRuntime] connect superseded tcp.disconnect ' + errLikeToLogString(e),
+    );
+  });
+}
+
+interface NormalizedMeshcoreConnectError {
+  error: Error;
+  bleTimeoutStage: ReturnType<typeof classifyMeshcoreBleTimeoutStage>;
+  isBleConnectTimeout: boolean;
+}
+
+/** Map a transport error message onto the user-facing MeshCore error key. */
+function resolveMeshcoreConnectErrorKey(args: {
+  safeMessage: string;
+  bleTimeoutStage: ReturnType<typeof classifyMeshcoreBleTimeoutStage>;
+  isBleConnectTimeout: boolean;
+  displayMessage: string;
+}): string {
+  if (/already in progress|Connection already in progress/i.test(args.safeMessage)) {
+    return 'meshcore.errors.bleAlreadyInProgress';
+  }
+  if (isMeshcoreMissingServicesErrorMessage(args.safeMessage)) {
+    return 'meshcore.errors.bleMissingServices';
+  }
+  if (/already in use by the/i.test(args.safeMessage)) {
+    return 'meshcore.errors.blePeripheralInUse';
+  }
+  if (!args.isBleConnectTimeout) return args.displayMessage;
+  return args.bleTimeoutStage === 'protocol-handshake'
+    ? 'meshcore.errors.bleTimeoutHandshake'
+    : 'meshcore.errors.bleTimeoutGatt';
+}
+
+/** Map transport errors onto user-facing MeshCore error keys. */
+function normalizeMeshcoreConnectError(
+  type: 'ble' | 'serial' | 'tcp',
+  err: unknown,
+): NormalizedMeshcoreConnectError {
+  const safeMessage =
+    (serializeErrorLike(err) || 'meshcore.errors.connectionFailed').trim() ||
+    'meshcore.errors.connectionFailed';
+  const bleTimeoutStage = type === 'ble' ? classifyMeshcoreBleTimeoutStage(safeMessage) : 'unknown';
+  const isBleConnectTimeout = bleTimeoutStage !== 'unknown';
+  const fallbackMessage =
+    type === 'ble' && err == null
+      ? 'meshcore.errors.bleNoDetails'
+      : 'meshcore.errors.connectionFailed';
+  const displayMessage =
+    safeMessage !== 'meshcore.errors.connectionFailed' && safeMessage !== 'Connection failed'
+      ? safeMessage
+      : fallbackMessage;
+  const message = resolveMeshcoreConnectErrorKey({
+    safeMessage,
+    bleTimeoutStage,
+    isBleConnectTimeout,
+    displayMessage,
+  });
+  return { error: new Error(message), bleTimeoutStage, isBleConnectTimeout };
+}
+
 /** 12-hex prefix used for MeshCore pubkey-prefix routing maps. */
 function meshcorePubKeyPrefixHex(publicKey: Uint8Array): string {
   return Array.from(publicKey.slice(0, 6))
@@ -4944,18 +5015,7 @@ export function useMeshcoreRuntime() {
         meshcorePendingDriverIdentityRef.current = opened.driverIdentityId;
         if (meshcoreSetupGenerationRef.current !== connectSetupGen) {
           meshcorePendingDriverIdentityRef.current = null;
-          await connectionDriver.disconnect(opened.driverIdentityId).catch((e: unknown) => {
-            console.debug(
-              '[useMeshcoreRuntime] connect superseded disconnect ' + errLikeToLogString(e),
-            );
-          });
-          if (type === 'tcp') {
-            await window.electronAPI.meshcore.tcp.disconnect().catch((e: unknown) => {
-              console.debug(
-                '[useMeshcoreRuntime] connect superseded tcp.disconnect ' + errLikeToLogString(e),
-              );
-            });
-          }
+          await disconnectSupersededMeshcoreOpen(opened.driverIdentityId, type);
           throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
         }
         await attachRfSession(opened.driverIdentityId, type);
@@ -5002,39 +5062,8 @@ export function useMeshcoreRuntime() {
           await handleRfConnectFailure(type, opened?.driverIdentityId);
           throw err;
         }
-        const rawMessage = serializeErrorLike(err) || 'meshcore.errors.connectionFailed';
-        const safeMessage = rawMessage.trim() || 'meshcore.errors.connectionFailed';
-        const isAlreadyInProgress = /already in progress|Connection already in progress/i.test(
-          safeMessage,
-        );
-        const isMissingServices = isMeshcoreMissingServicesErrorMessage(safeMessage);
-        const isPeripheralInUse = /already in use by the/i.test(safeMessage);
-        const bleTimeoutStage =
-          type === 'ble' ? classifyMeshcoreBleTimeoutStage(safeMessage) : 'unknown';
-        const isBleConnectTimeout = bleTimeoutStage !== 'unknown';
-        const fallbackMessage =
-          type === 'ble' && err == null
-            ? 'meshcore.errors.bleNoDetails'
-            : 'meshcore.errors.connectionFailed';
-        const displayMessage =
-          safeMessage !== 'meshcore.errors.connectionFailed' && safeMessage !== 'Connection failed'
-            ? safeMessage
-            : fallbackMessage;
-        const timeoutMessage =
-          bleTimeoutStage === 'protocol-handshake'
-            ? 'meshcore.errors.bleTimeoutHandshake'
-            : 'meshcore.errors.bleTimeoutGatt';
-        const normalizedErr = new Error(
-          isAlreadyInProgress
-            ? 'meshcore.errors.bleAlreadyInProgress'
-            : isMissingServices
-              ? 'meshcore.errors.bleMissingServices'
-              : isPeripheralInUse
-                ? 'meshcore.errors.blePeripheralInUse'
-                : isBleConnectTimeout
-                  ? timeoutMessage
-                  : displayMessage,
-        );
+        const normalized = normalizeMeshcoreConnectError(type, err);
+        const { error: normalizedErr, bleTimeoutStage, isBleConnectTimeout } = normalized;
         if (isBleConnectTimeout) {
           console.warn(
             `mcL1232 [useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback ${formatStructuredLogDetail(
