@@ -884,6 +884,35 @@ export default function RepeatersPanel({
     }
   };
 
+  const repeaterCliTargetLabel = (node: ReturnType<typeof nodes.get>, nodeId: number): string =>
+    node?.long_name ??
+    t(
+      node?.hw_model === 'Room'
+        ? 'repeatersPanel.savedPasswordOrphanRoomLabel'
+        : 'repeatersPanel.savedPasswordOrphanLabel',
+      { nodeId: nodeId.toString(16) },
+    );
+
+  const assertCliSessionCurrent = (opts?: MeshcoreRepeaterCliOptions): void => {
+    if (opts?.isCurrent && !opts.isCurrent()) throw new Error(t('infraConfig.sessionChanged'));
+  };
+
+  const assertCliAdminPassword = (
+    nodeId: number,
+    node: ReturnType<typeof nodes.get>,
+    opts?: MeshcoreRepeaterCliOptions,
+  ): void => {
+    if (opts?.target === 'companion') return;
+    if (hasResolvableAdminPassword(nodeId, node?.hw_model)) return;
+    throw new Error(
+      t(
+        node?.hw_model === 'Room'
+          ? 'repeatersPanel.roomCliNeedsAdminPassword'
+          : 'repeatersPanel.repeaterCliNeedsAdminPassword',
+      ),
+    );
+  };
+
   const sendAuthenticatedCliCommand = async (
     nodeId: number,
     command: string,
@@ -895,30 +924,16 @@ export default function RepeatersPanel({
     const node = nodes.get(nodeId);
     const auth = await ensureRepeaterAuth(
       nodeId,
-      node?.long_name ??
-        t(
-          node?.hw_model === 'Room'
-            ? 'repeatersPanel.savedPasswordOrphanRoomLabel'
-            : 'repeatersPanel.savedPasswordOrphanLabel',
-          { nodeId: nodeId.toString(16) },
-        ),
+      repeaterCliTargetLabel(node, nodeId),
       node?.hw_model,
     );
-    if (opts?.isCurrent && !opts.isCurrent()) throw new Error(t('infraConfig.sessionChanged'));
+    assertCliSessionCurrent(opts);
     if (!auth.ok) throw new Error(t('infraConfig.authCancelled'));
     if (auth.saved) refreshStoredSecrets();
     // Firmware drops CLI unless the sender is ACL admin — skip / no password must not send.
-    if (opts?.target !== 'companion' && !hasResolvableAdminPassword(nodeId, node?.hw_model)) {
-      throw new Error(
-        t(
-          node?.hw_model === 'Room'
-            ? 'repeatersPanel.roomCliNeedsAdminPassword'
-            : 'repeatersPanel.repeaterCliNeedsAdminPassword',
-        ),
-      );
-    }
+    assertCliAdminPassword(nodeId, node, opts);
     await ensureCliRoutePrimed(nodeId);
-    if (opts?.isCurrent && !opts.isCurrent()) throw new Error(t('infraConfig.sessionChanged'));
+    assertCliSessionCurrent(opts);
     return onSendCliCommand(nodeId, normalizeMeshcoreCliCommand(command), opts);
   };
 

@@ -286,6 +286,19 @@ export interface ChatComposerProps {
 }
 
 /** Shared channel/DM/room compose box: draft, mentions, macros, GIF, schedule, and send. */
+function buildMacroInsertion(
+  current: string,
+  text: string,
+  textarea: HTMLTextAreaElement | null,
+): { next: string; caret: number } {
+  const focused = textarea != null && document.activeElement === textarea;
+  const start = focused ? (textarea.selectionStart ?? current.length) : current.length;
+  const end = focused ? (textarea.selectionEnd ?? current.length) : current.length;
+  const before = current.slice(0, start);
+  const insert = before && !/\s$/.test(before) ? ` ${text}` : text;
+  return { next: before + insert + current.slice(end), caret: start + insert.length };
+}
+
 export function ChatComposer({
   protocol,
   viewKey,
@@ -1063,19 +1076,13 @@ export function ChatComposer({
         return true;
       }
 
-      const focused = textarea != null && document.activeElement === textarea;
-      const start = focused ? (textarea.selectionStart ?? current.length) : current.length;
-      const end = focused ? (textarea.selectionEnd ?? current.length) : current.length;
-      const before = current.slice(0, start);
-      const insert = before && !/\s$/.test(before) ? ` ${text}` : text;
-      const next = before + insert + current.slice(end);
+      const { next, caret } = buildMacroInsertion(current, text, textarea);
       if (!suppressLimits && next.length > maxInputLength) return false;
       if (shouldMarkUsed) macros.markUsed(index);
       setInput(next);
       setChatActionError(null);
       setMentionQuery(null);
       requestAnimationFrame(() => {
-        const caret = start + insert.length;
         textarea?.focus();
         textarea?.setSelectionRange(caret, caret);
       });
