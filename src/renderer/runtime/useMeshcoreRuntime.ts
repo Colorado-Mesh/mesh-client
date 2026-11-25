@@ -1144,6 +1144,93 @@ function patchNodeFavoritedInMap(
   return next;
 }
 
+/** 12-hex prefix used for MeshCore pubkey-prefix routing maps. */
+function meshcorePubKeyPrefixHex(publicKey: Uint8Array): string {
+  return Array.from(publicKey.slice(0, 6))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function applyMeshcoreContactStats(node: MeshNode, prevNode: MeshNode | undefined): void {
+  if (prevNode?.channel_utilization != null) {
+    node.channel_utilization = prevNode.channel_utilization;
+  }
+  if (prevNode?.air_util_tx != null) node.air_util_tx = prevNode.air_util_tx;
+  if (prevNode?.meshcore_local_stats != null) {
+    node.meshcore_local_stats = prevNode.meshcore_local_stats;
+  }
+  const mergedHwModel = mergeHwModelOnContactUpdate(prevNode?.hw_model, node.hw_model);
+  if (mergedHwModel !== node.hw_model) node.hw_model = mergedHwModel;
+}
+
+interface MeshcoreContactNodeBuild {
+  node: MeshNode;
+  mergedAdvName: string;
+  slicedPath: Uint8Array;
+}
+
+/** Merge one radio contact with prior UI state, saved hops and nickname overlays. */
+function buildMeshcoreContactNode(
+  contact: MeshCoreContactRaw,
+  prevSnap: Map<number, MeshNode>,
+  savedHopsByNodeId: Map<number, number>,
+  nicknameMap: Map<number, string>,
+): MeshcoreContactNodeBuild {
+  const base = meshcoreContactToMeshNode(contact);
+  const prevNode = prevSnap.get(base.node_id);
+  const slicedPath = meshcoreContactOutPathBytesForTrace(contact);
+  const last_heard = mergeMeshcoreLastHeardFromAdvert(contact.lastAdvert, prevNode?.last_heard);
+  const effectivePrevHops = prevNode?.hops_away ?? savedHopsByNodeId.get(base.node_id);
+  const hopsAway = meshcoreMergeContactHopsAwayFromPrevious(
+    base.hops_away,
+    effectivePrevHops,
+    slicedPath.length,
+  );
+  const nick = nicknameMap.get(base.node_id);
+  // Nickname overlay runs after this loop; merge stored advert name, not the nick.
+  const mergedAdvName = meshcoreMergeContactAdvNameFromPrevious(
+    base.long_name,
+    meshcorePreviousAdvertNameForRebuild(
+      prevNode?.long_name,
+      nick,
+      rememberedMeshcoreLiveAdvertName(base.node_id),
+      base.node_id,
+    ),
+    base.node_id,
+    { prevLastHeard: prevNode?.last_heard, radioLastAdvert: contact.lastAdvert },
+  );
+  const node: MeshNode = { ...base, last_heard, hops_away: hopsAway, long_name: mergedAdvName };
+  applyMeshcoreContactStats(node, prevNode);
+  return { node, mergedAdvName, slicedPath };
+}
+
+function recordMeshcoreContactPathHistory(node: MeshNode, slicedPath: Uint8Array): void {
+  if (slicedPath.length === 0) return;
+  const contactPathBytes = Array.from(slicedPath);
+  const pathHash = computePathHash(contactPathBytes);
+  const existing = usePathHistoryStore.getState().records.get(node.node_id) ?? [];
+  if (existing.some((r) => r.pathHash === pathHash)) return;
+  const hops = node.hops_away ?? Math.max(0, contactPathBytes.length - 1);
+  usePathHistoryStore.getState().recordPathUpdated(node.node_id, contactPathBytes, hops, false);
+}
+
+function buildMeshcoreContactDbRow(
+  contact: MeshCoreContactRaw,
+  mergedAdvName: string,
+  contactsFromRadio: boolean,
+  hopsAway: number | undefined,
+  prevHopsAway: number | undefined,
+): ReturnType<typeof contactToDbRow> {
+  // Save with on_radio=1 when contacts came from radio.
+  return contactToDbRow(
+    { ...contact, advName: mergedAdvName },
+    undefined,
+    contactsFromRadio ? 1 : 0,
+    new Date().toISOString(),
+    hopsAway ?? prevHopsAway ?? undefined,
+  );
+}
+
 export function useMeshcoreRuntime() {
   // Restore tombstones before any contact/message hydration in this session.
   restoreMeshcoreLocallyDeletedContactsFromStorage();
@@ -2307,56 +2394,14 @@ export function useMeshcoreRuntime() {
       buildPathLens.clear();
       const pendingDbRows: ReturnType<typeof contactToDbRow>[] = [];
       for (const contact of contacts) {
-        const base = meshcoreContactToMeshNode(contact);
-        const last_heard = mergeMeshcoreLastHeardFromAdvert(
-          contact.lastAdvert,
-          prevSnap.get(base.node_id)?.last_heard,
+        const { node, mergedAdvName, slicedPath } = buildMeshcoreContactNode(
+          contact,
+          prevSnap,
+          savedHopsByNodeId,
+          nicknameMapRef.current,
         );
-        const prevNode = prevSnap.get(base.node_id);
-        const slicedPath = meshcoreContactOutPathBytesForTrace(contact);
-        const effectivePrevHops = prevNode?.hops_away ?? savedHopsByNodeId.get(base.node_id);
-        const hopsAway = meshcoreMergeContactHopsAwayFromPrevious(
-          base.hops_away,
-          effectivePrevHops,
-          slicedPath.length,
-        );
-        const nick = nicknameMapRef.current.get(base.node_id);
-        // Nickname overlay runs after this loop; merge stored advert name, not the nick.
-        const mergedAdvName = meshcoreMergeContactAdvNameFromPrevious(
-          base.long_name,
-          meshcorePreviousAdvertNameForRebuild(
-            prevNode?.long_name,
-            nick,
-            rememberedMeshcoreLiveAdvertName(base.node_id),
-            base.node_id,
-          ),
-          base.node_id,
-          {
-            prevLastHeard: prevNode?.last_heard,
-            radioLastAdvert: contact.lastAdvert,
-          },
-        );
-        if (staged) advertNames.set(base.node_id, mergedAdvName);
-        else rememberMeshcoreLiveAdvertName(base.node_id, mergedAdvName);
-        const node: MeshNode = {
-          ...base,
-          last_heard,
-          hops_away: hopsAway,
-          long_name: mergedAdvName,
-        };
-        if (prevNode?.channel_utilization != null) {
-          node.channel_utilization = prevNode.channel_utilization;
-        }
-        if (prevNode?.air_util_tx != null) {
-          node.air_util_tx = prevNode.air_util_tx;
-        }
-        if (prevNode?.meshcore_local_stats != null) {
-          node.meshcore_local_stats = prevNode.meshcore_local_stats;
-        }
-        const mergedHwModel = mergeHwModelOnContactUpdate(prevNode?.hw_model, node.hw_model);
-        if (mergedHwModel !== node.hw_model) {
-          node.hw_model = mergedHwModel;
-        }
+        if (staged) advertNames.set(node.node_id, mergedAdvName);
+        else rememberMeshcoreLiveAdvertName(node.node_id, mergedAdvName);
         nextNodes.set(node.node_id, node);
         buildPubKeys.set(node.node_id, contact.publicKey);
         buildPaths.set(node.node_id, slicedPath);
@@ -2369,34 +2414,17 @@ export function useMeshcoreRuntime() {
         ) {
           buildPathLens.set(node.node_id, contact.outPathLen);
         }
-        const contactPathBytes = slicedPath.length > 0 ? Array.from(slicedPath) : [];
-        if (!opts?.deferPathHistory && contactPathBytes.length > 0) {
-          const pathHash = computePathHash(contactPathBytes);
-          const existing = usePathHistoryStore.getState().records.get(node.node_id) ?? [];
-          if (!existing.some((r) => r.pathHash === pathHash)) {
-            const hops = node.hops_away ?? Math.max(0, contactPathBytes.length - 1);
-            usePathHistoryStore
-              .getState()
-              .recordPathUpdated(node.node_id, contactPathBytes, hops, false);
-          }
-        }
-        const prefix = Array.from(contact.publicKey.slice(0, 6))
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join('');
-        buildPrefixes.set(prefix, node.node_id);
-        // Save with on_radio=1 when contacts came from radio
-        const now = new Date().toISOString();
-        const onRadio = opts?.contactsFromRadio ? 1 : 0;
-        const prevHopsAway = prevNode?.hops_away;
-        const hopsToSave = hopsAway ?? prevHopsAway ?? undefined;
-        const dbRow = contactToDbRow(
-          { ...contact, advName: mergedAdvName },
-          undefined,
-          onRadio,
-          now,
-          hopsToSave,
+        if (!opts?.deferPathHistory) recordMeshcoreContactPathHistory(node, slicedPath);
+        buildPrefixes.set(meshcorePubKeyPrefixHex(contact.publicKey), node.node_id);
+        pendingDbRows.push(
+          buildMeshcoreContactDbRow(
+            contact,
+            mergedAdvName,
+            opts?.contactsFromRadio === true,
+            node.hops_away,
+            prevSnap.get(node.node_id)?.hops_away,
+          ),
         );
-        pendingDbRows.push(dbRow);
       }
       await persistMeshcoreContactRows(pendingDbRows, opts);
       if (staged) {
