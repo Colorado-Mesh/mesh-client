@@ -1312,23 +1312,28 @@ function validateMqttPublishMeshcoreArgs(args: unknown): void {
   if (!args || typeof args !== 'object')
     throw new Error('mqtt:publishMeshcore: args must be an object');
   const a = args as Record<string, unknown>;
-  if (typeof a.text !== 'string') throw new Error('mqtt:publishMeshcore: text must be a string');
-  if (a.text.length > MAX_MESHCORE_MQTT_TEXT)
-    throw new Error('mqtt:publishMeshcore: text too long');
   const ch = Number(a.channelIdx);
-  if (!Number.isFinite(ch) || ch < 0 || ch > 255)
-    throw new Error('mqtt:publishMeshcore: channelIdx must be 0–255');
-  if (a.senderName != null && (typeof a.senderName !== 'string' || a.senderName.length > 200)) {
-    throw new Error('mqtt:publishMeshcore: senderName invalid');
-  }
-  if (a.senderNodeId != null) {
-    const id = Number(a.senderNodeId);
-    if (!Number.isFinite(id) || id < 0)
-      throw new Error('mqtt:publishMeshcore: senderNodeId invalid');
-  }
-  if (a.timestamp != null && !Number.isFinite(Number(a.timestamp))) {
-    throw new Error('mqtt:publishMeshcore: timestamp invalid');
-  }
+  assertValidationRules([
+    [typeof a.text === 'string', 'mqtt:publishMeshcore: text must be a string'],
+    [
+      typeof a.text === 'string' && a.text.length <= MAX_MESHCORE_MQTT_TEXT,
+      'mqtt:publishMeshcore: text too long',
+    ],
+    [Number.isFinite(ch) && ch >= 0 && ch <= 255, 'mqtt:publishMeshcore: channelIdx must be 0–255'],
+    [
+      a.senderName == null || (typeof a.senderName === 'string' && a.senderName.length <= 200),
+      'mqtt:publishMeshcore: senderName invalid',
+    ],
+    [
+      a.senderNodeId == null ||
+        (Number.isFinite(Number(a.senderNodeId)) && Number(a.senderNodeId) >= 0),
+      'mqtt:publishMeshcore: senderNodeId invalid',
+    ],
+    [
+      a.timestamp == null || Number.isFinite(Number(a.timestamp)),
+      'mqtt:publishMeshcore: timestamp invalid',
+    ],
+  ]);
 }
 
 const MAX_MESHCORE_PACKET_LOG_ORIGIN = 200;
@@ -1362,6 +1367,27 @@ function validateOptionalPskBase64(value: unknown, channel: string): void {
   if (!parsePsk(value)) throw new Error(`${channel}: pskBase64 must decode to 16 or 32 bytes`);
 }
 
+function validateMqttChannelKeyEntry(entry: unknown): void {
+  if (!entry || typeof entry !== 'object')
+    throw new Error('mqtt:updateChannelKeys: each entry must be an object');
+  const e = entry as Record<string, unknown>;
+  assertValidationRules([
+    [
+      typeof e.name === 'string' && e.name.trim().length > 0,
+      'mqtt:updateChannelKeys: name must be a non-empty string',
+    ],
+    [typeof e.name === 'string' && e.name.length <= 64, 'mqtt:updateChannelKeys: name too long'],
+  ]);
+  validateOptionalPskBase64(e.pskBase64, 'mqtt:updateChannelKeys');
+  assertValidationRules([
+    [
+      e.index === undefined ||
+        (typeof e.index === 'number' && Number.isInteger(e.index) && e.index >= 0 && e.index <= 7),
+      'mqtt:updateChannelKeys: index must be an integer 0–7',
+    ],
+  ]);
+}
+
 function validateMqttUpdateChannelKeysArgs(args: unknown): void {
   if (!args || typeof args !== 'object')
     throw new Error('mqtt:updateChannelKeys: args must be an object');
@@ -1369,26 +1395,18 @@ function validateMqttUpdateChannelKeysArgs(args: unknown): void {
   if (!Array.isArray(a.entries))
     throw new Error('mqtt:updateChannelKeys: entries must be an array');
   if (a.entries.length > 32) throw new Error('mqtt:updateChannelKeys: too many entries');
-  for (const entry of a.entries) {
-    if (!entry || typeof entry !== 'object')
-      throw new Error('mqtt:updateChannelKeys: each entry must be an object');
-    const e = entry as Record<string, unknown>;
-    if (typeof e.name !== 'string' || !e.name.trim())
-      throw new Error('mqtt:updateChannelKeys: name must be a non-empty string');
-    if (e.name.length > 64) throw new Error('mqtt:updateChannelKeys: name too long');
-    validateOptionalPskBase64(e.pskBase64, 'mqtt:updateChannelKeys');
-    if (e.index !== undefined) {
-      if (typeof e.index !== 'number' || !Number.isInteger(e.index) || e.index < 0 || e.index > 7) {
-        throw new Error('mqtt:updateChannelKeys: index must be an integer 0–7');
-      }
-    }
-  }
-  if (a.radioSessionId !== undefined) {
-    if (typeof a.radioSessionId !== 'string')
-      throw new Error('mqtt:updateChannelKeys: radioSessionId must be a string');
-    if (a.radioSessionId.length > 64)
-      throw new Error('mqtt:updateChannelKeys: radioSessionId too long');
-  }
+  for (const entry of a.entries) validateMqttChannelKeyEntry(entry);
+  assertValidationRules([
+    [
+      a.radioSessionId === undefined || typeof a.radioSessionId === 'string',
+      'mqtt:updateChannelKeys: radioSessionId must be a string',
+    ],
+    [
+      a.radioSessionId === undefined ||
+        (typeof a.radioSessionId === 'string' && a.radioSessionId.length <= 64),
+      'mqtt:updateChannelKeys: radioSessionId too long',
+    ],
+  ]);
 }
 
 function validateMqttUpdateTopicPrefixArgs(args: unknown): void {
@@ -1450,37 +1468,36 @@ function validateMqttPublishArgs(args: unknown): void {
   validateOptionalPskBase64(a.pskBase64, 'mqtt:publish');
 }
 
+function isPublishProxyDataWithinLimit(data: unknown): boolean {
+  if (data instanceof Uint8Array) return data.byteLength <= 512 * 1024;
+  return new Uint8Array(data as ArrayBuffer).byteLength <= 512 * 1024;
+}
+
 function validateMqttPublishProxyArgs(args: unknown): void {
   if (!args || typeof args !== 'object') {
     throw new Error('mqtt:publishProxy: args must be an object');
   }
   const a = args as Record<string, unknown>;
-  if (typeof a.topic !== 'string' || !a.topic.trim()) {
-    throw new Error('mqtt:publishProxy: topic must be a non-empty string');
-  }
-  if (a.topic.length > 512) {
-    throw new Error('mqtt:publishProxy: topic too long');
-  }
   const hasData = a.data != null;
   const hasText = typeof a.text === 'string';
-  if (!hasData && !hasText) {
-    throw new Error('mqtt:publishProxy: data or text required');
-  }
-  if (hasText && (a.text as string).length > 512 * 1024) {
-    throw new Error('mqtt:publishProxy: text too long');
-  }
-  if (hasData && !(a.data instanceof Uint8Array) && !ArrayBuffer.isView(a.data)) {
-    throw new Error('mqtt:publishProxy: data must be Uint8Array');
-  }
-  if (hasData) {
-    const dataBytes = a.data instanceof Uint8Array ? a.data : new Uint8Array(a.data as ArrayBuffer);
-    if (dataBytes.byteLength > 512 * 1024) {
-      throw new Error('mqtt:publishProxy: data too long');
-    }
-  }
-  if (a.retained != null && typeof a.retained !== 'boolean') {
-    throw new Error('mqtt:publishProxy: retained must be a boolean');
-  }
+  assertValidationRules([
+    [
+      typeof a.topic === 'string' && a.topic.trim().length > 0,
+      'mqtt:publishProxy: topic must be a non-empty string',
+    ],
+    [typeof a.topic === 'string' && a.topic.length <= 512, 'mqtt:publishProxy: topic too long'],
+    [hasData || hasText, 'mqtt:publishProxy: data or text required'],
+    [!hasText || (a.text as string).length <= 512 * 1024, 'mqtt:publishProxy: text too long'],
+    [
+      !hasData || a.data instanceof Uint8Array || ArrayBuffer.isView(a.data),
+      'mqtt:publishProxy: data must be Uint8Array',
+    ],
+    [!hasData || isPublishProxyDataWithinLimit(a.data), 'mqtt:publishProxy: data too long'],
+    [
+      a.retained == null || typeof a.retained === 'boolean',
+      'mqtt:publishProxy: retained must be a boolean',
+    ],
+  ]);
 }
 
 // Enable Web Serial at the process level (LoRa BLE uses sidecar btleplug, not Web Bluetooth).
