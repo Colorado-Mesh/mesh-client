@@ -1215,19 +1215,25 @@ export function ReticulumInterfacesPanel({
  * before the `kiss` / `tcp` / `rnode` catch-alls (`ax25kiss` contains "kiss",
  * and `LocalInterface` must not fall through to `auto` silently).
  */
+const UI_TYPE_MATCHERS: readonly [RegExp, ReticulumIfaceUiType][] = [
+  [/^udp$|udpinterface/, 'udp'],
+  [/^ax25kiss$|ax25/, 'ax25kiss'],
+  [/^kiss$|kiss/, 'kiss'],
+  [/^pipe$|pipe/, 'pipe'],
+  [/^i2p$|i2p/, 'i2p'],
+  [/^rnode_multi$|rnodemulti/, 'rnode_multi'],
+  [/^ble_peer$|blepeer/, 'ble_peer'],
+  [/^local$|localinterface/, 'local'],
+  [/^serial$|serialinterface/, 'serial'],
+  [/tcp/, 'tcp'],
+  [/rnode/, 'rnode'],
+];
+
 function uiTypeFromRow(type: string): ReticulumIfaceUiType {
   const normalized = type.toLowerCase();
-  if (normalized === 'udp' || normalized.includes('udpinterface')) return 'udp';
-  if (normalized === 'ax25kiss' || normalized.includes('ax25')) return 'ax25kiss';
-  if (normalized === 'kiss' || normalized.includes('kiss')) return 'kiss';
-  if (normalized === 'pipe' || normalized.includes('pipe')) return 'pipe';
-  if (normalized === 'i2p' || normalized.includes('i2p')) return 'i2p';
-  if (normalized === 'rnode_multi' || normalized.includes('rnodemulti')) return 'rnode_multi';
-  if (normalized === 'ble_peer' || normalized.includes('blepeer')) return 'ble_peer';
-  if (normalized === 'local' || normalized.includes('localinterface')) return 'local';
-  if (normalized === 'serial' || normalized.includes('serialinterface')) return 'serial';
-  if (normalized.includes('tcp') || normalized === 'tcpclient') return 'tcp';
-  if (normalized.includes('rnode')) return 'rnode';
+  for (const [pattern, result] of UI_TYPE_MATCHERS) {
+    if (pattern.test(normalized)) return result;
+  }
   return 'auto';
 }
 

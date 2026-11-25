@@ -262,71 +262,74 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
 let prevNodeMapExport: Map<number, MeshNode> | null = null;
 let prevNodeRecordSnapshot: Map<number, NodeRecord> | null = null;
 
+/** Scalar fields that participate in structural sharing for the App node map. */
+const NODE_RECORD_COMPARE_KEYS = [
+  'nodeId',
+  'longName',
+  'shortName',
+  'hwModel',
+  'snr',
+  'rssi',
+  'batteryLevel',
+  'lastHeardAt',
+  'latitude',
+  'longitude',
+  'altitude',
+  'role',
+  'hopsAway',
+  'viaMqtt',
+  'hops',
+  'path',
+  'heardViaMqttOnly',
+  'heardViaMqtt',
+  'source',
+  'onRadio',
+  'favorited',
+  'voltage',
+  'channelUtilization',
+  'airUtilTx',
+  'temperature',
+  'relativeHumidity',
+  'barometricPressure',
+  'iaq',
+  'gasResistance',
+  'lux',
+  'windSpeed',
+  'windDirection',
+  'windGust',
+  'windLull',
+  'weight',
+  'rainfall1h',
+  'rainfall24h',
+  'lastPositionWarning',
+  'numPacketsRxBad',
+  'numRxDupe',
+  'numPacketsRx',
+  'numPacketsTx',
+  'noiseFloor',
+  'noiseFloorObservedAt',
+  'meshcoreLocalStats',
+  'publicKeyHex',
+  'reticulumDestinationHash',
+  'lightningStrikeCount1h',
+  'lightningDistanceKm',
+  'pm10Standard',
+  'pm25Standard',
+  'pm40Standard',
+  'pm100Standard',
+  'pmTemperature',
+  'pmHumidity',
+  'pmVocIdx',
+  'pmNoxIdx',
+  'mcuTemperature',
+  'co2',
+  'keyManuallyVerified',
+  'hasXeddsaSigned',
+  'firmwareVersion',
+] as const satisfies readonly (keyof NodeRecord)[];
+
 function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
-  return (
-    a.nodeId === b.nodeId &&
-    a.longName === b.longName &&
-    a.shortName === b.shortName &&
-    a.hwModel === b.hwModel &&
-    a.snr === b.snr &&
-    a.rssi === b.rssi &&
-    a.batteryLevel === b.batteryLevel &&
-    a.lastHeardAt === b.lastHeardAt &&
-    a.latitude === b.latitude &&
-    a.longitude === b.longitude &&
-    a.altitude === b.altitude &&
-    a.role === b.role &&
-    a.hopsAway === b.hopsAway &&
-    a.viaMqtt === b.viaMqtt &&
-    a.hops === b.hops &&
-    a.path === b.path &&
-    a.heardViaMqttOnly === b.heardViaMqttOnly &&
-    a.heardViaMqtt === b.heardViaMqtt &&
-    a.source === b.source &&
-    a.onRadio === b.onRadio &&
-    a.favorited === b.favorited &&
-    a.voltage === b.voltage &&
-    a.channelUtilization === b.channelUtilization &&
-    a.airUtilTx === b.airUtilTx &&
-    a.temperature === b.temperature &&
-    a.relativeHumidity === b.relativeHumidity &&
-    a.barometricPressure === b.barometricPressure &&
-    a.iaq === b.iaq &&
-    a.gasResistance === b.gasResistance &&
-    a.lux === b.lux &&
-    a.windSpeed === b.windSpeed &&
-    a.windDirection === b.windDirection &&
-    a.windGust === b.windGust &&
-    a.windLull === b.windLull &&
-    a.weight === b.weight &&
-    a.rainfall1h === b.rainfall1h &&
-    a.rainfall24h === b.rainfall24h &&
-    a.lastPositionWarning === b.lastPositionWarning &&
-    a.numPacketsRxBad === b.numPacketsRxBad &&
-    a.numRxDupe === b.numRxDupe &&
-    a.numPacketsRx === b.numPacketsRx &&
-    a.numPacketsTx === b.numPacketsTx &&
-    a.noiseFloor === b.noiseFloor &&
-    a.noiseFloorObservedAt === b.noiseFloorObservedAt &&
-    a.meshcoreLocalStats === b.meshcoreLocalStats &&
-    a.publicKeyHex === b.publicKeyHex &&
-    a.reticulumDestinationHash === b.reticulumDestinationHash &&
-    a.lightningStrikeCount1h === b.lightningStrikeCount1h &&
-    a.lightningDistanceKm === b.lightningDistanceKm &&
-    a.pm10Standard === b.pm10Standard &&
-    a.pm25Standard === b.pm25Standard &&
-    a.pm40Standard === b.pm40Standard &&
-    a.pm100Standard === b.pm100Standard &&
-    a.pmTemperature === b.pmTemperature &&
-    a.pmHumidity === b.pmHumidity &&
-    a.pmVocIdx === b.pmVocIdx &&
-    a.pmNoxIdx === b.pmNoxIdx &&
-    a.mcuTemperature === b.mcuTemperature &&
-    a.co2 === b.co2 &&
-    a.keyManuallyVerified === b.keyManuallyVerified &&
-    a.hasXeddsaSigned === b.hasXeddsaSigned &&
-    a.firmwareVersion === b.firmwareVersion
-  );
+  return NODE_RECORD_COMPARE_KEYS.every((key) => a[key] === b[key]);
 }
 
 /** Reset export cache (tests only). */

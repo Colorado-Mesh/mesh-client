@@ -97,6 +97,21 @@ function notificationDeviceSignature(protocol: MeshProtocol): string {
 
 // Chat keeps its last channel layout visible while RF is disconnected.
 const retainedLayouts = new Map<string, Readonly<Record<number, string>>>();
+function notificationRadioNodeId(protocol: MeshProtocol, device: string): number | null {
+  if (device.includes(':mqtt:client:')) return notificationConnection(protocol)?.myNodeNum ?? null;
+  if (protocol === 'meshtastic') return Number(device.slice('meshtastic:node:'.length));
+  return pubkeyToNodeId(
+    Uint8Array.from(device.slice('meshcore:pk:'.length).match(/../g) ?? [], (byte) =>
+      Number.parseInt(byte, 16),
+    ),
+  );
+}
+
+function notificationMqttLayout(): Readonly<Record<number, string>> | null {
+  const keys = notificationMqttChannelKeys();
+  return Object.keys(keys).length > 0 ? keys : null;
+}
+
 function notificationChannelKeys(protocol: MeshProtocol): Readonly<Record<number, string>> | null {
   if (protocol === 'reticulum' || protocol === 'meshcom') return null;
   const device = notificationDeviceSignature(protocol);
@@ -104,19 +119,10 @@ function notificationChannelKeys(protocol: MeshProtocol): Readonly<Record<number
   if (protocol === 'meshtastic' && device.includes(':mqtt:client:')) {
     // Canonical MQTT settings own this namespace; a stale RF map must not. They do not
     // depend on myNodeNum, which a disconnect or failed connect resets to 0.
-    const keys = notificationMqttChannelKeys();
-    return Object.keys(keys).length > 0 ? keys : null;
+    return notificationMqttLayout();
   }
   const live = getLiveChannelKeys(protocol);
-  const radioNodeId = device.includes(':mqtt:client:')
-    ? notificationConnection(protocol)?.myNodeNum
-    : protocol === 'meshtastic'
-      ? Number(device.slice('meshtastic:node:'.length))
-      : pubkeyToNodeId(
-          Uint8Array.from(device.slice('meshcore:pk:'.length).match(/../g) ?? [], (byte) =>
-            Number.parseInt(byte, 16),
-          ),
-        );
+  const radioNodeId = notificationRadioNodeId(protocol, device);
   if (radioNodeId == null || radioNodeId <= 0) return null;
   if (live?.radioNodeId != null && live.radioNodeId !== radioNodeId) return null;
   if (live?.radioNodeId === radioNodeId && Object.keys(live.keyByIndex).length > 0) {

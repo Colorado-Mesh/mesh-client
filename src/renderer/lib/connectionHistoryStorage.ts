@@ -150,18 +150,29 @@ export function isValidLastConnectionForHistory(last: LastConnection): boolean {
   return connectionHistoryIdentityKey(last) != null;
 }
 
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string';
+}
+
+function isOptionalNumber(value: unknown): boolean {
+  return value === undefined || typeof value === 'number';
+}
+
 function isStoredSavedConnection(v: unknown): v is SavedConnection {
   if (!v || typeof v !== 'object') return false;
   const c = v as Record<string, unknown>;
   if (typeof c.id !== 'string' || c.id.length === 0) return false;
   if (typeof c.lastUsedAt !== 'number' || !Number.isFinite(c.lastUsedAt)) return false;
   if (!isConnectionType(c.type)) return false;
-  if (c.httpAddress !== undefined && typeof c.httpAddress !== 'string') return false;
-  if (c.bleDeviceId !== undefined && typeof c.bleDeviceId !== 'string') return false;
-  if (c.bleDeviceName !== undefined && typeof c.bleDeviceName !== 'string') return false;
-  if (c.bleMac !== undefined && typeof c.bleMac !== 'string') return false;
-  if (c.bleRssi !== undefined && typeof c.bleRssi !== 'number') return false;
-  if (c.serialPortId !== undefined && typeof c.serialPortId !== 'string') return false;
+  const optionalStrings = [
+    'httpAddress',
+    'bleDeviceId',
+    'bleDeviceName',
+    'bleMac',
+    'serialPortId',
+  ] as const;
+  if (!optionalStrings.every((key) => isOptionalString(c[key]))) return false;
+  if (!isOptionalNumber(c.bleRssi)) return false;
   return connectionHistoryIdentityKey(c as unknown as LastConnection) != null;
 }
 
