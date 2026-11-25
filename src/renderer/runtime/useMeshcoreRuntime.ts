@@ -1074,6 +1074,56 @@ function saveOutgoingMeshcoreDm(args: OutgoingMeshcoreDmSave): void {
     .catch(args.onError);
 }
 
+interface MeshcoreContactKeyRow {
+  node_id: number;
+  nickname?: string | null;
+  adv_name: string | null;
+  public_key: string;
+}
+
+/** Registers DB contact public keys/prefixes and returns full 64-hex keys by node id. */
+function populateMeshcorePubKeyMapsFromRows(
+  rows: readonly MeshcoreContactKeyRow[],
+  nicknameMap: Map<number, string>,
+  pubKeyMap: Map<number, Uint8Array>,
+  prefixMap: Map<string, number>,
+): Map<number, string> {
+  const dbPubKeyHexByNodeId = new Map<number, string>();
+  for (const row of rows) {
+    if (row.nickname) nicknameMap.set(row.node_id, row.nickname);
+    rememberMeshcoreLiveAdvertName(row.node_id, row.adv_name);
+    const hex = row.public_key.replace(/\s/g, '').toLowerCase();
+    if (meshcoreIsSyntheticPlaceholderPubKeyHex(hex) || hex.length < 12) continue;
+    const pairs = hex.match(/.{2}/g);
+    if (!pairs) continue;
+    pubKeyMap.set(row.node_id, new Uint8Array(pairs.map((b) => parseInt(b, 16))));
+    prefixMap.set(hex.slice(0, 12), row.node_id);
+    if (hex.length === 64) dbPubKeyHexByNodeId.set(row.node_id, hex);
+  }
+  return dbPubKeyHexByNodeId;
+}
+
+function addMeshcoreSelfHexFromSelfInfo(
+  map: Map<number, string>,
+  self: MeshCoreSelfInfo | null | undefined,
+): void {
+  if (self?.publicKey?.length !== 32) return;
+  const selfId = pubkeyToNodeId(self.publicKey);
+  if (selfId !== 0) map.set(selfId, bytesToHex(self.publicKey));
+}
+
+function repairMeshcoreHydrationMessages(
+  mappedPreview: ChatMessage[],
+  initial: Map<number, MeshNode>,
+  myNodeNum: number,
+): ChatMessage[] {
+  return repairMeshcoreHydratedMessages(
+    mappedPreview,
+    meshcoreRoomServerIdsFromNodes(initial.values()),
+    myNodeNum,
+  );
+}
+
 export function useMeshcoreRuntime() {
   // Restore tombstones before any contact/message hydration in this session.
   restoreMeshcoreLocallyDeletedContactsFromStorage();
@@ -1826,32 +1876,15 @@ export function useMeshcoreRuntime() {
         mappedPreview,
         myNodeNumRef.current,
       );
-      const dbPubKeyHexByNodeId = new Map<number, string>();
-      for (const row of dbContacts) {
-        if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
-        rememberMeshcoreLiveAdvertName(row.node_id, row.adv_name);
-        const hex = row.public_key.replace(/\s/g, '').toLowerCase();
-        if (!meshcoreIsSyntheticPlaceholderPubKeyHex(hex) && hex.length >= 12) {
-          const pairs = hex.match(/.{2}/g);
-          if (!pairs) continue;
-          const bytes = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
-          pubKeyMapRef.current.set(row.node_id, bytes);
-          const prefix = hex.slice(0, 12);
-          pubKeyPrefixMapRef.current.set(prefix, row.node_id);
-          if (hex.length === 64) dbPubKeyHexByNodeId.set(row.node_id, hex);
-        }
-      }
-      const selfForHexMap = selfInfoRef.current;
-      if (selfForHexMap?.publicKey?.length === 32) {
-        const selfId = pubkeyToNodeId(selfForHexMap.publicKey);
-        if (selfId !== 0) dbPubKeyHexByNodeId.set(selfId, bytesToHex(selfForHexMap.publicKey));
-      }
-      setMeshcorePubKeyHexByNodeId(dbPubKeyHexByNodeId);
-      const mapped = repairMeshcoreHydratedMessages(
-        mappedPreview,
-        meshcoreRoomServerIdsFromNodes(initial.values()),
-        myNodeNumRef.current,
+      const dbPubKeyHexByNodeId = populateMeshcorePubKeyMapsFromRows(
+        dbContacts,
+        nicknameMapRef.current,
+        pubKeyMapRef.current,
+        pubKeyPrefixMapRef.current,
       );
+      addMeshcoreSelfHexFromSelfInfo(dbPubKeyHexByNodeId, selfInfoRef.current);
+      setMeshcorePubKeyHexByNodeId(dbPubKeyHexByNodeId);
+      const mapped = repairMeshcoreHydrationMessages(mappedPreview, initial, myNodeNumRef.current);
       void persistMeshcoreMessageSenderRepairs(meshcoreRows, mapped);
       const mergedInitial = filterOutMeshcoreLocallyDeletedContacts(
         mergeStubNodesFromMeshcoreMessages(initial, mapped),
