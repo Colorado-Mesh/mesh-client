@@ -1046,6 +1046,34 @@ function withNodeAltitude(
   return next;
 }
 
+interface OutgoingMeshcoreDmSave {
+  senderId: number;
+  senderName: string;
+  payload: string;
+  timestamp: number;
+  status: 'sending' | 'acked';
+  packetId?: number;
+  replyId?: number;
+  toNode: number;
+  onError: (e: unknown) => void;
+}
+
+function saveOutgoingMeshcoreDm(args: OutgoingMeshcoreDmSave): void {
+  void window.electronAPI.db
+    .saveMeshcoreMessage({
+      sender_id: args.senderId || null,
+      sender_name: args.senderName,
+      payload: args.payload,
+      channel_idx: -1,
+      timestamp: args.timestamp,
+      status: args.status,
+      ...(args.packetId != null ? { packet_id: args.packetId } : {}),
+      reply_id: args.replyId ?? null,
+      to_node: args.toNode,
+    })
+    .catch(args.onError);
+}
+
 export function useMeshcoreRuntime() {
   // Restore tombstones before any contact/message hydration in this session.
   restoreMeshcoreLocallyDeletedContactsFromStorage();
@@ -5055,337 +5083,414 @@ export function useMeshcoreRuntime() {
     await finalizeDriverDisconnect({ disconnectDriver: true });
   }, [finalizeDriverDisconnect]);
 
-  const sendMessage = useCallback(
-    async (text: string, channelIdx: number, destNodeId?: number, replyId?: number) => {
-      if (destNodeId !== undefined) {
-        if (!connRef.current) {
-          throw new Error(MESHCORE_ERR_NOT_CONNECTED);
-        }
-        const pubKey = pubKeyMapRef.current.get(destNodeId);
-        if (!pubKey) {
-          throw new Error('chatPanel.sendErrors.missingDestinationKey');
-        }
-        const sentAt = Date.now();
-        const openWireCompat = isMeshcoreOpenWireCompatEnabled();
-        const { wireText: textToSend, displayPayload } = resolveMeshcoreOutboundWireText({
-          text,
-          replyTo: replyId != null ? String(replyId) : undefined,
-          channelIndex: channelIdx,
-          destination: destNodeId,
-          myNodeNum: myNodeNumRef.current,
-          messages: readMeshcoreMessages(),
-          openWireCompat,
-        });
-        const replyField: number | undefined =
-          replyId != null && displayPayload.trim() && textToSend !== displayPayload
-            ? replyId
-            : undefined;
-        // Optimistically add own message with 'sending' status (DM uses channel -1, not UI sendChannel)
-        const tempMsg: ChatMessage = {
-          sender_id: myNodeNumRef.current,
-          sender_name: selfInfo?.name ?? 'Me',
-          payload: displayPayload,
-          channel: -1,
-          timestamp: sentAt,
-          status: 'sending',
-          to: destNodeId,
-          replyId: replyField,
-        };
-        setMessages((prev) => trimMeshcoreChatMessages([...prev, tempMsg]));
+  /** Captures the outbound path hash and records it for delivery attribution. */
+  const recordMeshcoreOutboundPath = useCallback((destNodeId: number, hopsAway: number): string => {
+    const outPathRaw = outPathMapRef.current.get(destNodeId);
+    const sendPathBytes = outPathRaw && outPathRaw.length > 0 ? Array.from(outPathRaw) : [];
+    const sendPathHash = sendPathBytes.length > 0 ? computePathHash(sendPathBytes) : '';
+    if (sendPathBytes.length > 0) {
+      usePathHistoryStore.getState().recordPathUpdated(destNodeId, sendPathBytes, hopsAway, false);
+    }
+    return sendPathHash;
+  }, []);
 
-        // Calculate dynamic timeout based on hop count for multi-hop paths
-        const destNode = getIdentityNode(meshcoreIdentityIdRef.current, destNodeId);
-        const hopsAway = destNode?.hops_away ?? 0;
-
-        try {
-          const liveConn = connRef.current;
-          const result = await meshcoreSendTextMessageWithNotFoundRestore(
-            liveConn as unknown as Connection,
-            pubKey,
-            textToSend,
-            async () => {
-              const nodeForRadio = destNode ?? {
-                node_id: destNodeId,
-                long_name: '',
-                hw_model: '',
-                last_heard: 0,
-                latitude: null,
-                longitude: null,
-              };
-              await addMeshcoreNodeContactToRadio(
-                liveConn,
-                pubKey,
-                nodeForRadio,
-                repeaterRemoteRpcRef.current,
-              );
-              noteRadioContactReadded(
-                radioContactPathLenByNodeRef.current,
-                droppedOutPathByNodeRef.current,
-                outPathMapRef.current,
-                destNodeId,
-              );
-            },
-          );
-          markMeshcoreCompanionTx();
-          void fetchAndUpdateLocalStats().catch((e: unknown) => {
+  /** Schedules the DM ack timeout that marks the row failed and clears pending ack keys. */
+  const scheduleMeshcoreDmAckTimeout = useCallback(
+    (args: {
+      ackKey: number;
+      pendingMapKeys: number[];
+      destNodeId: number;
+      sendPathHash: string;
+      estTimeout: number;
+    }): ReturnType<typeof setTimeout> => {
+      const { ackKey, pendingMapKeys, destNodeId, sendPathHash, estTimeout } = args;
+      return setTimeout(() => {
+        for (const k of pendingMapKeys) pendingAcksRef.current.delete(k);
+        if (sendPathHash) {
+          usePathHistoryStore.getState().recordOutcome(destNodeId, sendPathHash, false);
+        }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.packetId != null &&
+            meshcoreDmAckKeyU32(m.packetId) === ackKey &&
+            m.status === 'sending'
+              ? { ...m, status: 'failed' as const }
+              : m,
+          ),
+        );
+        void window.electronAPI.db
+          .updateMeshcoreMessageStatus(ackKey, 'failed')
+          .catch((e: unknown) => {
             console.warn(
-              'mcL1235 [useMeshcoreRuntime] fetchAndUpdateLocalStats (DM send) error ' +
+              'mcL1237 [useMeshcoreRuntime] updateMeshcoreMessageStatus (timeout) error ' +
                 errLikeToLogString(e),
             );
           });
-          const ackCrc = result?.expectedAckCrc;
-          const estTimeout = computeMeshcoreDmAckWaitMs(result?.estTimeout, hopsAway);
+      }, estTimeout);
+    },
+    [],
+  );
 
-          if (ackCrc !== undefined) {
-            const ackKey = meshcoreDmAckKeyU32(ackCrc);
-            const pendingMapKeys = meshcorePendingDmAckMapKeys(ackCrc);
-            // Update the temp message with the real packetId
-            setMessages((prev) =>
-              prev.map((m) =>
-                m === tempMsg || (m.timestamp === sentAt && m.status === 'sending')
-                  ? { ...m, sender_id: myNodeNumRef.current, packetId: ackKey }
-                  : m,
-              ),
-            );
-            // Persist the outgoing DM with packet_id for status tracking
-            void window.electronAPI.db
-              .saveMeshcoreMessage({
-                sender_id: myNodeNumRef.current || null,
-                sender_name: selfInfo?.name ?? 'Me',
-                payload: text,
-                channel_idx: -1,
-                timestamp: sentAt,
-                status: 'sending',
-                packet_id: ackKey,
-                reply_id: replyField ?? null,
-                to_node: destNodeId,
-              })
-              .catch((e: unknown) => {
-                console.warn(
-                  'mcL1236 [useMeshcoreRuntime] saveMeshcoreMessage (outgoing) error ' +
-                    errLikeToLogString(e),
-                );
-              });
+  const sendMeshcoreDirectMessage = useCallback(
+    async (text: string, channelIdx: number, destNodeId: number, replyId?: number) => {
+      if (!connRef.current) {
+        throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+      }
+      const pubKey = pubKeyMapRef.current.get(destNodeId);
+      if (!pubKey) {
+        throw new Error('chatPanel.sendErrors.missingDestinationKey');
+      }
+      const sentAt = Date.now();
+      const openWireCompat = isMeshcoreOpenWireCompatEnabled();
+      const { wireText: textToSend, displayPayload } = resolveMeshcoreOutboundWireText({
+        text,
+        replyTo: replyId != null ? String(replyId) : undefined,
+        channelIndex: channelIdx,
+        destination: destNodeId,
+        myNodeNum: myNodeNumRef.current,
+        messages: readMeshcoreMessages(),
+        openWireCompat,
+      });
+      const replyField: number | undefined =
+        replyId != null && displayPayload.trim() && textToSend !== displayPayload
+          ? replyId
+          : undefined;
+      // Optimistically add own message with 'sending' status (DM uses channel -1, not UI sendChannel)
+      const tempMsg: ChatMessage = {
+        sender_id: myNodeNumRef.current,
+        sender_name: selfInfo?.name ?? 'Me',
+        payload: displayPayload,
+        channel: -1,
+        timestamp: sentAt,
+        status: 'sending',
+        to: destNodeId,
+        replyId: replyField,
+      };
+      setMessages((prev) => trimMeshcoreChatMessages([...prev, tempMsg]));
 
-            // Capture outbound path for delivery outcome attribution
-            const outPathRaw = outPathMapRef.current.get(destNodeId);
-            const sendPathBytes = outPathRaw && outPathRaw.length > 0 ? Array.from(outPathRaw) : [];
-            const sendPathHash = sendPathBytes.length > 0 ? computePathHash(sendPathBytes) : '';
-            if (sendPathBytes.length > 0) {
-              usePathHistoryStore
-                .getState()
-                .recordPathUpdated(destNodeId, sendPathBytes, hopsAway, false);
-            }
+      // Calculate dynamic timeout based on hop count for multi-hop paths
+      const destNode = getIdentityNode(meshcoreIdentityIdRef.current, destNodeId);
+      const hopsAway = destNode?.hops_away ?? 0;
 
-            // Schedule failure timeout
-            const timeoutId = setTimeout(() => {
-              for (const k of pendingMapKeys) {
-                pendingAcksRef.current.delete(k);
-              }
-              if (sendPathHash) {
-                usePathHistoryStore.getState().recordOutcome(destNodeId, sendPathHash, false);
-              }
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.packetId != null &&
-                  meshcoreDmAckKeyU32(m.packetId) === ackKey &&
-                  m.status === 'sending'
-                    ? { ...m, status: 'failed' as const }
-                    : m,
-                ),
-              );
-              void window.electronAPI.db
-                .updateMeshcoreMessageStatus(ackKey, 'failed')
-                .catch((e: unknown) => {
-                  console.warn(
-                    'mcL1237 [useMeshcoreRuntime] updateMeshcoreMessageStatus (timeout) error ' +
-                      errLikeToLogString(e),
-                  );
-                });
-            }, estTimeout);
-            const pendingEntry: PendingDmAckEntry = {
-              timeoutId,
-              mapKeys: pendingMapKeys,
-              canonicalPacketIdU32: ackKey,
-              destNodeId,
-              pathHash: sendPathHash,
+      try {
+        const liveConn = connRef.current;
+        const result = await meshcoreSendTextMessageWithNotFoundRestore(
+          liveConn as unknown as Connection,
+          pubKey,
+          textToSend,
+          async () => {
+            const nodeForRadio = destNode ?? {
+              node_id: destNodeId,
+              long_name: '',
+              hw_model: '',
+              last_heard: 0,
+              latitude: null,
+              longitude: null,
             };
-            for (const k of pendingMapKeys) {
-              pendingAcksRef.current.set(k, pendingEntry);
-            }
-          } else {
-            // No ackCrc — mark as acked immediately
-            setMessages((prev) =>
-              prev.map((m) =>
-                m === tempMsg || (m.timestamp === sentAt && m.status === 'sending')
-                  ? { ...m, sender_id: myNodeNumRef.current, status: 'acked' as const }
-                  : m,
-              ),
+            await addMeshcoreNodeContactToRadio(
+              liveConn,
+              pubKey,
+              nodeForRadio,
+              repeaterRemoteRpcRef.current,
             );
-            void window.electronAPI.db
-              .saveMeshcoreMessage({
-                sender_id: myNodeNumRef.current || null,
-                sender_name: selfInfo?.name ?? 'Me',
-                payload: text,
-                channel_idx: -1,
-                timestamp: sentAt,
-                status: 'acked',
-                reply_id: replyField ?? null,
-                to_node: destNodeId,
-              })
-              .catch((e: unknown) => {
-                console.warn(
-                  'mcL1238 [useMeshcoreRuntime] saveMeshcoreMessage (outgoing-no-ack) error ' +
-                    errLikeToLogString(e),
-                );
-              });
-          }
-        } catch (e) {
+            noteRadioContactReadded(
+              radioContactPathLenByNodeRef.current,
+              droppedOutPathByNodeRef.current,
+              outPathMapRef.current,
+              destNodeId,
+            );
+          },
+        );
+        markMeshcoreCompanionTx();
+        void fetchAndUpdateLocalStats().catch((e: unknown) => {
           console.warn(
-            'mcL1239 [useMeshcoreRuntime] sendTextMessage error ' + errLikeToLogString(e),
+            'mcL1235 [useMeshcoreRuntime] fetchAndUpdateLocalStats (DM send) error ' +
+              errLikeToLogString(e),
           );
+        });
+        const ackCrc = result?.expectedAckCrc;
+        const estTimeout = computeMeshcoreDmAckWaitMs(result?.estTimeout, hopsAway);
+
+        if (ackCrc !== undefined) {
+          const ackKey = meshcoreDmAckKeyU32(ackCrc);
+          const pendingMapKeys = meshcorePendingDmAckMapKeys(ackCrc);
+          // Update the temp message with the real packetId
           setMessages((prev) =>
             prev.map((m) =>
               m === tempMsg || (m.timestamp === sentAt && m.status === 'sending')
-                ? { ...m, status: 'failed' as const }
+                ? { ...m, sender_id: myNodeNumRef.current, packetId: ackKey }
                 : m,
             ),
           );
-        }
-      } else {
-        const sentAt = Date.now();
-        const openWireCompat = isMeshcoreOpenWireCompatEnabled();
-        const { wireText: textToSend, displayPayload } = resolveMeshcoreOutboundWireText({
-          text,
-          replyTo: replyId != null ? String(replyId) : undefined,
-          channelIndex: channelIdx,
-          myNodeNum: myNodeNumRef.current,
-          messages: readMeshcoreMessages(),
-          openWireCompat,
-        });
-        const replyField: number | undefined =
-          replyId != null && displayPayload.trim() && textToSend !== displayPayload
-            ? replyId
-            : undefined;
-        try {
-          const hadRadioConn =
-            connRef.current != null ||
-            isMeshcoreTcpOpenHopDeadAccepted() ||
-            meshcoreTcpBridgeDeadRef.current;
-          const heardIdentityId = meshcoreIdentityIdRef.current;
-          const provisionalHeardId = `out:mc-ch:${sentAt}:${channelIdx}`;
-          if (hadRadioConn && heardIdentityId) {
-            // Open before TX so fast repeater overhears during send can still credit.
-            openHeardRepeatWindow(
-              heardIdentityId,
-              provisionalHeardId,
-              undefined,
-              undefined,
-              selfInfo?.name
-                ? {
-                    channelIndex: channelIdx,
-                    senderName: selfInfo.name,
-                    wireText: textToSend,
-                    sentAtSec: Math.floor(sentAt / 1000),
-                  }
-                : undefined,
-            );
-          }
-          if (hadRadioConn) {
-            try {
-              await runMeshcoreUserTxWithLiveTcp(async () => {
-                const liveConn = connRef.current;
-                if (!liveConn) throw new Error('Not connected to radio');
-                const work = liveConn.sendChannelTextMessage(channelIdx, textToSend);
-                if (
-                  isMeshcoreTcpOpenHopDeadAccepted() ||
-                  meshcoreOpenHopUserTxReopenInFlightRef.current
-                ) {
-                  trackMeshcoreTcpUserTxSend(work);
-                }
-                await work;
-              });
-            } catch (txErr) {
-              if (heardIdentityId) {
-                clearHeardRepeatWindowIfMessage(heardIdentityId, provisionalHeardId);
-                useRelayCoverageStore.getState().remove(heardIdentityId, provisionalHeardId);
-              }
-              throw txErr;
-            }
-            markMeshcoreCompanionTx();
-            void fetchAndUpdateLocalStats().catch((e: unknown) => {
+          // Persist the outgoing DM with packet_id for status tracking
+          saveOutgoingMeshcoreDm({
+            senderId: myNodeNumRef.current,
+            senderName: selfInfo?.name ?? 'Me',
+            payload: text,
+            timestamp: sentAt,
+            status: 'sending',
+            packetId: ackKey,
+            replyId: replyField,
+            toNode: destNodeId,
+            onError: (e: unknown) => {
               console.warn(
-                'mcL1240 [useMeshcoreRuntime] fetchAndUpdateLocalStats (channel send) error ' +
+                'mcL1236 [useMeshcoreRuntime] saveMeshcoreMessage (outgoing) error ' +
                   errLikeToLogString(e),
               );
-            });
-            const channelMsgId = addMessage({
-              sender_id: myNodeNumRef.current,
-              sender_name: selfInfo?.name ?? 'Me',
-              payload: displayPayload,
-              channel: channelIdx,
-              timestamp: sentAt,
-              status: 'acked',
-              replyId: replyField,
-            }).canonicalId;
-            if (channelMsgId && heardIdentityId && channelMsgId !== provisionalHeardId) {
-              renameHeardRepeatWindowMessageId(heardIdentityId, provisionalHeardId, channelMsgId);
-              useRelayCoverageStore
-                .getState()
-                .renameMessage(heardIdentityId, provisionalHeardId, channelMsgId);
-            }
-            if (mqttStatusRef.current === 'connected') {
-              void window.electronAPI.mqtt
-                .publishMeshcorePacketLog({
-                  origin: selfInfo?.name ?? 'mesh-client',
-                  snr: 0,
-                  rssi: 0,
-                  direction: 'tx',
-                })
-                .catch((e: unknown) => {
-                  console.warn(
-                    'mcL1241 [useMeshcoreRuntime] publishMeshcorePacketLog (sent via RF) error ' +
-                      errLikeToLogString(e),
-                  );
-                });
-            }
-          } else if (mqttStatusRef.current === 'connected') {
-            await window.electronAPI.mqtt.publishMeshcore({
-              text: textToSend,
-              channelIdx,
-              senderNodeId: myNodeNumRef.current || undefined,
-              senderName: selfInfo?.name,
-              timestamp: sentAt,
-            });
-            addMessage({
-              sender_id: myNodeNumRef.current,
-              sender_name: selfInfo?.name ?? 'Me',
-              payload: text,
-              channel: channelIdx,
-              timestamp: sentAt,
-              status: 'acked',
-              receivedVia: 'mqtt',
-              replyId: replyField,
-            });
-          } else {
-            throw new Error('Not connected — connect radio or MQTT to send channel messages');
+            },
+          });
+
+          // Capture outbound path for delivery outcome attribution
+          const sendPathHash = recordMeshcoreOutboundPath(destNodeId, hopsAway);
+
+          // Schedule failure timeout
+          const timeoutId = scheduleMeshcoreDmAckTimeout({
+            ackKey,
+            pendingMapKeys,
+            destNodeId,
+            sendPathHash,
+            estTimeout,
+          });
+          const pendingEntry: PendingDmAckEntry = {
+            timeoutId,
+            mapKeys: pendingMapKeys,
+            canonicalPacketIdU32: ackKey,
+            destNodeId,
+            pathHash: sendPathHash,
+          };
+          for (const k of pendingMapKeys) {
+            pendingAcksRef.current.set(k, pendingEntry);
           }
-        } catch (e) {
-          console.warn(
-            'mcL1242 [useMeshcoreRuntime] sendChannelTextMessage / publishMeshcore error ' +
-              errLikeToLogString(e),
+        } else {
+          // No ackCrc — mark as acked immediately
+          setMessages((prev) =>
+            prev.map((m) =>
+              m === tempMsg || (m.timestamp === sentAt && m.status === 'sending')
+                ? { ...m, sender_id: myNodeNumRef.current, status: 'acked' as const }
+                : m,
+            ),
           );
-          throw e;
+          saveOutgoingMeshcoreDm({
+            senderId: myNodeNumRef.current,
+            senderName: selfInfo?.name ?? 'Me',
+            payload: text,
+            timestamp: sentAt,
+            status: 'acked',
+            replyId: replyField,
+            toNode: destNodeId,
+            onError: (e: unknown) => {
+              console.warn(
+                'mcL1238 [useMeshcoreRuntime] saveMeshcoreMessage (outgoing-no-ack) error ' +
+                  errLikeToLogString(e),
+              );
+            },
+          });
         }
+      } catch (e) {
+        console.warn('mcL1239 [useMeshcoreRuntime] sendTextMessage error ' + errLikeToLogString(e));
+        setMessages((prev) =>
+          prev.map((m) =>
+            m === tempMsg || (m.timestamp === sentAt && m.status === 'sending')
+              ? { ...m, status: 'failed' as const }
+              : m,
+          ),
+        );
       }
     },
     [
-      addMessage,
-      readMeshcoreMessages,
       selfInfo,
       fetchAndUpdateLocalStats,
-      runMeshcoreUserTxWithLiveTcp,
+      readMeshcoreMessages,
+      recordMeshcoreOutboundPath,
+      scheduleMeshcoreDmAckTimeout,
     ],
+  );
+
+  const sendMeshcoreChannelViaRadio = useCallback(
+    async (args: {
+      textToSend: string;
+      displayPayload: string;
+      channelIdx: number;
+      sentAt: number;
+      replyField: number | undefined;
+      heardIdentityId: string | null;
+      provisionalHeardId: string;
+    }) => {
+      const {
+        textToSend,
+        displayPayload,
+        channelIdx,
+        sentAt,
+        replyField,
+        heardIdentityId,
+        provisionalHeardId,
+      } = args;
+      try {
+        await runMeshcoreUserTxWithLiveTcp(async () => {
+          const liveConn = connRef.current;
+          if (!liveConn) throw new Error('Not connected to radio');
+          const work = liveConn.sendChannelTextMessage(channelIdx, textToSend);
+          if (
+            isMeshcoreTcpOpenHopDeadAccepted() ||
+            meshcoreOpenHopUserTxReopenInFlightRef.current
+          ) {
+            trackMeshcoreTcpUserTxSend(work);
+          }
+          await work;
+        });
+      } catch (txErr) {
+        if (heardIdentityId) {
+          clearHeardRepeatWindowIfMessage(heardIdentityId, provisionalHeardId);
+          useRelayCoverageStore.getState().remove(heardIdentityId, provisionalHeardId);
+        }
+        throw txErr;
+      }
+      markMeshcoreCompanionTx();
+      void fetchAndUpdateLocalStats().catch((e: unknown) => {
+        console.warn(
+          'mcL1240 [useMeshcoreRuntime] fetchAndUpdateLocalStats (channel send) error ' +
+            errLikeToLogString(e),
+        );
+      });
+      const channelMsgId = addMessage({
+        sender_id: myNodeNumRef.current,
+        sender_name: selfInfo?.name ?? 'Me',
+        payload: displayPayload,
+        channel: channelIdx,
+        timestamp: sentAt,
+        status: 'acked',
+        replyId: replyField,
+      }).canonicalId;
+      if (channelMsgId && heardIdentityId && channelMsgId !== provisionalHeardId) {
+        renameHeardRepeatWindowMessageId(heardIdentityId, provisionalHeardId, channelMsgId);
+        useRelayCoverageStore
+          .getState()
+          .renameMessage(heardIdentityId, provisionalHeardId, channelMsgId);
+      }
+      if (mqttStatusRef.current === 'connected') {
+        void window.electronAPI.mqtt
+          .publishMeshcorePacketLog({
+            origin: selfInfo?.name ?? 'mesh-client',
+            snr: 0,
+            rssi: 0,
+            direction: 'tx',
+          })
+          .catch((e: unknown) => {
+            console.warn(
+              'mcL1241 [useMeshcoreRuntime] publishMeshcorePacketLog (sent via RF) error ' +
+                errLikeToLogString(e),
+            );
+          });
+      }
+    },
+    [addMessage, fetchAndUpdateLocalStats, runMeshcoreUserTxWithLiveTcp, selfInfo],
+  );
+
+  const sendMeshcoreChannelViaMqtt = useCallback(
+    async (args: {
+      textToSend: string;
+      text: string;
+      channelIdx: number;
+      sentAt: number;
+      replyField: number | undefined;
+    }) => {
+      const { textToSend, text, channelIdx, sentAt, replyField } = args;
+      await window.electronAPI.mqtt.publishMeshcore({
+        text: textToSend,
+        channelIdx,
+        senderNodeId: myNodeNumRef.current || undefined,
+        senderName: selfInfo?.name,
+        timestamp: sentAt,
+      });
+      addMessage({
+        sender_id: myNodeNumRef.current,
+        sender_name: selfInfo?.name ?? 'Me',
+        payload: text,
+        channel: channelIdx,
+        timestamp: sentAt,
+        status: 'acked',
+        receivedVia: 'mqtt',
+        replyId: replyField,
+      });
+    },
+    [addMessage, selfInfo],
+  );
+
+  const sendMeshcoreChannelMessage = useCallback(
+    async (text: string, channelIdx: number, replyId?: number) => {
+      const sentAt = Date.now();
+      const openWireCompat = isMeshcoreOpenWireCompatEnabled();
+      const { wireText: textToSend, displayPayload } = resolveMeshcoreOutboundWireText({
+        text,
+        replyTo: replyId != null ? String(replyId) : undefined,
+        channelIndex: channelIdx,
+        myNodeNum: myNodeNumRef.current,
+        messages: readMeshcoreMessages(),
+        openWireCompat,
+      });
+      const replyField: number | undefined =
+        replyId != null && displayPayload.trim() && textToSend !== displayPayload
+          ? replyId
+          : undefined;
+      try {
+        const hadRadioConn =
+          connRef.current != null ||
+          isMeshcoreTcpOpenHopDeadAccepted() ||
+          meshcoreTcpBridgeDeadRef.current;
+        const heardIdentityId = meshcoreIdentityIdRef.current;
+        const provisionalHeardId = `out:mc-ch:${sentAt}:${channelIdx}`;
+        if (hadRadioConn && heardIdentityId) {
+          // Open before TX so fast repeater overhears during send can still credit.
+          openHeardRepeatWindow(
+            heardIdentityId,
+            provisionalHeardId,
+            undefined,
+            undefined,
+            selfInfo?.name
+              ? {
+                  channelIndex: channelIdx,
+                  senderName: selfInfo.name,
+                  wireText: textToSend,
+                  sentAtSec: Math.floor(sentAt / 1000),
+                }
+              : undefined,
+          );
+        }
+        if (hadRadioConn) {
+          await sendMeshcoreChannelViaRadio({
+            textToSend,
+            displayPayload,
+            channelIdx,
+            sentAt,
+            replyField,
+            heardIdentityId,
+            provisionalHeardId,
+          });
+        } else if (mqttStatusRef.current === 'connected') {
+          await sendMeshcoreChannelViaMqtt({ textToSend, text, channelIdx, sentAt, replyField });
+        } else {
+          throw new Error('Not connected — connect radio or MQTT to send channel messages');
+        }
+      } catch (e) {
+        console.warn(
+          'mcL1242 [useMeshcoreRuntime] sendChannelTextMessage / publishMeshcore error ' +
+            errLikeToLogString(e),
+        );
+        throw e;
+      }
+    },
+    [readMeshcoreMessages, selfInfo, sendMeshcoreChannelViaMqtt, sendMeshcoreChannelViaRadio],
+  );
+
+  const sendMessage = useCallback(
+    async (text: string, channelIdx: number, destNodeId?: number, replyId?: number) => {
+      if (destNodeId !== undefined) {
+        await sendMeshcoreDirectMessage(text, channelIdx, destNodeId, replyId);
+        return;
+      }
+      await sendMeshcoreChannelMessage(text, channelIdx, replyId);
+    },
+    [sendMeshcoreDirectMessage, sendMeshcoreChannelMessage],
   );
 
   const readChatContacts = useCallback(
