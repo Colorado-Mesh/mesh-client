@@ -363,11 +363,14 @@ import {
 import {
   clearMeshcoreRepeaterRouteEscalationForScope,
   MESHCORE_OUT_PATH_UNKNOWN_BYTE,
+  meshcoreLearnedPathSinceRadioReset,
   type MeshcoreRepeaterRouteEscalationDeps,
   type MeshcoreRepeaterRouteKind,
   meshcoreRepeaterRouteKind,
   type MeshcoreRepeaterRouteMode,
+  noteRadioContactReadded,
   noteRadioContactRouteUnknown,
+  prepareMeshcoreZeroHopRouteAfterLogin,
   withMeshcoreRepeaterLoginFallback,
   withMeshcoreRepeaterRouteEscalation,
 } from '../lib/meshcoreRepeaterRouteEscalation';
@@ -954,12 +957,15 @@ export function useMeshcoreRuntime() {
   const outPathMapRef = useRef<Map<number, Uint8Array>>(new Map());
   /** Last-seen companion outPathLen per node (packed hash size survives intermittent getContacts misses). */
   const radioContactPathLenByNodeRef = useRef<Map<number, number>>(new Map());
+  /** Learned path kept for a node when its contact was re-added; the radio no longer uses it. */
+  const droppedOutPathByNodeRef = useRef<Map<number, Uint8Array>>(new Map());
   /** Filled after route-escalation deps useMemo; Room Ping reads this before that declaration. */
   const meshcoreRepeaterRouteEscalationSharedDepsRef = useRef<
     Pick<
       MeshcoreRepeaterRouteEscalationDeps,
       | 'resetContactPath'
       | 'resolveRouteKind'
+      | 'resolveCurrentRouteKind'
       | 'escalationScope'
       | 'captureEscalationContext'
       | 'isEscalationContextCurrent'
@@ -4905,7 +4911,12 @@ export function useMeshcoreRuntime() {
                 nodeForRadio,
                 repeaterRemoteRpcRef.current,
               );
-              noteRadioContactRouteUnknown(radioContactPathLenByNodeRef.current, destNodeId);
+              noteRadioContactReadded(
+                radioContactPathLenByNodeRef.current,
+                droppedOutPathByNodeRef.current,
+                outPathMapRef.current,
+                destNodeId,
+              );
             },
           );
           markMeshcoreCompanionTx();
@@ -6218,8 +6229,10 @@ export function useMeshcoreRuntime() {
                               pingNode,
                               repeaterRemoteRpcRef.current,
                             );
-                            noteRadioContactRouteUnknown(
+                            noteRadioContactReadded(
                               radioContactPathLenByNodeRef.current,
+                              droppedOutPathByNodeRef.current,
+                              outPathMapRef.current,
                               nodeId,
                             );
                           }
@@ -6968,6 +6981,22 @@ export function useMeshcoreRuntime() {
     );
   }, []);
 
+  /** As above, without a learned path the radio dropped at a re-add (Direct only reads this). */
+  const resolveAdminCurrentRouteKindForNode = useCallback(
+    (nodeId: number): MeshcoreRepeaterRouteKind => {
+      const id = nodeId >>> 0;
+      return meshcoreRepeaterRouteKind(
+        meshcoreLearnedPathSinceRadioReset(
+          outPathMapRef.current,
+          droppedOutPathByNodeRef.current,
+          id,
+        ),
+        radioContactPathLenByNodeRef.current.get(id),
+      );
+    },
+    [],
+  );
+
   /** Per-repeater route mode (issue 1566); a node with no known public key stays on Auto. */
   const resolveAdminRouteModeForNode = useCallback((nodeId: number): MeshcoreRepeaterRouteMode => {
     const id = nodeId >>> 0;
@@ -7054,6 +7083,7 @@ export function useMeshcoreRuntime() {
       MeshcoreRepeaterRouteEscalationDeps,
       | 'resetContactPath'
       | 'resolveRouteKind'
+      | 'resolveCurrentRouteKind'
       | 'escalationScope'
       | 'captureEscalationContext'
       | 'isEscalationContextCurrent'
@@ -7062,6 +7092,7 @@ export function useMeshcoreRuntime() {
     > => ({
       resetContactPath: resetContactPathForEscalation,
       resolveRouteKind: resolveAdminRouteKindForNode,
+      resolveCurrentRouteKind: resolveAdminCurrentRouteKindForNode,
       routeMode: resolveAdminRouteModeForNode,
       ensureZeroHopRoute: ensureZeroHopRouteForNode,
       escalationScope: meshcoreRepeaterRouteEscalationScope,
@@ -7077,6 +7108,7 @@ export function useMeshcoreRuntime() {
     [
       resetContactPathForEscalation,
       resolveAdminRouteKindForNode,
+      resolveAdminCurrentRouteKindForNode,
       resolveAdminRouteModeForNode,
       ensureZeroHopRouteForNode,
       meshcoreRepeaterRouteEscalationScope,
@@ -7093,7 +7125,12 @@ export function useMeshcoreRuntime() {
         restoreRadioContact: async () => {
           try {
             await addMeshcoreNodeContactToRadio(conn, pubKey, node, repeaterRemoteRpcRef.current);
-            noteRadioContactRouteUnknown(radioContactPathLenByNodeRef.current, nodeId);
+            noteRadioContactReadded(
+              radioContactPathLenByNodeRef.current,
+              droppedOutPathByNodeRef.current,
+              outPathMapRef.current,
+              nodeId,
+            );
           } catch (e: unknown) {
             maybeRequestMeshcoreAutoOffloadForError(e instanceof Error ? e.cause : e);
             throw e;
@@ -7207,8 +7244,10 @@ export function useMeshcoreRuntime() {
                                 statusNode,
                                 repeaterRemoteRpcRef.current,
                               );
-                              noteRadioContactRouteUnknown(
+                              noteRadioContactReadded(
                                 radioContactPathLenByNodeRef.current,
+                                droppedOutPathByNodeRef.current,
+                                outPathMapRef.current,
                                 nodeId,
                               );
                             } catch (e: unknown) {
@@ -7579,6 +7618,10 @@ export function useMeshcoreRuntime() {
                   repeaterRemoteRpcRef.current,
                   makeRepeaterLoginOpts(conn, nodeId, pubKey),
                 );
+                await prepareMeshcoreZeroHopRouteAfterLogin(
+                  meshcoreRepeaterRouteEscalationSharedDeps,
+                  nodeId,
+                );
                 // Bounded idle returns promptly when no TraceData is in flight.
                 const raw = await runMeshcoreRepeaterTelemetryRequest(conn, pubKey, {
                   hopsAway,
@@ -7683,6 +7726,10 @@ export function useMeshcoreRuntime() {
             getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model,
             repeaterRemoteRpcRef.current,
             makeRepeaterLoginOpts(conn, nodeId, pubKey),
+          );
+          await prepareMeshcoreZeroHopRouteAfterLogin(
+            meshcoreRepeaterRouteEscalationSharedDeps,
+            nodeId,
           );
           return runMeshcoreRepeaterBinaryRequest(
             conn,
@@ -8056,6 +8103,10 @@ export function useMeshcoreRuntime() {
                         },
                       );
                       assertMeshcoreRepeaterLoginOk(aclLogin);
+                      await prepareMeshcoreZeroHopRouteAfterLogin(
+                        meshcoreRepeaterRouteEscalationSharedDeps,
+                        nodeId,
+                      );
                     },
                   );
                 } else {
@@ -8076,6 +8127,10 @@ export function useMeshcoreRuntime() {
                         hwModelForCli,
                         repeaterRemoteRpcRef.current,
                         loginOpts,
+                      );
+                      await prepareMeshcoreZeroHopRouteAfterLogin(
+                        meshcoreRepeaterRouteEscalationSharedDeps,
+                        nodeId,
                       );
                     },
                   );
@@ -9874,7 +9929,12 @@ export function useMeshcoreRuntime() {
                 nodeForRadio,
                 repeaterRemoteRpcRef.current,
               );
-              noteRadioContactRouteUnknown(radioContactPathLenByNodeRef.current, peerNodeId);
+              noteRadioContactReadded(
+                radioContactPathLenByNodeRef.current,
+                droppedOutPathByNodeRef.current,
+                outPathMapRef.current,
+                peerNodeId,
+              );
             },
           );
           if (

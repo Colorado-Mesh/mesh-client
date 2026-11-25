@@ -4,10 +4,13 @@ import { meshcoreRadioContactRoute } from '../../shared/meshcorePathHash';
 import {
   clearMeshcoreRepeaterRouteEscalationStateForTests,
   isMeshcoreRepeaterTimeoutError,
+  meshcoreLearnedPathSinceRadioReset,
   meshcoreRepeaterRouteKind,
   type MeshcoreRepeaterRouteMode,
   MeshcoreRepeaterRoutePrepError,
+  noteRadioContactReadded,
   noteRadioContactRouteUnknown,
+  prepareMeshcoreZeroHopRouteAfterLogin,
   withMeshcoreRepeaterLoginFallback,
   withMeshcoreRepeaterRouteEscalation,
 } from './meshcoreRepeaterRouteEscalation';
@@ -63,7 +66,8 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     for (const after of readds) {
       const end = after.indexOf(');');
       const next = after.slice(end, end + 400);
-      expect(next).toMatch(/noteRadioContactRouteUnknown\(/);
+      // Caches 0xFF and marks the kept learned path stale for the Direct only check.
+      expect(next).toMatch(/noteRadioContactReadded\(/);
       // The learned path stays: Ping seeds and hop display read it, and the radio length alone
       // decides the Zero-hop skip.
       expect(next).not.toMatch(/outPathMapRef\.current\.delete\(/);
@@ -75,6 +79,30 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     // Same as resetContactPathForEscalation: the radio route is cleared, so is the learned one.
     expect(afterReset).toMatch(/outPathMapRef\.current\.delete\(nodeId >>> 0\)/);
     expect(afterReset).toMatch(/noteRadioContactRouteUnknown\([^;]*\bnodeId,?\s*\)/);
+  });
+
+  it('runtime gives Direct only a route kind that ignores a learned path the radio dropped', () => {
+    const source = loadRuntimeSource('useMeshcoreRuntime.ts');
+    const body = extractUseCallbackBody(source, 'resolveAdminCurrentRouteKindForNode');
+    expect(body).toMatch(/meshcoreLearnedPathSinceRadioReset\(/);
+    expect(source).toContain('resolveCurrentRouteKind: resolveAdminCurrentRouteKindForNode');
+  });
+
+  it('runtime writes the Zero-hop route again after every login inside a route escalation', () => {
+    const source = loadRuntimeSource('useMeshcoreRuntime.ts');
+    // A login can re-add an evicted contact with no route; the send after it would flood.
+    const calls = source.split('withMeshcoreRepeaterRouteEscalation(').slice(1);
+    let withLogin = 0;
+    for (const call of calls) {
+      const window = call.slice(0, 1600);
+      const loginAt = window.search(
+        /meshcoreTryRemoteServerLogin\(|meshcoreRepeaterTryLoginWithPassword\(/,
+      );
+      if (loginAt < 0) continue;
+      withLogin += 1;
+      expect(window.slice(loginAt)).toMatch(/prepareMeshcoreZeroHopRouteAfterLogin\(/);
+    }
+    expect(withLogin).toBeGreaterThanOrEqual(4);
   });
 
   it('noteRadioContactRouteUnknown caches the 0xFF length so Zero-hop writes the route again', () => {
@@ -490,6 +518,8 @@ describe('repeater route modes', () => {
   function modeHarness(opts: {
     mode: MeshcoreRepeaterRouteMode;
     route?: 'direct' | 'flood' | 'unknown';
+    /** Route kind ignoring a learned path the radio dropped at a re-add (Direct only reads it). */
+    currentRoute?: 'direct' | 'flood' | 'unknown';
     canLogin?: boolean;
     /** Outcome of each request attempt in order; the last entry repeats. */
     requests: ('ok' | 'timeout' | 'rejected')[];
@@ -502,6 +532,7 @@ describe('repeater route modes', () => {
     let attemptIndex = 0;
     let zeroHopIndex = 0;
     const zeroHopWrites = opts.zeroHopWrites ?? [opts.zeroHopFails ? 'error' : 'ok'];
+    const currentRoute = opts.currentRoute;
     const routeMode = vi.fn(() => opts.mode);
     const deps = {
       resetContactPath: vi.fn(() => {
@@ -509,6 +540,7 @@ describe('repeater route modes', () => {
         return Promise.resolve(true);
       }),
       resolveRouteKind: () => opts.route ?? 'direct',
+      ...(currentRoute ? { resolveCurrentRouteKind: () => currentRoute } : {}),
       nowMs: () => 1_000,
       routeMode,
       ensureZeroHopRoute: vi.fn(() => {
@@ -586,6 +618,89 @@ describe('repeater route modes', () => {
     });
     await expect(withMeshcoreRepeaterRouteEscalation(25, deps, request)).rejects.toThrow(/timeout/);
     expect(order).toEqual(['request']);
+  });
+
+  it('Direct only does not resend when the radio dropped the route its learned path describes', async () => {
+    const { deps, request, order } = modeHarness({
+      mode: 'direct',
+      route: 'direct',
+      currentRoute: 'flood',
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterRouteEscalation(26, deps, request)).rejects.toThrow(/timeout/);
+    expect(order).toEqual(['request']);
+  });
+
+  it('Auto still resets and floods on a learned path the radio dropped', async () => {
+    const { deps, request, order } = modeHarness({
+      mode: 'auto',
+      route: 'direct',
+      currentRoute: 'flood',
+      requests: ['timeout', 'ok'],
+    });
+    await expect(withMeshcoreRepeaterRouteEscalation(27, deps, request)).resolves.toBe('ok');
+    expect(order).toEqual(['request', 'reset', 'request']);
+  });
+
+  it('a re-add marks the learned path stale until a new path is learned', () => {
+    const outPaths = new Map<number, Uint8Array>([[9, new Uint8Array([0xab])]]);
+    const radioLens = new Map<number, number>([[9, 1]]);
+    const dropped = new Map<number, Uint8Array>();
+    expect(meshcoreLearnedPathSinceRadioReset(outPaths, dropped, 9)).toEqual(
+      new Uint8Array([0xab]),
+    );
+    noteRadioContactReadded(radioLens, dropped, outPaths, 9);
+    expect(radioLens.get(9)).toBe(0xff);
+    expect(outPaths.get(9)).toEqual(new Uint8Array([0xab]));
+    expect(meshcoreLearnedPathSinceRadioReset(outPaths, dropped, 9)).toBeUndefined();
+    expect(
+      meshcoreRepeaterRouteKind(
+        meshcoreLearnedPathSinceRadioReset(outPaths, dropped, 9),
+        radioLens.get(9),
+      ),
+    ).toBe('flood');
+    // A path learned afterwards is a new array, so it counts even with the length still 0xFF.
+    outPaths.set(9, new Uint8Array([0xcd]));
+    expect(meshcoreLearnedPathSinceRadioReset(outPaths, dropped, 9)).toEqual(
+      new Uint8Array([0xcd]),
+    );
+    expect(
+      meshcoreRepeaterRouteKind(
+        meshcoreLearnedPathSinceRadioReset(outPaths, dropped, 9),
+        radioLens.get(9),
+      ),
+    ).toBe('direct');
+  });
+
+  it('a re-add with no learned path leaves nothing marked', () => {
+    const outPaths = new Map<number, Uint8Array>();
+    const radioLens = new Map<number, number>();
+    const dropped = new Map<number, Uint8Array>([[4, new Uint8Array([1])]]);
+    noteRadioContactReadded(radioLens, dropped, outPaths, 4);
+    expect(dropped.has(4)).toBe(false);
+    expect(radioLens.get(4)).toBe(0xff);
+  });
+
+  it.each(['auto', 'direct'] as const)(
+    'after a login, %s mode writes no Zero-hop route',
+    async (mode) => {
+      const { deps } = modeHarness({ mode, requests: ['ok'] });
+      await prepareMeshcoreZeroHopRouteAfterLogin(deps, 5);
+      expect(deps.ensureZeroHopRoute).not.toHaveBeenCalled();
+    },
+  );
+
+  it('after a login, Zero-hop writes the route again', async () => {
+    const { deps, order } = modeHarness({ mode: 'zeroHop', requests: ['ok'] });
+    await prepareMeshcoreZeroHopRouteAfterLogin(deps, 5);
+    expect(order).toEqual(['zeroHop']);
+  });
+
+  it('a Zero-hop write after a login that times out is not a request timeout', async () => {
+    const { deps } = modeHarness({ mode: 'zeroHop', requests: ['ok'], zeroHopWrites: ['timeout'] });
+    const err = await prepareMeshcoreZeroHopRouteAfterLogin(deps, 5).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(MeshcoreRepeaterRoutePrepError);
+    expect(isMeshcoreRepeaterTimeoutError(err)).toBe(false);
   });
 
   it('Zero-hop sets a zero-hop route before the first send and before the retry', async () => {

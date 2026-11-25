@@ -31,6 +31,12 @@ export interface MeshcoreRepeaterRouteEscalationDeps {
   resetContactPath: (nodeId: number) => Promise<boolean>;
   /** Current route classification before the failed attempt. */
   resolveRouteKind: (nodeId: number) => MeshcoreRepeaterRouteKind;
+  /**
+   * The same classification, ignoring a learned path the radio dropped when its contact was
+   * re-added. Direct only reads it to avoid a resend that would flood. Missing means
+   * `resolveRouteKind`.
+   */
+  resolveCurrentRouteKind?: (nodeId: number) => MeshcoreRepeaterRouteKind;
   /** MeshCore identity scope for per-identity cooldown (defaults to global when omitted). */
   escalationScope?: () => string | null | undefined;
   /** Snapshot the active identity and connection when the request starts. */
@@ -65,6 +71,38 @@ export function noteRadioContactRouteUnknown(
   nodeId: number,
 ): void {
   radioPathLens.set(nodeId >>> 0, MESHCORE_OUT_PATH_UNKNOWN_BYTE);
+}
+
+/**
+ * A contact was re-added to the radio with no route. Caches the 0xFF length (as
+ * `noteRadioContactRouteUnknown`) and records the learned path the app still keeps, which the
+ * radio no longer uses. The path itself stays for Ping and hop display.
+ */
+export function noteRadioContactReadded(
+  radioPathLens: Map<number, number>,
+  droppedPaths: Map<number, Uint8Array>,
+  outPaths: Map<number, Uint8Array>,
+  nodeId: number,
+): void {
+  const id = nodeId >>> 0;
+  noteRadioContactRouteUnknown(radioPathLens, id);
+  const kept = outPaths.get(id);
+  if (kept) droppedPaths.set(id, kept);
+  else droppedPaths.delete(id);
+}
+
+/**
+ * The learned path, unless it is the one the radio dropped at its last re-add. A path learned
+ * afterwards is a new array, so it counts even before the cached length is refreshed.
+ */
+export function meshcoreLearnedPathSinceRadioReset(
+  outPaths: Map<number, Uint8Array>,
+  droppedPaths: Map<number, Uint8Array>,
+  nodeId: number,
+): Uint8Array | undefined {
+  const id = nodeId >>> 0;
+  const path = outPaths.get(id);
+  return path !== undefined && droppedPaths.get(id) === path ? undefined : path;
 }
 
 /**
@@ -134,6 +172,22 @@ async function prepareZeroHopRoute(
   }
 }
 
+/**
+ * For callers that log in inside `withMeshcoreRepeaterRouteEscalation` and then send: in
+ * Zero-hop mode, write the route again after the login, because a login can re-add an evicted
+ * contact with no route and the send would flood. No-op in other modes; the write is skipped
+ * when the radio already holds a zero-hop route. A failed write rejects with
+ * `MeshcoreRepeaterRoutePrepError`, which is not retried as a timeout.
+ */
+export async function prepareMeshcoreZeroHopRouteAfterLogin(
+  deps: MeshcoreRepeaterRouteEscalationDeps,
+  nodeId: number,
+): Promise<void> {
+  const normalizedId = nodeId >>> 0;
+  if ((deps.routeMode?.(normalizedId) ?? 'auto') !== 'zeroHop') return;
+  await prepareZeroHopRoute(deps, normalizedId);
+}
+
 export function isMeshcoreRepeaterTimeoutError(error: unknown): boolean {
   if (error instanceof MeshcoreRepeaterRoutePrepError) return false;
   const msg = errLikeToLogString(error).toLowerCase();
@@ -192,7 +246,10 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
     if (mode !== 'auto') {
       // A Direct only route the radio already floods gets no help from a resend here; the
       // login fallback still asks again after a login, as it does in Auto.
-      if (mode === 'direct' && deps.resolveRouteKind(normalizedId) === 'flood') {
+      if (
+        mode === 'direct' &&
+        (deps.resolveCurrentRouteKind ?? deps.resolveRouteKind)(normalizedId) === 'flood'
+      ) {
         throw firstErr;
       }
       console.warn(
