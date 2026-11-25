@@ -1061,32 +1061,17 @@ function validateMqttSettings(settings: unknown): void {
   const port = Number(s.port);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw new Error('mqtt:connect: port must be 1–65535');
-  if (s.topicPrefix != null && typeof s.topicPrefix !== 'string')
-    throw new Error('mqtt:connect: topicPrefix must be a string');
-  if (s.username != null && typeof s.username !== 'string')
-    throw new Error('mqtt:connect: username must be a string');
-  if (s.password != null && typeof s.password !== 'string')
-    throw new Error('mqtt:connect: password must be a string');
-  if (s.tlsInsecure != null && typeof s.tlsInsecure !== 'boolean')
-    throw new Error('mqtt:connect: tlsInsecure must be a boolean');
-  if (s.tlsEnabled != null && typeof s.tlsEnabled !== 'boolean')
-    throw new Error('mqtt:connect: tlsEnabled must be a boolean');
-  if (s.useWebSocket != null && typeof s.useWebSocket !== 'boolean')
-    throw new Error('mqtt:connect: useWebSocket must be a boolean');
-  if (s.meshcorePacketLoggerEnabled != null && typeof s.meshcorePacketLoggerEnabled !== 'boolean') {
-    throw new Error('mqtt:connect: meshcorePacketLoggerEnabled must be a boolean');
-  }
-  if (s.mqttTransportProtocol != null) {
-    if (
-      s.mqttTransportProtocol !== 'meshtastic' &&
-      s.mqttTransportProtocol !== 'meshcore' &&
-      s.mqttTransportProtocol !== 'meshcom'
-    ) {
-      throw new Error(
-        'mqtt:connect: mqttTransportProtocol must be meshtastic, meshcore, or meshcom',
-      );
-    }
-  }
+  assertOptionalString(s.topicPrefix, 'mqtt:connect: topicPrefix must be a string');
+  assertOptionalString(s.username, 'mqtt:connect: username must be a string');
+  assertOptionalString(s.password, 'mqtt:connect: password must be a string');
+  assertOptionalBoolean(s.tlsInsecure, 'mqtt:connect: tlsInsecure must be a boolean');
+  assertOptionalBoolean(s.tlsEnabled, 'mqtt:connect: tlsEnabled must be a boolean');
+  assertOptionalBoolean(s.useWebSocket, 'mqtt:connect: useWebSocket must be a boolean');
+  assertOptionalBoolean(
+    s.meshcorePacketLoggerEnabled,
+    'mqtt:connect: meshcorePacketLoggerEnabled must be a boolean',
+  );
+  assertMqttTransportProtocol(s.mqttTransportProtocol);
 }
 
 const MAX_MESHCORE_MQTT_TEXT = 16000;
@@ -1204,6 +1189,16 @@ function assertOptionalNonNegativeInteger(value: unknown, label: string): void {
 
 function assertOptionalString(value: unknown, message: string): void {
   if (value != null && typeof value !== 'string') throw new Error(message);
+}
+
+function assertOptionalBoolean(value: unknown, message: string): void {
+  if (value != null && typeof value !== 'boolean') throw new Error(message);
+}
+
+function assertMqttTransportProtocol(value: unknown): void {
+  if (value == null) return;
+  if (value === 'meshtastic' || value === 'meshcore' || value === 'meshcom') return;
+  throw new Error('mqtt:connect: mqttTransportProtocol must be meshtastic, meshcore, or meshcom');
 }
 
 function validateMqttPublishArgs(args: unknown): void {
