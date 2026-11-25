@@ -1,10 +1,15 @@
-import { meshcoreUnpackPathLenByte } from '@/shared/meshcorePathHash';
+import {
+  meshcorePackPathLenByte,
+  type MeshcorePathHashMode,
+  meshcoreUnpackPathLenByte,
+} from '@/shared/meshcorePathHash';
 import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 import { meshcoreContactOutPathBytesForTrace } from './meshcoreRadioContactPath';
 import { isMeshcoreTableFullError } from './meshcoreRadioErr';
+import { meshcoreHashSizeForTraceSeed } from './meshcoreRepeaterTracePath';
 import {
   MESHCORE_COORD_SCALE,
   meshcoreContactTypeFromHwModel,
@@ -172,6 +177,14 @@ function findRadioContact(
   return contacts.find((c) => pubkeyToNodeId(c.publicKey) === nodeId);
 }
 
+function publicKeysEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 /** Same trimming rules as hop inference when firmware reports outPathLen 0 but buffer has route bytes. */
 function pathBytesFromRadioContact(contact: MeshCoreContactRaw): Uint8Array {
   return meshcoreContactOutPathBytesForTrace(contact);
@@ -247,6 +260,71 @@ export async function addMeshcoreNodeContactToRadio(
     }
     throw e;
   }
+}
+
+/**
+ * Point the companion contact at `nodeId` with a zero-hop route, for the Repeaters "Zero-hop"
+ * route mode (issue 1566). The written `out_path_len` has zero hops and keeps the path hash size
+ * (the contact's own when it holds a route, else the companion's mode), the same size Ping seeds
+ * from. Keeps the radio's own type, flags, name and advert fields when the contact is present;
+ * adds it from the node when it is not. Returns the packed byte written.
+ * Failure point: a read or write error rejects, and the caller sends nothing; TABLE_FULL maps to
+ * `meshcore.errors.radioContactTableFull` with the radio error as `cause`.
+ */
+export async function setMeshcoreRadioContactZeroHop(
+  conn: MeshcoreRoomLoginPathSyncConn,
+  nodeId: number,
+  pubKey: Uint8Array,
+  node: Pick<MeshNode, 'long_name' | 'hw_model' | 'last_heard' | 'latitude' | 'longitude'>,
+  runSerialized?: <T>(fn: () => Promise<T>) => Promise<T>,
+  companionPathHashMode?: MeshcorePathHashMode | null,
+): Promise<number> {
+  const addOrUpdate = conn.addOrUpdateContact;
+  if (!addOrUpdate) {
+    throw new Error(serializeMeshcoreUserMessage('meshcore.errors.radioContactMissing'));
+  }
+  const contacts = await withTimeout(
+    conn.getContacts(),
+    MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
+    'meshcoreZeroHopGetContacts',
+  );
+  // Match the whole key: two keys can fold to one 32-bit node id, and the write targets `pubKey`.
+  const existing = contacts.find(
+    (c) => pubkeyToNodeId(c.publicKey) === nodeId && publicKeysEqual(c.publicKey, pubKey),
+  );
+  const contact = existing ?? buildContactFromNode(pubKey, node);
+  const packedPathLen = meshcorePackPathLenByte(
+    0,
+    meshcoreHashSizeForTraceSeed(existing?.outPathLen, companionPathHashMode),
+  );
+  const op = () =>
+    addOrUpdate.call(
+      conn,
+      pubKey,
+      contact.type,
+      contact.flags,
+      packedPathLen,
+      new Uint8Array(64),
+      contact.advName,
+      contact.lastAdvert,
+      contact.advLat,
+      contact.advLon,
+    );
+  try {
+    await withTimeout(
+      runSerialized ? runSerialized(op) : op(),
+      MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
+      'meshcoreZeroHopContactWrite',
+    );
+  } catch (e: unknown) {
+    if (isMeshcoreTableFullError(e)) {
+      throw new Error(serializeMeshcoreUserMessage('meshcore.errors.radioContactTableFull'), {
+        cause: e,
+      });
+    }
+    throw e;
+  }
+  return packedPathLen;
 }
 
 /**
