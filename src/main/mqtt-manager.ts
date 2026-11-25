@@ -1019,6 +1019,102 @@ export class MQTTManager extends EventEmitter {
    * Firmware-style JSON on `/2/json/...` for MQTT monitors (cleartext — gated by publishJsonMirror).
    * Failure point: malformed decoded protobuf — skip mirror only; encrypted uplink already sent.
    */
+  private buildTextJsonMirrorPayload(
+    body: Record<string, unknown>,
+    portnum: (typeof PortNum)[keyof typeof PortNum],
+    rawData: { payload?: Uint8Array; emoji?: number; replyId?: number },
+  ): void {
+    body.type = portnum === PortNum.ALERT_APP ? 'alert' : 'text';
+    const textBytes = rawData.payload ?? new Uint8Array();
+    const textStr = new TextDecoder().decode(textBytes);
+    body.payload = this.parseDecodedJsonMirrorText(textStr);
+    if (rawData.emoji != null && rawData.emoji !== 0) body.emoji = rawData.emoji;
+    if (rawData.replyId != null && rawData.replyId !== 0) body.replyId = rawData.replyId;
+  }
+
+  private buildNodeInfoJsonMirrorPayload(body: Record<string, unknown>, payload: Uint8Array): void {
+    body.type = 'nodeinfo';
+    const user = fromBinary(UserSchema, payload);
+    body.payload = {
+      id: user.id ?? '',
+      longname: user.longName ?? '',
+      shortname: user.shortName ?? '',
+      hardware: user.hwModel ?? 0,
+      role: user.role ?? 0,
+    };
+  }
+
+  private buildPositionJsonMirrorPayload(body: Record<string, unknown>, payload: Uint8Array): void {
+    body.type = 'position';
+    const pos = fromBinary(PositionSchema, payload);
+    const p: Record<string, unknown> = {
+      latitude_i: pos.latitudeI ?? 0,
+      longitude_i: pos.longitudeI ?? 0,
+    };
+    if (pos.altitude != null) p.altitude = pos.altitude;
+    if (pos.time != null) p.time = pos.time;
+    body.payload = p;
+  }
+
+  private buildWaypointJsonMirrorPayload(body: Record<string, unknown>, payload: Uint8Array): void {
+    body.type = 'waypoint';
+    const wp = fromBinary(WaypointSchema, payload);
+    body.payload = {
+      id: wp.id ?? 0,
+      name: wp.name ?? '',
+      description: wp.description ?? '',
+      expire: wp.expire ?? 0,
+      locked_to: wp.lockedTo ?? 0,
+      latitude_i: wp.latitudeI ?? 0,
+      longitude_i: wp.longitudeI ?? 0,
+    };
+  }
+
+  private buildDecodedJsonMirrorPayload(
+    body: Record<string, unknown>,
+    portnum: (typeof PortNum)[keyof typeof PortNum],
+    rawData: {
+      portnum?: (typeof PortNum)[keyof typeof PortNum];
+      payload?: Uint8Array;
+      emoji?: number;
+      replyId?: number;
+    },
+  ): boolean {
+    if (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) {
+      this.buildTextJsonMirrorPayload(body, portnum, rawData);
+      return true;
+    }
+    const payload = rawData.payload;
+    if (!payload?.length) return false;
+    if (portnum === PortNum.NODEINFO_APP) {
+      this.buildNodeInfoJsonMirrorPayload(body, payload);
+      return true;
+    }
+    if (portnum === PortNum.POSITION_APP) {
+      this.buildPositionJsonMirrorPayload(body, payload);
+      return true;
+    }
+    if (portnum === PortNum.WAYPOINT_APP) {
+      this.buildWaypointJsonMirrorPayload(body, payload);
+      return true;
+    }
+    return false;
+  }
+
+  private parseDecodedJsonMirrorText(textStr: string): unknown {
+    try {
+      const parsed: unknown = JSON.parse(textStr);
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) return parsed;
+      return { text: textStr };
+    } catch (e: unknown) {
+      console.debug(
+        '[main/mqtt-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      return { text: textStr };
+    }
+  }
+
   private publishDecodedJsonMirror(
     fromId: number,
     toId: number,
@@ -1060,69 +1156,7 @@ export class MQTTManager extends EventEmitter {
     };
 
     try {
-      if (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) {
-        body.type = portnum === PortNum.ALERT_APP ? 'alert' : 'text';
-        const textBytes = rawData.payload ?? new Uint8Array();
-        const textStr = new TextDecoder().decode(textBytes);
-        let payloadVal: unknown;
-        try {
-          const parsed: unknown = JSON.parse(textStr);
-          if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-            payloadVal = parsed;
-          } else {
-            payloadVal = { text: textStr };
-          }
-        } catch (e: unknown) {
-          console.debug(
-            '[main/mqtt-manager] catch:',
-            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-          );
-
-          payloadVal = { text: textStr };
-        }
-        body.payload = payloadVal;
-        if (rawData.emoji != null && rawData.emoji !== 0) {
-          body.emoji = rawData.emoji;
-        }
-        if (rawData.replyId != null && rawData.replyId !== 0) {
-          body.replyId = rawData.replyId;
-        }
-      } else if (portnum === PortNum.NODEINFO_APP && rawData.payload?.length) {
-        body.type = 'nodeinfo';
-        const user = fromBinary(UserSchema, rawData.payload);
-        body.payload = {
-          id: user.id ?? '',
-          longname: user.longName ?? '',
-          shortname: user.shortName ?? '',
-          hardware: user.hwModel ?? 0,
-          role: user.role ?? 0,
-        };
-      } else if (portnum === PortNum.POSITION_APP && rawData.payload?.length) {
-        body.type = 'position';
-        const pos = fromBinary(PositionSchema, rawData.payload);
-        const p: Record<string, unknown> = {
-          latitude_i: pos.latitudeI ?? 0,
-          longitude_i: pos.longitudeI ?? 0,
-        };
-        if (pos.altitude != null) p.altitude = pos.altitude;
-        if (pos.time != null) p.time = pos.time;
-        body.payload = p;
-      } else if (portnum === PortNum.WAYPOINT_APP && rawData.payload?.length) {
-        body.type = 'waypoint';
-        const wp = fromBinary(WaypointSchema, rawData.payload);
-        body.payload = {
-          id: wp.id ?? 0,
-          name: wp.name ?? '',
-          description: wp.description ?? '',
-          expire: wp.expire ?? 0,
-          locked_to: wp.lockedTo ?? 0,
-          latitude_i: wp.latitudeI ?? 0,
-          longitude_i: wp.longitudeI ?? 0,
-        };
-      } else {
-        return;
-      }
-
+      if (!this.buildDecodedJsonMirrorPayload(body, portnum, rawData)) return;
       this.client.publish(topicJson, JSON.stringify(body), { qos: 0 });
     } catch (e) {
       console.warn(
