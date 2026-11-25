@@ -1215,6 +1215,69 @@ function normalizeMeshcoreConnectError(
   return { error: new Error(message), bleTimeoutStage, isBleConnectTimeout };
 }
 
+/** Air-utilization delta since the previous stats poll (undefined on first/degenerate delta). */
+function computeMeshcoreAirUtil(args: {
+  txAirSecs: number;
+  prevTxAirSecs: number | null;
+  prevTimestamp: number | null;
+  now: number;
+}): { airUtilTx: number | undefined; channelUtilization: number | undefined } {
+  if (args.prevTxAirSecs === null || args.prevTimestamp === null) {
+    return { airUtilTx: undefined, channelUtilization: undefined };
+  }
+  const deltaTxAirSecs = args.txAirSecs - args.prevTxAirSecs;
+  const deltaTimeSecs = (args.now - args.prevTimestamp) / 1000;
+  if (deltaTimeSecs <= 0 || deltaTxAirSecs < 0) {
+    return { airUtilTx: undefined, channelUtilization: undefined };
+  }
+  const airUtilTx = (deltaTxAirSecs / deltaTimeSecs) * 100;
+  return { airUtilTx, channelUtilization: airUtilTx };
+}
+
+interface MeshcoreLocalStatsInput {
+  batteryMilliVolts: number;
+  uptimeSecs: number;
+  queueLen: number;
+  noiseFloor: number;
+  lastRssi: number;
+  lastSnr: number;
+  txAirSecs: number;
+  rxAirSecs: number;
+  recv: number;
+  sent: number;
+  nSentFlood: number;
+  nSentDirect: number;
+  nRecvFlood: number;
+  nRecvDirect: number;
+  nRecvErrors: number | undefined;
+  channelUtilization: number | undefined;
+  airUtilTx: number | undefined;
+  fetchedAt: number;
+}
+
+function buildMeshcoreLocalStats(input: MeshcoreLocalStatsInput): MeshCoreLocalStats {
+  return {
+    batteryMilliVolts: input.batteryMilliVolts,
+    uptimeSecs: input.uptimeSecs,
+    queueLen: input.queueLen,
+    noiseFloor: input.noiseFloor,
+    lastRssi: input.lastRssi,
+    lastSnr: input.lastSnr,
+    txAirSecs: input.txAirSecs,
+    rxAirSecs: input.rxAirSecs,
+    recv: input.recv,
+    sent: input.sent,
+    nSentFlood: input.nSentFlood,
+    nSentDirect: input.nSentDirect,
+    nRecvFlood: input.nRecvFlood,
+    nRecvDirect: input.nRecvDirect,
+    nRecvErrors: input.nRecvErrors ?? undefined,
+    channelUtilization: input.channelUtilization,
+    airUtilTx: input.airUtilTx,
+    fetchedAt: input.fetchedAt,
+  };
+}
+
 /** 12-hex prefix used for MeshCore pubkey-prefix routing maps. */
 function meshcorePubKeyPrefixHex(publicKey: Uint8Array): string {
   return Array.from(publicKey.slice(0, 6))
@@ -1661,6 +1724,44 @@ export function useMeshcoreRuntime() {
     // Same connection: skip. Different/retired owner: supersede so reconnect can poll.
     if (meshcoreStatsInFlightConnRef.current === conn) return;
     meshcoreStatsInFlightConnRef.current = conn;
+    const applyMeshcoreSelfLocalStats = (args: {
+      myNodeId: number;
+      batteryMilliVolts: number;
+      lastSnr: number;
+      lastRssi: number;
+      channelUtilization: number | undefined;
+      airUtilTx: number | undefined;
+      localStats: MeshCoreLocalStats;
+      now: number;
+    }): void => {
+      const { myNodeId, batteryMilliVolts, lastSnr, lastRssi, localStats, now } = args;
+      setNodes((prev) => {
+        const updated = new Map(prev);
+        const node = prev.get(myNodeId);
+        const fallbackName =
+          selfInfoRef.current?.name?.trim() || `Node-${myNodeId.toString(16).toUpperCase()}`;
+        updated.set(myNodeId, {
+          ...(node ?? {
+            node_id: myNodeId,
+            long_name: fallbackName,
+            short_name: '',
+            hw_model: 'Unknown',
+            battery: meshcoreMilliVoltsToApproximateBatteryPercent(batteryMilliVolts) ?? 0,
+            snr: lastSnr,
+            rssi: lastRssi,
+            last_heard: Math.floor(now / 1000),
+            latitude: null,
+            longitude: null,
+            hops_away: 0,
+          }),
+          voltage: batteryMilliVolts / 1000,
+          channel_utilization: args.channelUtilization ?? node?.channel_utilization,
+          air_util_tx: args.airUtilTx ?? node?.air_util_tx,
+          meshcore_local_stats: localStats,
+        });
+        return updated;
+      });
+    };
     try {
       let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
       try {
@@ -1729,22 +1830,17 @@ export function useMeshcoreRuntime() {
       const radio = radioStats.data;
       const packet = packetStats.data;
 
-      let channelUtilization: number | undefined;
-      let airUtilTx: number | undefined;
-
-      if (prevTxAirSecsRef.current !== null && prevStatsTimestampRef.current !== null) {
-        const deltaTxAirSecs = radio.txAirSecs - prevTxAirSecsRef.current;
-        const deltaTimeSecs = (now - prevStatsTimestampRef.current) / 1000;
-        if (deltaTimeSecs > 0 && deltaTxAirSecs >= 0) {
-          airUtilTx = (deltaTxAirSecs / deltaTimeSecs) * 100;
-          channelUtilization = airUtilTx;
-        }
-      }
+      const { airUtilTx, channelUtilization } = computeMeshcoreAirUtil({
+        txAirSecs: radio.txAirSecs,
+        prevTxAirSecs: prevTxAirSecsRef.current,
+        prevTimestamp: prevStatsTimestampRef.current,
+        now,
+      });
 
       prevTxAirSecsRef.current = radio.txAirSecs;
       prevStatsTimestampRef.current = now;
 
-      const localStats: MeshCoreLocalStats = {
+      const localStats = buildMeshcoreLocalStats({
         batteryMilliVolts: core.batteryMilliVolts,
         uptimeSecs: core.uptimeSecs,
         queueLen: queueLenCapped,
@@ -1763,35 +1859,19 @@ export function useMeshcoreRuntime() {
         channelUtilization,
         airUtilTx,
         fetchedAt: now,
-      };
+      });
 
       const myNodeId = myNodeNumRef.current || state.myNodeNum;
       if (myNodeId > 0) {
-        setNodes((prev) => {
-          const updated = new Map(prev);
-          const node = prev.get(myNodeId);
-          const fallbackName =
-            selfInfoRef.current?.name?.trim() || `Node-${myNodeId.toString(16).toUpperCase()}`;
-          updated.set(myNodeId, {
-            ...(node ?? {
-              node_id: myNodeId,
-              long_name: fallbackName,
-              short_name: '',
-              hw_model: 'Unknown',
-              battery: meshcoreMilliVoltsToApproximateBatteryPercent(core.batteryMilliVolts) ?? 0,
-              snr: radio.lastSnr,
-              rssi: radio.lastRssi,
-              last_heard: Math.floor(now / 1000),
-              latitude: null,
-              longitude: null,
-              hops_away: 0,
-            }),
-            voltage: core.batteryMilliVolts / 1000,
-            channel_utilization: channelUtilization ?? node?.channel_utilization,
-            air_util_tx: airUtilTx ?? node?.air_util_tx,
-            meshcore_local_stats: localStats,
-          });
-          return updated;
+        applyMeshcoreSelfLocalStats({
+          myNodeId,
+          batteryMilliVolts: core.batteryMilliVolts,
+          lastSnr: radio.lastSnr,
+          lastRssi: radio.lastRssi,
+          channelUtilization,
+          airUtilTx,
+          localStats,
+          now,
         });
       }
       meshcoreLastDataReceivedRef.current = Date.now();
@@ -10252,7 +10332,7 @@ export function useMeshcoreRuntime() {
         addMessage(tapbackMsg);
       };
 
-      if (reactedTo?.to != null) {
+      const sendDmReaction = async (): Promise<void> => {
         const peerNodeId =
           reactedTo.sender_id === me && reactedTo.to != null ? reactedTo.to : reactedTo.sender_id;
         const pubKey = pubKeyMapRef.current.get(peerNodeId);
@@ -10314,7 +10394,9 @@ export function useMeshcoreRuntime() {
           to: peerNodeId,
         };
         publishTapback(tapbackMsg);
-      } else {
+      };
+
+      const sendChannelReaction = async (): Promise<void> => {
         const outboundChannel =
           reactedTo != null && typeof reactedTo.channel === 'number' && reactedTo.channel >= 0
             ? reactedTo.channel
@@ -10344,7 +10426,13 @@ export function useMeshcoreRuntime() {
           emoji: parsed.scalar,
           replyId: replyKey,
         });
+      };
+
+      if (reactedTo.to != null) {
+        await sendDmReaction();
+        return;
       }
+      await sendChannelReaction();
     },
     [addMessage, readMeshcoreMessages, runMeshcoreUserTxWithLiveTcp, selfInfo?.name],
   );
