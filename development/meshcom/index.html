@@ -2698,6 +2698,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Transports">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kiss--net-console-password-auth-threat-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KISS / NET Console password auth (threat model)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3399,6 +3416,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Transports">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kiss--net-console-password-auth-threat-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KISS / NET Console password auth (threat model)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3712,7 +3746,12 @@
 <tr>
 <td><strong>KISS/TCP</strong></td>
 <td>TCP <strong>8001</strong></td>
-<td>Required. AX.25 UI over KISS (<code>0x00</code>/<code>0x10</code>/<code>0x20</code>/<code>0xF0</code>). Not Reticulum <code>kiss</code> / <code>ax25kiss</code>.</td>
+<td>AX.25 UI over KISS (<code>0x00</code>/<code>0x10</code>/<code>0x20</code>/<code>0xF0</code>). Optional HMAC when <code>--kiss auth on</code> (same <code>--passwd</code> as NET Console). Password stored per <code>host:port</code> (not global). Not Reticulum <code>kiss</code> / <code>ax25kiss</code>.</td>
+</tr>
+<tr>
+<td><strong>NET Console</strong></td>
+<td>TCP <strong>2323</strong></td>
+<td>Plaintext console after optional HMAC; <code>--setinfo on</code> for ExtUDP JSON lines; device <code>--</code> commands + <code>::{dst}text</code> chat. Single firmware session; LAN/VPN only. Password keyed per endpoint like KISS.</td>
 </tr>
 <tr>
 <td><strong>Serial</strong></td>
@@ -3727,6 +3766,8 @@
 </tbody>
 </table>
 <p>Shared constants: <code>src/shared/meshcomConstants.ts</code>.</p>
+<h3 id="kiss--net-console-password-auth-threat-model">KISS / NET Console password auth (threat model)<a class="headerlink" href="#kiss--net-console-password-auth-threat-model" title="Permanent link">&para;</a></h3>
+<p>ICSSW companion auth is <strong>client-proves-password</strong> only: the TCP peer sends <code>NONCE:</code>, the client replies <code>HMAC-SHA256(password, nonce_bytes)</code>, the peer answers <code>OK</code>/<code>FAIL</code>. There is <strong>no TLS</strong>, no pinned node key, and no mutual proof in the firmware greeting — Mesh Client cannot authenticate the peer before returning an HMAC without breaking wire compatibility. An on-path impersonator that elicits one HMAC can offline-guess a short <code>--passwd</code> (≤14 chars) and later use it against the real node. Mitigations in-app: per-endpoint password scoping (no A→B reuse), LAN/VPN-only guidance, and treating KISS/NET Console as a <strong>trusted-network</strong> console — not a WAN auth boundary. Stronger peer authentication would need a firmware protocol change.</p>
 <h2 id="identity-and-addressing">Identity and addressing<a class="headerlink" href="#identity-and-addressing" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Soft-normalize callsigns (<code>normalizeMeshcomCallsign</code>) — no hard ITU reject.</li>
@@ -3767,11 +3808,12 @@
 </tr>
 </tbody>
 </table>
+<p>The Connection MQTT block is wrapped in a <strong>collapsed</strong> <code>SettingsCollapsible</code> unless a server, saved profile, or live MQTT session already exists — national MeshCom MQTT is typically reached via the node gateway (<code>--gateway</code>), not a direct client broker. Storage and the main-process adapter remain for custom brokers.</p>
 <p>Connect uses <code>mqttTransportProtocol: 'meshcom'</code> and a dedicated main-process adapter instance (same MQTT.js stack as MeshCore; no MeshCom chat ingest yet). Device-side gateway commands (<code>--gateway</code>, …) remain under Radio → Device Configuration.</p>
 <h2 id="device-configuration-radio-panel">Device configuration (Radio panel)<a class="headerlink" href="#device-configuration-radio-panel" title="Permanent link">&para;</a></h2>
 <p>Capability <code>hasMeshcomDeviceCommands</code> also unlocks the <strong>Radio</strong> tab (<code>TAB_CAPABILITY_REQUIREMENTS</code> — MeshCom has neither <code>hasChannelConfig</code> nor MeshCore <code>hasJsonRadioConfigImport</code>). MeshCom has <strong>no</strong> Meshtastic protobuf config slices — every ICSSW <a href="https://icssw.org/en/meshcom-kommandos-cl-gw/">node command</a> is applied as a <code>--</code> console line over Serial/BLE.</p>
-<p>Radio → <strong>Device Configuration</strong> renders first-class sections (Display, Position / GPS, Sensors, Identity &amp; groups, WiFi / Network, Gateway, Bluetooth, Neighbors, Mailbox, Status &amp; debug, Power &amp; OTA, KISS / misc) from the catalog in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomCommands.ts"><code>meshcomCommands.ts</code></a>. UI: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MeshComDeviceCommandsSection.tsx"><code>MeshComDeviceCommandsSection.tsx</code></a>. Wire: Serial CRLF or BLE <code>0xA0</code> via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomDeviceCommands.ts"><code>meshcomDeviceCommands.ts</code></a>. EXTUDP/KISS are chat-only (sections stay visible with a Serial/BLE notice).</p>
-<p><strong>Chat wire length:</strong> Serial/BLE outbound text is capped at <strong>160 UTF-8 bytes</strong> for address prefix + body (<code>{260}…</code> / <code>{CALL}…</code>; ALL has no braces). The composer uses a UTF-8 byte counter. EXTUDP JSON <code>msg</code> remains capped at 150 characters in the codec.</p>
+<p>Radio → <strong>Device Configuration</strong> renders first-class sections (Display, Position / GPS, Sensors, Identity &amp; groups, WiFi / Network, Gateway, Bluetooth, Neighbors, Mailbox, Status &amp; debug, Power &amp; OTA, KISS / misc) from the catalog in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomCommands.ts"><code>meshcomCommands.ts</code></a>. UI: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MeshComDeviceCommandsSection.tsx"><code>MeshComDeviceCommandsSection.tsx</code></a>. Wire: Serial CRLF, NET Console CRLF, or BLE <code>0xA0</code> via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomDeviceCommands.ts"><code>meshcomDeviceCommands.ts</code></a>. EXTUDP/KISS are chat-only (sections stay visible with a Serial/BLE/NET Console notice).</p>
+<p><strong>Chat wire length:</strong> Firmware (<code>v4.40a.11.14</code>) rejects serial/BLE/<code>sendMessage</code> text when length <strong>&gt; 160</strong> and EXTUDP JSON <code>msg</code> when <code>strlen(msg) &gt; 150</code> (ICSSW UDP docs agree on 150). The client mirrors those as <strong>UTF-8 byte</strong> budgets (prefix + body on serial/BLE; EXTUDP <code>msg</code> alone). Multi-byte national characters count as multiple bytes, so fewer <em>characters</em> fit under the same cap. The composer uses a UTF-8 byte counter and may split long text into up to <strong>9</strong> <code>[i/N]</code> parts (unlike MeshCore’s single-packet policy).</p>
 <p><strong>MeshCom RM / kocel commands:</strong> <code>--battcal</code> and <code>--e22pa</code> (plus stock <code>--txpower</code>) live in the Power group. RM-only rows are gated with <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomRmFirmware.ts"><code>meshcomRmFirmware.ts</code></a> using <code>FWVER</code> / settings <code>firmwareVersion</code> (e.g. <code>4.40a-rm5</code>). Known <strong>stock</strong> firmware blocks those sends with an error toast; <strong>unknown</strong> firmware still allows send and shows an “only on MeshCom RM / kocel” hint.</p>
 <h3 id="serial--ble-command-badges">Serial / BLE command badges<a class="headerlink" href="#serial--ble-command-badges" title="Permanent link">&para;</a></h3>
 <p>Each catalog row carries a <code>channel</code> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcom/meshcomCommands.ts"><code>meshcomCommands.ts</code></a>: <strong><code>app</code></strong> means the command can be sent from Serial <strong>and</strong> the BLE companion (<code>0xA0</code>); the Device Configuration UI labels these as App+Serial. <strong><code>serial</code></strong> is reserved for USB-console-only entries (none in the current ICSSW catalog). <code>meshcomCommandWire.ts</code> stays in the hot App path; load the full catalog only from the lazy Radio panel.</p>
@@ -3937,7 +3979,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 24, 2026 16:44:01 UTC">November 24, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 25, 2026 15:01:27 UTC">November 25, 2026</span>
   </span>
 
     
