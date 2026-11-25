@@ -165,6 +165,320 @@ function pruneTombstones(tombs: Record<string, number>): Record<string, number> 
   return next;
 }
 
+type IncidentStoreSet = (
+  updater: (state: IncidentStoreState) => Partial<IncidentStoreState>,
+) => void;
+
+function isMecpSeedTombstoned(
+  tombs: Record<string, number>,
+  id: string,
+  payloadTomb: string | null,
+): boolean {
+  return tombs[id] != null || (payloadTomb != null && tombs[payloadTomb] != null);
+}
+
+function isMecpSeedSuppressed(
+  input: MecpIncidentInput,
+  tombs: Record<string, number>,
+  id: string,
+  payloadTomb: string | null,
+  now: number,
+): boolean {
+  if (!input.fromSeed) return false;
+  if (isMecpSeedTombstoned(tombs, id, payloadTomb)) return true;
+  return now > 0 && Date.now() - now > INCIDENT_SEED_MAX_AGE_MS;
+}
+
+function findCancelledMecpBeacons(
+  all: Record<string, EmergencyIncident>,
+  input: MecpIncidentInput,
+  now: number,
+): EmergencyIncident[] {
+  return Object.values(all).filter(
+    (inc) =>
+      isUnresolved(inc) &&
+      inc.beaconActive &&
+      inc.senderId === input.senderId &&
+      (!input.fromSeed || inc.lastSeenAt <= now),
+  );
+}
+
+/** B03: clear the sender's active beacons. Returns undefined when this is not a cancel. */
+function applyMecpBeaconCancel(
+  all: Record<string, EmergencyIncident>,
+  input: MecpIncidentInput,
+  now: number,
+  set: IncidentStoreSet,
+): string | null | undefined {
+  if (!isBeaconCancel(input.parsed.codes)) return undefined;
+  // A hydrated B03 must not clear a beacon heard after it (DB load can land after live RX).
+  const beacons = findCancelledMecpBeacons(all, input, now);
+  if (beacons.length === 0) return null;
+  set((s) => {
+    const next = { ...s.incidents };
+    for (const inc of beacons) {
+      next[inc.id] = {
+        ...inc,
+        beaconActive: false,
+        lastSeenAt: now,
+        events: appendEvent(inc.events, {
+          at: now,
+          kind: 'beaconCancelled',
+          peerId: input.senderId,
+          protocol: input.protocol,
+        }),
+      };
+    }
+    return { incidents: next };
+  });
+  return beacons[0].id;
+}
+
+/** B02/R01: record an ACK on the matching open incident. */
+function applyMecpAckRoute(
+  all: Record<string, EmergencyIncident>,
+  input: MecpIncidentInput,
+  severity: Severity,
+  now: number,
+  recordAck: (incidentId: string, peerId: string, at?: number) => void,
+): string | null | undefined {
+  const { parsed, senderId } = input;
+  if (!isBeaconAck(parsed.codes) && !isGeneralAck(parsed.codes)) return undefined;
+  const target = findOpenIncidentForAck(Object.values(all), {
+    severity,
+    codes: parsed.codes,
+    senderId,
+  });
+  if (!target) return null;
+  recordAck(target.id, senderId, now);
+  return target.id;
+}
+
+function resolveMecpIncidentCoords(
+  freetext: string,
+  isRelay: boolean,
+  lastKnown: { lat: number; lon: number } | null | undefined,
+): {
+  msgCoords: { lat: number; lon: number } | null;
+  coords: { lat: number; lon: number } | null;
+  coordsSource: 'message' | 'lastKnown' | null;
+} {
+  const msgCoords = extractMecpCoords(freetext);
+  // Relays must not overwrite the victim's pin with the bridge node's lastKnown.
+  const coords = msgCoords ?? (isRelay ? null : lastKnown) ?? null;
+  const coordsSource: 'message' | 'lastKnown' | null = msgCoords
+    ? 'message'
+    : !isRelay && lastKnown
+      ? 'lastKnown'
+      : null;
+  return { msgCoords, coords, coordsSource };
+}
+
+function findMecpExistingForUpsert(
+  all: Record<string, EmergencyIncident>,
+  protocol: MeshProtocol,
+  severity: Severity,
+  senderId: string,
+  id: string,
+  codes: string[],
+  freetext: string,
+  now: number,
+): EmergencyIncident | undefined {
+  return findExistingIncident(all, {
+    id,
+    senderId,
+    protocol,
+    severity,
+    codes,
+    freetext,
+    now,
+  });
+}
+
+/** Seed hydration never revives a resolved or tombstoned incident. */
+function isMecpSeedExistingSuppressed(
+  input: MecpIncidentInput,
+  tombs: Record<string, number>,
+  existing: EmergencyIncident | undefined,
+): boolean {
+  if (!input.fromSeed || !existing) return false;
+  const existingPayloadTomb = payloadTombstoneKeyIfDistinct(
+    existing.severity,
+    existing.codes,
+    existing.freetext,
+  );
+  return (
+    tombs[existing.id] != null ||
+    (existingPayloadTomb != null && tombs[existingPayloadTomb] != null) ||
+    existing.status === 'resolved'
+  );
+}
+
+interface MecpRecordContext {
+  input: MecpIncidentInput;
+  severity: Severity;
+  now: number;
+  id: string;
+  freetext: string;
+  coords: { lat: number; lon: number } | null;
+  coordsSource: 'message' | 'lastKnown' | null;
+  isRelay: boolean;
+  beacon: boolean;
+  msgCoords: { lat: number; lon: number } | null;
+}
+
+function buildNewMecpIncident(ctx: MecpRecordContext): EmergencyIncident {
+  const { input, severity, now, id, freetext, coords, coordsSource, beacon } = ctx;
+  const { parsed, protocol, senderId } = input;
+  return {
+    id,
+    protocol,
+    protocolsSeen: [protocol],
+    severity,
+    codes: [...parsed.codes],
+    freetext,
+    senderId,
+    senderName: input.senderName ?? senderId,
+    channel: input.channel ?? null,
+    receivedAt: now,
+    lastSeenAt: now,
+    ...(coords ? { lat: coords.lat, lon: coords.lon } : {}),
+    coordsSource,
+    messageIds: input.messageId ? [input.messageId] : [],
+    ackCount: 0,
+    ackPeerIds: [],
+    beaconActive: beacon,
+    beaconAcked: false,
+    ...(input.localOrigin && beacon ? { localOrigin: true } : {}),
+    ...(beacon && typeof input.beaconCancelToNode === 'number'
+      ? { beaconCancelToNode: input.beaconCancelToNode }
+      : {}),
+    isDrill: parsed.isDrill,
+    status: 'open',
+    ...(input.fromSeed || input.localOrigin || input.quiet ? { seenAt: now } : {}),
+    events: [{ at: now, kind: 'received', peerId: senderId, protocol }],
+  };
+}
+
+function buildMecpAttentionFlags(
+  existing: EmergencyIncident,
+  ctx: MecpRecordContext,
+  mergedSeverity: Severity,
+  reopen: boolean,
+): { messageIds: string[]; relaySenderIds: string[] | undefined; needsAttention: boolean } {
+  const { input, isRelay } = ctx;
+  const messageIds =
+    input.messageId && !existing.messageIds.includes(input.messageId)
+      ? [...existing.messageIds, input.messageId].slice(-MAX_MESSAGE_IDS_PER_INCIDENT)
+      : existing.messageIds;
+  const relaySenderIds = isRelay
+    ? [...new Set([...(existing.relaySenderIds ?? []), input.senderId])].slice(-20)
+    : existing.relaySenderIds;
+  // A live reopen or escalation into MAYDAY/URGENT needs the operator's attention again.
+  const needsAttention =
+    !input.fromSeed &&
+    !input.localOrigin &&
+    !input.quiet &&
+    mergedSeverity <= 1 &&
+    (reopen || mergedSeverity < existing.severity);
+  return { messageIds, relaySenderIds, needsAttention };
+}
+
+function mergeMecpEventTimeline(
+  existing: EmergencyIncident,
+  ctx: MecpRecordContext,
+  reopen: boolean,
+): IncidentEvent[] | undefined {
+  const { input, now } = ctx;
+  const { protocol, senderId } = input;
+  let events = existing.events;
+  if (reopen) {
+    events = appendEvent(events, { at: now, kind: 'reopened', peerId: senderId, protocol });
+  }
+  if (ctx.isRelay || !existing.protocolsSeen.includes(protocol)) {
+    events = appendEvent(events, { at: now, kind: 'relayHeard', peerId: senderId, protocol });
+  }
+  return events;
+}
+
+function mergeMecpCoordinateFields(
+  existing: EmergencyIncident,
+  ctx: MecpRecordContext,
+): Partial<EmergencyIncident> {
+  const { coords, coordsSource, isRelay, msgCoords, freetext } = ctx;
+  // Message coordinates always win over lastKnown; never apply coords from a relay copy.
+  const keepCoords = isRelay || (existing.coordsSource === 'message' && !msgCoords);
+  return {
+    ...(keepCoords || !coords ? {} : { lat: coords.lat, lon: coords.lon, coordsSource }),
+    freetext: isRelay ? existing.freetext : msgCoords ? freetext : existing.freetext,
+  };
+}
+
+function mergeMecpBeaconFields(
+  existing: EmergencyIncident,
+  ctx: MecpRecordContext,
+): Partial<EmergencyIncident> {
+  const { input, isRelay, beacon } = ctx;
+  const markLocalOrigin = existing.localOrigin === true || (!isRelay && input.localOrigin === true);
+  const beaconCancelToNode =
+    existing.beaconCancelToNode ??
+    (!isRelay && beacon && typeof input.beaconCancelToNode === 'number'
+      ? input.beaconCancelToNode
+      : undefined);
+  return {
+    beaconActive: existing.beaconActive || beacon,
+    ...(markLocalOrigin ? { localOrigin: true } : {}),
+    ...(beaconCancelToNode != null ? { beaconCancelToNode } : {}),
+  };
+}
+
+function mergeMecpIncidentFields(
+  existing: EmergencyIncident,
+  ctx: MecpRecordContext,
+  mergedSeverity: Severity,
+): Partial<EmergencyIncident> {
+  const { input, isRelay } = ctx;
+  const { protocol } = input;
+  return {
+    protocol,
+    protocolsSeen: existing.protocolsSeen.includes(protocol)
+      ? existing.protocolsSeen
+      : [...existing.protocolsSeen, protocol],
+    severity: mergedSeverity,
+    // Keep original victim identity; relays are recorded separately.
+    senderName: isRelay ? existing.senderName : (input.senderName ?? existing.senderName),
+    channel: isRelay ? existing.channel : (input.channel ?? existing.channel),
+    ...mergeMecpCoordinateFields(existing, ctx),
+    ...mergeMecpBeaconFields(existing, ctx),
+  };
+}
+
+function mergeMecpIncident(
+  existing: EmergencyIncident,
+  ctx: MecpRecordContext,
+  reopen: boolean,
+): EmergencyIncident {
+  const { severity, now } = ctx;
+  const mergedSeverity = Math.min(existing.severity, severity) as Severity;
+  const { messageIds, relaySenderIds, needsAttention } = buildMecpAttentionFlags(
+    existing,
+    ctx,
+    mergedSeverity,
+    reopen,
+  );
+  const events = mergeMecpEventTimeline(existing, ctx, reopen);
+  return {
+    ...existing,
+    ...mergeMecpIncidentFields(existing, ctx, mergedSeverity),
+    lastSeenAt: Math.max(existing.lastSeenAt, now),
+    messageIds,
+    ...(relaySenderIds ? { relaySenderIds } : {}),
+    ...(reopen ? { status: 'open' as const, resolvedAt: undefined } : {}),
+    ...(needsAttention ? { seenAt: undefined } : {}),
+    ...(events ? { events } : {}),
+  };
+}
+
 function appendEvent(
   events: readonly IncidentEvent[] | undefined,
   event: IncidentEvent,
@@ -275,122 +589,52 @@ export const useIncidentStore = create<IncidentStoreState>()((set, get) => {
       const all = get().incidents;
       const tombs = get().resolvedTombstones;
 
-      if (isBeaconCancel(parsed.codes)) {
-        // A hydrated B03 must not clear a beacon heard after it (DB load can land after live RX).
-        const beacons = Object.values(all).filter(
-          (inc) =>
-            isUnresolved(inc) &&
-            inc.beaconActive &&
-            inc.senderId === senderId &&
-            (!input.fromSeed || inc.lastSeenAt <= now),
-        );
-        if (beacons.length === 0) return null;
-        set((s) => {
-          const next = { ...s.incidents };
-          for (const inc of beacons) {
-            next[inc.id] = {
-              ...inc,
-              beaconActive: false,
-              lastSeenAt: now,
-              events: appendEvent(inc.events, {
-                at: now,
-                kind: 'beaconCancelled',
-                peerId: senderId,
-                protocol,
-              }),
-            };
-          }
-          return { incidents: next };
-        });
-        return beacons[0].id;
-      }
-
-      if (isBeaconAck(parsed.codes) || isGeneralAck(parsed.codes)) {
-        const target = findOpenIncidentForAck(Object.values(all), {
-          severity,
-          codes: parsed.codes,
-          senderId,
-        });
-        if (!target) return null;
-        get().recordAck(target.id, senderId, now);
-        return target.id;
-      }
+      const canceled = applyMecpBeaconCancel(all, input, now, set);
+      if (canceled !== undefined) return canceled;
+      const acked = applyMecpAckRoute(all, input, severity, now, get().recordAck);
+      if (acked !== undefined) return acked;
 
       const freetext = parsed.freetext ?? '';
       const id = incidentFingerprint({ severity, codes: parsed.codes, freetext, senderId });
       const payloadTomb = payloadTombstoneKeyIfDistinct(severity, parsed.codes, freetext);
 
-      if (input.fromSeed) {
-        if (tombs[id] != null || (payloadTomb != null && tombs[payloadTomb] != null)) return null;
-        if (now > 0 && Date.now() - now > INCIDENT_SEED_MAX_AGE_MS) return null;
-      }
+      if (isMecpSeedSuppressed(input, tombs, id, payloadTomb, now)) return null;
 
-      const existing = findExistingIncident(all, {
-        id,
-        senderId,
+      const existing = findMecpExistingForUpsert(
+        all,
         protocol,
         severity,
-        codes: parsed.codes,
+        senderId,
+        id,
+        parsed.codes,
         freetext,
         now,
-      });
-
-      if (input.fromSeed && existing) {
-        const existingPayloadTomb = payloadTombstoneKeyIfDistinct(
-          existing.severity,
-          existing.codes,
-          existing.freetext,
-        );
-        if (
-          tombs[existing.id] != null ||
-          (existingPayloadTomb != null && tombs[existingPayloadTomb] != null) ||
-          existing.status === 'resolved'
-        ) {
-          return null;
-        }
-      }
+      );
+      if (isMecpSeedExistingSuppressed(input, tombs, existing)) return null;
 
       const isRelay = existing != null && existing.senderId !== senderId;
-      const msgCoords = extractMecpCoords(freetext);
-      // Relays must not overwrite the victim's pin with the bridge node's lastKnown.
-      const coords = msgCoords ?? (isRelay ? null : input.lastKnown) ?? null;
-      const coordsSource = msgCoords ? 'message' : !isRelay && input.lastKnown ? 'lastKnown' : null;
+      const { msgCoords, coords, coordsSource } = resolveMecpIncidentCoords(
+        freetext,
+        isRelay,
+        input.lastKnown,
+      );
       const beacon = isBeacon(parsed.codes);
+      const ctx: MecpRecordContext = {
+        input,
+        severity,
+        now,
+        id,
+        freetext,
+        coords,
+        coordsSource,
+        isRelay,
+        beacon,
+        msgCoords,
+      };
 
       if (!existing) {
-        if (
-          input.fromSeed &&
-          (tombs[id] != null || (payloadTomb != null && tombs[payloadTomb] != null))
-        )
-          return null;
-        const created: EmergencyIncident = {
-          id,
-          protocol,
-          protocolsSeen: [protocol],
-          severity,
-          codes: [...parsed.codes],
-          freetext,
-          senderId,
-          senderName: input.senderName ?? senderId,
-          channel: input.channel ?? null,
-          receivedAt: now,
-          lastSeenAt: now,
-          ...(coords ? { lat: coords.lat, lon: coords.lon } : {}),
-          coordsSource,
-          messageIds: input.messageId ? [input.messageId] : [],
-          ackCount: 0,
-          ackPeerIds: [],
-          beaconActive: beacon,
-          beaconAcked: false,
-          ...(input.localOrigin && beacon ? { localOrigin: true } : {}),
-          ...(beacon && typeof input.beaconCancelToNode === 'number'
-            ? { beaconCancelToNode: input.beaconCancelToNode }
-            : {}),
-          isDrill: parsed.isDrill,
-          status: 'open',
-          ...(input.fromSeed || input.localOrigin || input.quiet ? { seenAt: now } : {}),
-          events: [{ at: now, kind: 'received', peerId: senderId, protocol }],
-        };
+        if (input.fromSeed && isMecpSeedTombstoned(tombs, id, payloadTomb)) return null;
+        const created = buildNewMecpIncident(ctx);
         set((s) => {
           const pruned = pruneIncidents({ ...s.incidents, [id]: created }, s.resolvedTombstones);
           return pruned;
@@ -402,62 +646,7 @@ export const useIncidentStore = create<IncidentStoreState>()((set, get) => {
         existing.status === 'resolved' &&
         now - (existing.resolvedAt ?? 0) > INCIDENT_REOPEN_GRACE_MS;
       if (existing.status === 'resolved' && !reopen) return null;
-
-      const messageIds =
-        input.messageId && !existing.messageIds.includes(input.messageId)
-          ? [...existing.messageIds, input.messageId].slice(-MAX_MESSAGE_IDS_PER_INCIDENT)
-          : existing.messageIds;
-      // Message coordinates always win over lastKnown; never apply coords from a relay copy.
-      const keepCoords = isRelay || (existing.coordsSource === 'message' && !msgCoords);
-      const relaySenderIds = isRelay
-        ? [...new Set([...(existing.relaySenderIds ?? []), senderId])].slice(-20)
-        : existing.relaySenderIds;
-      const markLocalOrigin =
-        existing.localOrigin === true || (!isRelay && input.localOrigin === true);
-      const beaconCancelToNode =
-        existing.beaconCancelToNode ??
-        (!isRelay && beacon && typeof input.beaconCancelToNode === 'number'
-          ? input.beaconCancelToNode
-          : undefined);
-      const mergedSeverity = Math.min(existing.severity, severity) as Severity;
-      // A live reopen or escalation into MAYDAY/URGENT needs the operator's attention again.
-      const needsAttention =
-        !input.fromSeed &&
-        !input.localOrigin &&
-        !input.quiet &&
-        mergedSeverity <= 1 &&
-        (reopen || mergedSeverity < existing.severity);
-      let events = existing.events;
-      if (reopen) {
-        events = appendEvent(events, { at: now, kind: 'reopened', peerId: senderId, protocol });
-      }
-      if (isRelay || !existing.protocolsSeen.includes(protocol)) {
-        events = appendEvent(events, { at: now, kind: 'relayHeard', peerId: senderId, protocol });
-      }
-      const merged: EmergencyIncident = {
-        ...existing,
-        protocol,
-        protocolsSeen: existing.protocolsSeen.includes(protocol)
-          ? existing.protocolsSeen
-          : [...existing.protocolsSeen, protocol],
-        severity: mergedSeverity,
-        lastSeenAt: Math.max(existing.lastSeenAt, now),
-        // Keep original victim identity; relays are recorded separately.
-        senderName: isRelay ? existing.senderName : (input.senderName ?? existing.senderName),
-        channel: isRelay ? existing.channel : (input.channel ?? existing.channel),
-        messageIds,
-        ...(relaySenderIds ? { relaySenderIds } : {}),
-        ...(keepCoords || !coords
-          ? {}
-          : { lat: coords.lat, lon: coords.lon, coordsSource: coordsSource }),
-        freetext: isRelay ? existing.freetext : msgCoords ? freetext : existing.freetext,
-        beaconActive: existing.beaconActive || beacon,
-        ...(markLocalOrigin ? { localOrigin: true } : {}),
-        ...(beaconCancelToNode != null ? { beaconCancelToNode } : {}),
-        ...(reopen ? { status: 'open' as const, resolvedAt: undefined } : {}),
-        ...(needsAttention ? { seenAt: undefined } : {}),
-        ...(events ? { events } : {}),
-      };
+      const merged = mergeMecpIncident(existing, ctx, reopen);
       set((s) => {
         let nextTombs = s.resolvedTombstones;
         if (reopen) {
