@@ -2912,6 +2912,63 @@ export function useMeshcoreRuntime() {
   }, []);
 
   /** Shared post-connection handshake: wire events, fetch self info, contacts, channels. */
+  /** Capture DeviceInfo before the first await so path-hash mode and firmware land early. */
+  const registerMeshcoreDeviceInfoHandler = useCallback((conn: MeshCoreConnection) => {
+    // meshcore.js runs deviceQuery(SupportedCompanionProtocolVersion) from onConnected() on the next
+    // macrotask; register before any await so we capture that DeviceInfo (manufacturer string, build date).
+    conn.once(MESHCORE_RESPONSE_DEVICE_INFO, (response: unknown) => {
+      if (
+        connRef.current === conn &&
+        isMeshcorePathHashMode(parsePathHashModeFromDeviceQuery(response).pathHashMode)
+      ) {
+        meshcoreDeviceReportedPathHashModeRef.current = true;
+      }
+      setState((prev) => {
+        const next = { ...prev };
+        const r = response as { firmware_build_date?: string };
+        if (typeof r?.firmware_build_date === 'string' && r.firmware_build_date.trim()) {
+          next.firmwareVersion = r.firmware_build_date.trim();
+        }
+        const ver = meshcoreCompanionProtocolVersionFromDeviceQuery(response);
+        if (ver !== null) next.companionProtocolVersion = ver;
+        const mm = meshcoreManufacturerModelFromDeviceQuery(response);
+        if (mm) next.manufacturerModel = mm;
+        return next;
+      });
+    });
+  }, []);
+
+  /** Load persisted messages in the background (not required for contact/repeater list). */
+  const hydrateMeshcoreDbMessagesInBackground = useCallback(
+    (setupGen: number) => {
+      void (async () => {
+        try {
+          const dbMsgs = await awaitUnlessMeshcoreSetupCancelled(
+            setupGen,
+            loadMeshcoreMessagesForHydration(),
+          );
+          if (dbMsgs.length > 0) {
+            const contactRows =
+              (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+            const mapped = repairMeshcoreHydratedMessages(
+              mapMeshcoreDbRowsToChatMessages(dbMsgs),
+              meshcoreRoomServerIdsFromContacts(contactRows),
+              myNodeNumRef.current,
+            );
+            setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
+            setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
+          }
+        } catch (e) {
+          if (isMeshcoreSetupAbortError(e)) return;
+          console.warn(
+            'mcL1208 [useMeshcoreRuntime] loadMessagesFromDb error ' + errLikeToLogString(e),
+          );
+        }
+      })();
+    },
+    [awaitUnlessMeshcoreSetupCancelled],
+  );
+
   const initConn = useCallback(
     async (conn: MeshCoreConnection, setupGen: number, opts?: { driverIdentityId?: string }) => {
       meshcoreInitConnInFlightRef.current = true;
@@ -2922,54 +2979,8 @@ export function useMeshcoreRuntime() {
         meshcoreConnEventListenersTeardownRef.current?.();
         meshcoreConnEventListenersTeardownRef.current = setupEventListeners(conn);
 
-        // meshcore.js runs deviceQuery(SupportedCompanionProtocolVersion) from onConnected() on the next
-        // macrotask; register before any await so we capture that DeviceInfo (manufacturer string, build date).
-        conn.once(MESHCORE_RESPONSE_DEVICE_INFO, (response: unknown) => {
-          if (
-            connRef.current === conn &&
-            isMeshcorePathHashMode(parsePathHashModeFromDeviceQuery(response).pathHashMode)
-          ) {
-            meshcoreDeviceReportedPathHashModeRef.current = true;
-          }
-          setState((prev) => {
-            const next = { ...prev };
-            const r = response as { firmware_build_date?: string };
-            if (typeof r?.firmware_build_date === 'string' && r.firmware_build_date.trim()) {
-              next.firmwareVersion = r.firmware_build_date.trim();
-            }
-            const ver = meshcoreCompanionProtocolVersionFromDeviceQuery(response);
-            if (ver !== null) next.companionProtocolVersion = ver;
-            const mm = meshcoreManufacturerModelFromDeviceQuery(response);
-            if (mm) next.manufacturerModel = mm;
-            return next;
-          });
-        });
-
-        // Load persisted messages in background (not required for contact/repeater list).
-        void (async () => {
-          try {
-            const dbMsgs = await awaitUnlessMeshcoreSetupCancelled(
-              setupGen,
-              loadMeshcoreMessagesForHydration(),
-            );
-            if (dbMsgs.length > 0) {
-              const contactRows =
-                (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
-              const mapped = repairMeshcoreHydratedMessages(
-                mapMeshcoreDbRowsToChatMessages(dbMsgs),
-                meshcoreRoomServerIdsFromContacts(contactRows),
-                myNodeNumRef.current,
-              );
-              setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
-              setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
-            }
-          } catch (e) {
-            if (isMeshcoreSetupAbortError(e)) return;
-            console.warn(
-              'mcL1208 [useMeshcoreRuntime] loadMessagesFromDb error ' + errLikeToLogString(e),
-            );
-          }
-        })();
+        registerMeshcoreDeviceInfoHandler(conn);
+        hydrateMeshcoreDbMessagesInBackground(setupGen);
 
         const initConnPerfStart = performance.now();
         const driverStoreId = opts?.driverIdentityId ?? resolveMeshcoreStoreIdentityId();
@@ -3826,6 +3837,8 @@ export function useMeshcoreRuntime() {
       awaitUnlessMeshcoreSetupCancelled,
       applyMeshcoreNodesToUi,
       buildNodesFromContacts,
+      hydrateMeshcoreDbMessagesInBackground,
+      registerMeshcoreDeviceInfoHandler,
       deferMeshcoreDbContactMerge,
       handleMeshcorePathUpdatedFromIngest,
       maybeAutoLaunchMeshcoreMqttAfterIdentity,
