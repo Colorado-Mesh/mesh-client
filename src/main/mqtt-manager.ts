@@ -241,6 +241,32 @@ export function enforceBadEnvelopeSignatureCap(
  * Do not strip trailing 0x00 here — a valid ServiceEnvelope can end with a literal 0x00
  * on the wire; trailing padding is removed only after a decode failure (see onMessage).
  */
+interface ParsedJsonTextFields {
+  text: string;
+  emoji: number | undefined;
+  replyId: number | undefined;
+}
+
+function parseJsonTextFields(json: Record<string, unknown>): ParsedJsonTextFields {
+  const jsonPayload = json.payload as Record<string, unknown> | undefined;
+  const payloadText = jsonPayload?.text ?? json.text ?? '';
+  const text = typeof payloadText === 'string' ? payloadText : '';
+  const emojiRaw = jsonPayload?.emoji ?? json.emoji;
+  const emoji = typeof emojiRaw === 'number' && emojiRaw !== 0 ? emojiRaw : undefined;
+  const replyIdRaw = jsonPayload?.replyId ?? json.replyId;
+  const replyId = typeof replyIdRaw === 'number' && replyIdRaw !== 0 ? replyIdRaw : undefined;
+  return { text, emoji, replyId };
+}
+
+function looksLikeBareJsonNodeInfo(json: Record<string, unknown>): boolean {
+  return (
+    json.longName !== undefined ||
+    json.long_name !== undefined ||
+    json.shortName !== undefined ||
+    json.short_name !== undefined
+  );
+}
+
 function trimLeadingNullRun(bytes: Uint8Array): Uint8Array {
   let start = 0;
   while (start < bytes.length && bytes[start] === 0) start++;
@@ -1689,12 +1715,7 @@ export class MQTTManager extends EventEmitter {
     const json = parsed as Record<string, unknown>;
 
     // Bare nodeinfo-like objects (some gateways): handle before Meshtastic-shape guard.
-    if (
-      json.longName !== undefined ||
-      json.long_name !== undefined ||
-      json.shortName !== undefined ||
-      json.short_name !== undefined
-    ) {
+    if (looksLikeBareJsonNodeInfo(json)) {
       this.handleJsonNodeInfo(json, topic);
       return;
     }
@@ -1705,37 +1726,30 @@ export class MQTTManager extends EventEmitter {
 
     const portnumRaw = json.portnum;
     const hasMeshtasticShape = typeLower.length > 0 || typeof portnumRaw === 'number';
-    if (!hasMeshtasticShape) {
-      return;
-    }
+    if (!hasMeshtasticShape) return;
 
-    if (typeLower === 'nodeinfo' || typeLower === 'user') {
-      this.handleJsonNodeInfo(json, topic);
-      return;
-    }
-
-    if (typeLower === 'position') {
-      this.handleJsonPosition(json, topic);
-      return;
-    }
-
-    if (typeLower === 'telemetry') {
-      this.handleJsonTelemetry(json, topic);
-      return;
-    }
-
-    if (typeLower === 'neighborinfo') {
-      this.handleJsonNeighborInfo(json, topic);
-      return;
-    }
-
-    if (typeLower === 'text' || typeLower === 'alert') {
-      this.handleJsonText(json, topic);
-      return;
-    }
-
-    if (typeLower === 'traceroute') {
-      return;
+    switch (typeLower) {
+      case 'nodeinfo':
+      case 'user':
+        this.handleJsonNodeInfo(json, topic);
+        return;
+      case 'position':
+        this.handleJsonPosition(json, topic);
+        return;
+      case 'telemetry':
+        this.handleJsonTelemetry(json, topic);
+        return;
+      case 'neighborinfo':
+        this.handleJsonNeighborInfo(json, topic);
+        return;
+      case 'text':
+      case 'alert':
+        this.handleJsonText(json, topic);
+        return;
+      case 'traceroute':
+        return;
+      default:
+        break;
     }
     if (portnumRaw === PortNum.NODEINFO_APP) {
       this.handleJsonNodeInfo(json, topic);
@@ -1839,25 +1853,27 @@ export class MQTTManager extends EventEmitter {
     const nodeId = this.parseFromNodeId(json.from, `text topic=${topic}`);
     if (nodeId === null) return;
 
-    const jsonPayload = json.payload as Record<string, unknown> | undefined;
-    const payloadText = jsonPayload?.text ?? json.text ?? '';
-    const text = typeof payloadText === 'string' ? payloadText : '';
-    const emojiRaw = jsonPayload?.emoji ?? json.emoji;
-    const emoji = typeof emojiRaw === 'number' && emojiRaw !== 0 ? emojiRaw : undefined;
-    const replyIdRaw = jsonPayload?.replyId ?? json.replyId;
-    const replyId = typeof replyIdRaw === 'number' && replyIdRaw !== 0 ? replyIdRaw : undefined;
-
+    const { text, emoji, replyId } = parseJsonTextFields(json);
     if (!text && !emoji) return;
-
-    if (text) {
-      const textBytes = new TextEncoder().encode(text);
-      if (!isLikelyReadableChatText(textBytes)) return;
-    }
+    if (text && !isLikelyReadableChatText(new TextEncoder().encode(text))) return;
 
     const packetId = typeof json.id === 'number' ? json.id >>> 0 : 0;
     if (packetId !== 0 && this.isDuplicate(packetId)) return;
 
-    const msg: Omit<ChatMessage, 'id'> & { from_mqtt: boolean } = {
+    const msg = this.buildJsonTextMessage(nodeId, json, topic, { text, emoji, replyId, packetId });
+    this.emit('message', msg);
+    this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
+    this.emitMinimalNodeUpdate(nodeId, undefined, PortNum.TEXT_MESSAGE_APP);
+  }
+
+  private buildJsonTextMessage(
+    nodeId: number,
+    json: Record<string, unknown>,
+    topic: string,
+    fields: ParsedJsonTextFields & { packetId: number },
+  ): Omit<ChatMessage, 'id'> & { from_mqtt: boolean } {
+    const { text, emoji, replyId, packetId } = fields;
+    return {
       sender_id: nodeId,
       sender_name: formatMeshtasticNodeId(nodeId),
       payload: text,
@@ -1871,9 +1887,6 @@ export class MQTTManager extends EventEmitter {
       emoji,
       replyId,
     };
-    this.emit('message', msg);
-    this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-    this.emitMinimalNodeUpdate(nodeId, undefined, PortNum.TEXT_MESSAGE_APP);
   }
 
   private handleJsonPosition(json: Record<string, unknown>, topic: string): void {
