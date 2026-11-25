@@ -3,7 +3,8 @@
   "plugins": ["eslint", "typescript", "oxc"],
   "categories": {
     "correctness": "error",
-    "suspicious": "error"
+    "suspicious": "error",
+    "perf": "error"
   },
   "ignorePatterns": [
     "node_modules/**",
@@ -25,6 +26,8 @@
     "no-unsafe-optional-chaining": "off",
     "no-useless-concat": "off",
     "no-unmodified-loop-condition": "off",
-    "no-new": "off"
+    "no-new": "off",
+    "no-await-in-loop": "off",
+    "no-map-spread": "off"
   }
 }

@@ -465,7 +465,7 @@ The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Acti
 - **Staged-file** Prettier + markdownlint (not a full-tree `pnpm run format` / `lint:md`)
 - `pnpm dedupe` when dependency manifests are staged
 - `pnpm run i18n:auto-translate` when `en/translation.json` is staged (fills new English keys vs `HEAD`) + re-stages locales
-- Staged ESLint (`--cache`) + staged oxlint (`correctness`/`suspicious` via `.oxlintrc.json`) + full `typecheck`; path-gated `typecheck:strict-shared` when shared paths staged; always-on cheap `check:*` scanners and `fallow audit --type-aware --staged`; path-gated flatpak / DB / IPC / reticulum catalog / full-feature sidecar checks (sidecar also requires `cargo` on `PATH` when sidecar paths are staged; `check:i18n` when English locale staged, else `check:i18n:branch`)
+- Staged ESLint (`--cache`) + staged oxlint (`correctness`/`suspicious`/`perf` via `.oxlintrc.json`) + full `typecheck`; path-gated `typecheck:strict-shared` when shared paths staged; always-on cheap `check:*` scanners and `fallow audit --type-aware --staged`; path-gated flatpak / DB / IPC / reticulum catalog / full-feature sidecar checks (sidecar also requires `cargo` on `PATH` when sidecar paths are staged; `check:i18n` when English locale staged, else `check:i18n:branch`)
 - Before PR: `pnpm run check:pr` (full lint + typecheck + strict-shared + `test:run` + path-aware sidecar)
 - `pnpm audit` only when dependency manifests staged; `pnpm exec github-actionlint` / `yamllint` only when relevant files are staged
 - `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)

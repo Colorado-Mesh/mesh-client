@@ -474,7 +474,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `check:log-panel-filter`              | Verify log panel filter wiring                                                                                                        |
 | `check:log-service-sinks`             | Verify log service sink configuration                                                                                                 |
 | `check:main-bundle`                   | Production main `index.js` size budget (same suite as `bundle-size.yaml`)                                                             |
-| `check:oxlint`                        | Fast ESLint-compatible lint pass (`correctness` + `suspicious` errors)                                                                |
+| `check:oxlint`                        | Fast ESLint-compatible lint pass (`correctness` + `suspicious` + `perf` errors)                                                       |
 | `check:pinned-majors`                 | Warn when a pinned override is behind a newer npm major (needs network)                                                               |
 | `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                                                                                |
 | `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                                                                                         |
@@ -735,7 +735,7 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 3. markdownlint-cli2 on staged `.md` files only (not full `pnpm run lint:md` unless you run it manually)
 4. When `package.json` or `pnpm-lock.yaml` is staged: `pnpm dedupe`, re-stage `pnpm-lock.yaml`, then re-stage the originally staged paths
 5. When `src/renderer/locales/en/translation.json` is staged: `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
-6. ESLint on **staged** JS/TS with `--cache` (skip when none staged); **oxlint** on staged JS/TS (`correctness` + `suspicious` as errors via `.oxlintrc.json`; skip when none staged)
+6. ESLint on **staged** JS/TS with `--cache` (skip when none staged); **oxlint** on staged JS/TS (`correctness` + `suspicious` + `perf` as errors via `.oxlintrc.json`; skip when none staged)
 7. `pnpm run typecheck` (full tree); path-gated `typecheck:strict-shared` when `src/shared/` or `tsconfig.strict.json` staged
 8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:log-ids`, `check:semgrep` (`p/typescript`, `p/javascript`, `p/nodejs`, `p/security-audit`, `.semgrep.yml`; findings may be wrong — research before dismissing, then update `.semgrep.yml` / narrow `nosemgrep` if truly incorrect), `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`, `fallow audit --type-aware --staged`; `check:i18n` when English locale staged else `check:i18n:branch`
 9. Path-gated: `check:flatpak`, `check:db-migrations`, `check:main-bundle` (when `src/main/` or esbuild main-build scripts staged), `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged)

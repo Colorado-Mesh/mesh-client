@@ -1682,10 +1682,14 @@ describe('ChatPanel scroll pinning', () => {
         initialDmTarget: view === 'dm' ? 2 : undefined,
         ownNodeIds: [1],
       };
-      const makeViewMessage = (index: number): ChatMessage => ({
-        ...makeMsg(index),
-        ...(view === 'dm' ? { channel: -1, to: 1 } : {}),
-      });
+      const makeViewMessage = (index: number): ChatMessage => {
+        const msg = makeMsg(index);
+        if (view === 'dm') {
+          msg.channel = -1;
+          msg.to = 1;
+        }
+        return msg;
+      };
       let messages = Array.from({ length: 5 }, (_, i) => makeViewMessage(i));
       const { container, rerender } = render(
         <ToastProvider>
@@ -1702,7 +1706,7 @@ describe('ChatPanel scroll pinning', () => {
         stream.scrollTop = 1600 - distance;
         fireEvent.scroll(stream);
         mockScrollToEnd.mockClear();
-        messages = [...messages, makeViewMessage(messages.length)];
+        messages = messages.concat(makeViewMessage(messages.length));
         rerender(
           <ToastProvider>
             <ChatPanel {...props} messages={messages} />
@@ -1720,7 +1724,7 @@ describe('ChatPanel scroll pinning', () => {
       stream.scrollTop = 1600 - 2;
       fireEvent.scroll(stream);
       mockScrollToEnd.mockClear();
-      messages = [...messages, makeViewMessage(messages.length)];
+      messages = messages.concat(makeViewMessage(messages.length));
       rerender(
         <ToastProvider>
           <ChatPanel {...props} messages={messages} />
