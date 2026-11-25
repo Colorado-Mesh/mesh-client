@@ -147,6 +147,12 @@ export default defineConfig({
               priority: 25,
             },
             {
+              // Keep chat weather-forecast parsing out of App-*.js (1000 kB entry budget).
+              name: 'weather-forecast',
+              test: /[\\/](weatherForecastParse|weatherForecastIngest|weatherForecastStore|weatherForecastArea|useWeatherForecastIngest)\.[tj]sx?$/,
+              priority: 20,
+            },
+            {
               // Keep MeshCom runtime shell out of App-*.js (1000 kB entry budget).
               name: 'meshcom-runtime',
               test: /[\\/](useMeshcomRuntime|openMeshComTransport|useMeshcomDeviceCommands|meshcomSession|meshcomProtocolLoader|meshcomIdentitySignature)\.[tj]sx?$/,

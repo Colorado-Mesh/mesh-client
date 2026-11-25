@@ -7132,6 +7132,111 @@ app.on('child-process-gone', (_event, details) => {
   );
 });
 
+async function registerTeamRosterIpcWithFallback(): Promise<void> {
+  // Production ships `team-roster-handlers.js` beside index.js (out of measured budget).
+  try {
+    const mod = (
+      process.env.VITEST
+        ? await import('./ipc/team-roster-handlers')
+        : await import(pathToFileURL(path.join(__dirname, 'team-roster-handlers.js')).href)
+    ) as {
+      registerTeamRosterIpcHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+        getDatabase: typeof getDatabase;
+      }) => void;
+    };
+    mod.registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
+  } catch (err: unknown) {
+    console.error(
+      'mcL0141 [main] team-roster IPC registration failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    const fallbackMod = (
+      process.env.VITEST
+        ? await import('./ipc/team-roster-handlers-fallback')
+        : await import(pathToFileURL(path.join(__dirname, 'team-roster-handlers-fallback.js')).href)
+    ) as {
+      registerTeamRosterIpcFallbackHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+      }) => void;
+    };
+    fallbackMod.registerTeamRosterIpcFallbackHandlers({ ipcMain, assertIpcSender });
+  }
+}
+
+async function registerEnvironmentTelemetryIpcWithFallback(): Promise<void> {
+  // Production ships `environment-telemetry-handlers.js` beside index.js (out of measured budget).
+  try {
+    const envTelMod = (
+      process.env.VITEST
+        ? await import('./ipc/environment-telemetry-handlers')
+        : await import(
+            pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers.js')).href
+          )
+    ) as {
+      registerEnvironmentTelemetryIpcHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+      }) => void;
+    };
+    envTelMod.registerEnvironmentTelemetryIpcHandlers({ ipcMain, assertIpcSender });
+  } catch (err: unknown) {
+    console.error(
+      'mcL0142 [main] environment-telemetry IPC registration failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    const envTelFallbackMod = (
+      process.env.VITEST
+        ? await import('./ipc/environment-telemetry-handlers-fallback')
+        : await import(
+            pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers-fallback.js')).href
+          )
+    ) as {
+      registerEnvironmentTelemetryIpcFallbackHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+      }) => void;
+    };
+    envTelFallbackMod.registerEnvironmentTelemetryIpcFallbackHandlers({
+      ipcMain,
+      assertIpcSender,
+    });
+  }
+}
+
+function registerLxmProtocolClient(): string | null | undefined {
+  // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient('lxm');
+  }
+  const coldStartUrl = findLxmUrlInArgv(process.argv);
+  return coldStartUrl;
+}
+
+function loadVerboseLoggingSetting(): void {
+  try {
+    const verboseRow = getDatabase()
+      .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+      .get(VERBOSE_LOGGING_SETTING_KEY) as { value: string } | undefined;
+    if (verboseRow?.value === '1' || process.env.MESH_CLIENT_VERBOSE_LOG === '1') {
+      setVerboseLoggingEnabled(true);
+    } else {
+      setVerboseLoggingEnabled(false);
+    }
+  } catch (e: unknown) {
+    console.warn(
+      'mcL0140 [main] verboseLogging setting load failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  }
+}
+
 void app
   .whenReady()
   .then(async () => {
@@ -7148,106 +7253,14 @@ void app
         );
       }
 
-      // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
-      if (process.defaultApp) {
-        if (process.argv.length >= 2) {
-          app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
-        }
-      } else {
-        app.setAsDefaultProtocolClient('lxm');
-      }
-      const coldStartUrl = findLxmUrlInArgv(process.argv);
-      if (coldStartUrl) pendingOpenUrl = coldStartUrl;
-
       initDatabase();
-      try {
-        const verboseRow = getDatabase()
-          .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
-          .get(VERBOSE_LOGGING_SETTING_KEY) as { value: string } | undefined;
-        if (verboseRow?.value === '1' || process.env.MESH_CLIENT_VERBOSE_LOG === '1') {
-          setVerboseLoggingEnabled(true);
-        } else {
-          setVerboseLoggingEnabled(false);
-        }
-      } catch (e: unknown) {
-        console.warn(
-          'mcL0140 [main] verboseLogging setting load failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
+      loadVerboseLoggingSetting();
+      await registerTeamRosterIpcWithFallback();
+      await registerEnvironmentTelemetryIpcWithFallback();
+      const coldStartUrl = registerLxmProtocolClient();
+      if (coldStartUrl) pendingOpenUrl = coldStartUrl;
       registerIncidentIpcHandlers();
       registerScheduledBroadcastIpcHandlers();
-      // Production ships `team-roster-handlers.js` beside index.js (out of measured budget).
-      try {
-        const mod = (
-          process.env.VITEST
-            ? await import('./ipc/team-roster-handlers')
-            : await import(pathToFileURL(path.join(__dirname, 'team-roster-handlers.js')).href)
-        ) as {
-          registerTeamRosterIpcHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-            getDatabase: typeof getDatabase;
-          }) => void;
-        };
-        mod.registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
-      } catch (err: unknown) {
-        console.error(
-          'mcL0141 [main] team-roster IPC registration failed:',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-        const fallbackMod = (
-          process.env.VITEST
-            ? await import('./ipc/team-roster-handlers-fallback')
-            : await import(
-                pathToFileURL(path.join(__dirname, 'team-roster-handlers-fallback.js')).href
-              )
-        ) as {
-          registerTeamRosterIpcFallbackHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-          }) => void;
-        };
-        fallbackMod.registerTeamRosterIpcFallbackHandlers({ ipcMain, assertIpcSender });
-      }
-      // Production ships `environment-telemetry-handlers.js` beside index.js (out of measured budget).
-      try {
-        const envTelMod = (
-          process.env.VITEST
-            ? await import('./ipc/environment-telemetry-handlers')
-            : await import(
-                pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers.js')).href
-              )
-        ) as {
-          registerEnvironmentTelemetryIpcHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-          }) => void;
-        };
-        envTelMod.registerEnvironmentTelemetryIpcHandlers({ ipcMain, assertIpcSender });
-      } catch (err: unknown) {
-        console.error(
-          'mcL0142 [main] environment-telemetry IPC registration failed:',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-        const envTelFallbackMod = (
-          process.env.VITEST
-            ? await import('./ipc/environment-telemetry-handlers-fallback')
-            : await import(
-                pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers-fallback.js'))
-                  .href
-              )
-        ) as {
-          registerEnvironmentTelemetryIpcFallbackHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-          }) => void;
-        };
-        envTelFallbackMod.registerEnvironmentTelemetryIpcFallbackHandlers({
-          ipcMain,
-          assertIpcSender,
-        });
-      }
       // Production ships `meshcom-db-handlers.js` beside index.js (out of measured budget).
       try {
         const meshcomDbMod = (
