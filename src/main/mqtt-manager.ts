@@ -96,6 +96,12 @@ const CANDIDATE_PORTNUM_SCHEMAS: Partial<Record<number, Parameters<typeof fromBi
   [PortNum.ROUTING_APP]: RoutingSchema,
 };
 
+/** Portnums whose empty payload is still a valid (default) protobuf message. */
+const CANDIDATE_EMPTY_OK_SCHEMAS: Partial<Record<number, Parameters<typeof fromBinary>[0]>> = {
+  [PortNum.NODEINFO_APP]: UserSchema,
+  [PortNum.POSITION_APP]: PositionSchema,
+};
+
 /** Payload-only checks for portnums without a strict protobuf schema. */
 const CANDIDATE_PORTNUM_PREDICATES: Partial<Record<number, (payload: Uint8Array) => boolean>> = {
   [PortNum.DETECTION_SENSOR_APP]: (payload) => isLikelyReadableChatText(payload),
@@ -2566,11 +2572,9 @@ export class MQTTManager extends EventEmitter {
       if (!payload?.length && !data.emoji) return false;
       return resolveMeshtasticTextMessagePayload(payload ?? new Uint8Array()) !== null;
     }
-    if (portnum === PortNum.NODEINFO_APP) {
-      return this.decodesCandidatePayload(UserSchema, payload ?? new Uint8Array());
-    }
-    if (portnum === PortNum.POSITION_APP) {
-      return this.decodesCandidatePayload(PositionSchema, payload ?? new Uint8Array());
+    const emptyOkSchema = CANDIDATE_EMPTY_OK_SCHEMAS[portnum];
+    if (emptyOkSchema) {
+      return this.decodesCandidatePayload(emptyOkSchema, payload ?? new Uint8Array());
     }
     const predicate = CANDIDATE_PORTNUM_PREDICATES[portnum];
     if (predicate) return Boolean(payload?.length && predicate(payload));
