@@ -60,6 +60,14 @@
       "exports": ["RETICULUM_RUNTIME_CAUSE_I18N_KEYS"],
     },
   ],
+  "health": {
+    // CRAP-only findings are dominated by uncovered small functions and drown out the complexity
+    // gate. `0` is fallow's documented "disable CRAP enforcement" value: no CRAP findings and
+    // nothing counts above threshold, while cyclomatic/cognitive thresholds still report and gate.
+    // Review coverage debt with the coverage-backed health command in
+    // docs/development/fallow-health-cleanup.md.
+    "maxCrap": 0,
+  },
   "rules": {
     "private-type-leaks": "error",
     // Renderer libraries are bundled by Vite from devDependencies; no production install is needed.
