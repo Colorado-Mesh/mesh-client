@@ -845,6 +845,48 @@ function safeMeshcoreRadioNodeId(value: unknown): number {
   return n;
 }
 
+type ValidationRule = readonly [ok: boolean, message: string];
+
+/** Throws the first failing rule's message, preserving declaration order. */
+function assertValidationRules(rules: readonly ValidationRule[]): void {
+  for (const rule of rules) {
+    if (!rule[0]) throw new Error(rule[1]);
+  }
+}
+
+function isOptionalStringWithin(value: unknown, max: number): boolean {
+  return value == null || typeof value !== 'string' || value.length <= max;
+}
+
+function isOptionalIntWithin(value: unknown, min: number, max: number): boolean {
+  if (value == null) return true;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= min && n <= max;
+}
+
+function isOptionalSafeNonNegativeInt(value: unknown): boolean {
+  if (value == null) return true;
+  const n = Number(value);
+  return Number.isSafeInteger(n) && n >= 0;
+}
+
+function requireFiniteNodeId(target: Record<string, unknown>, key: string, message: string): void {
+  const raw = Number(target[key]);
+  if (!Number.isFinite(raw)) throw new Error(message);
+  target[key] = raw >>> 0;
+}
+
+function normalizeOptionalNodeId(
+  target: Record<string, unknown>,
+  key: string,
+  message: string,
+): void {
+  if (target[key] == null) return;
+  const raw = Number(target[key]);
+  if (!Number.isFinite(raw)) throw new Error(message);
+  target[key] = raw >>> 0;
+}
+
 function validateSaveMessage(message: unknown): asserts message is Record<string, unknown> & {
   sender_id: number;
   sender_name: string;
@@ -863,48 +905,46 @@ function validateSaveMessage(message: unknown): asserts message is Record<string
   if (!message || typeof message !== 'object')
     throw new Error('db:saveMessage: message must be an object');
   const m = message as Record<string, unknown>;
-  if (typeof m.payload !== 'string') throw new Error('db:saveMessage: payload must be a string');
-  if (m.payload.length > MAX_PAYLOAD_LENGTH) throw new Error('db:saveMessage: payload too long');
-  const rawSenderId = Number(m.sender_id);
-  if (!Number.isFinite(rawSenderId))
-    throw new Error('db:saveMessage: sender_id must be a finite number');
-  m.sender_id = rawSenderId >>> 0;
-  if (m.to != null) {
-    const rawTo = Number(m.to);
-    if (!Number.isFinite(rawTo)) throw new Error('db:saveMessage: to must be a finite number');
-    m.to = rawTo >>> 0;
-  }
-  if (typeof m.sender_name !== 'string')
-    throw new Error('db:saveMessage: sender_name must be a string');
-  if (m.sender_name.length > MAX_NODE_STRING)
-    throw new Error('db:saveMessage: sender_name too long');
-  if (m.status != null && typeof m.status === 'string' && m.status.length > MAX_STATUS_STRING)
-    throw new Error('db:saveMessage: status too long');
-  if (m.error != null && typeof m.error === 'string' && m.error.length > MAX_STATUS_STRING)
-    throw new Error('db:saveMessage: error too long');
-  if (
-    m.mqttStatus != null &&
-    typeof m.mqttStatus === 'string' &&
-    m.mqttStatus.length > MAX_STATUS_STRING
-  )
-    throw new Error('db:saveMessage: mqttStatus too long');
+  assertValidationRules([
+    [typeof m.payload === 'string', 'db:saveMessage: payload must be a string'],
+    [
+      typeof m.payload === 'string' && m.payload.length <= MAX_PAYLOAD_LENGTH,
+      'db:saveMessage: payload too long',
+    ],
+  ]);
+  requireFiniteNodeId(m, 'sender_id', 'db:saveMessage: sender_id must be a finite number');
+  normalizeOptionalNodeId(m, 'to', 'db:saveMessage: to must be a finite number');
   safeNonNegativeInt(m.channel);
-  if (typeof m.timestamp !== 'number' && typeof m.timestamp !== 'undefined')
-    throw new Error('db:saveMessage: timestamp must be a number');
-  if (m.timestamp != null && !Number.isFinite(m.timestamp))
-    throw new Error('db:saveMessage: invalid timestamp');
-  if (m.rxHops != null) {
-    const h = Number(m.rxHops);
-    if (!Number.isInteger(h) || h < 0)
-      throw new Error('db:saveMessage: rxHops must be a non-negative integer');
-  }
-  if (m.radioNodeId != null) {
-    const radio = Number(m.radioNodeId);
-    if (!Number.isSafeInteger(radio) || radio < 0)
-      throw new Error('db:saveMessage: radioNodeId must be a non-negative integer');
-  }
-  if (m.channelKey != null && !isChannelIdentityKey(m.channelKey))
-    throw new Error('db:saveMessage: channelKey must be a channel identity key');
+  assertValidationRules([
+    [typeof m.sender_name === 'string', 'db:saveMessage: sender_name must be a string'],
+    [
+      typeof m.sender_name === 'string' && m.sender_name.length <= MAX_NODE_STRING,
+      'db:saveMessage: sender_name too long',
+    ],
+    [isOptionalStringWithin(m.status, MAX_STATUS_STRING), 'db:saveMessage: status too long'],
+    [isOptionalStringWithin(m.error, MAX_STATUS_STRING), 'db:saveMessage: error too long'],
+    [
+      isOptionalStringWithin(m.mqttStatus, MAX_STATUS_STRING),
+      'db:saveMessage: mqttStatus too long',
+    ],
+    [
+      typeof m.timestamp === 'number' || typeof m.timestamp === 'undefined',
+      'db:saveMessage: timestamp must be a number',
+    ],
+    [m.timestamp == null || Number.isFinite(m.timestamp), 'db:saveMessage: invalid timestamp'],
+    [
+      isOptionalIntWithin(m.rxHops, 0, Number.MAX_SAFE_INTEGER),
+      'db:saveMessage: rxHops must be a non-negative integer',
+    ],
+    [
+      isOptionalSafeNonNegativeInt(m.radioNodeId),
+      'db:saveMessage: radioNodeId must be a non-negative integer',
+    ],
+    [
+      m.channelKey == null || isChannelIdentityKey(m.channelKey),
+      'db:saveMessage: channelKey must be a channel identity key',
+    ],
+  ]);
 }
 
 function validateSaveNode(
@@ -933,64 +973,66 @@ function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string
   if (!msg || typeof msg !== 'object')
     throw new Error('db:saveMeshcoreMessage: message must be an object');
   const m = msg as Record<string, unknown>;
-  if (typeof m.payload !== 'string')
-    throw new Error('db:saveMeshcoreMessage: payload must be a string');
-  if (m.payload.length > MAX_PAYLOAD_LENGTH)
-    throw new Error('db:saveMeshcoreMessage: payload too long');
-  if (typeof m.timestamp !== 'number' || !Number.isFinite(m.timestamp))
-    throw new Error('db:saveMeshcoreMessage: timestamp must be a finite number');
-  if (
-    m.sender_name != null &&
-    typeof m.sender_name === 'string' &&
-    m.sender_name.length > MAX_NODE_STRING
-  )
-    throw new Error('db:saveMeshcoreMessage: sender_name too long');
-  if (m.status != null && typeof m.status === 'string' && m.status.length > MAX_STATUS_STRING)
-    throw new Error('db:saveMeshcoreMessage: status too long');
-  const validReceivedVia = ['rf', 'mqtt', 'both'];
-  if (m.received_via != null) {
-    if (typeof m.received_via !== 'string' || m.received_via.length > 8)
-      throw new Error('db:saveMeshcoreMessage: received_via invalid');
-    if (!validReceivedVia.includes(m.received_via))
-      throw new Error('db:saveMeshcoreMessage: received_via must be rf, mqtt, or both');
-  }
-  if (m.rx_packet_fingerprint != null) {
-    if (
-      typeof m.rx_packet_fingerprint !== 'string' ||
-      !/^[0-9A-Fa-f]{8}$/.test(m.rx_packet_fingerprint)
-    )
-      throw new Error('db:saveMeshcoreMessage: rx_packet_fingerprint must be 8 hex chars');
-  }
+  assertValidationRules([
+    [typeof m.payload === 'string', 'db:saveMeshcoreMessage: payload must be a string'],
+    [
+      typeof m.payload === 'string' && m.payload.length <= MAX_PAYLOAD_LENGTH,
+      'db:saveMeshcoreMessage: payload too long',
+    ],
+    [
+      typeof m.timestamp === 'number' && Number.isFinite(m.timestamp),
+      'db:saveMeshcoreMessage: timestamp must be a finite number',
+    ],
+    [
+      isOptionalStringWithin(m.sender_name, MAX_NODE_STRING),
+      'db:saveMeshcoreMessage: sender_name too long',
+    ],
+    [
+      isOptionalStringWithin(m.status, MAX_STATUS_STRING),
+      'db:saveMeshcoreMessage: status too long',
+    ],
+    [
+      m.received_via == null || (typeof m.received_via === 'string' && m.received_via.length <= 8),
+      'db:saveMeshcoreMessage: received_via invalid',
+    ],
+    [
+      m.received_via == null || ['rf', 'mqtt', 'both'].includes(m.received_via as string),
+      'db:saveMeshcoreMessage: received_via must be rf, mqtt, or both',
+    ],
+    [
+      m.rx_packet_fingerprint == null ||
+        (typeof m.rx_packet_fingerprint === 'string' &&
+          /^[0-9A-Fa-f]{8}$/.test(m.rx_packet_fingerprint)),
+      'db:saveMeshcoreMessage: rx_packet_fingerprint must be 8 hex chars',
+    ],
+  ]);
   validateMeshcoreMessageLocalOrder(m.local_order);
-  if (m.rx_hops != null) {
-    const h = Number(m.rx_hops);
-    if (!Number.isInteger(h) || h < 0)
-      throw new Error('db:saveMeshcoreMessage: rx_hops must be a non-negative integer');
-  }
-  if (m.room_server_id != null) {
-    const rs = Number(m.room_server_id);
-    if (!Number.isInteger(rs) || rs < 0)
-      throw new Error('db:saveMeshcoreMessage: room_server_id must be a non-negative integer');
-  }
-  if (m.sender_id != null) {
-    const rawSender = Number(m.sender_id);
-    if (!Number.isFinite(rawSender))
-      throw new Error('db:saveMeshcoreMessage: sender_id must be a finite number');
-    m.sender_id = rawSender >>> 0;
-  }
-  if (m.to_node != null) {
-    const rawTo = Number(m.to_node);
-    if (!Number.isFinite(rawTo))
-      throw new Error('db:saveMeshcoreMessage: to_node must be a finite number');
-    m.to_node = rawTo >>> 0;
-  }
-  if (m.radio_node_id != null) {
-    const radio = Number(m.radio_node_id);
-    if (!Number.isSafeInteger(radio) || radio < 0)
-      throw new Error('db:saveMeshcoreMessage: radio_node_id must be a non-negative integer');
-  }
-  if (m.channel_key != null && !isChannelIdentityKey(m.channel_key))
-    throw new Error('db:saveMeshcoreMessage: channel_key must be a channel identity key');
+  assertValidationRules([
+    [
+      isOptionalIntWithin(m.rx_hops, 0, Number.MAX_SAFE_INTEGER),
+      'db:saveMeshcoreMessage: rx_hops must be a non-negative integer',
+    ],
+    [
+      isOptionalIntWithin(m.room_server_id, 0, Number.MAX_SAFE_INTEGER),
+      'db:saveMeshcoreMessage: room_server_id must be a non-negative integer',
+    ],
+  ]);
+  normalizeOptionalNodeId(
+    m,
+    'sender_id',
+    'db:saveMeshcoreMessage: sender_id must be a finite number',
+  );
+  normalizeOptionalNodeId(m, 'to_node', 'db:saveMeshcoreMessage: to_node must be a finite number');
+  assertValidationRules([
+    [
+      isOptionalSafeNonNegativeInt(m.radio_node_id),
+      'db:saveMeshcoreMessage: radio_node_id must be a non-negative integer',
+    ],
+    [
+      m.channel_key == null || isChannelIdentityKey(m.channel_key),
+      'db:saveMeshcoreMessage: channel_key must be a channel identity key',
+    ],
+  ]);
 }
 
 function validateSaveMeshcoreContact(contact: unknown): asserts contact is Record<
@@ -1004,35 +1046,41 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
     throw new Error('db:saveMeshcoreContact: contact must be an object');
   const c = contact as Record<string, unknown>;
   const nodeId = Number(c.node_id);
-  if (!Number.isFinite(nodeId) || nodeId < 0)
-    throw new Error('db:saveMeshcoreContact: node_id must be a finite non-negative number');
-  if (typeof c.public_key !== 'string')
-    throw new Error('db:saveMeshcoreContact: public_key must be a string');
-  if (c.public_key.length > 128) throw new Error('db:saveMeshcoreContact: public_key too long');
-  if (c.adv_name != null && typeof c.adv_name === 'string' && c.adv_name.length > MAX_NODE_STRING)
-    throw new Error('db:saveMeshcoreContact: adv_name too long');
-  if (c.nickname != null && typeof c.nickname === 'string' && c.nickname.length > MAX_NODE_STRING)
-    throw new Error('db:saveMeshcoreContact: nickname too long');
-  if (c.contact_flags != null) {
-    const f = Number(c.contact_flags);
-    if (!Number.isInteger(f) || f < 0 || f > 255)
-      throw new Error('db:saveMeshcoreContact: contact_flags must be 0–255');
-  }
-  if (c.hops_away != null) {
-    const h = Number(c.hops_away);
-    if (!Number.isInteger(h) || h < 0)
-      throw new Error('db:saveMeshcoreContact: hops_away must be a non-negative integer');
-  }
-  if (c.on_radio != null) {
-    const o = Number(c.on_radio);
-    if (o !== 0 && o !== 1) throw new Error('db:saveMeshcoreContact: on_radio must be 0 or 1');
-  }
-  if (
-    c.last_synced_from_radio != null &&
-    (typeof c.last_synced_from_radio !== 'string' || c.last_synced_from_radio.length > 128)
-  ) {
-    throw new Error('db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128');
-  }
+  assertValidationRules([
+    [
+      Number.isFinite(nodeId) && nodeId >= 0,
+      'db:saveMeshcoreContact: node_id must be a finite non-negative number',
+    ],
+    [typeof c.public_key === 'string', 'db:saveMeshcoreContact: public_key must be a string'],
+    [
+      typeof c.public_key === 'string' && c.public_key.length <= 128,
+      'db:saveMeshcoreContact: public_key too long',
+    ],
+    [
+      isOptionalStringWithin(c.adv_name, MAX_NODE_STRING),
+      'db:saveMeshcoreContact: adv_name too long',
+    ],
+    [
+      isOptionalStringWithin(c.nickname, MAX_NODE_STRING),
+      'db:saveMeshcoreContact: nickname too long',
+    ],
+    [
+      isOptionalIntWithin(c.contact_flags, 0, 255),
+      'db:saveMeshcoreContact: contact_flags must be 0–255',
+    ],
+    [
+      isOptionalIntWithin(c.hops_away, 0, Number.MAX_SAFE_INTEGER),
+      'db:saveMeshcoreContact: hops_away must be a non-negative integer',
+    ],
+    [
+      c.on_radio == null || Number(c.on_radio) === 0 || Number(c.on_radio) === 1,
+      'db:saveMeshcoreContact: on_radio must be 0 or 1',
+    ],
+    [
+      isOptionalStringWithin(c.last_synced_from_radio, 128),
+      'db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128',
+    ],
+  ]);
 }
 
 function validateTakSettings(settings: unknown): asserts settings is TAKSettings {
