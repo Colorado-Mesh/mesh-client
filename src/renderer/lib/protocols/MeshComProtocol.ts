@@ -37,6 +37,10 @@ import {
 } from '../meshcom/meshcomKissCodec';
 import { parseMeshcomMhJson } from '../meshcom/meshcomMheard';
 import {
+  getMeshcomNodePasswd,
+  meshcomAuthTransportFromConnectionType,
+} from '../meshcom/meshcomNodePasswd';
+import {
   meshcomNetConsoleSendText,
   MeshcomSerialLineBuffer,
   meshcomSerialSendText,
@@ -44,7 +48,6 @@ import {
 import { meshcomBodyBudgetBytes, truncateToWireBytes } from '../meshcom/meshcomWireLimits';
 import { sanitizeMeshcomWireLine } from '../meshcom/meshcomWireSanitize';
 import { MESHCOM_CAPABILITIES } from '../radio/BaseRadioProvider';
-import { getCachedSecureSecret, MESHCOM_NODE_PASSWD_SECRET_KEY } from '../secureSecretStorage';
 import type { TransportParams } from '../types';
 import {
   createMeshComConnection,
@@ -946,7 +949,13 @@ export const meshcomProtocol: Protocol = {
   capabilities: MESHCOM_CAPABILITIES,
 
   async createDevice(params: TransportParams): Promise<MeshComDeviceHandle> {
-    const authPassword = getCachedSecureSecret(MESHCOM_NODE_PASSWD_SECRET_KEY) ?? '';
+    const authTransport = meshcomAuthTransportFromConnectionType(params.type);
+    const authHost =
+      params.type === 'tcp' || params.type === 'http' || params.type === 'netconsole'
+        ? params.host
+        : '';
+    const authPassword =
+      authTransport && authHost ? getMeshcomNodePasswd(authTransport, authHost) : '';
     const transportParams = transportParamsToMeshCom(params, { authPassword });
     const connection = await createMeshComConnection(transportParams);
     return {

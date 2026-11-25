@@ -126,6 +126,11 @@ import {
   getMeshcomNetworkTime,
   subscribeMeshcomNetworkTime,
 } from '../lib/meshcom/meshcomNetworkTime';
+import {
+  getMeshcomNodePasswd,
+  meshcomAuthTransportFromConnectionType,
+  setMeshcomNodePasswd,
+} from '../lib/meshcom/meshcomNodePasswd';
 import { shouldOpenMeshcomMqttPanel } from '../lib/meshcomMqttPanelOpen';
 import { MESHCOM_MQTT_SETTINGS_KEY } from '../lib/meshcomMqttSettingsStorage';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
@@ -184,11 +189,6 @@ import {
   sortPickerItems,
   useDebouncedPickerSort,
 } from '../lib/pickerListSort';
-import {
-  getCachedSecureSecret,
-  MESHCOM_NODE_PASSWD_SECRET_KEY,
-  setSecureSecret,
-} from '../lib/secureSecretStorage';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
 import { isWeakBleRssi } from '../lib/signal';
@@ -567,10 +567,21 @@ export default function ConnectionPanel({
   const [meshcomMqttSettings, setMeshcomMqttSettings] =
     useState<MQTTSettings>(loadMeshcomMqttSettings);
   const [showMqttPassword, setShowMqttPassword] = useState(false);
-  const [meshcomNodePassword, setMeshcomNodePassword] = useState(
-    () => getCachedSecureSecret(MESHCOM_NODE_PASSWD_SECRET_KEY) ?? '',
-  );
+  const [meshcomNodePassword, setMeshcomNodePassword] = useState('');
   const [showMeshcomNodePassword, setShowMeshcomNodePassword] = useState(false);
+  // Load/clear the MeshCom node password for the currently selected host + transport.
+  useEffect(() => {
+    if (protocol !== 'meshcom') {
+      setMeshcomNodePassword('');
+      return;
+    }
+    const authTransport = meshcomAuthTransportFromConnectionType(connectionType);
+    if (!authTransport) {
+      setMeshcomNodePassword('');
+      return;
+    }
+    setMeshcomNodePassword(getMeshcomNodePasswd(authTransport, httpAddress));
+  }, [protocol, connectionType, httpAddress]);
   const [mqttError, setMqttError] = useState<string | null>(null);
   const [mqttWarning, setMqttWarning] = useState<string | null>(null);
   const [channelPskWarn, setChannelPskWarn] = useState<string | null>(null);
@@ -1972,14 +1983,17 @@ export default function ConnectionPanel({
         protocol === 'meshcom' &&
         (connectionType === 'http' || connectionType === 'netconsole')
       ) {
-        void setSecureSecret(MESHCOM_NODE_PASSWD_SECRET_KEY, meshcomNodePassword).catch(
-          (err: unknown) => {
-            console.warn(
-              'mcL0413 [ConnectionPanel] MeshCom node password persist failed ' +
-                errLikeToLogString(err),
-            );
-          },
-        );
+        const authTransport = meshcomAuthTransportFromConnectionType(connectionType);
+        if (authTransport) {
+          void setMeshcomNodePasswd(authTransport, activeHostAddress, meshcomNodePassword).catch(
+            (err: unknown) => {
+              console.warn(
+                'mcL0413 [ConnectionPanel] MeshCom node password persist failed ' +
+                  errLikeToLogString(err),
+              );
+            },
+          );
+        }
       }
       if (connectionType === 'http') {
         await onConnect('http', activeHostAddress);
