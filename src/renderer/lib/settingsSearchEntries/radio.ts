@@ -1245,6 +1245,7 @@ export const radioSurface: SettingsSearchSurface = {
     'radioPanel.keySize*': 'per-channel edit form, shown only after selecting a channel',
     'radioPanel.mqtt*': 'per-channel MQTT toggles, shown only after selecting a channel',
     'radioPanel.validation*': 'per-channel PSK validation errors, not a control',
+    'radioPanel.frequencyRangeError': 'validation message under the indexed frequency field',
     'radioPanel.channelUrl.apply*': 'import confirm button and result, shown after a link parses',
     'radioPanel.channelUrl.confirm*': 'confirmation dialog copy for the indexed link import',
     'radioPanel.channelUrl.cop*': 'copy buttons and toasts inside the indexed share row',

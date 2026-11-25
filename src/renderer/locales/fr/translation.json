@@ -5339,7 +5339,8 @@
       "timeout": "Terminé",
       "unreachable": "inaccessible/injoignable/impossible",
       "unknown": "erreur inconnue"
-    }
+    },
+    "frequencyRangeError": "Saisissez une fréquence comprise entre {{min}} et {{max}} MHz."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",

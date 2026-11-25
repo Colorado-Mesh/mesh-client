@@ -5487,6 +5487,7 @@
     "telemetryPrivacyFailed": "Failed to update telemetry privacy.",
     "title": "Radio Configuration",
     "frequencyHint": "Operating frequency. Check local regulations.",
+    "frequencyRangeError": "Enter a frequency between {{min}} and {{max}} MHz.",
     "ntpHint": "Leave empty for default NTP server.",
     "deviceActions": "Device Actions",
     "deviceCommands": "Device Commands",

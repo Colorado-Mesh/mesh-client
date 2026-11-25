@@ -5385,7 +5385,8 @@
       "timeout": "Vypršel časový limit.",
       "unreachable": "nedostupné",
       "unknown": "neznámá chyba"
-    }
+    },
+    "frequencyRangeError": "Zadejte frekvenci mezi {{min}} a {{max}} MHz."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

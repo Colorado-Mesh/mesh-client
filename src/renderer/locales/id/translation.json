@@ -5339,7 +5339,8 @@
       "timeout": "Waktu habis.",
       "unreachable": "tidak dapat dihubungi",
       "unknown": "unknown error"
-    }
+    },
+    "frequencyRangeError": "Masukkan frekuensi antara {{min}} dan {{max}} MHz."
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

@@ -877,6 +877,35 @@ function WifiPasswordField({
   );
 }
 
+/**
+ * MeshCore LoRa frequency limits the Radio panel accepts, in MHz. Matches companion firmware
+ * CMD_SET_RADIO_PARAMS (150000-2500000 kHz) and the repeater config panel, so 2.4 GHz radios fit.
+ */
+const MESHCORE_FREQ_MIN_MHZ = 150;
+const MESHCORE_FREQ_MAX_MHZ = 2500;
+
+/**
+ * True when text holds only digits, "." and "," (no sign, exponent, hex or units). Number() then
+ * rejects a second separator as NaN, and empty text becomes 0, below the range.
+ */
+function isPlainDecimalText(text: string): boolean {
+  for (const ch of text) {
+    if ((ch < '0' || ch > '9') && ch !== '.' && ch !== ',') return false;
+  }
+  return true;
+}
+
+/** Parse typed MHz text to Hz; null when it is not a plain decimal in the accepted range. */
+function parseMeshcoreFreqMhzToHz(text: string): number | null {
+  const trimmed = text.trim();
+  if (!isPlainDecimalText(trimmed)) return null;
+  const mhz = Number(trimmed.replace(',', '.'));
+  if (!Number.isFinite(mhz) || mhz < MESHCORE_FREQ_MIN_MHZ || mhz > MESHCORE_FREQ_MAX_MHZ) {
+    return null;
+  }
+  return Math.round(mhz * 1e6);
+}
+
 export default function RadioPanel({
   configTarget,
   onSetConfig,
@@ -1029,6 +1058,18 @@ export default function RadioPanel({
   const [radioFreqHz, setRadioFreqHz] = useState(() =>
     loraConfig?.freq != null ? meshcoreSelfInfoFreqToDisplayHz(loraConfig.freq) : 915000000,
   );
+  // Text the user is typing into the frequency field; null shows radioFreqHz formatted.
+  // Kept as typed so a partial value ("9", "91", "") is never rewritten mid-entry.
+  const [radioFreqDraft, setRadioFreqDraft] = useState<string | null>(null);
+  const [showRadioFreqError, setShowRadioFreqError] = useState(false);
+  const radioFreqInputRef = useRef<HTMLInputElement>(null);
+  const radioFreqDraftInvalid =
+    radioFreqDraft != null && parseMeshcoreFreqMhzToHz(radioFreqDraft) == null;
+  const setRadioFreqFromDevice = useCallback((hz: number) => {
+    setRadioFreqHz(hz);
+    setRadioFreqDraft(null);
+    setShowRadioFreqError(false);
+  }, []);
 
   // Sync LoRa state from loraConfig prop (MeshCore device info)
   useEffect(() => {
@@ -1045,14 +1086,16 @@ export default function RadioPanel({
     ]);
     if (syncedMeshcoreLoraRef.current === signature) return;
     syncedMeshcoreLoraRef.current = signature;
-    if (loraConfig.freq != null) setRadioFreqHz(meshcoreSelfInfoFreqToDisplayHz(loraConfig.freq));
+    if (loraConfig.freq != null) {
+      setRadioFreqFromDevice(meshcoreSelfInfoFreqToDisplayHz(loraConfig.freq));
+    }
     if (loraConfig.bw != null) setBandwidth(meshcoreSelfInfoBwToDisplayKhz(loraConfig.bw));
     if (loraConfig.sf != null) setSpreadFactor(loraConfig.sf);
     if (loraConfig.cr != null) setCodingRate(loraConfig.cr);
     if (loraConfig.txPower != null) {
       setTxPower(Math.min(loraConfig.txPower, meshcoreTxPowerMax));
     }
-  }, [loraConfig, meshcoreTxPowerMax]);
+  }, [loraConfig, meshcoreTxPowerMax, setRadioFreqFromDevice]);
 
   useEffect(() => {
     if (!meshcoreSelfInfo) return;
@@ -1741,7 +1784,7 @@ export default function RadioPanel({
             // frequency: kHz in config file → Hz for state
             if (typeof rs.frequency === 'number') {
               importedFreqHz = rs.frequency * 1000;
-              setRadioFreqHz(importedFreqHz);
+              setRadioFreqFromDevice(importedFreqHz);
             }
             // bandwidth: Hz in config → kHz (float ok, e.g. 62500 → 62.5)
             if (typeof rs.bandwidth === 'number') {
@@ -1879,7 +1922,17 @@ export default function RadioPanel({
       })();
     };
     input.click();
-  }, [addToast, onSetOwner, onApplyLoraParams, shortName, isLicensed, bandwidth, radioFreqHz, t]);
+  }, [
+    addToast,
+    onSetOwner,
+    onApplyLoraParams,
+    shortName,
+    isLicensed,
+    bandwidth,
+    radioFreqHz,
+    setRadioFreqFromDevice,
+    t,
+  ]);
 
   return (
     <div data-panel-anchor="Radio" className="w-full space-y-4">
@@ -2150,6 +2203,14 @@ export default function RadioPanel({
             title={t('radioPanel.sectionLora')}
             onApply={async () => {
               if (!onApplyLoraParams) return;
+              if (radioFreqDraftInvalid) {
+                // Never send a frequency the field does not show; ask for a valid one instead,
+                // and drop an earlier "applied" result so it cannot read as this attempt's.
+                setShowRadioFreqError(true);
+                setStatus((current) => (current?.section === 'lora' ? null : current));
+                radioFreqInputRef.current?.focus();
+                return;
+              }
               setApplyingSection('lora');
               showSectionStatus(
                 'lora',
@@ -2191,20 +2252,46 @@ export default function RadioPanel({
                 {t('radioPanel.frequencyMhzLabel')}
               </label>
               <input
+                ref={radioFreqInputRef}
                 id="radio-freq-mhz"
-                type="number"
-                value={(radioFreqHz / 1e6).toFixed(3)}
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={radioFreqDraft ?? (radioFreqHz / 1e6).toFixed(3)}
                 onChange={(e) => {
-                  const parsed = parseFloat(e.target.value);
-                  if (!Number.isNaN(parsed)) setRadioFreqHz(Math.round(parsed * 1e6));
+                  // Keep exactly what was typed; only a complete in-range value updates the radio params.
+                  const text = e.target.value;
+                  setRadioFreqDraft(text);
+                  const hz = parseMeshcoreFreqMhzToHz(text);
+                  if (hz != null) {
+                    setRadioFreqHz(hz);
+                    setShowRadioFreqError(false);
+                  }
                 }}
-                step={0.001}
-                min={150}
-                max={960}
+                onBlur={() => {
+                  if (radioFreqDraft == null) return;
+                  if (radioFreqDraftInvalid) setShowRadioFreqError(true);
+                  else setRadioFreqDraft(null);
+                }}
                 disabled={disabled || applyingSection !== null}
+                aria-invalid={showRadioFreqError && radioFreqDraftInvalid}
+                aria-describedby={
+                  showRadioFreqError && radioFreqDraftInvalid ? 'radio-freq-mhz-error' : undefined
+                }
                 className={`${INPUT_BOX_CLASS} w-36`}
               />
-              <p className="text-muted text-xs">{t('radioPanel.frequencyHint')}</p>
+              {/* The error takes the hint's line instead of adding one: a line appearing on blur
+                  would push Apply down between mouse press and release and swallow the click. */}
+              {showRadioFreqError && radioFreqDraftInvalid ? (
+                <p id="radio-freq-mhz-error" className="text-xs text-red-400" role="alert">
+                  {t('radioPanel.frequencyRangeError', {
+                    min: MESHCORE_FREQ_MIN_MHZ,
+                    max: MESHCORE_FREQ_MAX_MHZ,
+                  })}
+                </p>
+              ) : (
+                <p className="text-muted text-xs">{t('radioPanel.frequencyHint')}</p>
+              )}
             </div>
             <div className="border-ink-700 space-y-4 border-l pl-3">
               <ConfigSelect

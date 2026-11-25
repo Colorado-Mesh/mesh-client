@@ -5339,7 +5339,8 @@
       "timeout": "タイムアウト",
       "unreachable": "UNREACHABLE",
       "unknown": "不明なエラー"
-    }
+    },
+    "frequencyRangeError": "{{min}}～{{max}} MHzの周波数を入力してください。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
