@@ -87,6 +87,20 @@ interface MqttDeviceMetrics {
 
 // Default PSK for meshtastic: firmware Channels.h `defaultpsk` (shorthand alias 0x01 expands to
 // this — see expandMeshtasticPskAlias). NOT a zero-padded literal of the alias byte itself.
+/** Portnums whose decrypted payload must decode with a known protobuf schema. */
+const CANDIDATE_PORTNUM_SCHEMAS: Partial<Record<number, Parameters<typeof fromBinary>[0]>> = {
+  [PortNum.TELEMETRY_APP]: TelemetrySchema as Parameters<typeof fromBinary>[0],
+  [PortNum.PAXCOUNTER_APP]: PaxcountSchema as Parameters<typeof fromBinary>[0],
+  [PortNum.TRACEROUTE_APP]: RouteDiscoverySchema,
+  [PortNum.MAP_REPORT_APP]: MapReportSchema as Parameters<typeof fromBinary>[0],
+  [PortNum.ROUTING_APP]: RoutingSchema,
+};
+
+/** Payload-only checks for portnums without a strict protobuf schema. */
+const CANDIDATE_PORTNUM_PREDICATES: Partial<Record<number, (payload: Uint8Array) => boolean>> = {
+  [PortNum.DETECTION_SENSOR_APP]: (payload) => isLikelyReadableChatText(payload),
+};
+
 const DEFAULT_PSK = Buffer.from(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES);
 
 /**
@@ -2043,32 +2057,17 @@ export class MQTTManager extends EventEmitter {
         }
         break;
       case PortNum.PAXCOUNTER_APP:
-        if (payload) {
-          this.handleMqttPaxCount(nodeId, payload);
-          return;
-        }
-        break;
       case PortNum.DETECTION_SENSOR_APP:
-        if (payload) {
-          this.handleMqttDetectionSensor(nodeId, payload);
-          return;
-        }
-        break;
       case PortNum.MAP_REPORT_APP:
         if (payload) {
-          this.handleMqttMapReport(nodeId, payload);
+          this.handleMqttSensorPayload(nodeId, payload, portnum);
           return;
         }
         break;
       case PortNum.ROUTING_APP:
-        if (payload) {
-          this.handleMqttRouting(nodeId, payload, hopsAway, portnum);
-          return;
-        }
-        break;
       case PortNum.TRACEROUTE_APP:
         if (payload) {
-          this.handleMqttTraceRoute(nodeId, payload, hopsAway, portnum);
+          this.handleMqttRoutePayload(nodeId, payload, hopsAway, portnum);
           return;
         }
         break;
@@ -2288,6 +2287,35 @@ export class MQTTManager extends EventEmitter {
     }
   }
 
+  private handleMqttSensorPayload(
+    nodeId: number,
+    payload: Uint8Array,
+    portnum: (typeof PortNum)[keyof typeof PortNum],
+  ): void {
+    if (portnum === PortNum.PAXCOUNTER_APP) {
+      this.handleMqttPaxCount(nodeId, payload);
+      return;
+    }
+    if (portnum === PortNum.DETECTION_SENSOR_APP) {
+      this.handleMqttDetectionSensor(nodeId, payload);
+      return;
+    }
+    this.handleMqttMapReport(nodeId, payload);
+  }
+
+  private handleMqttRoutePayload(
+    nodeId: number,
+    payload: Uint8Array,
+    hopsAway: number | undefined,
+    portnum: (typeof PortNum)[keyof typeof PortNum],
+  ): void {
+    if (portnum === PortNum.ROUTING_APP) {
+      this.handleMqttRouting(nodeId, payload, hopsAway, portnum);
+      return;
+    }
+    this.handleMqttTraceRoute(nodeId, payload, hopsAway, portnum);
+  }
+
   private handleMqttPaxCount(nodeId: number, payload: Uint8Array): void {
     try {
       const pax = fromBinary(PaxcountSchema as Parameters<typeof fromBinary>[0], payload) as {
@@ -2450,6 +2478,22 @@ export class MQTTManager extends EventEmitter {
    * Reject those candidates so tryDecryptAllKeys keeps searching for a key whose nested payload
    * matches the port (same bar as handleDecoded before emitting chat/node updates).
    */
+  private decodesCandidatePayload(
+    schema: Parameters<typeof fromBinary>[0],
+    payload: Uint8Array,
+  ): boolean {
+    try {
+      fromBinary(schema, payload);
+      return true;
+    } catch (e: unknown) {
+      console.debug(
+        '[main/mqtt-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      return false;
+    }
+  }
+
   private acceptsDecryptedDataCandidate(data: {
     portnum?: (typeof PortNum)[keyof typeof PortNum];
     payload?: Uint8Array;
@@ -2458,124 +2502,26 @@ export class MQTTManager extends EventEmitter {
     const portnum = data.portnum ?? PortNum.UNKNOWN_APP;
     const payload = data.payload;
 
-    if (portnum === PortNum.UNKNOWN_APP) {
-      return false;
-    }
+    if (portnum === PortNum.UNKNOWN_APP) return false;
 
     if (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) {
       if (data.emoji === MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG) return true;
       if (!payload?.length && !data.emoji) return false;
       return resolveMeshtasticTextMessagePayload(payload ?? new Uint8Array()) !== null;
     }
-
     if (portnum === PortNum.NODEINFO_APP) {
-      try {
-        fromBinary(UserSchema, payload ?? new Uint8Array());
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
+      return this.decodesCandidatePayload(UserSchema, payload ?? new Uint8Array());
     }
-
     if (portnum === PortNum.POSITION_APP) {
-      try {
-        fromBinary(PositionSchema, payload ?? new Uint8Array());
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
+      return this.decodesCandidatePayload(PositionSchema, payload ?? new Uint8Array());
     }
+    const predicate = CANDIDATE_PORTNUM_PREDICATES[portnum];
+    if (predicate) return Boolean(payload?.length && predicate(payload));
 
-    if (portnum === PortNum.TELEMETRY_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(TelemetrySchema as Parameters<typeof fromBinary>[0], payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.PAXCOUNTER_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(PaxcountSchema as Parameters<typeof fromBinary>[0], payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.TRACEROUTE_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(RouteDiscoverySchema, payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.MAP_REPORT_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(MapReportSchema as Parameters<typeof fromBinary>[0], payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.ROUTING_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(RoutingSchema as Parameters<typeof fromBinary>[0], payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.DETECTION_SENSOR_APP) {
-      return Boolean(payload?.length && isLikelyReadableChatText(payload));
-    }
-
-    return Boolean(payload?.length);
+    const schema = CANDIDATE_PORTNUM_SCHEMAS[portnum];
+    if (!schema) return Boolean(payload?.length);
+    if (!payload?.length) return false;
+    return this.decodesCandidatePayload(schema, payload);
   }
 
   /**
