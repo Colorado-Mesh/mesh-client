@@ -201,235 +201,66 @@ class PacketRouter {
   /** Applies the store mutation for `event`, then notifies listeners in order. */
   dispatch(event: DomainEvent, identityId: IdentityId): void {
     // When a suppress branch skips the store write, skip listeners too (contract §3).
-    let skipListeners = false;
+    const skipListeners =
+      event.type === 'text_message'
+        ? this.applyTextMessage(event, identityId)
+        : this.applyNonTextEvent(event, identityId);
+    if (skipListeners) return;
+    const listeners = [...this.listeners, ...(this.typedListeners.get(event.type) ?? [])].sort(
+      (a, b) => a.id - b.id,
+    );
+    // Snapshot before invoking: listeners may detach themselves during dispatch.
+    for (const { listener } of listeners) {
+      try {
+        listener(event, identityId);
+      } catch (e) {
+        console.warn('mcL0827 [PacketRouter] listener error ' + errLikeToLogString(e));
+      }
+    }
+  }
+
+  /** Routes every non-text event to its focused store mutation. */
+  private applyNonTextEvent(
+    event: Exclude<DomainEvent, { type: 'text_message' }>,
+    identityId: IdentityId,
+  ): boolean {
     switch (event.type) {
-      case 'text_message': {
-        const protocolType = getIdentity(identityId)?.protocol.type;
-        const isMeshtastic = protocolType === 'meshtastic';
-        // Fully blocked LoRa sender: never stored, persisted, alerted, or seen by MECP.
-        if (protocolType && isLoraSenderBlocked(protocolType, event.payload.from)) {
-          skipListeners = true;
-          break;
-        }
-        if (protocolType === 'meshcom' && noteMeshcomNetworkTimeFromText(event.payload.payload)) {
-          skipListeners = true;
-          break;
-        }
-        if (event.payload.id) {
-          const byIdentity = useMessageStore.getState().messages[identityId] ?? {};
-          const dedupWindowMs = event.payload.tapback
-            ? MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS
-            : MESHCORE_ROOM_POST_DEDUP_WINDOW_MS;
-          const optimistic = Object.values(byIdentity).find(
-            (m) =>
-              m.status === 'sending' &&
-              m.id !== event.payload.id &&
-              m.from === event.payload.from &&
-              m.to === event.payload.to &&
-              m.channelIndex === event.payload.channelIndex &&
-              m.payload === event.payload.payload &&
-              Math.abs(m.timestamp - event.payload.timestamp) <= dedupWindowMs,
-          );
-          const roomOptimistic =
-            optimistic ?? findRoomPostOptimistic(Object.values(byIdentity), event.payload);
-          if (roomOptimistic) {
-            renameMessageId(identityId, roomOptimistic.id, event.payload.id);
-            if (roomOptimistic.status === 'sending' && event.payload.tapback) {
-              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
-              const renamed = useMessageStore.getState().messages[identityId]?.[event.payload.id];
-              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
-              if (renamed) {
-                upsertMessage(identityId, { ...renamed, status: 'acked' });
-              }
-            }
-            if (isMeshtastic) {
-              const tempNum = Number.parseInt(roomOptimistic.id, 10);
-              if (Number.isFinite(tempNum) && tempNum > 0) {
-                retargetMeshtasticOutboundTempId(tempNum, event.payload.id);
-                if (event.payload.tapback) {
-                  const realNum = Number.parseInt(event.payload.id, 10);
-                  if (Number.isFinite(realNum) && realNum > 0 && realNum !== tempNum) {
-                    void window.electronAPI.db
-                      .updateMessagePacketId(tempNum, realNum, event.payload.from)
-                      .catch((e: unknown) => {
-                        console.warn(
-                          'mcL0826 [PacketRouter] updateMessagePacketId failed ' +
-                            errLikeToLogString(e),
-                        );
-                      });
-                  }
-                }
-              }
-            }
-          }
-        }
-        // Upsert (not add) so an outbound echo carrying the same packetId-derived
-        // id merges into the optimistic row written by useSendMessage instead of
-        // creating a duplicate.
-        if (isMeshtastic) {
-          ensureMeshtasticChatSenderInNodeStore(identityId, event.payload.from, {
-            lastHeardAt: event.payload.timestamp,
-            source: 'rf',
-          });
-        }
-        const senderName = resolveMeshtasticSenderName(identityId, event.payload.from);
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
-        const existingRecord = useMessageStore.getState().messages[identityId]?.[event.payload.id];
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent when its identity bucket is missing.
-        const existingReceivedVia = existingRecord?.receivedVia;
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent before first receipt.
-        const existingLocalOrder = existingRecord?.localOrder;
-        const receivedVia =
-          existingReceivedVia === 'mqtt' || existingReceivedVia === 'both'
-            ? ('both' as const)
-            : ('rf' as const);
-        // A room post's `from` is the room server and its text still carries the author prefix.
-        // When the same post arrives again (the waiting-queue drain and the protocol both dispatch
-        // it, and rooms resend history), keep the author and body meshcoreIngest already stored;
-        // otherwise its merge prefers the room's name over an author it could not resolve. A room
-        // post id ends with the post's body (`meshcoreRoomMessageId`), so a stored row under this
-        // id is this post.
-        const storedRoomPost =
-          event.payload.roomServerId != null &&
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent before first receipt.
-          existingRecord != null
-            ? existingRecord
-            : undefined;
-        upsertMessage(identityId, {
-          id: event.payload.id,
-          from: storedRoomPost ? storedRoomPost.from : event.payload.from,
-          to: event.payload.to,
-          payload: storedRoomPost ? storedRoomPost.payload : event.payload.payload,
-          channelIndex: event.payload.channelIndex,
-          timestamp: event.payload.timestamp,
-          ...(protocolType === 'meshcore' && event.payload.channelIndex === -1
-            ? { localOrder: existingLocalOrder ?? nextMeshcoreMessageLocalOrder() }
-            : {}),
-          rxSnr: event.payload.rxSnr,
-          rxRssi: event.payload.rxRssi,
-          hopCount: event.payload.hopCount,
-          ...(event.payload.pathHashSizeBytes === 1 ||
-          event.payload.pathHashSizeBytes === 2 ||
-          event.payload.pathHashSizeBytes === 3
-            ? { rxPathHashSizeBytes: event.payload.pathHashSizeBytes }
-            : {}),
-          tapback: event.payload.tapback,
-          replyTo: event.payload.replyTo,
-          receivedVia,
-          ...(event.payload.roomServerId != null
-            ? { roomServerId: event.payload.roomServerId }
-            : {}),
-          ...(senderName && !storedRoomPost ? { senderName } : {}),
-        });
-        break;
-      }
       case 'node_info':
-        if (shouldSuppressMeshtasticGhostNodeHear(identityId, event.payload.nodeId)) {
-          skipListeners = true;
-          break;
-        }
-        upsertNode(identityId, event.payload);
-        break;
       case 'position':
-        if (shouldSuppressMeshtasticGhostNodeHear(identityId, event.payload.nodeId)) {
-          skipListeners = true;
-          break;
-        }
-        updatePosition(identityId, event.payload);
-        break;
       case 'telemetry':
-        if (shouldSuppressMeshtasticGhostNodeHear(identityId, event.payload.nodeId)) {
-          skipListeners = true;
-          break;
-        }
-        updateTelemetry(identityId, event.payload);
-        break;
-      case 'trace_route': {
-        addTraceRoute(identityId, event.payload);
-        if (getIdentity(identityId)?.protocol.type === 'meshtastic') {
-          const bumpIds = meshtasticTracerouteLastHeardNodeIds(
-            event.payload.from,
-            event.payload.to,
-          );
-          bumpMeshtasticNodesLastHeardAt(identityId, bumpIds, event.payload.timestamp);
-        }
-        break;
-      }
+        return this.applyGhostSuppressedNodeEvent(event, identityId);
+      case 'channel':
+        return this.applyChannelEvent(event, identityId);
+      case 'device_gps_state':
+      case 'security_config':
+      case 'module_config':
+      case 'telemetry_interval':
+      case 'meshtastic_config_slice':
+        return this.applyMeshtasticConfigEvent(event, identityId);
+      case 'trace_route':
+        this.applyTraceRouteEvent(event, identityId);
+        return false;
+      case 'device_metadata':
+        this.applyDeviceMetadataEvent(event, identityId);
+        return false;
+      default:
+        this.applyStoreEvent(event, identityId);
+        return false;
+    }
+  }
+
+  /** Store-only events without extra suppression rules. */
+  private applyStoreEvent(event: DomainEvent, identityId: IdentityId): void {
+    switch (event.type) {
       case 'waypoint':
         upsertWaypoint(identityId, event.payload);
         break;
-      case 'channel': {
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
-          skipListeners = true;
-          break;
-        }
-        const e = event.payload;
-        const existing = getDevice(identityId);
-        const name = e.name || (e.index === 0 ? 'Primary' : `Channel ${e.index}`);
-        const channels =
-          e.role !== 0
-            ? upsertByIndex(existing.channels, { index: e.index, name })
-            : existing.channels;
-        const channelConfigEntry: ChannelConfig = {
-          index: e.index,
-          name: e.name,
-          role: e.role,
-          psk: e.psk,
-          uplinkEnabled: e.uplinkEnabled,
-          downlinkEnabled: e.downlinkEnabled,
-          positionPrecision: e.positionPrecision,
-        };
-        const channelConfigs = upsertByIndex(existing.channelConfigs, channelConfigEntry);
-        setDeviceChannels(identityId, channels, channelConfigs);
-        break;
-      }
-      case 'device_gps_state':
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
-          skipListeners = true;
-          break;
-        }
-        setDeviceGpsState(identityId, event.payload.gpsMode, event.payload.fixedPosition);
-        break;
-      case 'security_config':
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
-          skipListeners = true;
-          break;
-        }
-        setSecurityConfig(identityId, event.payload);
-        break;
-      case 'module_config': {
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
-          skipListeners = true;
-          break;
-        }
-        const current = getDevice(identityId).moduleConfigs;
-        setModuleConfigs(identityId, {
-          ...current,
-          [event.payload.configType]: event.payload.value,
-        });
-        break;
-      }
-      case 'telemetry_interval':
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
-          skipListeners = true;
-          break;
-        }
-        setTelemetryDeviceUpdateInterval(identityId, event.payload.interval);
-        break;
-      case 'meshtastic_config_slice':
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
-          skipListeners = true;
-          break;
-        }
-        setMeshtasticConfigSlice(identityId, event.payload.configCase, event.payload.value);
-        break;
-      case 'queue_status': {
+      case 'queue_status':
         setConnection(identityId, {
           queueFree: event.payload.free,
           queueMax: event.payload.maxlen,
         });
         break;
-      }
       case 'device_log':
         appendDeviceLog(identityId, event.payload);
         break;
@@ -439,17 +270,6 @@ class PacketRouter {
       case 'device_status':
         setConnection(identityId, { status: event.payload.status as ConnectionStatus });
         break;
-      case 'device_metadata': {
-        const { firmwareVersion, hasWifi, hasEthernet } = event.payload;
-        const updates: Parameters<typeof setConnection>[1] = {};
-        if (firmwareVersion) updates.firmwareVersion = firmwareVersion;
-        if (hasWifi != null) updates.deviceHasWifi = hasWifi;
-        if (hasEthernet != null) updates.deviceHasEthernet = hasEthernet;
-        if (Object.keys(updates).length > 0) {
-          setConnection(identityId, updates);
-        }
-        break;
-      }
       case 'neighbor_info':
         upsertNeighborInfo(identityId, event.payload);
         break;
@@ -465,19 +285,253 @@ class PacketRouter {
       case 'meshcore_channel':
         upsertMeshcoreChannel(identityId, event.payload);
         break;
+      default:
+        break;
     }
-    if (skipListeners) return;
-    const listeners = [...this.listeners, ...(this.typedListeners.get(event.type) ?? [])].sort(
-      (a, b) => a.id - b.id,
+  }
+
+  /** Node/position/telemetry events share the Meshtastic ghost-hear suppression. */
+  private applyGhostSuppressedNodeEvent(
+    event: Extract<DomainEvent, { type: 'node_info' | 'position' | 'telemetry' }>,
+    identityId: IdentityId,
+  ): boolean {
+    if (shouldSuppressMeshtasticGhostNodeHear(identityId, event.payload.nodeId)) return true;
+    switch (event.type) {
+      case 'node_info':
+        upsertNode(identityId, event.payload);
+        break;
+      case 'position':
+        updatePosition(identityId, event.payload);
+        break;
+      case 'telemetry':
+        updateTelemetry(identityId, event.payload);
+        break;
+    }
+    return false;
+  }
+
+  private applyTraceRouteEvent(
+    event: Extract<DomainEvent, { type: 'trace_route' }>,
+    identityId: IdentityId,
+  ): void {
+    addTraceRoute(identityId, event.payload);
+    if (getIdentity(identityId)?.protocol.type !== 'meshtastic') return;
+    const bumpIds = meshtasticTracerouteLastHeardNodeIds(event.payload.from, event.payload.to);
+    bumpMeshtasticNodesLastHeardAt(identityId, bumpIds, event.payload.timestamp);
+  }
+
+  private applyChannelEvent(
+    event: Extract<DomainEvent, { type: 'channel' }>,
+    identityId: IdentityId,
+  ): boolean {
+    if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) return true;
+    const e = event.payload;
+    const existing = getDevice(identityId);
+    const name = e.name || (e.index === 0 ? 'Primary' : `Channel ${e.index}`);
+    const channels =
+      e.role !== 0 ? upsertByIndex(existing.channels, { index: e.index, name }) : existing.channels;
+    const channelConfigEntry: ChannelConfig = {
+      index: e.index,
+      name: e.name,
+      role: e.role,
+      psk: e.psk,
+      uplinkEnabled: e.uplinkEnabled,
+      downlinkEnabled: e.downlinkEnabled,
+      positionPrecision: e.positionPrecision,
+    };
+    const channelConfigs = upsertByIndex(existing.channelConfigs, channelConfigEntry);
+    setDeviceChannels(identityId, channels, channelConfigs);
+    return false;
+  }
+
+  /** Device-config events share the Meshtastic local-config-write suppression. */
+  private applyMeshtasticConfigEvent(
+    event: Extract<
+      DomainEvent,
+      {
+        type:
+          | 'device_gps_state'
+          | 'security_config'
+          | 'module_config'
+          | 'telemetry_interval'
+          | 'meshtastic_config_slice';
+      }
+    >,
+    identityId: IdentityId,
+  ): boolean {
+    if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) return true;
+    switch (event.type) {
+      case 'device_gps_state':
+        setDeviceGpsState(identityId, event.payload.gpsMode, event.payload.fixedPosition);
+        break;
+      case 'security_config':
+        setSecurityConfig(identityId, event.payload);
+        break;
+      case 'module_config': {
+        const current = getDevice(identityId).moduleConfigs;
+        setModuleConfigs(identityId, {
+          ...current,
+          [event.payload.configType]: event.payload.value,
+        });
+        break;
+      }
+      case 'telemetry_interval':
+        setTelemetryDeviceUpdateInterval(identityId, event.payload.interval);
+        break;
+      case 'meshtastic_config_slice':
+        setMeshtasticConfigSlice(identityId, event.payload.configCase, event.payload.value);
+        break;
+    }
+    return false;
+  }
+
+  private applyDeviceMetadataEvent(
+    event: Extract<DomainEvent, { type: 'device_metadata' }>,
+    identityId: IdentityId,
+  ): void {
+    const { firmwareVersion, hasWifi, hasEthernet } = event.payload;
+    const updates: Parameters<typeof setConnection>[1] = {};
+    if (firmwareVersion) updates.firmwareVersion = firmwareVersion;
+    if (hasWifi != null) updates.deviceHasWifi = hasWifi;
+    if (hasEthernet != null) updates.deviceHasEthernet = hasEthernet;
+    if (Object.keys(updates).length > 0) setConnection(identityId, updates);
+  }
+
+  /** Applies a text message; returns true when listeners should be skipped. */
+  private applyTextMessage(
+    event: Extract<DomainEvent, { type: 'text_message' }>,
+    identityId: IdentityId,
+  ): boolean {
+    const protocolType = getIdentity(identityId)?.protocol.type;
+    const isMeshtastic = protocolType === 'meshtastic';
+    // Fully blocked LoRa sender: never stored, persisted, alerted, or seen by MECP.
+    if (protocolType && isLoraSenderBlocked(protocolType, event.payload.from)) return true;
+    if (protocolType === 'meshcom' && noteMeshcomNetworkTimeFromText(event.payload.payload)) {
+      return true;
+    }
+    if (event.payload.id) {
+      this.mergeOptimisticTextMessage(event, identityId, isMeshtastic);
+    }
+    if (isMeshtastic) {
+      ensureMeshtasticChatSenderInNodeStore(identityId, event.payload.from, {
+        lastHeardAt: event.payload.timestamp,
+        source: 'rf',
+      });
+    }
+    this.upsertTextMessage(event, identityId);
+    return false;
+  }
+
+  /** Renames an optimistic outbound row to the packet id the radio echoed back. */
+  private mergeOptimisticTextMessage(
+    event: Extract<DomainEvent, { type: 'text_message' }>,
+    identityId: IdentityId,
+    isMeshtastic: boolean,
+  ): void {
+    const byIdentity = useMessageStore.getState().messages[identityId] ?? {};
+    const dedupWindowMs = event.payload.tapback
+      ? MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS
+      : MESHCORE_ROOM_POST_DEDUP_WINDOW_MS;
+    const optimistic = Object.values(byIdentity).find(
+      (m) =>
+        m.status === 'sending' &&
+        m.id !== event.payload.id &&
+        m.from === event.payload.from &&
+        m.to === event.payload.to &&
+        m.channelIndex === event.payload.channelIndex &&
+        m.payload === event.payload.payload &&
+        Math.abs(m.timestamp - event.payload.timestamp) <= dedupWindowMs,
     );
-    // Snapshot before invoking: listeners may detach themselves during dispatch.
-    for (const { listener } of listeners) {
-      try {
-        listener(event, identityId);
-      } catch (e) {
-        console.warn('mcL0827 [PacketRouter] listener error ' + errLikeToLogString(e));
+    const roomOptimistic =
+      optimistic ?? findRoomPostOptimistic(Object.values(byIdentity), event.payload);
+    if (!roomOptimistic) return;
+    renameMessageId(identityId, roomOptimistic.id, event.payload.id);
+    if (roomOptimistic.status === 'sending' && event.payload.tapback) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+      const renamed = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+      if (renamed) {
+        upsertMessage(identityId, { ...renamed, status: 'acked' });
       }
     }
+    if (isMeshtastic) {
+      this.retargetOptimisticTempId(roomOptimistic.id, event.payload);
+    }
+  }
+
+  /** Points Meshtastic outbound tracking and the DB at the real packet id. */
+  private retargetOptimisticTempId(
+    tempId: string,
+    payload: Extract<DomainEvent, { type: 'text_message' }>['payload'],
+  ): void {
+    const tempNum = Number.parseInt(tempId, 10);
+    if (!Number.isFinite(tempNum) || tempNum <= 0) return;
+    retargetMeshtasticOutboundTempId(tempNum, payload.id);
+    if (!payload.tapback) return;
+    const realNum = Number.parseInt(payload.id, 10);
+    if (!Number.isFinite(realNum) || realNum <= 0 || realNum === tempNum) return;
+    void window.electronAPI.db
+      .updateMessagePacketId(tempNum, realNum, payload.from)
+      .catch((e: unknown) => {
+        console.warn(
+          'mcL0826 [PacketRouter] updateMessagePacketId failed ' + errLikeToLogString(e),
+        );
+      });
+  }
+
+  /** Upserts the incoming text row, preserving an existing room-post author. */
+  private upsertTextMessage(
+    event: Extract<DomainEvent, { type: 'text_message' }>,
+    identityId: IdentityId,
+  ): void {
+    const protocolType = getIdentity(identityId)?.protocol.type;
+    const senderName = resolveMeshtasticSenderName(identityId, event.payload.from);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+    const existingRecord = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent when its identity bucket is missing.
+    const existingReceivedVia = existingRecord?.receivedVia;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent before first receipt.
+    const existingLocalOrder = existingRecord?.localOrder;
+    const receivedVia =
+      existingReceivedVia === 'mqtt' || existingReceivedVia === 'both'
+        ? ('both' as const)
+        : ('rf' as const);
+    // A room post's `from` is the room server and its text still carries the author prefix.
+    // When the same post arrives again (the waiting-queue drain and the protocol both dispatch
+    // it, and rooms resend history), keep the author and body meshcoreIngest already stored;
+    // otherwise its merge prefers the room's name over an author it could not resolve. A room
+    // post id ends with the post's body (`meshcoreRoomMessageId`), so a stored row under this
+    // id is this post.
+    const storedRoomPost =
+      event.payload.roomServerId != null &&
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent before first receipt.
+      existingRecord != null
+        ? existingRecord
+        : undefined;
+    upsertMessage(identityId, {
+      id: event.payload.id,
+      from: storedRoomPost ? storedRoomPost.from : event.payload.from,
+      to: event.payload.to,
+      payload: storedRoomPost ? storedRoomPost.payload : event.payload.payload,
+      channelIndex: event.payload.channelIndex,
+      timestamp: event.payload.timestamp,
+      ...(protocolType === 'meshcore' && event.payload.channelIndex === -1
+        ? { localOrder: existingLocalOrder ?? nextMeshcoreMessageLocalOrder() }
+        : {}),
+      rxSnr: event.payload.rxSnr,
+      rxRssi: event.payload.rxRssi,
+      hopCount: event.payload.hopCount,
+      ...(event.payload.pathHashSizeBytes === 1 ||
+      event.payload.pathHashSizeBytes === 2 ||
+      event.payload.pathHashSizeBytes === 3
+        ? { rxPathHashSizeBytes: event.payload.pathHashSizeBytes }
+        : {}),
+      tapback: event.payload.tapback,
+      replyTo: event.payload.replyTo,
+      receivedVia,
+      ...(event.payload.roomServerId != null ? { roomServerId: event.payload.roomServerId } : {}),
+      ...(senderName && !storedRoomPost ? { senderName } : {}),
+    });
   }
 }
 
