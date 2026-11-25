@@ -845,6 +845,27 @@ function safeMeshcoreRadioNodeId(value: unknown): number {
   return n;
 }
 
+type SaveMessageInput = Record<string, unknown> & {
+  sender_id: number;
+  sender_name: string;
+  payload: string;
+  channel: number;
+  timestamp: number;
+  packetId?: number;
+  status?: string;
+  error?: string;
+  emoji?: number;
+  replyId?: number;
+  to?: number;
+  mqttStatus?: string;
+  receivedVia?: string;
+};
+
+type SaveMeshcoreMessageInput = Record<string, unknown> & {
+  payload: string;
+  timestamp: number;
+};
+
 type ValidationRule = readonly [ok: boolean, message: string];
 
 /** Throws the first failing rule's message, preserving declaration order. */
@@ -887,21 +908,7 @@ function normalizeOptionalNodeId(
   target[key] = raw >>> 0;
 }
 
-function validateSaveMessage(message: unknown): asserts message is Record<string, unknown> & {
-  sender_id: number;
-  sender_name: string;
-  payload: string;
-  channel: number;
-  timestamp: number;
-  packetId?: number;
-  status?: string;
-  error?: string;
-  emoji?: number;
-  replyId?: number;
-  to?: number;
-  mqttStatus?: string;
-  receivedVia?: string;
-} {
+function validateSaveMessage(message: unknown): asserts message is SaveMessageInput {
   if (!message || typeof message !== 'object')
     throw new Error('db:saveMessage: message must be an object');
   const m = message as Record<string, unknown>;
@@ -966,10 +973,7 @@ function validateSaveNode(
   checkStr('source', 64);
 }
 
-function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string, unknown> & {
-  payload: string;
-  timestamp: number;
-} {
+function validateSaveMeshcoreMessage(msg: unknown): asserts msg is SaveMeshcoreMessageInput {
   if (!msg || typeof msg !== 'object')
     throw new Error('db:saveMeshcoreMessage: message must be an object');
   const m = msg as Record<string, unknown>;
@@ -1081,6 +1085,186 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
       'db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128',
     ],
   ]);
+}
+
+function buildMeshtasticMessageCore(
+  message: SaveMessageInput,
+): Pick<
+  Parameters<typeof persistMeshtasticMessage>[1],
+  | 'sender_id'
+  | 'sender_name'
+  | 'payload'
+  | 'channel'
+  | 'timestamp'
+  | 'packet_id'
+  | 'status'
+  | 'error'
+  | 'emoji'
+  | 'reply_id'
+  | 'to_node'
+> {
+  return {
+    sender_id: safeNonNegativeInt(message.sender_id),
+    sender_name: message.sender_name,
+    payload: message.payload,
+    channel: safeNonNegativeInt(message.channel),
+    timestamp: message.timestamp,
+    packet_id: message.packetId != null ? safeNonNegativeInt(message.packetId) : null,
+    status: message.status ?? 'acked',
+    error: message.error ?? null,
+    emoji: message.emoji != null ? (sanitizeUnicodeReactionScalar(message.emoji) ?? null) : null,
+    reply_id: message.replyId != null ? safeNonNegativeInt(message.replyId) : null,
+    to_node: message.to != null ? safeNonNegativeInt(message.to) : null,
+  };
+}
+
+function buildMeshtasticMessageMeta(
+  message: SaveMessageInput,
+): Pick<
+  Parameters<typeof persistMeshtasticMessage>[1],
+  | 'mqtt_status'
+  | 'received_via'
+  | 'reply_preview_text'
+  | 'reply_preview_sender'
+  | 'rx_hops'
+  | 'via_store_forward'
+  | 'radio_node_id'
+  | 'channel_key'
+  | 'received_at'
+> {
+  const radioNodeId = message.radioNodeId != null ? Number(message.radioNodeId) >>> 0 : 0;
+  const validReceivedVia = ['rf', 'mqtt', 'both'];
+  return {
+    mqtt_status: message.mqttStatus ?? null,
+    received_via:
+      message.receivedVia != null && validReceivedVia.includes(message.receivedVia)
+        ? message.receivedVia
+        : null,
+    reply_preview_text:
+      typeof message.replyPreviewText === 'string' ? message.replyPreviewText : null,
+    reply_preview_sender:
+      typeof message.replyPreviewSender === 'string' ? message.replyPreviewSender : null,
+    rx_hops:
+      message.rxHops != null &&
+      typeof message.rxHops === 'number' &&
+      Number.isFinite(message.rxHops)
+        ? Math.trunc(message.rxHops)
+        : null,
+    via_store_forward: message.viaStoreForward ? 1 : 0,
+    radio_node_id: radioNodeId > 0 ? radioNodeId : null,
+    channel_key: isChannelIdentityKey(message.channelKey) ? message.channelKey : null,
+    received_at: chatReceivedAtForDb(message.receivedAt),
+  };
+}
+
+function buildPersistableMeshtasticMessage(
+  message: SaveMessageInput,
+): Parameters<typeof persistMeshtasticMessage>[1] {
+  return { ...buildMeshtasticMessageCore(message), ...buildMeshtasticMessageMeta(message) };
+}
+
+function resolveMeshcoreReplyId(m: SaveMeshcoreMessageInput): number | null {
+  const replyId = m.reply_id != null ? Number(m.reply_id) : null;
+  if (replyId != null && (!Number.isFinite(replyId) || replyId < 0)) {
+    throw new Error('db:saveMeshcoreMessage: reply_id must be a non-negative finite number');
+  }
+  return replyId;
+}
+
+function buildMeshcoreMessageIdentity(
+  m: SaveMeshcoreMessageInput,
+  replyId: number | null,
+): Pick<
+  Parameters<typeof persistMeshcoreMessage>[1],
+  | 'sender_id'
+  | 'sender_name'
+  | 'payload'
+  | 'channel_idx'
+  | 'local_order'
+  | 'packet_id'
+  | 'reply_id'
+  | 'to_node'
+  | 'room_server_id'
+  | 'radio_node_id'
+  | 'channel_key'
+> {
+  const radioNodeId = (() => {
+    if (m.radio_node_id == null) return null;
+    const radio = Number(m.radio_node_id) >>> 0;
+    return radio > 0 ? radio : null;
+  })();
+  return {
+    sender_id: m.sender_id != null ? Number(m.sender_id) >>> 0 : null,
+    sender_name: typeof m.sender_name === 'string' ? m.sender_name : null,
+    payload: m.payload,
+    channel_idx: meshcoreMessageChannelIndex(
+      m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
+      m.to_node != null ? Number(m.to_node) >>> 0 : null,
+      m.room_server_id != null ? Number(m.room_server_id) : null,
+    ),
+    local_order: m.local_order != null ? Number(m.local_order) : null,
+    packet_id: m.packet_id != null ? Number(m.packet_id) : null,
+    reply_id: replyId,
+    to_node: m.to_node != null ? Number(m.to_node) >>> 0 : null,
+    room_server_id:
+      m.room_server_id != null && Number.isFinite(Number(m.room_server_id))
+        ? Math.trunc(Number(m.room_server_id))
+        : null,
+    radio_node_id: radioNodeId,
+    channel_key: isChannelIdentityKey(m.channel_key) ? m.channel_key : null,
+  };
+}
+
+function buildMeshcoreMessageDelivery(
+  m: SaveMeshcoreMessageInput,
+): Pick<
+  Parameters<typeof persistMeshcoreMessage>[1],
+  | 'timestamp'
+  | 'status'
+  | 'emoji'
+  | 'received_via'
+  | 'rx_packet_fingerprint'
+  | 'reply_preview_text'
+  | 'reply_preview_sender'
+  | 'rx_hops'
+  | 'rx_path_hash_bytes'
+  | 'received_at'
+> {
+  const validReceivedVia = ['rf', 'mqtt', 'both'] as const;
+  const receivedViaRaw = m.received_via;
+  const received_via =
+    typeof receivedViaRaw === 'string' &&
+    (validReceivedVia as readonly string[]).includes(receivedViaRaw)
+      ? receivedViaRaw
+      : null;
+  return {
+    timestamp: effectiveMessageTimestampMs(m.timestamp),
+    status: typeof m.status === 'string' ? m.status : 'acked',
+    emoji: m.emoji != null ? (sanitizeUnicodeReactionScalar(m.emoji) ?? null) : null,
+    received_via,
+    rx_packet_fingerprint:
+      typeof m.rx_packet_fingerprint === 'string' ? m.rx_packet_fingerprint.toUpperCase() : null,
+    reply_preview_text:
+      typeof m.reply_preview_text === 'string' ? m.reply_preview_text.slice(0, 50) : null,
+    reply_preview_sender:
+      typeof m.reply_preview_sender === 'string' ? m.reply_preview_sender.slice(0, 64) : null,
+    rx_hops:
+      m.rx_hops != null && Number.isFinite(Number(m.rx_hops))
+        ? Math.trunc(Number(m.rx_hops))
+        : null,
+    rx_path_hash_bytes: m.rx_path_hash_bytes == null ? null : Number(m.rx_path_hash_bytes),
+    received_at: chatReceivedAtForDb(m.received_at),
+  };
+}
+
+function buildMeshcoreMessageRowParams(
+  m: SaveMeshcoreMessageInput,
+): Parameters<typeof persistMeshcoreMessage>[1] {
+  const replyId = resolveMeshcoreReplyId(m);
+  return {
+    ...buildMeshcoreMessageIdentity(m, replyId),
+    ...buildMeshcoreMessageDelivery(m),
+  };
 }
 
 function validateTakSettings(settings: unknown): asserts settings is TAKSettings {
@@ -4072,40 +4256,7 @@ ipcMain.handle('db:saveMessage', (event, message) => {
     validateSaveMessage(message);
     const db = getDbForIpc('db:saveMessage');
     if (!db) return { changes: 0 };
-    const radioNodeId = message.radioNodeId != null ? Number(message.radioNodeId) >>> 0 : 0;
-    const validReceivedVia = ['rf', 'mqtt', 'both'];
-    return persistMeshtasticMessage(db, {
-      sender_id: safeNonNegativeInt(message.sender_id),
-      sender_name: message.sender_name,
-      payload: message.payload,
-      channel: safeNonNegativeInt(message.channel),
-      timestamp: message.timestamp,
-      packet_id: message.packetId != null ? safeNonNegativeInt(message.packetId) : null,
-      status: message.status ?? 'acked',
-      error: message.error ?? null,
-      emoji: message.emoji != null ? (sanitizeUnicodeReactionScalar(message.emoji) ?? null) : null,
-      reply_id: message.replyId != null ? safeNonNegativeInt(message.replyId) : null,
-      to_node: message.to != null ? safeNonNegativeInt(message.to) : null,
-      mqtt_status: message.mqttStatus ?? null,
-      received_via:
-        message.receivedVia != null && validReceivedVia.includes(message.receivedVia)
-          ? message.receivedVia
-          : null,
-      reply_preview_text:
-        typeof message.replyPreviewText === 'string' ? message.replyPreviewText : null,
-      reply_preview_sender:
-        typeof message.replyPreviewSender === 'string' ? message.replyPreviewSender : null,
-      rx_hops:
-        message.rxHops != null &&
-        typeof message.rxHops === 'number' &&
-        Number.isFinite(message.rxHops)
-          ? Math.trunc(message.rxHops)
-          : null,
-      via_store_forward: message.viaStoreForward ? 1 : 0,
-      radio_node_id: radioNodeId > 0 ? radioNodeId : null,
-      channel_key: isChannelIdentityKey(message.channelKey) ? message.channelKey : null,
-      received_at: chatReceivedAtForDb(message.receivedAt),
-    });
+    return persistMeshtasticMessage(db, buildPersistableMeshtasticMessage(message));
   } catch (err) {
     finishDbIpcHandler('db:saveMessage', err);
   }
@@ -5685,64 +5836,9 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
   if (!validateIpcSender(event)) throw new Error('db:saveMeshcoreMessage: unauthorized sender');
   try {
     validateSaveMeshcoreMessage(message);
-    const m = message as Record<string, unknown>;
-    const replyId = m.reply_id != null ? Number(m.reply_id) : null;
-    if (replyId != null && (!Number.isFinite(replyId) || replyId < 0)) {
-      throw new Error('db:saveMeshcoreMessage: reply_id must be a non-negative finite number');
-    }
+    const rowParams = buildMeshcoreMessageRowParams(message);
     const db = getDbForIpc('db:saveMeshcoreMessage');
     if (!db) return { changes: 0 };
-    const validReceivedVia = ['rf', 'mqtt', 'both'] as const;
-    const receivedViaRaw = m.received_via;
-    const received_via =
-      typeof receivedViaRaw === 'string' &&
-      (validReceivedVia as readonly string[]).includes(receivedViaRaw)
-        ? receivedViaRaw
-        : null;
-    const rxFp =
-      typeof m.rx_packet_fingerprint === 'string' ? m.rx_packet_fingerprint.toUpperCase() : null;
-    const replyPreviewText =
-      typeof m.reply_preview_text === 'string' ? m.reply_preview_text.slice(0, 50) : null;
-    const replyPreviewSender =
-      typeof m.reply_preview_sender === 'string' ? m.reply_preview_sender.slice(0, 64) : null;
-    const rowParams = {
-      sender_id: m.sender_id != null ? Number(m.sender_id) >>> 0 : null,
-      sender_name: typeof m.sender_name === 'string' ? m.sender_name : null,
-      payload: m.payload as string,
-      channel_idx: meshcoreMessageChannelIndex(
-        m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
-        m.to_node != null ? Number(m.to_node) >>> 0 : null,
-        m.room_server_id != null ? Number(m.room_server_id) : null,
-      ),
-      local_order: m.local_order != null ? Number(m.local_order) : null,
-      timestamp: effectiveMessageTimestampMs(Number(m.timestamp)),
-      status: typeof m.status === 'string' ? m.status : 'acked',
-      packet_id: m.packet_id != null ? Number(m.packet_id) : null,
-      emoji: m.emoji != null ? (sanitizeUnicodeReactionScalar(m.emoji) ?? null) : null,
-      reply_id: replyId,
-      to_node: m.to_node != null ? Number(m.to_node) >>> 0 : null,
-      received_via,
-      rx_packet_fingerprint: rxFp,
-      reply_preview_text: replyPreviewText,
-      reply_preview_sender: replyPreviewSender,
-      rx_hops:
-        m.rx_hops != null && Number.isFinite(Number(m.rx_hops))
-          ? Math.trunc(Number(m.rx_hops))
-          : null,
-      rx_path_hash_bytes: m.rx_path_hash_bytes == null ? null : Number(m.rx_path_hash_bytes),
-      room_server_id:
-        m.room_server_id != null && Number.isFinite(Number(m.room_server_id))
-          ? Math.trunc(Number(m.room_server_id))
-          : null,
-      radio_node_id: (() => {
-        if (m.radio_node_id == null) return null;
-        const radio = Number(m.radio_node_id) >>> 0;
-        return radio > 0 ? radio : null;
-      })(),
-      channel_key: isChannelIdentityKey(m.channel_key) ? m.channel_key : null,
-      received_at: chatReceivedAtForDb(m.received_at),
-    };
-
     return persistMeshcoreMessage(db, rowParams);
   } catch (err) {
     finishDbIpcHandler('db:saveMeshcoreMessage', err);
