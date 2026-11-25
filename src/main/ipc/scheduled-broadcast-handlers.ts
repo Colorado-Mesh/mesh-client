@@ -151,6 +151,57 @@ function rowFromDb(r: DbRow): ScheduledBroadcastRow {
   };
 }
 
+function validateChannelTarget(
+  o: Record<string, unknown>,
+  target: ScheduledBroadcastTarget,
+  index: number,
+): void {
+  if (
+    !Number.isInteger(o.channelIndex) ||
+    (o.channelIndex as number) < 0 ||
+    (o.channelIndex as number) > 255
+  ) {
+    fail(`targets[${index}].channelIndex`);
+  }
+  target.channelIndex = o.channelIndex as number;
+  if (o.channelKey == null) return;
+  if (typeof o.channelKey !== 'string' || !HEX_KEY_RE.test(o.channelKey)) {
+    fail(`targets[${index}].channelKey`);
+  }
+  target.channelKey = o.channelKey.toLowerCase();
+}
+
+function validateRoomTarget(
+  o: Record<string, unknown>,
+  target: ScheduledBroadcastTarget,
+  index: number,
+): void {
+  if (typeof o.roomPubKeyHex !== 'string' || !HEX_KEY_RE.test(o.roomPubKeyHex)) {
+    fail(`targets[${index}].roomPubKeyHex`);
+  }
+  target.roomPubKeyHex = o.roomPubKeyHex.toLowerCase();
+  if (o.roomNodeId == null) return;
+  if (!Number.isInteger(o.roomNodeId) || (o.roomNodeId as number) < 0) {
+    fail(`targets[${index}].roomNodeId`);
+  }
+  target.roomNodeId = o.roomNodeId as number;
+}
+
+function validateRrcRoomTarget(
+  o: Record<string, unknown>,
+  target: ScheduledBroadcastTarget,
+  index: number,
+): void {
+  if (typeof o.hubDestHash !== 'string' || !o.hubDestHash || o.hubDestHash.length > 128) {
+    fail(`targets[${index}].hubDestHash`);
+  }
+  if (typeof o.room !== 'string' || !o.room || o.room.length > 256) {
+    fail(`targets[${index}].room`);
+  }
+  target.hubDestHash = o.hubDestHash;
+  target.room = o.room;
+}
+
 function validateTarget(t: unknown, index: number): ScheduledBroadcastTarget {
   if (!t || typeof t !== 'object') fail(`targets[${index}]`);
   const o = t as Record<string, unknown>;
@@ -166,41 +217,19 @@ function validateTarget(t: unknown, index: number): ScheduledBroadcastTarget {
     label: typeof o.label === 'string' ? o.label.slice(0, 128) : '',
     enabled: o.enabled === true,
   };
-  if (kind === 'meshtastic-channel' || kind === 'meshcore-channel') {
-    if (
-      !Number.isInteger(o.channelIndex) ||
-      (o.channelIndex as number) < 0 ||
-      (o.channelIndex as number) > 255
-    ) {
-      fail(`targets[${index}].channelIndex`);
-    }
-    target.channelIndex = o.channelIndex as number;
-    if (o.channelKey != null) {
-      if (typeof o.channelKey !== 'string' || !HEX_KEY_RE.test(o.channelKey)) {
-        fail(`targets[${index}].channelKey`);
-      }
-      target.channelKey = o.channelKey.toLowerCase();
-    }
-  } else if (kind === 'meshcore-room') {
-    if (typeof o.roomPubKeyHex !== 'string' || !HEX_KEY_RE.test(o.roomPubKeyHex)) {
-      fail(`targets[${index}].roomPubKeyHex`);
-    }
-    target.roomPubKeyHex = o.roomPubKeyHex.toLowerCase();
-    if (o.roomNodeId != null) {
-      if (!Number.isInteger(o.roomNodeId) || (o.roomNodeId as number) < 0) {
-        fail(`targets[${index}].roomNodeId`);
-      }
-      target.roomNodeId = o.roomNodeId as number;
-    }
-  } else if (kind === 'rrc-room') {
-    if (typeof o.hubDestHash !== 'string' || !o.hubDestHash || o.hubDestHash.length > 128) {
-      fail(`targets[${index}].hubDestHash`);
-    }
-    if (typeof o.room !== 'string' || !o.room || o.room.length > 256) {
-      fail(`targets[${index}].room`);
-    }
-    target.hubDestHash = o.hubDestHash;
-    target.room = o.room;
+  switch (kind) {
+    case 'meshtastic-channel':
+    case 'meshcore-channel':
+      validateChannelTarget(o, target, index);
+      break;
+    case 'meshcore-room':
+      validateRoomTarget(o, target, index);
+      break;
+    case 'rrc-room':
+      validateRrcRoomTarget(o, target, index);
+      break;
+    default:
+      break;
   }
   return target;
 }
