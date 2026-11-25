@@ -258,6 +258,55 @@ function parseJsonTextFields(json: Record<string, unknown>): ParsedJsonTextField
   return { text, emoji, replyId };
 }
 
+interface JsonNodeInfoFields {
+  longName: string;
+  shortName: string;
+  hwModel: number;
+  role: number | undefined;
+}
+
+function resolveJsonNodeInfoFields(json: Record<string, unknown>): JsonNodeInfoFields {
+  const user = json.user as Record<string, unknown> | undefined;
+  const payload = json.payload as Record<string, unknown> | undefined;
+  // Fall back to the root JSON object when node info fields are at the top level
+  // (no "user" or "payload" wrapper) — some firmware versions omit the wrapper.
+  const userData = user ?? payload ?? json;
+  const longName = (userData.longName ?? userData.long_name ?? userData.longname ?? '') as string;
+  const shortName = (userData.shortName ??
+    userData.short_name ??
+    userData.shortname ??
+    '') as string;
+  const hwModelNum = userData.hwModel ?? userData.hw_model ?? userData.hardware ?? 0;
+  return {
+    longName,
+    shortName,
+    hwModel: typeof hwModelNum === 'number' ? hwModelNum : 0,
+    role: userData.role as number | undefined,
+  };
+}
+
+interface JsonPositionCoords {
+  lat: number | undefined;
+  lon: number | undefined;
+  altitude: number | undefined;
+}
+
+function resolveJsonPositionCoords(json: Record<string, unknown>): JsonPositionCoords {
+  const data = (json.payload as Record<string, unknown> | undefined) ?? json;
+  const latitudeI = (data.latitudeI ?? data.latitude_i) as number | undefined;
+  const longitudeI = (data.longitudeI ?? data.longitude_i) as number | undefined;
+  const altitude = data.altitude as number | undefined;
+  const latRaw = (data.latitude ?? data.lat) as number | undefined;
+  const lonRaw = (data.longitude ?? data.lon) as number | undefined;
+  if (latitudeI !== undefined && longitudeI !== undefined) {
+    return { lat: latitudeI / 1e7, lon: longitudeI / 1e7, altitude };
+  }
+  if (latRaw !== undefined && lonRaw !== undefined) {
+    return { lat: latRaw, lon: lonRaw, altitude };
+  }
+  return { lat: undefined, lon: undefined, altitude };
+}
+
 function looksLikeBareJsonNodeInfo(json: Record<string, unknown>): boolean {
   return (
     json.longName !== undefined ||
@@ -1655,33 +1704,49 @@ export class MQTTManager extends EventEmitter {
   private decodeServiceEnvelopeWithTrailingNullRetry(bytes: Uint8Array, topic: string): void {
     try {
       this.decodeAndHandleServiceEnvelope(bytes, topic);
+      return;
     } catch (err) {
-      let decodeErr: unknown = err;
-      let msg = err instanceof Error ? err.message : String(err);
-      if (isIllegalTagFieldZero(msg) && bytes.length > 0 && bytes[bytes.length - 1] === 0) {
-        let currentBytes = bytes;
-        while (currentBytes.length > 0 && currentBytes[currentBytes.length - 1] === 0) {
-          currentBytes = currentBytes.subarray(0, currentBytes.length - 1);
-          try {
-            this.decodeAndHandleServiceEnvelope(currentBytes, topic);
-            return;
-          } catch (retryErr) {
-            console.debug('[main/mqtt-manager] catch:', retryErr);
-
-            decodeErr = retryErr;
-            msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-            if (!isIllegalTagFieldZero(msg)) break;
-          }
-        }
+      // catch-no-log-ok delegated to reportBadServiceEnvelope and the retry loop debug log.
+      const msg = err instanceof Error ? err.message : String(err);
+      const hasTrailingNull = bytes.length > 0 && bytes[bytes.length - 1] === 0;
+      if (!isIllegalTagFieldZero(msg) || !hasTrailingNull) {
+        this.reportBadServiceEnvelope(topic, bytes, err);
+        return;
       }
-
-      const finalMsg = decodeErr instanceof Error ? decodeErr.message : String(decodeErr);
-      this.rememberBadEnvelope(topic, bytes);
-      this.logSampledDebug(
-        this.serviceEnvelopeDecodeFailureLogKey(topic, bytes),
-        `[Meshtastic MQTT] ServiceEnvelope decode failed: ${sanitizeLogMessage(finalMsg)} | Topic: ${sanitizeLogMessage(topic)}`,
-      );
+      const retry = this.retryEnvelopeWithoutTrailingNulls(bytes, topic);
+      if (retry.ok) return;
+      this.reportBadServiceEnvelope(topic, bytes, retry.error ?? err);
     }
+  }
+
+  private retryEnvelopeWithoutTrailingNulls(
+    bytes: Uint8Array,
+    topic: string,
+  ): { ok: boolean; error: unknown } {
+    let currentBytes = bytes;
+    let decodeErr: unknown = null;
+    while (currentBytes.length > 0 && currentBytes[currentBytes.length - 1] === 0) {
+      currentBytes = currentBytes.subarray(0, currentBytes.length - 1);
+      try {
+        this.decodeAndHandleServiceEnvelope(currentBytes, topic);
+        return { ok: true, error: null };
+      } catch (retryErr) {
+        console.debug('[main/mqtt-manager] catch:', retryErr);
+        decodeErr = retryErr;
+        const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+        if (!isIllegalTagFieldZero(retryMsg)) break;
+      }
+    }
+    return { ok: false, error: decodeErr };
+  }
+
+  private reportBadServiceEnvelope(topic: string, bytes: Uint8Array, err: unknown): void {
+    const finalMsg = err instanceof Error ? err.message : String(err);
+    this.rememberBadEnvelope(topic, bytes);
+    this.logSampledDebug(
+      this.serviceEnvelopeDecodeFailureLogKey(topic, bytes),
+      `[Meshtastic MQTT] ServiceEnvelope decode failed: ${sanitizeLogMessage(finalMsg)} | Topic: ${sanitizeLogMessage(topic)}`,
+    );
   }
 
   private decodeAndHandleServiceEnvelope(bytes: Uint8Array, topic: string): void {
@@ -1822,21 +1887,7 @@ export class MQTTManager extends EventEmitter {
     const nodeId = this.parseFromNodeId(json.from, `nodeinfo topic=${topic}`);
     if (nodeId === null) return;
 
-    const user = json.user as Record<string, unknown> | undefined;
-    const payload = json.payload as Record<string, unknown> | undefined;
-    // Fall back to the root JSON object when node info fields are at the top level
-    // (no "user" or "payload" wrapper) — some firmware versions omit the wrapper.
-    const userData = user ?? payload ?? json;
-
-    const longName = (userData.longName ?? userData.long_name ?? userData.longname ?? '') as string;
-    const shortName = (userData.shortName ??
-      userData.short_name ??
-      userData.shortname ??
-      '') as string;
-    const hwModelNum = userData.hwModel ?? userData.hw_model ?? userData.hardware ?? 0;
-    const hwModel = typeof hwModelNum === 'number' ? hwModelNum : 0;
-    const role = userData.role as number | undefined;
-
+    const { longName, shortName, hwModel, role } = resolveJsonNodeInfoFields(json);
     const now = Date.now();
     const processedShortName = meshtasticShortNameAfterClearingDefault(longName, shortName, nodeId);
 
@@ -1905,26 +1956,7 @@ export class MQTTManager extends EventEmitter {
     const nodeId = this.parseFromNodeId(json.from, `position topic=${topic}`);
     if (nodeId === null) return;
 
-    const jsonPayload = json.payload as Record<string, unknown> | undefined;
-    const data = jsonPayload ?? json;
-
-    const latitudeI = (data.latitudeI ?? data.latitude_i) as number | undefined;
-    const longitudeI = (data.longitudeI ?? data.longitude_i) as number | undefined;
-    const altitude = data.altitude as number | undefined;
-
-    const latRaw = (data.latitude ?? data.lat) as number | undefined;
-    const lonRaw = (data.longitude ?? data.lon) as number | undefined;
-
-    let lat: number | undefined;
-    let lon: number | undefined;
-
-    if (latitudeI !== undefined && longitudeI !== undefined) {
-      lat = latitudeI / 1e7;
-      lon = longitudeI / 1e7;
-    } else if (latRaw !== undefined && lonRaw !== undefined) {
-      lat = latRaw;
-      lon = lonRaw;
-    }
+    const { lat, lon, altitude } = resolveJsonPositionCoords(json);
 
     if (lat === undefined || lon === undefined) {
       this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
