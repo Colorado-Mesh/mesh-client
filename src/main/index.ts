@@ -5564,17 +5564,28 @@ ipcMain.handle('chat:outbox:list', (event, protocol: unknown) => {
   }
 });
 
+function validateOutboxAddEntry(entry: unknown): Record<string, unknown> {
+  if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
+  const e = entry as Record<string, unknown>;
+  assertValidationRules([
+    [
+      typeof e.protocol === 'string' && OUTBOX_VALID_PROTOCOLS.has(e.protocol),
+      'chat:outbox:add: invalid protocol',
+    ],
+    [typeof e.viewKey === 'string', 'chat:outbox:add: invalid viewKey'],
+    [typeof e.channel === 'number', 'chat:outbox:add: invalid channel'],
+    [
+      typeof e.payload === 'string' && !(e.payload.length === 0 || e.payload.length > 2048),
+      'chat:outbox:add: invalid payload',
+    ],
+  ]);
+  return e;
+}
+
 ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
   try {
     assertIpcSender(event, 'chat:outbox:add');
-    if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
-    const e = entry as Record<string, unknown>;
-    if (typeof e.protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(e.protocol))
-      throw new Error('chat:outbox:add: invalid protocol');
-    if (typeof e.viewKey !== 'string') throw new Error('chat:outbox:add: invalid viewKey');
-    if (typeof e.channel !== 'number') throw new Error('chat:outbox:add: invalid channel');
-    if (typeof e.payload !== 'string' || e.payload.length === 0 || e.payload.length > 2048)
-      throw new Error('chat:outbox:add: invalid payload');
+    const e = validateOutboxAddEntry(entry);
     const now = Date.now();
     const db = getDbForIpc('chat:outbox:add');
     if (!db) throw new Error('chat:outbox:add: database closed');
