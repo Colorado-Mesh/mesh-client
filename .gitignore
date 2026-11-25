@@ -28,6 +28,7 @@ release/
 test-results/
 playwright-report/
 coverage/
+coverage-json/
 .vitest-reports/
 .eslintcache
 .context-os

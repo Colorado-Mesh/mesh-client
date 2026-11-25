@@ -1183,34 +1183,40 @@ function validateMqttUpdateTopicPrefixArgs(args: unknown): void {
   if (a.topicPrefix.length > 128) throw new Error('mqtt:updateTopicPrefix: topicPrefix too long');
 }
 
+function assertPositiveFiniteNodeId(value: unknown, label: string): void {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error(`mqtt:publish: ${label} must be a positive node id`);
+  }
+}
+
+function assertNonNegativeInteger(value: unknown, label: string): void {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error(`mqtt:publish: ${label} must be a non-negative integer`);
+  }
+}
+
+function assertOptionalNonNegativeInteger(value: unknown, label: string): void {
+  if (value == null) return;
+  assertNonNegativeInteger(value, label);
+}
+
+function assertOptionalString(value: unknown, message: string): void {
+  if (value != null && typeof value !== 'string') throw new Error(message);
+}
+
 function validateMqttPublishArgs(args: unknown): void {
   if (!args || typeof args !== 'object') throw new Error('mqtt:publish: args must be an object');
   const a = args as Record<string, unknown>;
   if (typeof a.text !== 'string') throw new Error('mqtt:publish: text must be a string');
   if (a.text.length > MAX_PAYLOAD_LENGTH) throw new Error('mqtt:publish: text too long');
-  const from = Number(a.from);
-  if (!Number.isFinite(from) || from <= 0)
-    throw new Error('mqtt:publish: from must be a positive node id');
-  const channel = Number(a.channel);
-  if (!Number.isFinite(channel) || channel < 0)
-    throw new Error('mqtt:publish: channel must be a non-negative integer');
-  if (a.destination != null) {
-    const dest = Number(a.destination);
-    if (!Number.isFinite(dest) || dest < 0)
-      throw new Error('mqtt:publish: destination must be a non-negative integer');
-  }
-  if (a.channelName != null && typeof a.channelName !== 'string')
-    throw new Error('mqtt:publish: channelName must be a string');
-  if (a.emoji != null) {
-    const emoji = Number(a.emoji);
-    if (!Number.isFinite(emoji) || emoji < 0)
-      throw new Error('mqtt:publish: emoji must be a non-negative integer');
-  }
-  if (a.replyId != null) {
-    const replyId = Number(a.replyId);
-    if (!Number.isFinite(replyId) || replyId < 0)
-      throw new Error('mqtt:publish: replyId must be a non-negative integer');
-  }
+  assertPositiveFiniteNodeId(a.from, 'from');
+  assertNonNegativeInteger(a.channel, 'channel');
+  assertOptionalNonNegativeInteger(a.destination, 'destination');
+  assertOptionalString(a.channelName, 'mqtt:publish: channelName must be a string');
+  assertOptionalNonNegativeInteger(a.emoji, 'emoji');
+  assertOptionalNonNegativeInteger(a.replyId, 'replyId');
   if (typeof a.publishJsonMirror !== 'boolean') {
     throw new Error('mqtt:publish: publishJsonMirror must be a boolean');
   }

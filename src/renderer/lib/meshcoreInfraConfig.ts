@@ -193,32 +193,56 @@ export async function readInfraConfig(
   return { values, unavailable };
 }
 
+function hasControlChars(value: string): boolean {
+  return /[\r\n\0]/.test(value);
+}
+
+function exceedsMaxBytes(field: InfraConfigField, value: string): boolean {
+  return field.maxBytes != null && new TextEncoder().encode(value).length > field.maxBytes;
+}
+
+function violatesInfraKeyRules(field: InfraConfigField, value: string): boolean {
+  if (field.key === 'name' && (!value.trim() || /[[\]\\:,?*]/.test(value))) return true;
+  if (field.key === 'region.default' && value !== '' && !/^#?[\p{L}\p{N}_-]+$/u.test(value)) {
+    return true;
+  }
+  return false;
+}
+
+function isInvalidInfraNumber(field: InfraConfigField, value: string): boolean {
+  const number = Number(value);
+  if (
+    !value.trim() ||
+    !Number.isFinite(number) ||
+    (field.integer && !Number.isInteger(number)) ||
+    (field.min != null && number < field.min) ||
+    (field.max != null && number > field.max)
+  ) {
+    return true;
+  }
+  if (field.key === 'flood.advert.interval' && number > 0 && number < 3) return true;
+  if (field.key === 'advert.interval' && (number % 2 !== 0 || (number > 0 && number < 60))) {
+    return true;
+  }
+  return false;
+}
+
 function validateInfraConfigValue(field: InfraConfigField, value: string): void {
-  if (/[\r\n\0]/.test(value)) throw configError('infraConfig.invalidValue');
-  if (field.maxBytes != null && new TextEncoder().encode(value).length > field.maxBytes)
+  if (
+    hasControlChars(value) ||
+    exceedsMaxBytes(field, value) ||
+    violatesInfraKeyRules(field, value)
+  ) {
     throw configError('infraConfig.invalidValue');
-  if (field.key === 'name' && (!value.trim() || /[[\]\\:,?*]/.test(value)))
+  }
+  if (field.type === 'boolean' && !['on', 'off'].includes(value)) {
     throw configError('infraConfig.invalidValue');
-  if (field.key === 'region.default' && value !== '' && !/^#?[\p{L}\p{N}_-]+$/u.test(value))
+  }
+  if (field.type === 'select' && !field.options?.includes(value)) {
     throw configError('infraConfig.invalidValue');
-  if (field.type === 'boolean' && !['on', 'off'].includes(value))
+  }
+  if (field.type === 'number' && isInvalidInfraNumber(field, value)) {
     throw configError('infraConfig.invalidValue');
-  if (field.type === 'select' && !field.options?.includes(value))
-    throw configError('infraConfig.invalidValue');
-  if (field.type === 'number') {
-    const number = Number(value);
-    if (
-      !value.trim() ||
-      !Number.isFinite(number) ||
-      (field.integer && !Number.isInteger(number)) ||
-      (field.min != null && number < field.min) ||
-      (field.max != null && number > field.max)
-    )
-      throw configError('infraConfig.invalidValue');
-    if (field.key === 'flood.advert.interval' && number > 0 && number < 3)
-      throw configError('infraConfig.invalidValue');
-    if (field.key === 'advert.interval' && (number % 2 !== 0 || (number > 0 && number < 60)))
-      throw configError('infraConfig.invalidValue');
   }
 }
 
