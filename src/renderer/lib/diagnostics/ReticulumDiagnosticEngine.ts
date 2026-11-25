@@ -15,6 +15,7 @@ import {
   isReticulumLocalSerialInterface,
   isReticulumRemoteInterfaceType,
   resolveReticulumTxDropHintKind,
+  type ReticulumLocalInterfaceAlert,
   type ReticulumLocalInterfaceInput,
   reticulumTxDropDiagnosticsCauseKey,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
@@ -154,14 +155,23 @@ export const RETICULUM_ANNOUNCE_BUS_PRESSURE_TIP_I18N_KEYS = [
 const RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS = 60_000;
 
 /** Build Reticulum-native diagnostic rows (interface/path/LXMF — not LoRa RF). */
-export function buildReticulumDiagnosticRows(
-  snapshot: ReticulumDiagnosticsSnapshot,
-  options?: ReticulumDiagnosticsBuildOptions,
-): DiagnosticRow[] {
-  const rows: DiagnosticRow[] = [];
-  const now = Date.now();
-  const homeNodeId = options?.selfNodeId ?? 0;
+interface ReticulumRowContext {
+  rows: DiagnosticRow[];
+  snapshot: ReticulumDiagnosticsSnapshot;
+  options: ReticulumDiagnosticsBuildOptions | undefined;
+  now: number;
+  homeNodeId: number;
+  healthInterfaces: ReticulumLocalInterfaceInput[];
+  localAlerts: ReticulumLocalInterfaceAlert[];
+  remoteAlerts: ReticulumLocalInterfaceAlert[];
+}
 
+function pushReticulumStackReadyRows(
+  rows: DiagnosticRow[],
+  snapshot: ReticulumDiagnosticsSnapshot,
+  homeNodeId: number,
+  now: number,
+): void {
   if (!snapshot.rns_ready) {
     rows.push({
       kind: 'rf',
@@ -175,7 +185,6 @@ export function buildReticulumDiagnosticRows(
       reticulumRepairKind: 'restart_stack',
     });
   }
-
   if (!snapshot.lxmf_ready) {
     rows.push({
       kind: 'rf',
@@ -189,16 +198,10 @@ export function buildReticulumDiagnosticRows(
       reticulumRepairKind: 'restart_stack',
     });
   }
+}
 
-  const healthInterfaces = options?.interfaces ?? snapshot.interfaces ?? [];
-  const osSerialPorts = options?.osSerialPorts ?? [];
-  const localAlerts = collectReticulumLocalInterfaceAlerts(healthInterfaces, osSerialPorts);
-  const localAlertIds = new Set(localAlerts.map((a) => a.iface.id));
-  const remoteAlerts = collectReticulumRemoteInterfaceAlerts(healthInterfaces, {
-    stackFastFlapSuspected: options?.stackFastFlapSuspected === true,
-  });
-  const remoteAlertIds = new Set(remoteAlerts.map((a) => a.iface.id));
-
+function pushReticulumLocalAlertRows(ctx: ReticulumRowContext): void {
+  const { rows, localAlerts, homeNodeId, now } = ctx;
   for (const alert of localAlerts) {
     const port = alert.iface.serial_port ?? '';
     if (alert.reason === 'stale_port') {
@@ -217,90 +220,108 @@ export function buildReticulumDiagnosticRows(
         reticulumInterfaceId: alert.iface.id,
         reticulumRepairKind: 'edit',
       });
-    } else {
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, `reticulum/local-offline/${alert.iface.id}`),
-        nodeId: homeNodeId,
-        condition: 'reticulum/local-offline',
-        cause: `Local interface "${alert.iface.name}" is enabled but offline`,
-        causeI18n: runtimeCauseI18n('localOffline', { name: alert.iface.name }),
-        severity: 'warning',
-        detectedAt: now,
-        reticulumInterfaceId: alert.iface.id,
-        reticulumRepairKind: 'restart_stack',
-      });
+      continue;
     }
-  }
-
-  for (const alert of remoteAlerts) {
-    const host = alert.iface.host ?? '';
-    const port = alert.iface.port != null && alert.iface.port > 0 ? String(alert.iface.port) : '';
-    const fastFlap = alert.reason === 'tcp_fast_flap';
     rows.push({
       kind: 'rf',
-      id: rfRowId(homeNodeId, `reticulum/tcp-unreachable/${alert.iface.id}`),
+      id: rfRowId(homeNodeId, `reticulum/local-offline/${alert.iface.id}`),
       nodeId: homeNodeId,
-      condition: fastFlap ? 'reticulum/tcp-fast-flap' : 'reticulum/tcp-unreachable',
-      cause: fastFlap
-        ? `TCP interface "${alert.iface.name}" likely blocked this IP after frequent stack restarts`
-        : `TCP interface "${alert.iface.name}" is unreachable`,
-      causeI18n: runtimeCauseI18n(fastFlap ? 'tcpFastFlap' : 'tcpUnreachable', {
-        name: alert.iface.name,
-        host,
-        port,
-      }),
+      condition: 'reticulum/local-offline',
+      cause: `Local interface "${alert.iface.name}" is enabled but offline`,
+      causeI18n: runtimeCauseI18n('localOffline', { name: alert.iface.name }),
       severity: 'warning',
       detectedAt: now,
       reticulumInterfaceId: alert.iface.id,
-      reticulumRepairKind: 'disable',
+      reticulumRepairKind: 'restart_stack',
     });
   }
+}
 
+function pushReticulumRemoteAlertRow(
+  rows: DiagnosticRow[],
+  alert: ReticulumLocalInterfaceAlert,
+  homeNodeId: number,
+  now: number,
+): void {
+  const host = alert.iface.host ?? '';
+  const port = alert.iface.port != null && alert.iface.port > 0 ? String(alert.iface.port) : '';
+  const fastFlap = alert.reason === 'tcp_fast_flap';
+  rows.push({
+    kind: 'rf',
+    id: rfRowId(homeNodeId, `reticulum/tcp-unreachable/${alert.iface.id}`),
+    nodeId: homeNodeId,
+    condition: fastFlap ? 'reticulum/tcp-fast-flap' : 'reticulum/tcp-unreachable',
+    cause: fastFlap
+      ? `TCP interface "${alert.iface.name}" likely blocked this IP after frequent stack restarts`
+      : `TCP interface "${alert.iface.name}" is unreachable`,
+    causeI18n: runtimeCauseI18n(fastFlap ? 'tcpFastFlap' : 'tcpUnreachable', {
+      name: alert.iface.name,
+      host,
+      port,
+    }),
+    severity: 'warning',
+    detectedAt: now,
+    reticulumInterfaceId: alert.iface.id,
+    reticulumRepairKind: 'disable',
+  });
+}
+
+function pushReticulumRemoteAlertRows(ctx: ReticulumRowContext): void {
+  for (const alert of ctx.remoteAlerts) {
+    pushReticulumRemoteAlertRow(ctx.rows, alert, ctx.homeNodeId, ctx.now);
+  }
+}
+
+function pushReticulumInterfaceDownRows(ctx: ReticulumRowContext): void {
+  const { rows, healthInterfaces, localAlerts, remoteAlerts, homeNodeId, now } = ctx;
+  const localAlertIds = new Set(localAlerts.map((a) => a.iface.id));
+  const remoteAlertIds = new Set(remoteAlerts.map((a) => a.iface.id));
   for (const iface of healthInterfaces) {
-    if (localAlertIds.has(iface.id) || remoteAlertIds.has(iface.id)) {
-      continue;
-    }
+    if (localAlertIds.has(iface.id) || remoteAlertIds.has(iface.id)) continue;
     if (isReticulumLocalSerialInterface(iface.type) || isReticulumRemoteInterfaceType(iface.type)) {
       continue;
     }
-    if (iface.enabled && !isReticulumInterfaceOnlineStatus(iface.status)) {
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, `reticulum/iface-down/${iface.id}`),
-        nodeId: homeNodeId,
-        condition: 'reticulum/interface-down',
-        cause: `${iface.type} interface "${iface.name}" is enabled but ${iface.status}`,
-        causeI18n: runtimeCauseI18n('interfaceDown', {
-          type: iface.type,
-          name: iface.name,
-          status: iface.status,
-        }),
-        severity: 'warning',
-        detectedAt: now,
-        reticulumInterfaceId: iface.id,
-        reticulumRepairKind: 'edit',
-      });
-    }
-  }
-
-  const enabledDefaultBackboneCount = countEnabledDefaultHubPresets(healthInterfaces);
-  if (enabledDefaultBackboneCount > RETICULUM_TOO_MANY_DEFAULT_BACKBONES_THRESHOLD) {
+    if (!iface.enabled || isReticulumInterfaceOnlineStatus(iface.status)) continue;
     rows.push({
       kind: 'rf',
-      id: rfRowId(homeNodeId, 'reticulum/too-many-default-backbones'),
+      id: rfRowId(homeNodeId, `reticulum/iface-down/${iface.id}`),
       nodeId: homeNodeId,
-      condition: 'reticulum/too-many-default-backbones',
-      cause: `Too many default backbone hubs enabled (${enabledDefaultBackboneCount})`,
-      causeI18n: runtimeCauseI18n('tooManyDefaultBackbones', {
-        count: String(enabledDefaultBackboneCount),
+      condition: 'reticulum/interface-down',
+      cause: `${iface.type} interface "${iface.name}" is enabled but ${iface.status}`,
+      causeI18n: runtimeCauseI18n('interfaceDown', {
+        type: iface.type,
+        name: iface.name,
+        status: iface.status,
       }),
       severity: 'warning',
       detectedAt: now,
-      reticulumRepairKind: 'open_interfaces',
+      reticulumInterfaceId: iface.id,
+      reticulumRepairKind: 'edit',
     });
   }
+}
 
+function pushReticulumBackboneCountRows(ctx: ReticulumRowContext): void {
+  const { rows, healthInterfaces, homeNodeId, now } = ctx;
+  const enabledDefaultBackboneCount = countEnabledDefaultHubPresets(healthInterfaces);
+  if (enabledDefaultBackboneCount <= RETICULUM_TOO_MANY_DEFAULT_BACKBONES_THRESHOLD) return;
+  rows.push({
+    kind: 'rf',
+    id: rfRowId(homeNodeId, 'reticulum/too-many-default-backbones'),
+    nodeId: homeNodeId,
+    condition: 'reticulum/too-many-default-backbones',
+    cause: `Too many default backbone hubs enabled (${enabledDefaultBackboneCount})`,
+    causeI18n: runtimeCauseI18n('tooManyDefaultBackbones', {
+      count: String(enabledDefaultBackboneCount),
+    }),
+    severity: 'warning',
+    detectedAt: now,
+    reticulumRepairKind: 'open_interfaces',
+  });
+}
+
+function pushReticulumDecommissionedRows(ctx: ReticulumRowContext): void {
+  const { rows, healthInterfaces, homeNodeId, now } = ctx;
   for (const iface of healthInterfaces) {
     if (!iface.enabled) continue;
     if (!isDecommissionedReticulumTcpInterfaceRow(iface)) continue;
@@ -317,157 +338,215 @@ export function buildReticulumDiagnosticRows(
       reticulumRepairKind: 'disable',
     });
   }
+}
 
-  const interfaceIssueAlert = options?.interfaceIssueAlert;
-  if (interfaceIssueAlert) {
-    const ifaceByName = new Map(healthInterfaces.map((iface) => [iface.name, iface]));
-    for (const name of interfaceIssueAlert.tcpConnectFailed) {
-      if (remoteAlerts.some((alert) => alert.iface.name === name)) {
-        continue;
-      }
-      const iface = ifaceByName.get(name);
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, `reticulum/tcp-connect-failed/${name}`),
-        nodeId: homeNodeId,
-        condition: 'reticulum/tcp-connect-failed',
-        cause: `TCP interface "${name}" connection refused or timed out`,
-        causeI18n: runtimeCauseI18n('tcpConnectFailed', { name }),
-        severity: 'warning',
-        detectedAt: now,
-        reticulumInterfaceId: iface?.id,
-        reticulumRepairKind: 'disable',
-      });
-    }
-    for (const drop of interfaceIssueAlert.txQueueDrops) {
-      const iface = ifaceByName.get(drop.name);
-      const hintKind = resolveReticulumTxDropHintKind(
-        drop.name,
-        healthInterfaces,
-        interfaceIssueAlert.bleBondRemoved,
-      );
-      const causeKey = reticulumTxDropDiagnosticsCauseKey(hintKind);
-      const isFlowControlCongestion = hintKind === 'bleFlowControl';
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, `reticulum/tx-queue-drops/${drop.name}`),
-        nodeId: homeNodeId,
-        condition: 'reticulum/tx-queue-drops',
-        cause: `Interface "${drop.name}" dropped ${drop.dropCount} outbound packets (TX queue full)`,
-        causeI18n: runtimeCauseI18n(causeKey, {
-          name: drop.name,
-          count: String(drop.dropCount),
-        }),
-        // Flow-controlled BLE drops are host TX backpressure under RF load, not a fault.
-        severity: isFlowControlCongestion ? 'warning' : 'error',
-        detectedAt: now,
-        reticulumInterfaceId: iface?.id,
-        reticulumRepairKind: isFlowControlCongestion
-          ? undefined
-          : hintKind === 'ble' || hintKind === 'bleBondStale'
-            ? 'edit'
-            : 'disable',
-      });
-    }
-    for (const name of interfaceIssueAlert.bleBondRemoved) {
-      const iface = ifaceByName.get(name);
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, `reticulum/ble-bond-removed/${name}`),
-        nodeId: homeNodeId,
-        condition: 'reticulum/ble-bond-removed',
-        cause: `BLE RNode "${name}" bond is stale (Peer removed pairing information)`,
-        causeI18n: runtimeCauseI18n('bleBondRemoved', { name }),
-        severity: 'warning',
-        detectedAt: now,
-        reticulumInterfaceId: iface?.id,
-        reticulumRepairKind: 'edit',
-      });
-    }
-    for (const name of interfaceIssueAlert.blePairingTimedOut) {
-      const iface = ifaceByName.get(name);
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, `reticulum/ble-pairing-timed-out/${name}`),
-        nodeId: homeNodeId,
-        condition: 'reticulum/ble-pairing-timed-out',
-        cause: `BLE RNode "${name}" passkey exchange timed out`,
-        causeI18n: runtimeCauseI18n('blePairingTimedOut', { name }),
-        severity: 'warning',
-        detectedAt: now,
-        reticulumInterfaceId: iface?.id,
-        reticulumRepairKind: 'edit',
-      });
-    }
-    for (const timeout of interfaceIssueAlert.linkDeliveryTimeouts) {
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, `reticulum/link-delivery-timeout/${timeout.destinationHash}`),
-        nodeId: homeNodeId,
-        condition: 'reticulum/link-delivery-timeout',
-        cause: `Direct LXMF link to ${timeout.destinationHash.slice(0, 8)}… timed out (${timeout.count}×)`,
-        causeI18n: runtimeCauseI18n('linkDeliveryTimeout', {
-          hash: timeout.destinationHash.slice(0, 8),
-          count: String(timeout.count),
-        }),
-        // Peer reachability — not stack interface health (Connection omits these).
-        severity: 'warning',
-        detectedAt: now,
-        reticulumRepairKind: 'restart_stack',
-      });
-    }
-    if (interfaceIssueAlert.transportSaturatedCount > 0) {
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, 'reticulum/transport-saturated'),
-        nodeId: homeNodeId,
-        condition: 'reticulum/transport-saturated',
-        cause: `RNS transport saturated (${interfaceIssueAlert.transportSaturatedCount} path-request drops)`,
-        causeI18n: runtimeCauseI18n(
-          options.shareInstanceEnabled ? 'transportSaturatedShareInstance' : 'transportSaturated',
-          {
-            count: String(interfaceIssueAlert.transportSaturatedCount),
-          },
-        ),
-        severity: 'error',
-        detectedAt: now,
-        reticulumRepairKind: 'restart_stack',
-      });
-    }
-    if (interfaceIssueAlert.slowTransportQueryCount > 0) {
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, 'reticulum/slow-transport-query'),
-        nodeId: homeNodeId,
-        condition: 'reticulum/slow-transport-query',
-        cause: `RNS transport queries slow or failing (${interfaceIssueAlert.slowTransportQueryCount}×)`,
-        causeI18n: runtimeCauseI18n('slowTransportQuery', {
-          count: String(interfaceIssueAlert.slowTransportQueryCount),
-        }),
-        severity: 'warning',
-        detectedAt: now,
-        reticulumRepairKind: 'restart_stack',
-      });
-    }
-  }
-
-  if ((snapshot.peer_count ?? 0) === 0 && (snapshot.interface_count ?? 0) > 0) {
+function pushReticulumTcpConnectFailedRows(
+  ctx: ReticulumRowContext,
+  ifaceByName: Map<string, ReticulumLocalInterfaceInput>,
+  names: readonly string[],
+): void {
+  const { rows, remoteAlerts, homeNodeId, now } = ctx;
+  for (const name of names) {
+    if (remoteAlerts.some((alert) => alert.iface.name === name)) continue;
+    const iface = ifaceByName.get(name);
     rows.push({
       kind: 'rf',
-      id: rfRowId(homeNodeId, 'reticulum/no-peers'),
+      id: rfRowId(homeNodeId, `reticulum/tcp-connect-failed/${name}`),
       nodeId: homeNodeId,
-      condition: 'reticulum/no-peers',
-      cause: 'No known peers in path table yet',
-      causeI18n: runtimeCauseI18n('noPeers'),
-      severity: 'info',
+      condition: 'reticulum/tcp-connect-failed',
+      cause: `TCP interface "${name}" connection refused or timed out`,
+      causeI18n: runtimeCauseI18n('tcpConnectFailed', { name }),
+      severity: 'warning',
       detectedAt: now,
+      reticulumInterfaceId: iface?.id,
+      reticulumRepairKind: 'disable',
     });
   }
+}
 
-  if (options?.auditIssues?.length) {
-    rows.push(...auditIssuesToDiagnosticRows(options.auditIssues, homeNodeId));
+function pushReticulumTxDropRows(
+  ctx: ReticulumRowContext,
+  ifaceByName: Map<string, ReticulumLocalInterfaceInput>,
+  alert: ReticulumInterfaceIssueAlert,
+): void {
+  const { rows, healthInterfaces, homeNodeId, now } = ctx;
+  for (const drop of alert.txQueueDrops) {
+    const iface = ifaceByName.get(drop.name);
+    const hintKind = resolveReticulumTxDropHintKind(
+      drop.name,
+      healthInterfaces,
+      alert.bleBondRemoved,
+    );
+    const causeKey = reticulumTxDropDiagnosticsCauseKey(hintKind);
+    const isFlowControlCongestion = hintKind === 'bleFlowControl';
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, `reticulum/tx-queue-drops/${drop.name}`),
+      nodeId: homeNodeId,
+      condition: 'reticulum/tx-queue-drops',
+      cause: `Interface "${drop.name}" dropped ${drop.dropCount} outbound packets (TX queue full)`,
+      causeI18n: runtimeCauseI18n(causeKey, {
+        name: drop.name,
+        count: String(drop.dropCount),
+      }),
+      // Flow-controlled BLE drops are host TX backpressure under RF load, not a fault.
+      severity: isFlowControlCongestion ? 'warning' : 'error',
+      detectedAt: now,
+      reticulumInterfaceId: iface?.id,
+      reticulumRepairKind: isFlowControlCongestion
+        ? undefined
+        : hintKind === 'ble' || hintKind === 'bleBondStale'
+          ? 'edit'
+          : 'disable',
+    });
   }
+}
 
+function pushReticulumBleBondRows(
+  ctx: ReticulumRowContext,
+  ifaceByName: Map<string, ReticulumLocalInterfaceInput>,
+  names: readonly string[],
+): void {
+  const { rows, homeNodeId, now } = ctx;
+  for (const name of names) {
+    const iface = ifaceByName.get(name);
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, `reticulum/ble-bond-removed/${name}`),
+      nodeId: homeNodeId,
+      condition: 'reticulum/ble-bond-removed',
+      cause: `BLE RNode "${name}" bond is stale (Peer removed pairing information)`,
+      causeI18n: runtimeCauseI18n('bleBondRemoved', { name }),
+      severity: 'warning',
+      detectedAt: now,
+      reticulumInterfaceId: iface?.id,
+      reticulumRepairKind: 'edit',
+    });
+  }
+}
+
+function pushReticulumBlePairingRows(
+  ctx: ReticulumRowContext,
+  ifaceByName: Map<string, ReticulumLocalInterfaceInput>,
+  names: readonly string[],
+): void {
+  const { rows, homeNodeId, now } = ctx;
+  for (const name of names) {
+    const iface = ifaceByName.get(name);
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, `reticulum/ble-pairing-timed-out/${name}`),
+      nodeId: homeNodeId,
+      condition: 'reticulum/ble-pairing-timed-out',
+      cause: `BLE RNode "${name}" passkey exchange timed out`,
+      causeI18n: runtimeCauseI18n('blePairingTimedOut', { name }),
+      severity: 'warning',
+      detectedAt: now,
+      reticulumInterfaceId: iface?.id,
+      reticulumRepairKind: 'edit',
+    });
+  }
+}
+
+function pushReticulumLinkTimeoutRows(
+  ctx: ReticulumRowContext,
+  alert: ReticulumInterfaceIssueAlert,
+): void {
+  const { rows, homeNodeId, now } = ctx;
+  for (const timeout of alert.linkDeliveryTimeouts) {
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, `reticulum/link-delivery-timeout/${timeout.destinationHash}`),
+      nodeId: homeNodeId,
+      condition: 'reticulum/link-delivery-timeout',
+      cause: `Direct LXMF link to ${timeout.destinationHash.slice(0, 8)}… timed out (${timeout.count}×)`,
+      causeI18n: runtimeCauseI18n('linkDeliveryTimeout', {
+        hash: timeout.destinationHash.slice(0, 8),
+        count: String(timeout.count),
+      }),
+      // Peer reachability — not stack interface health (Connection omits these).
+      severity: 'warning',
+      detectedAt: now,
+      reticulumRepairKind: 'restart_stack',
+    });
+  }
+}
+
+function pushReticulumTransportRows(
+  ctx: ReticulumRowContext,
+  alert: ReticulumInterfaceIssueAlert,
+): void {
+  const { rows, options, homeNodeId, now } = ctx;
+  if (alert.transportSaturatedCount > 0) {
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, 'reticulum/transport-saturated'),
+      nodeId: homeNodeId,
+      condition: 'reticulum/transport-saturated',
+      cause: `RNS transport saturated (${alert.transportSaturatedCount} path-request drops)`,
+      causeI18n: runtimeCauseI18n(
+        options?.shareInstanceEnabled ? 'transportSaturatedShareInstance' : 'transportSaturated',
+        {
+          count: String(alert.transportSaturatedCount),
+        },
+      ),
+      severity: 'error',
+      detectedAt: now,
+      reticulumRepairKind: 'restart_stack',
+    });
+  }
+  if (alert.slowTransportQueryCount > 0) {
+    rows.push({
+      kind: 'rf',
+      id: rfRowId(homeNodeId, 'reticulum/slow-transport-query'),
+      nodeId: homeNodeId,
+      condition: 'reticulum/slow-transport-query',
+      cause: `RNS transport queries slow or failing (${alert.slowTransportQueryCount}×)`,
+      causeI18n: runtimeCauseI18n('slowTransportQuery', {
+        count: String(alert.slowTransportQueryCount),
+      }),
+      severity: 'warning',
+      detectedAt: now,
+      reticulumRepairKind: 'restart_stack',
+    });
+  }
+}
+
+function pushReticulumInterfaceIssueAlertRows(ctx: ReticulumRowContext): void {
+  const alert = ctx.options?.interfaceIssueAlert;
+  if (!alert) return;
+  const ifaceByName = new Map(ctx.healthInterfaces.map((iface) => [iface.name, iface]));
+  pushReticulumTcpConnectFailedRows(ctx, ifaceByName, alert.tcpConnectFailed);
+  pushReticulumTxDropRows(ctx, ifaceByName, alert);
+  pushReticulumBleBondRows(ctx, ifaceByName, alert.bleBondRemoved);
+  pushReticulumBlePairingRows(ctx, ifaceByName, alert.blePairingTimedOut);
+  pushReticulumLinkTimeoutRows(ctx, alert);
+  pushReticulumTransportRows(ctx, alert);
+}
+
+function pushReticulumPeerRows(ctx: ReticulumRowContext): void {
+  const { rows, snapshot, homeNodeId, now } = ctx;
+  if ((snapshot.peer_count ?? 0) !== 0 || (snapshot.interface_count ?? 0) <= 0) return;
+  rows.push({
+    kind: 'rf',
+    id: rfRowId(homeNodeId, 'reticulum/no-peers'),
+    nodeId: homeNodeId,
+    condition: 'reticulum/no-peers',
+    cause: 'No known peers in path table yet',
+    causeI18n: runtimeCauseI18n('noPeers'),
+    severity: 'info',
+    detectedAt: now,
+  });
+}
+
+function pushReticulumAuditRows(ctx: ReticulumRowContext): void {
+  const issues = ctx.options?.auditIssues;
+  if (!issues?.length) return;
+  ctx.rows.push(...auditIssuesToDiagnosticRows(issues, ctx.homeNodeId));
+}
+
+function pushReticulumAutoBeaconRows(ctx: ReticulumRowContext): void {
+  const { rows, options, homeNodeId, now } = ctx;
   const autoBeacon = options?.autoBeaconAlert;
   if (autoBeacon?.kind === 'physical_failures') {
     rows.push({
@@ -497,106 +576,163 @@ export function buildReticulumDiagnosticRows(
       detectedAt: now,
     });
   }
+}
 
-  if (options?.sidecarRunning === true && options.sidecarHealthy === false) {
-    const unhealthySince = options.sidecarUnhealthySince;
-    const pastGrace =
-      unhealthySince != null &&
-      now - unhealthySince >= RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS;
-    if (pastGrace) {
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, 'reticulum/sidecar-unhealthy'),
-        nodeId: homeNodeId,
-        condition: 'reticulum/sidecar-unhealthy',
-        cause: 'Reticulum sidecar is running but not responding to health checks',
-        causeI18n: runtimeCauseI18n('sidecarUnhealthy'),
-        severity: 'error',
-        detectedAt: now,
-        reticulumRepairKind: 'restart_stack',
-      });
-    }
-  }
+function pushReticulumSidecarRows(ctx: ReticulumRowContext): void {
+  const { rows, options, now, homeNodeId } = ctx;
+  if (options?.sidecarRunning !== true || options.sidecarHealthy !== false) return;
+  const unhealthySince = options.sidecarUnhealthySince;
+  const pastGrace =
+    unhealthySince != null &&
+    now - unhealthySince >= RETICULUM_SIDECAR_UNHEALTHY_DIAGNOSTIC_GRACE_MS;
+  if (!pastGrace) return;
+  rows.push({
+    kind: 'rf',
+    id: rfRowId(homeNodeId, 'reticulum/sidecar-unhealthy'),
+    nodeId: homeNodeId,
+    condition: 'reticulum/sidecar-unhealthy',
+    cause: 'Reticulum sidecar is running but not responding to health checks',
+    causeI18n: runtimeCauseI18n('sidecarUnhealthy'),
+    severity: 'error',
+    detectedAt: now,
+    reticulumRepairKind: 'restart_stack',
+  });
+}
 
-  if (shouldEmitAnnounceBusPressure(snapshot.announce_ws, options?.inboundLxmf, now)) {
-    const hotInterface =
-      typeof options?.hotPeerInterface === 'string' && options.hotPeerInterface.trim()
-        ? options.hotPeerInterface.trim()
-        : null;
-    const boundaryNames = listEnabledBoundaryInterfaceNames(healthInterfaces);
-    const defaultHubNames = listEnabledDefaultHubInterfaceNames(healthInterfaces);
-    // Prefer boundary-mode names; fall back to enabled default-preset hub names.
-    const hubContextNames = boundaryNames.length > 0 ? boundaryNames : defaultHubNames;
-    const txSaturatedNames =
-      options?.interfaceIssueAlert?.txQueueDrops
-        .map((d) => d.name.trim())
-        .filter((n) => n.length > 0) ?? [];
-    const params: Record<string, string> = {};
-    if (hotInterface) params.hotInterface = hotInterface;
-    if (hubContextNames.length > 0) params.boundaryHubs = hubContextNames.join(', ');
-    if (txSaturatedNames.length > 0) params.txSaturatedIfaces = txSaturatedNames.join(', ');
+function collectReticulumAnnounceBusParams(ctx: ReticulumRowContext): {
+  hotInterface: string | null;
+  params: Record<string, string>;
+} {
+  const { options, healthInterfaces } = ctx;
+  const hotInterface =
+    typeof options?.hotPeerInterface === 'string' && options.hotPeerInterface.trim()
+      ? options.hotPeerInterface.trim()
+      : null;
+  const boundaryNames = listEnabledBoundaryInterfaceNames(healthInterfaces);
+  const defaultHubNames = listEnabledDefaultHubInterfaceNames(healthInterfaces);
+  // Prefer boundary-mode names; fall back to enabled default-preset hub names.
+  const hubContextNames = boundaryNames.length > 0 ? boundaryNames : defaultHubNames;
+  const txSaturatedNames =
+    options?.interfaceIssueAlert?.txQueueDrops
+      .map((d) => d.name.trim())
+      .filter((n) => n.length > 0) ?? [];
+  const params: Record<string, string> = {};
+  if (hotInterface) params.hotInterface = hotInterface;
+  if (hubContextNames.length > 0) params.boundaryHubs = hubContextNames.join(', ');
+  if (txSaturatedNames.length > 0) params.txSaturatedIfaces = txSaturatedNames.join(', ');
+  return { hotInterface, params };
+}
 
+function pushReticulumAnnounceBusRows(ctx: ReticulumRowContext): void {
+  const { rows, snapshot, options, now, homeNodeId } = ctx;
+  if (!shouldEmitAnnounceBusPressure(snapshot.announce_ws, options?.inboundLxmf, now)) return;
+  const { hotInterface, params } = collectReticulumAnnounceBusParams(ctx);
+  rows.push({
+    kind: 'rf',
+    id: rfRowId(homeNodeId, 'reticulum/announce-bus-pressure'),
+    nodeId: homeNodeId,
+    condition: 'reticulum/announce-bus-pressure',
+    cause: hotInterface
+      ? `High announce/path-response rate may delay inbound LXMF Chat delivery (hot interface: ${hotInterface})`
+      : 'High announce/path-response rate may delay inbound LXMF Chat delivery (WS catch-up active)',
+    causeI18n: runtimeCauseI18n(
+      hotInterface ? 'announceBusPressureHot' : 'announceBusPressure',
+      Object.keys(params).length > 0 ? params : undefined,
+    ),
+    severity: 'warning',
+    detectedAt: now,
+    reticulumRepairKind: 'open_interfaces',
+  });
+}
+
+function isReticulumPropagationSyncFailing(
+  propagation: ReticulumPropagationDiagnosticsInput,
+  now: number,
+): boolean {
+  const attemptAt = propagation.lastAttemptAt;
+  if (propagation.syncActive) return false;
+  if (propagation.lastSyncError == null) return false;
+  if (propagation.lastSyncError === PROPAGATION_SYNC_USER_CANCEL_KEY) return false;
+  if (propagation.lastSyncError === PROPAGATION_SYNC_SUPERSEDED) return false;
+  return (
+    attemptAt != null && now - attemptAt <= RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS
+  );
+}
+
+function pushReticulumPropagationRows(ctx: ReticulumRowContext): void {
+  const { rows, options, now, homeNodeId } = ctx;
+  const propagation = options?.propagation;
+  if (!propagation) return;
+  const attemptAt = propagation.lastAttemptAt;
+  const stuck = isPropagationSyncEstablishingStuck(
+    {
+      syncActive: propagation.syncActive,
+      syncProgress: propagation.syncProgress,
+      lastAttemptAt: attemptAt,
+    },
+    now,
+  );
+  if (stuck) {
     rows.push({
       kind: 'rf',
-      id: rfRowId(homeNodeId, 'reticulum/announce-bus-pressure'),
+      id: rfRowId(homeNodeId, 'reticulum/propagation-sync-stuck'),
       nodeId: homeNodeId,
-      condition: 'reticulum/announce-bus-pressure',
-      cause: hotInterface
-        ? `High announce/path-response rate may delay inbound LXMF Chat delivery (hot interface: ${hotInterface})`
-        : 'High announce/path-response rate may delay inbound LXMF Chat delivery (WS catch-up active)',
-      causeI18n: runtimeCauseI18n(
-        hotInterface ? 'announceBusPressureHot' : 'announceBusPressure',
-        Object.keys(params).length > 0 ? params : undefined,
-      ),
+      condition: 'reticulum/propagation-sync-stuck',
+      cause: 'Propagation node sync is stuck establishing a link',
+      causeI18n: runtimeCauseI18n('propagationSyncStuck'),
       severity: 'warning',
       detectedAt: now,
-      reticulumRepairKind: 'open_interfaces',
     });
+    return;
   }
+  if (!isReticulumPropagationSyncFailing(propagation, now)) return;
+  rows.push({
+    kind: 'rf',
+    id: rfRowId(homeNodeId, 'reticulum/propagation-sync-failing'),
+    nodeId: homeNodeId,
+    condition: 'reticulum/propagation-sync-failing',
+    cause: 'Propagation node sync failed',
+    causeI18n: runtimeCauseI18n('propagationSyncFailing'),
+    severity: 'warning',
+    detectedAt: now,
+  });
+}
 
-  const propagation = options?.propagation;
-  if (propagation) {
-    const attemptAt = propagation.lastAttemptAt;
-    const stuck = isPropagationSyncEstablishingStuck(
-      {
-        syncActive: propagation.syncActive,
-        syncProgress: propagation.syncProgress,
-        lastAttemptAt: attemptAt,
-      },
-      now,
-    );
-    if (stuck) {
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, 'reticulum/propagation-sync-stuck'),
-        nodeId: homeNodeId,
-        condition: 'reticulum/propagation-sync-stuck',
-        cause: 'Propagation node sync is stuck establishing a link',
-        causeI18n: runtimeCauseI18n('propagationSyncStuck'),
-        severity: 'warning',
-        detectedAt: now,
-      });
-    } else if (
-      !propagation.syncActive &&
-      propagation.lastSyncError != null &&
-      propagation.lastSyncError !== PROPAGATION_SYNC_USER_CANCEL_KEY &&
-      propagation.lastSyncError !== PROPAGATION_SYNC_SUPERSEDED &&
-      attemptAt != null &&
-      now - attemptAt <= RETICULUM_PROPAGATION_SYNC_FAILING_DIAGNOSTIC_TTL_MS
-    ) {
-      rows.push({
-        kind: 'rf',
-        id: rfRowId(homeNodeId, 'reticulum/propagation-sync-failing'),
-        nodeId: homeNodeId,
-        condition: 'reticulum/propagation-sync-failing',
-        cause: 'Propagation node sync failed',
-        causeI18n: runtimeCauseI18n('propagationSyncFailing'),
-        severity: 'warning',
-        detectedAt: now,
-      });
-    }
-  }
+export function buildReticulumDiagnosticRows(
+  snapshot: ReticulumDiagnosticsSnapshot,
+  options?: ReticulumDiagnosticsBuildOptions,
+): DiagnosticRow[] {
+  const rows: DiagnosticRow[] = [];
+  const now = Date.now();
+  const homeNodeId = options?.selfNodeId ?? 0;
+  const healthInterfaces = options?.interfaces ?? snapshot.interfaces ?? [];
+  const osSerialPorts = options?.osSerialPorts ?? [];
+  const ctx: ReticulumRowContext = {
+    rows,
+    snapshot,
+    options,
+    now,
+    homeNodeId,
+    healthInterfaces,
+    localAlerts: collectReticulumLocalInterfaceAlerts(healthInterfaces, osSerialPorts),
+    remoteAlerts: collectReticulumRemoteInterfaceAlerts(healthInterfaces, {
+      stackFastFlapSuspected: options?.stackFastFlapSuspected === true,
+    }),
+  };
 
+  pushReticulumStackReadyRows(rows, snapshot, homeNodeId, now);
+  pushReticulumLocalAlertRows(ctx);
+  pushReticulumRemoteAlertRows(ctx);
+  pushReticulumInterfaceDownRows(ctx);
+  pushReticulumBackboneCountRows(ctx);
+  pushReticulumDecommissionedRows(ctx);
+  pushReticulumInterfaceIssueAlertRows(ctx);
+  pushReticulumPeerRows(ctx);
+  pushReticulumAuditRows(ctx);
+  pushReticulumAutoBeaconRows(ctx);
+  pushReticulumSidecarRows(ctx);
+  pushReticulumAnnounceBusRows(ctx);
+  pushReticulumPropagationRows(ctx);
   return rows;
 }
 
