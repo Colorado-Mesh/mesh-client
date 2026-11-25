@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { meshcoreRadioContactRoute } from '../../shared/meshcorePathHash';
 import {
   clearMeshcoreRepeaterRouteEscalationStateForTests,
   isMeshcoreRepeaterTimeoutError,
@@ -63,20 +64,27 @@ describe('meshcoreRepeaterRouteEscalation', () => {
       const end = after.indexOf(');');
       const next = after.slice(end, end + 400);
       expect(next).toMatch(/noteRadioContactRouteUnknown\(/);
+      // The learned path stays: Ping seeds and hop display read it, and the radio length alone
+      // decides the Zero-hop skip.
+      expect(next).not.toMatch(/outPathMapRef\.current\.delete\(/);
     }
     const resetBody = extractUseCallbackBody(source, 'resetContactPath');
     const resetAt = resetBody.indexOf('await conn.resetPath(pubKey)');
     expect(resetAt).toBeGreaterThan(-1);
-    expect(resetBody.slice(resetAt)).toMatch(/noteRadioContactRouteUnknown\([^;]*\bnodeId,?\s*\)/);
+    const afterReset = resetBody.slice(resetAt);
+    // Same as resetContactPathForEscalation: the radio route is cleared, so is the learned one.
+    expect(afterReset).toMatch(/outPathMapRef\.current\.delete\(nodeId >>> 0\)/);
+    expect(afterReset).toMatch(/noteRadioContactRouteUnknown\([^;]*\bnodeId,?\s*\)/);
   });
 
-  it('noteRadioContactRouteUnknown forgets the stored path and caches the 0xFF length', () => {
-    const outPaths = new Map<number, Uint8Array>([[7, new Uint8Array(0)]]);
+  it('noteRadioContactRouteUnknown caches the 0xFF length so Zero-hop writes the route again', () => {
     const radioLens = new Map<number, number>([[7, 0x40]]);
-    noteRadioContactRouteUnknown(outPaths, radioLens, 7);
-    expect(outPaths.has(7)).toBe(false);
+    expect(meshcoreRadioContactRoute(radioLens.get(7))?.hopCount).toBe(0);
+    noteRadioContactRouteUnknown(radioLens, 7);
     expect(radioLens.get(7)).toBe(0xff);
-    expect(meshcoreRepeaterRouteKind(outPaths.get(7), radioLens.get(7))).toBe('flood');
+    // The Zero-hop skip needs a cached zero-hop radio route; after this there is none, so the
+    // next Zero-hop request writes the route again.
+    expect(meshcoreRadioContactRoute(radioLens.get(7))).toBeNull();
   });
 
   it('runtime marks the cached radio length unknown after a successful path reset', () => {

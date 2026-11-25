@@ -4905,11 +4905,7 @@ export function useMeshcoreRuntime() {
                 nodeForRadio,
                 repeaterRemoteRpcRef.current,
               );
-              noteRadioContactRouteUnknown(
-                outPathMapRef.current,
-                radioContactPathLenByNodeRef.current,
-                destNodeId,
-              );
+              noteRadioContactRouteUnknown(radioContactPathLenByNodeRef.current, destNodeId);
             },
           );
           markMeshcoreCompanionTx();
@@ -6223,7 +6219,6 @@ export function useMeshcoreRuntime() {
                               repeaterRemoteRpcRef.current,
                             );
                             noteRadioContactRouteUnknown(
-                              outPathMapRef.current,
                               radioContactPathLenByNodeRef.current,
                               nodeId,
                             );
@@ -7098,11 +7093,7 @@ export function useMeshcoreRuntime() {
         restoreRadioContact: async () => {
           try {
             await addMeshcoreNodeContactToRadio(conn, pubKey, node, repeaterRemoteRpcRef.current);
-            noteRadioContactRouteUnknown(
-              outPathMapRef.current,
-              radioContactPathLenByNodeRef.current,
-              nodeId,
-            );
+            noteRadioContactRouteUnknown(radioContactPathLenByNodeRef.current, nodeId);
           } catch (e: unknown) {
             maybeRequestMeshcoreAutoOffloadForError(e instanceof Error ? e.cause : e);
             throw e;
@@ -7217,7 +7208,6 @@ export function useMeshcoreRuntime() {
                                 repeaterRemoteRpcRef.current,
                               );
                               noteRadioContactRouteUnknown(
-                                outPathMapRef.current,
                                 radioContactPathLenByNodeRef.current,
                                 nodeId,
                               );
@@ -9884,11 +9874,7 @@ export function useMeshcoreRuntime() {
                 nodeForRadio,
                 repeaterRemoteRpcRef.current,
               );
-              noteRadioContactRouteUnknown(
-                outPathMapRef.current,
-                radioContactPathLenByNodeRef.current,
-                peerNodeId,
-              );
+              noteRadioContactRouteUnknown(radioContactPathLenByNodeRef.current, peerNodeId);
             },
           );
           if (
@@ -10094,11 +10080,9 @@ export function useMeshcoreRuntime() {
     }
     try {
       await conn.resetPath(pubKey);
-      noteRadioContactRouteUnknown(
-        outPathMapRef.current,
-        radioContactPathLenByNodeRef.current,
-        nodeId,
-      );
+      // As in resetContactPathForEscalation: the radio route is gone, so is the learned one.
+      outPathMapRef.current.delete(nodeId >>> 0);
+      noteRadioContactRouteUnknown(radioContactPathLenByNodeRef.current, nodeId);
       return true;
     } catch (e: unknown) {
       console.warn('mcL1319 [useMeshcoreRuntime] resetContactPath error ' + errLikeToLogString(e));

@@ -58,16 +58,13 @@ export const MESHCORE_OUT_PATH_UNKNOWN_BYTE = 0xff;
 /**
  * Record that the radio now holds no route to `nodeId` (a path reset, or a contact re-added with
  * OUT_PATH_UNKNOWN). Without it a cached zero-hop route lets the next Zero-hop request skip its
- * write and flood.
+ * write and flood. The learned path the app keeps for Ping and hop display is left alone.
  */
 export function noteRadioContactRouteUnknown(
-  outPaths: Map<number, Uint8Array>,
   radioPathLens: Map<number, number>,
   nodeId: number,
 ): void {
-  const id = nodeId >>> 0;
-  outPaths.delete(id);
-  radioPathLens.set(id, MESHCORE_OUT_PATH_UNKNOWN_BYTE);
+  radioPathLens.set(nodeId >>> 0, MESHCORE_OUT_PATH_UNKNOWN_BYTE);
 }
 
 /**
