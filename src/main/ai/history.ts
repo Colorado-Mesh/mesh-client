@@ -5,51 +5,87 @@ import { MS_PER_SECOND } from '../../shared/timeConstants';
 import type { NodeSqliteDB } from '../db-compat';
 import { MESHCORE_MESSAGE_CHANNEL_SQL } from '../meshcoreMessageChannel';
 
+function isHistoryNodeIdValue(value: number | undefined): boolean {
+  return value === undefined || (Number.isSafeInteger(value) && value >= 0 && value <= 0xffffffff);
+}
+
+function isHistoryStringValue(value: string | undefined): boolean {
+  return (
+    value === undefined || (typeof value === 'string' && value.length > 0 && value.length <= 256)
+  );
+}
+
+function assertHistoryProtocolAndRange(q: AiHistoryQuery): void {
+  const protocolOk = ['meshtastic', 'meshcore', 'reticulum'].includes(q.protocol);
+  const surfaceOk = ['channel', 'dm', 'room', 'rrc'].includes(q.surface);
+  const rangeOk =
+    Number.isFinite(q.sinceMs) &&
+    Number.isFinite(q.untilMs) &&
+    q.sinceMs >= 0 &&
+    q.untilMs >= q.sinceMs &&
+    q.untilMs <= 8.64e15;
+  if (!protocolOk || !surfaceOk || !rangeOk) throw new Error('Invalid AI history range');
+}
+
+function assertHistoryNodeIds(q: AiHistoryQuery): void {
+  for (const value of [q.channel, q.peerId, q.roomServerId, q.radioNodeId]) {
+    if (!isHistoryNodeIdValue(value)) throw new Error('Invalid AI conversation');
+  }
+}
+
+function assertHistoryStringFields(q: AiHistoryQuery): void {
+  for (const value of [q.identityId, q.peerHash, q.hubHash, q.room, q.channelKey]) {
+    if (!isHistoryStringValue(value)) throw new Error('Invalid AI conversation');
+  }
+}
+
+function assertHistoryOwnNodeIds(q: AiHistoryQuery): void {
+  if (q.ownNodeIds === undefined) return;
+  const valid =
+    Array.isArray(q.ownNodeIds) &&
+    q.ownNodeIds.length <= 32 &&
+    q.ownNodeIds.every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 0xffffffff);
+  if (!valid) throw new Error('Invalid AI identities');
+}
+
+function assertHistoryLimit(q: AiHistoryQuery): void {
+  if (q.limit === undefined) return;
+  if (!Number.isSafeInteger(q.limit) || q.limit < 1 || q.limit > AI_MAX_MESSAGES) {
+    throw new Error('Invalid AI history limit');
+  }
+}
+
+function assertHistoryCursor(q: AiHistoryQuery): void {
+  if (q.beforeAt === undefined && q.beforeId === undefined) return;
+  const valid =
+    typeof q.beforeAt === 'number' &&
+    Number.isFinite(q.beforeAt) &&
+    q.beforeAt >= 0 &&
+    typeof q.beforeId === 'number' &&
+    Number.isSafeInteger(q.beforeId) &&
+    q.beforeId >= 0;
+  if (!valid) throw new Error('Invalid AI history cursor');
+}
+
+function assertHistoryOrder(q: AiHistoryQuery): void {
+  if (q.byArrival !== undefined && typeof q.byArrival !== 'boolean') {
+    throw new Error('Invalid AI history order');
+  }
+}
+
 export function validateHistoryQuery(value: unknown): AiHistoryQuery {
   if (!value || typeof value !== 'object') throw new Error('Invalid AI history query');
   const q = value as AiHistoryQuery;
-  if (
-    !['meshtastic', 'meshcore', 'reticulum'].includes(q.protocol) ||
-    !['channel', 'dm', 'room', 'rrc'].includes(q.surface) ||
-    !Number.isFinite(q.sinceMs) ||
-    !Number.isFinite(q.untilMs) ||
-    q.sinceMs < 0 ||
-    q.untilMs < q.sinceMs ||
-    q.untilMs > 8.64e15
-  )
-    throw new Error('Invalid AI history range');
-  for (const v of [q.channel, q.peerId, q.roomServerId, q.radioNodeId])
-    if (v !== undefined && (!Number.isSafeInteger(v) || v < 0 || v > 0xffffffff))
-      throw new Error('Invalid AI conversation');
-  for (const v of [q.identityId, q.peerHash, q.hubHash, q.room, q.channelKey])
-    if (v !== undefined && (typeof v !== 'string' || !v || v.length > 256))
-      throw new Error('Invalid AI conversation');
-  if (
-    q.ownNodeIds !== undefined &&
-    (!Array.isArray(q.ownNodeIds) ||
-      q.ownNodeIds.length > 32 ||
-      q.ownNodeIds.some((n) => !Number.isSafeInteger(n) || n < 0 || n > 0xffffffff))
-  )
-    throw new Error('Invalid AI identities');
-  if (
-    q.limit !== undefined &&
-    (!Number.isSafeInteger(q.limit) || q.limit < 1 || q.limit > AI_MAX_MESSAGES)
-  )
-    throw new Error('Invalid AI history limit');
-  if (
-    (q.beforeAt !== undefined || q.beforeId !== undefined) &&
-    (typeof q.beforeAt !== 'number' ||
-      !Number.isFinite(q.beforeAt) ||
-      q.beforeAt < 0 ||
-      typeof q.beforeId !== 'number' ||
-      !Number.isSafeInteger(q.beforeId) ||
-      q.beforeId < 0)
-  )
-    throw new Error('Invalid AI history cursor');
-  if (q.byArrival !== undefined && typeof q.byArrival !== 'boolean')
-    throw new Error('Invalid AI history order');
+  assertHistoryProtocolAndRange(q);
+  assertHistoryNodeIds(q);
+  assertHistoryStringFields(q);
+  assertHistoryOwnNodeIds(q);
+  assertHistoryLimit(q);
+  assertHistoryCursor(q);
+  assertHistoryOrder(q);
   return q;
 }
+
 interface AiHistoryQueryParts {
   table: string;
   where: string[];
