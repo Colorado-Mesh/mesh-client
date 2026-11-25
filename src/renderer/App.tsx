@@ -379,10 +379,9 @@ import { buildDetectedFlashDevice } from './lib/flasher/deviceFirmwareBoards';
 import { applyFontScale, loadFontScale } from './lib/fontScale';
 import {
   chatMessageFromSearchHit,
-  type GlobalMessageSearchHit,
   isGlobalMessageSearchShortcut,
-  type PendingMessageFocus,
-} from './lib/globalMessageSearch';
+} from './lib/globalMessageSearchChatRow';
+import type { GlobalMessageSearchHit, PendingMessageFocus } from './lib/globalMessageSearchTypes';
 import { latchHiddenProtocolStop, releaseHiddenProtocolStop } from './lib/hiddenProtocolStop';
 import { loadLastConnection } from './lib/lastConnectionStorage';
 import type {
