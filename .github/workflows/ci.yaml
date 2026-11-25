@@ -78,13 +78,8 @@ jobs:
       - name: Audit Open Source Licenses
         run: pnpm run check:licenses
 
-      - name: Install actionlint
-        run: pnpm run setup:actionlint
-
       - name: Actionlint
-        run: |
-          export PATH="${GITHUB_WORKSPACE}/.githooks/bin:${PATH}"
-          actionlint
+        run: pnpm exec github-actionlint
 
       - name: pnpm audit (high+)
         run: pnpm audit --audit-level=high

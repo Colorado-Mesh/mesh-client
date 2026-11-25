@@ -58,6 +58,9 @@ overrides:
   form-data: ^4.0.6
   # dbus-next → xml2js ^0.4.17 (GHSA-776f-qx25-q3cc / CVE-2023-0842). Floor ≥0.5.0.
   'dbus-next>xml2js': ^0.6.2
+  # github-actionlint → adm-zip <0.6.1 (GHSA-xcpc-8h2w-3j85 / GHSA-7q85-xj36-vmfc /
+  # GHSA-rcw4-f5rp-g42v / GHSA-j5f4-cc29-5x44 / GHSA-8238-w5pm-2374). Floor ≥0.6.1.
+  'github-actionlint>adm-zip': ^0.6.1
   # Security floors (Dependabot GHSA-52cp-r559-cp3m / GHSA-395f-4hp3-45gv /
   # GHSA-w8wr-v893-vjvp / GHSA-3jxr-9vmj-r5cp / GHSA-r28c-9q8g-f849 /
   # GHSA-p2f4-r6v6-j797 / GHSA-7g7r-gx96-252g / GHSA-mh99-v99m-4gvg /

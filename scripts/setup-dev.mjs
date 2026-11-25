@@ -178,7 +178,6 @@ function main() {
     { name: 'semgrep', run: () => runNodeScript('scripts/setup-semgrep.mjs') },
     { name: 'yamllint', run: () => runNodeScript('scripts/setup-yamllint.mjs') },
     { name: 'rust', run: () => ensureRust() },
-    { name: 'actionlint', run: () => runNodeScript('scripts/install-actionlint.mjs') },
   ];
 
   /** @type {string[]} */

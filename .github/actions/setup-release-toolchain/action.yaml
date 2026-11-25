@@ -1,7 +1,8 @@
 name: Setup release toolchain
 description: >-
-  Install the non-Node tools scripts/release.sh pre-flight requires (actionlint,
-  yamllint, flatpak-node-generator, Linux build deps, Rust). Shared by Cut release
+  Install the non-Node tools scripts/release.sh pre-flight requires (yamllint,
+  flatpak-node-generator, Linux build deps, Rust). actionlint comes from the
+  `github-actionlint` devDependency installed with pnpm. Shared by Cut release
   and the e2e.yaml Release preflight job so the preflight runs in the same environment
   as a real cut.
   Run after checkout and Node/pnpm dependency install.
@@ -9,16 +10,6 @@ description: >-
 runs:
   using: composite
   steps:
-    - name: Install actionlint
-      shell: bash
-      run: pnpm run setup:actionlint
-
-    - name: Add actionlint to PATH
-      shell: bash
-      env:
-        HOOKS_BIN: ${{ github.workspace }}/.githooks/bin
-      run: echo "${HOOKS_BIN}" >> "$GITHUB_PATH"
-
     - name: Install flatpak-node-generator
       shell: bash
       run: |

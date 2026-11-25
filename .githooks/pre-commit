@@ -5,7 +5,8 @@
 # Tests: staged-only related Vitest via scripts/precommit-tests.mjs.
 # Full Vitest suite runs on PRs (tests.yaml). Green pre-commit ≠ green CI.
 
-# Ensure locally installed tooling (e.g. `actionlint`) is on PATH.
+# Ensure legacy locally installed tooling is on PATH. actionlint now comes from
+# `pnpm install` (github-actionlint), so this is only for leftover local binaries.
 REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 if [ -d "$REPO_ROOT/.githooks/bin" ]; then
   export PATH="$REPO_ROOT/.githooks/bin:$PATH"
@@ -151,6 +152,39 @@ else
   printf 'pre-commit: skip eslint (no staged JS/TS)\n' >&2
 fi
 
+# Oxlint: fast second pass on staged JS/TS. Rule severities (correctness +
+# suspicious as errors) and vendor ignores live in .oxlintrc.json.
+if [ "$manifest_only" -eq 0 ] && [ -s "$STAGED_LIST" ]; then
+  OXLINT_LIST=$(mktemp)
+  trap 'rm -f "$STAGED_LIST" "$MARKDOWN_LIST" "$ESLINT_LIST" "$OXLINT_LIST"' EXIT
+  : > "$OXLINT_LIST"
+  while IFS= read -r f || [ -n "$f" ]; do
+    case "$f" in
+      *.js | *.jsx | *.mjs | *.cjs | *.ts | *.tsx | *.mts | *.cts)
+        [ -e "$f" ] || continue
+        printf '%s\n' "$f" >> "$OXLINT_LIST"
+        ;;
+    esac
+  done < "$STAGED_LIST"
+  if [ -s "$OXLINT_LIST" ]; then
+    (
+      set --
+      while IFS= read -r f || [ -n "$f" ]; do
+        set -- "$@" "$f"
+        if [ "$#" -eq 50 ]; then
+          pnpm exec oxlint --quiet -- "$@" || exit 1
+          set --
+        fi
+      done < "$OXLINT_LIST"
+      [ "$#" -eq 0 ] || pnpm exec oxlint --quiet -- "$@"
+    ) || fail 'oxlint (staged)'
+  else
+    printf 'pre-commit: skip oxlint (no staged JS/TS)\n' >&2
+  fi
+else
+  skip_manifest_only 'oxlint'
+fi
+
 pnpm run typecheck || fail 'pnpm run typecheck'
 
 if staged_match '^(src/shared/|tsconfig\.strict\.json)'; then
@@ -292,8 +326,9 @@ if [ "$manifest_only" -eq 0 ]; then
   else
     pnpm run check:i18n:branch || fail 'pnpm run check:i18n:branch'
   fi
+  pnpm exec fallow audit --staged --quiet || fail 'fallow audit'
 else
-  skip_manifest_only 'check:console-log, check:silent-catches, check:log-ids, check:semgrep, check:url-hostname-sanitization, check:xss-patterns, check:protocol-string-gates, check:log-panel-filter, check:i18n:branch'
+  skip_manifest_only 'check:console-log, check:silent-catches, check:log-ids, check:semgrep, check:url-hostname-sanitization, check:xss-patterns, check:protocol-string-gates, check:log-panel-filter, check:i18n:branch, fallow'
 fi
 pnpm run check:licenses || fail 'pnpm run check:licenses'
 
@@ -305,7 +340,7 @@ else
 fi
 
 if staged_match '^\.github/workflows/'; then
-  actionlint || fail 'actionlint'
+  pnpm exec github-actionlint || fail 'github-actionlint'
 fi
 if staged_match '\.(ya?ml)$'; then
   yamllint -f github -s . || fail 'yamllint'

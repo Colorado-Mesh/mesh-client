@@ -505,32 +505,40 @@ function checkCargoLlvmCov() {
   };
 }
 
-function checkActionlint() {
-  const binName = process.platform === 'win32' ? 'actionlint.exe' : 'actionlint';
-  const localPath = join(repoRoot, '.githooks', 'bin', binName);
-  if (existsSync(localPath)) {
+/**
+ * Pure evaluator for optional actionlint readiness. actionlint is provided by the
+ * `github-actionlint` devDependency (`node_modules/.bin/github-actionlint`).
+ *
+ * @param {{ binPath: string | null }} input
+ * @returns {CheckResult}
+ */
+export function evaluateActionlintCheck(input) {
+  if (input.binPath) {
     return {
       status: 'pass',
       severity: 'optional',
       label: 'actionlint',
-      detail: localPath,
-    };
-  }
-  const out = commandOutput('actionlint', ['--version']);
-  if (out) {
-    return {
-      status: 'pass',
-      severity: 'optional',
-      label: 'actionlint',
-      detail: out.split('\n')[0],
+      detail: input.binPath,
     };
   }
   return {
     status: 'warn',
     severity: 'optional',
     label: 'actionlint not found (optional)',
-    hint: 'Run: pnpm run setup:actionlint — needed for pre-commit workflow linting',
+    hint: 'Run: pnpm install — github-actionlint is a devDependency used for pre-commit workflow linting',
   };
+}
+
+function checkActionlint() {
+  const binNames =
+    process.platform === 'win32'
+      ? ['github-actionlint.cmd', 'github-actionlint.CMD', 'github-actionlint']
+      : ['github-actionlint'];
+  const binPath =
+    binNames
+      .map((name) => join(repoRoot, 'node_modules', '.bin', name))
+      .find((candidate) => existsSync(candidate)) ?? null;
+  return evaluateActionlintCheck({ binPath });
 }
 
 /**

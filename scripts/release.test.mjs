@@ -153,7 +153,7 @@ describe('release.sh full-suite gate', () => {
   });
 
   it('requires actionlint and yamllint (no soft-skip)', () => {
-    expect(script).toMatch(/actionlint not found/);
+    expect(script).toMatch(/pnpm exec github-actionlint/);
     expect(script).toMatch(/yamllint not found/);
     expect(script).not.toMatch(/actionlint not found, skipping/i);
     expect(script).not.toMatch(/yamllint not found, skipping/i);

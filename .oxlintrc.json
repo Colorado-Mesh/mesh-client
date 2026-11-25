@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "ignorePatterns": [
+    "node_modules/**",
+    "dist/**",
+    "dist-electron/**",
+    "release/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
+    "reticulum-sidecar/target/**",
+    "src/main/translation/vendor/**",
+    "src/renderer/lib/nomad/vendor/**",
+    "**/*.d.ts"
+  ],
+  "rules": {
+    "no-shadow": "off",
+    "no-underscore-dangle": "off",
+    "preserve-caught-error": "off",
+    "no-unsafe-optional-chaining": "off",
+    "no-useless-concat": "off",
+    "no-unmodified-loop-condition": "off",
+    "no-new": "off"
+  }
+}

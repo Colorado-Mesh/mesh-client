@@ -91,9 +91,12 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | eslint-plugin-security                | Apache-2.0      | ^4.2.1          | 4.2.1             | git+https://github.com/eslint-community/eslint-plugin-security.git                   |
 | eslint-plugin-simple-import-sort      | MIT             | ^13.0.0         | 13.0.0            | git+https://github.com/lydell/eslint-plugin-simple-import-sort.git                   |
 | fake-indexeddb                        | Apache-2.0      | ^6.2.8          | 6.2.8             | git://github.com/dumbmatter/fakeIndexedDB.git                                        |
+| fallow                                | MIT             | ^3.48.0         | 3.48.0            | git+https://github.com/fallow-rs/fallow.git                                          |
+| github-actionlint                     | MIT             | ^1.7.12         | 1.7.12            | git+https://github.com/judeallred/github-actionlint.git                              |
 | jsdom                                 | MIT             | ^29.1.1         | 29.1.1            | git+https://github.com/jsdom/jsdom.git                                               |
 | leaflet                               | BSD-2-Clause    | ^1.9.4          | 1.9.4             | git://github.com/Leaflet/Leaflet.git                                                 |
 | markdownlint-cli2                     | MIT             | ^0.23.3         | 0.23.3            | git+https://github.com/DavidAnson/markdownlint-cli2.git                              |
+| oxlint                                | MIT             | ^1.95.0         | 1.95.0            | git+https://github.com/oxc-project/oxc                                               |
 | prettier                              | MIT             | ^3.10.1         | 3.10.1            | git+https://github.com/prettier/prettier.git                                         |
 | prettier-plugin-sh                    | MIT             | ^0.18.1         | 0.18.1            | git+https://github.com/un-ts/prettier.git                                            |
 | prettier-plugin-tailwindcss           | MIT             | ^0.7.4          | 0.7.4             | git+https://github.com/tailwindlabs/prettier-plugin-tailwindcss.git                  |
