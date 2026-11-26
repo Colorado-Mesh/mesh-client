@@ -403,6 +403,111 @@ export interface RrcChatViewProps {
   onReact?: (target: RrcChatMessage, glyph: string) => Promise<void>;
 }
 
+function resolveRrcLineParts({
+  msg,
+  nickname,
+  activeRoom,
+  inlineOpts,
+  onOpenDm,
+}: {
+  msg: RrcChatMessage;
+  nickname: string;
+  activeRoom: string | null;
+  inlineOpts: RrcInlineOpts;
+  onOpenDm?: (destinationHash: string) => void;
+}): {
+  nick: string;
+  lineNick: string;
+  whisperEcho: ReturnType<typeof parseRrcWhisperEcho>;
+  whisperAsRoomMsg: boolean;
+  lineClass: string;
+  rawBody: string;
+  body: ReactNode;
+  isRoomMsg: boolean;
+  isNoticeLike: boolean;
+} {
+  const nick = msg.nickname || (msg.sender_hash ? formatHash(msg.sender_hash) : '');
+  const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
+  // Inbound whispers are wire NOTICE; outbound are msg; legacy → system → self nick.
+  const selfNick = nickname.trim();
+  const lineNick = whisperEcho ? selfNick || formatHash(msg.sender_hash ?? '') || 'me' : nick;
+  const whisperAsRoomMsg =
+    Boolean(whisperEcho) ||
+    (isRrcWhisperRoom(activeRoom) &&
+      (msg.kind === 'notice' || msg.kind === 'msg') &&
+      Boolean(nick));
+  const lineClass = rrcLineTextClass(msg, whisperAsRoomMsg);
+  const rawBody = whisperEcho ? whisperEcho.text : msg.body;
+  const plainBody = highlightRrcSelfMentions(rawBody, nickname, inlineOpts);
+  const body =
+    msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg ? (
+      <RrcFormattedBody text={rawBody} fallback={plainBody} onOpenDm={onOpenDm} />
+    ) : (
+      plainBody
+    );
+  return {
+    nick,
+    lineNick,
+    whisperEcho,
+    whisperAsRoomMsg,
+    lineClass,
+    rawBody,
+    body,
+    isRoomMsg: whisperAsRoomMsg || msg.kind === 'msg',
+    isNoticeLike: msg.kind === 'notice' || msg.kind === 'system' || msg.kind === 'error',
+  };
+}
+
+function rrcLineTextClass(msg: RrcChatMessage, whisperAsRoomMsg: boolean): string {
+  if (whisperAsRoomMsg) return 'text-ink-100';
+  if (msg.kind === 'notice' || msg.kind === 'system') return 'text-ink-400';
+  if (msg.kind === 'action') return 'text-cyan-200/90 italic';
+  if (msg.kind === 'error') return 'text-red-300';
+  return 'text-ink-100';
+}
+
+function renderRrcLineNickCell({
+  msg,
+  nick,
+  lineNick,
+  isRoomMsg,
+  isNoticeLike,
+}: {
+  msg: RrcChatMessage;
+  nick: string;
+  lineNick: string;
+  isRoomMsg: boolean;
+  isNoticeLike: boolean;
+}): ReactNode {
+  if (isRoomMsg) {
+    return (
+      <span
+        data-testid="rrc-line-nick"
+        title={lineNick}
+        className={`truncate text-right font-semibold ${rrcNickColorClass(lineNick)}`}
+      >
+        {lineNick}
+      </span>
+    );
+  }
+  if (msg.kind === 'notice' && nick) {
+    return (
+      <span
+        data-testid="rrc-line-nick"
+        title={nick}
+        className={`truncate text-right ${rrcNickColorClass(nick)}`}
+      >
+        -{nick}-
+      </span>
+    );
+  }
+  return (
+    <span data-testid="rrc-line-nick" className="text-muted truncate text-right">
+      {msg.kind === 'action' || isNoticeLike ? '*' : ''}
+    </span>
+  );
+}
+
 export function RrcChatView({
   connected,
   hubDestHash = null,
@@ -937,58 +1042,115 @@ export function RrcChatView({
     msg: RrcChatMessage,
     rowIndex: number,
   ): { lineClass: string; inner: ReactNode } => {
-    const nick = msg.nickname || (msg.sender_hash ? formatHash(msg.sender_hash) : '');
+    const {
+      nick,
+      lineNick,
+      whisperEcho,
+      whisperAsRoomMsg,
+      lineClass,
+      rawBody,
+      body,
+      isRoomMsg,
+      isNoticeLike,
+    } = resolveRrcLineParts({ msg, nickname, activeRoom, inlineOpts, onOpenDm });
     const time = formatLineTime(msg);
     const reactionRows = rrcReactionsFor(reactionPartition, msg);
-    const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
-    // Inbound whispers are wire NOTICE; outbound are msg; legacy → system → self nick.
-    const selfNick = nickname.trim();
-    const lineNick = whisperEcho ? selfNick || formatHash(msg.sender_hash ?? '') || 'me' : nick;
-    const whisperAsRoomMsg =
-      Boolean(whisperEcho) ||
-      (isRrcWhisperRoom(activeRoom) &&
-        (msg.kind === 'notice' || msg.kind === 'msg') &&
-        Boolean(nick));
-    const lineClass = whisperAsRoomMsg
-      ? 'text-ink-100'
-      : msg.kind === 'notice' || msg.kind === 'system'
-        ? 'text-ink-400'
-        : msg.kind === 'action'
-          ? 'text-cyan-200/90 italic'
-          : msg.kind === 'error'
-            ? 'text-red-300'
-            : 'text-ink-100';
-    const rawBody = whisperEcho ? whisperEcho.text : msg.body;
-    const plainBody = highlightRrcSelfMentions(rawBody, nickname, inlineOpts);
-    const body =
-      msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg ? (
-        <RrcFormattedBody text={rawBody} fallback={plainBody} onOpenDm={onOpenDm} />
-      ) : (
-        plainBody
-      );
+    const nickCell = renderRrcLineNickCell({ msg, nick, lineNick, isRoomMsg, isNoticeLike });
+    const renderActions = () => (
+      <div className="flex items-center self-start leading-none">
+        <span
+          className={
+            alwaysShowMessageActions
+              ? 'opacity-100'
+              : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
+          }
+        >
+          <MessageTranslateButton
+            messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
+            text={rawBody}
+            className="message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none"
+            iconSize={11}
+          />
+        </span>
+        <button
+          type="button"
+          className={`message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none ${
+            alwaysShowMessageActions
+              ? 'opacity-100'
+              : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
+          }`}
+          aria-label={t('rrc.copyMessage')}
+          title={t('rrc.copyMessage')}
+          onClick={() => {
+            void writeClipboardText(msg.body).catch((e: unknown) => {
+              console.warn('mcL0681 [RrcChatView] copy message failed ' + errLikeToLogString(e));
+            });
+          }}
+        >
+          <Copy size={11} />
+        </button>
+        {(msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
+          rrcReplyMention('', whisperEcho ? nickname : (msg.nickname ?? '')) !== null && (
+            <button
+              type="button"
+              {...{ [PARENT_HOVER_ATTR]: '' }}
+              className={`message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none disabled:opacity-40 ${alwaysShowMessageActions ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'}`}
+              aria-label={t('rrc.replyToUser', { nickname: lineNick })}
+              title={t('rrc.replyToUser', { nickname: lineNick })}
+              disabled={!canSend || isMuted || !activeRoom}
+              onClick={() => {
+                replyToNickname(lineNick);
+              }}
+            >
+              <Reply aria-hidden size={11} />
+            </button>
+          )}
+        {onReact && canReactToRrcMessage(msg) && (
+          <button
+            type="button"
+            {...{ [PARENT_HOVER_ATTR]: '' }}
+            className={`message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none disabled:opacity-40 ${alwaysShowMessageActions ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'}`}
+            aria-label={t('chatPanel.addReaction')}
+            title={t('chatPanel.reactButton')}
+            disabled={!canSend || isMuted || !activeRoom}
+            onClick={() => {
+              if (reactionPicker.inline && reactionPicker.inlineTarget?.id === msg.id) {
+                reactionPicker.close({ restoreFocus: true });
+              } else {
+                reactionPicker.open(msg);
+              }
+            }}
+          >
+            <Smile aria-hidden size={11} />
+          </button>
+        )}
+      </div>
+    );
 
-    const isRoomMsg = whisperAsRoomMsg || msg.kind === 'msg';
-    const isNoticeLike = msg.kind === 'notice' || msg.kind === 'system' || msg.kind === 'error';
-    const nickCell = isRoomMsg ? (
-      <span
-        data-testid="rrc-line-nick"
-        title={lineNick}
-        className={`truncate text-right font-semibold ${rrcNickColorClass(lineNick)}`}
-      >
-        {lineNick}
-      </span>
-    ) : msg.kind === 'notice' && nick ? (
-      <span
-        data-testid="rrc-line-nick"
-        title={nick}
-        className={`truncate text-right ${rrcNickColorClass(nick)}`}
-      >
-        -{nick}-
-      </span>
-    ) : (
-      <span data-testid="rrc-line-nick" className="text-muted truncate text-right">
-        {msg.kind === 'action' || isNoticeLike ? '*' : ''}
-      </span>
+    const renderBodyContent = () => (
+      <div className="min-w-0 break-words whitespace-pre-wrap">
+        {msg.kind === 'action' ? (
+          <>
+            <NickSpan nick={nick} /> {body}
+          </>
+        ) : isRoomMsg || isNoticeLike ? (
+          body
+        ) : null}
+        <TranslatedMessageBlock
+          messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
+          text={rawBody}
+          incoming={
+            isActive &&
+            !whisperEcho &&
+            (msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
+            !isOwnRrcLine(msg)
+          }
+          onContentResize={() => {
+            scheduleMessageRowRemeasure(rowIndex);
+          }}
+        />
+        {reactionRows.length > 0 && renderReactionChips(msg, reactionRows)}
+      </div>
     );
 
     const inner = (
@@ -999,97 +1161,8 @@ export function RrcChatView({
           </span>
         )}
         {nickCell}
-        <div className="min-w-0 break-words whitespace-pre-wrap">
-          {msg.kind === 'action' ? (
-            <>
-              <NickSpan nick={nick} /> {body}
-            </>
-          ) : isRoomMsg || isNoticeLike ? (
-            body
-          ) : null}
-          <TranslatedMessageBlock
-            messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
-            text={rawBody}
-            incoming={
-              isActive &&
-              !whisperEcho &&
-              (msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
-              !isOwnRrcLine(msg)
-            }
-            onContentResize={() => {
-              scheduleMessageRowRemeasure(rowIndex);
-            }}
-          />
-          {reactionRows.length > 0 && renderReactionChips(msg, reactionRows)}
-        </div>
-        <div className="flex items-center self-start leading-none">
-          <span
-            className={
-              alwaysShowMessageActions
-                ? 'opacity-100'
-                : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
-            }
-          >
-            <MessageTranslateButton
-              messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
-              text={rawBody}
-              className="message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none"
-              iconSize={11}
-            />
-          </span>
-          <button
-            type="button"
-            className={`message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none ${
-              alwaysShowMessageActions
-                ? 'opacity-100'
-                : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
-            }`}
-            aria-label={t('rrc.copyMessage')}
-            title={t('rrc.copyMessage')}
-            onClick={() => {
-              void writeClipboardText(msg.body).catch((e: unknown) => {
-                console.warn('mcL0681 [RrcChatView] copy message failed ' + errLikeToLogString(e));
-              });
-            }}
-          >
-            <Copy size={11} />
-          </button>
-          {(msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
-            rrcReplyMention('', whisperEcho ? nickname : (msg.nickname ?? '')) !== null && (
-              <button
-                type="button"
-                {...{ [PARENT_HOVER_ATTR]: '' }}
-                className={`message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none disabled:opacity-40 ${alwaysShowMessageActions ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'}`}
-                aria-label={t('rrc.replyToUser', { nickname: lineNick })}
-                title={t('rrc.replyToUser', { nickname: lineNick })}
-                disabled={!canSend || isMuted || !activeRoom}
-                onClick={() => {
-                  replyToNickname(lineNick);
-                }}
-              >
-                <Reply aria-hidden size={11} />
-              </button>
-            )}
-          {onReact && canReactToRrcMessage(msg) && (
-            <button
-              type="button"
-              {...{ [PARENT_HOVER_ATTR]: '' }}
-              className={`message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none disabled:opacity-40 ${alwaysShowMessageActions ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'}`}
-              aria-label={t('chatPanel.addReaction')}
-              title={t('chatPanel.reactButton')}
-              disabled={!canSend || isMuted || !activeRoom}
-              onClick={() => {
-                if (reactionPicker.inline && reactionPicker.inlineTarget?.id === msg.id) {
-                  reactionPicker.close({ restoreFocus: true });
-                } else {
-                  reactionPicker.open(msg);
-                }
-              }}
-            >
-              <Smile aria-hidden size={11} />
-            </button>
-          )}
-        </div>
+        {renderBodyContent()}
+        {renderActions()}
         {reactionPicker.inline && reactionPicker.inlineTarget?.id === msg.id && (
           // Full row width: on tablets and phones the body column is narrower than the picker.
           <div data-testid="rrc-inline-reaction-picker" className="col-span-full mt-1 font-sans">
