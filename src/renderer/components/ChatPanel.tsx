@@ -248,6 +248,7 @@ import {
   mecpLanguageForAppLocale,
   tryParseMecp,
 } from '../lib/mecp/mecpMessages';
+import { addMeshcomGrcLocalChannel } from '../lib/meshcom/meshcomGrcLocalChannels';
 import {
   findMeshcoreParentMessageForReply,
   meshcoreChatMessagesForDisplay,
@@ -845,8 +846,11 @@ export interface ChatPanelProps {
   meshcomGrcCanApplyToDevice?: boolean;
   /** MeshCom: book GRC ids on the node via `--setgrc`. */
   onMeshcomBookGrc?: (ids: readonly number[]) => Promise<void>;
-  /** MeshCom: hide a GRC pill and unbook from the node listen filter when possible. */
-  onRemoveMeshcomGrc?: (id: number) => Promise<void>;
+  /**
+   * MeshCom: hide a GRC pill and unbook from the node listen filter when possible.
+   * `radioNodeId` is the radio identity snapshotted when the confirm dialog opened.
+   */
+  onRemoveMeshcomGrc?: (id: number, radioNodeId: number) => Promise<void>;
   /** MeshCore: import a scanned contact QR from the channel manager. */
   onImportContactFromQr?: (text: string) => Promise<MeshcoreQrImportResult>;
   /** Clear one channel's saved messages (chat asks first). `channelKey` is snapshotted at dialog open. */
@@ -1380,10 +1384,36 @@ function ChatPanel({
   };
   const removeChannel = async (target: { index: number; name: string; nodeNum: number }) => {
     const removingMeshcom = canRemoveMeshcomGrc(target.index);
-    if (!removingMeshcom && !onDeleteMeshcoreChannel) return;
+    if (removingMeshcom) {
+      if (!onRemoveMeshcomGrc) return;
+      // Local hide must run even if the radio changed; App compares `nodeNum` before --setgrc.
+      setRemovingChannel(true);
+      try {
+        await onRemoveMeshcomGrc(target.index, target.nodeNum);
+        setChannelToRemove(null);
+        if (channel === target.index) {
+          const next = channels.find((ch) => ch.index !== target.index);
+          if (next) selectChannel(next.index);
+        }
+      } catch (e) {
+        console.warn('mcL0387 [ChatPanel] remove channel failed ' + errLikeToLogString(e));
+        setChannelToRemove(null);
+        addToast(
+          t('meshcom.grc.removeGroupFailed', {
+            name: target.name,
+            message: errLikeToLogString(e),
+          }),
+          'error',
+        );
+      } finally {
+        setRemovingChannel(false);
+      }
+      return;
+    }
+    if (!onDeleteMeshcoreChannel) return;
     // The delete goes by slot on whichever radio is connected now. If another radio connected
     // while the dialog was open, its slot is not the channel the user saw: remove nothing.
-    if (!removingMeshcom && target.nodeNum !== myNodeNum) {
+    if (target.nodeNum !== myNodeNum) {
       setChannelToRemove(null);
       addToast(t('chatPanel.removeChannelRadioChanged', { name: target.name }), 'warning');
       return;
@@ -1396,16 +1426,12 @@ function ChatPanel({
     }
     setRemovingChannel(true);
     try {
-      if (removingMeshcom) {
-        await onRemoveMeshcomGrc?.(target.index);
-      } else {
-        const scopeKey = meshcoreChannelScopeKey(
-          identityId ? useIdentityStore.getState().identities[identityId]?.signature : undefined,
-          meshcoreChannelSources?.find((ch) => ch.index === target.index),
-        );
-        await onDeleteMeshcoreChannel?.(target.index);
-        if (scopeKey) clearFloodScopeOverride('meshcore', scopeKey);
-      }
+      const scopeKey = meshcoreChannelScopeKey(
+        identityId ? useIdentityStore.getState().identities[identityId]?.signature : undefined,
+        meshcoreChannelSources?.find((ch) => ch.index === target.index),
+      );
+      await onDeleteMeshcoreChannel(target.index);
+      if (scopeKey) clearFloodScopeOverride('meshcore', scopeKey);
       setChannelToRemove(null);
       if (channel === target.index) {
         const next = channels.find((ch) => ch.index !== target.index);
@@ -1415,15 +1441,10 @@ function ChatPanel({
       console.warn('mcL0387 [ChatPanel] remove channel failed ' + errLikeToLogString(e));
       setChannelToRemove(null);
       addToast(
-        removingMeshcom
-          ? t('meshcom.grc.removeGroupFailed', {
-              name: target.name,
-              message: errLikeToLogString(e),
-            })
-          : t('chatPanel.removeChannelFailed', {
-              name: target.name,
-              message: errLikeToLogString(e),
-            }),
+        t('chatPanel.removeChannelFailed', {
+          name: target.name,
+          message: errLikeToLogString(e),
+        }),
         'error',
       );
     } finally {
@@ -4670,7 +4691,15 @@ function ChatPanel({
                               openDmTo(Number(raw));
                             } else {
                               setViewMode('channels');
-                              if (raw !== undefined) selectChannel(Number(raw));
+                              if (raw !== undefined) {
+                                const idx = Number(raw);
+                                // Reopen a user-hidden MeshCom GRC so the channel list
+                                // can resolve it (history discovery keeps the tombstone).
+                                if (protocol === 'meshcom' && idx > 0) {
+                                  addMeshcomGrcLocalChannel(idx);
+                                }
+                                selectChannel(idx);
+                              }
                             }
                           }}
                           {...{ [PARENT_HOVER_ATTR]: '' }}

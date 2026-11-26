@@ -110,6 +110,7 @@ import {
   subscribeMeshcomGrcHiddenChannels,
 } from '@/renderer/lib/meshcom/meshcomGrcHiddenChannels';
 import {
+  addMeshcomGrcLocalChannel,
   getMeshcomGrcLocalChannels,
   removeMeshcomGrcLocalChannel,
   subscribeMeshcomGrcLocalChannels,
@@ -3996,6 +3997,12 @@ function AppContent() {
       } else if (target.dmPeer != null) {
         setPendingDmTarget({ protocol: target.protocol, peer: target.dmPeer });
       } else if (target.channel != null) {
+        // Explicit navigation (search / notification / starred inbox) must reopen a
+        // user-hidden MeshCom GRC so ChatPanel can resolve the channel. Automatic
+        // history discovery still respects the hide tombstone via buildMeshcomChatChannels.
+        if (target.protocol === 'meshcom' && target.channel > 0) {
+          addMeshcomGrcLocalChannel(target.channel);
+        }
         setPendingChannelTarget({ protocol: target.protocol, channel: target.channel });
       }
     },
@@ -5962,19 +5969,36 @@ function AppContent() {
                                     }
                                     onRemoveMeshcomGrc={
                                       chatProtocol === 'meshcom'
-                                        ? async (id) => {
+                                        ? async (id, radioNodeId) => {
+                                            // Local hide is independent of which radio is connected.
+                                            removeMeshcomGrcLocalChannel(id);
+                                            hideMeshcomGrcChannel(id);
                                             const listenGroupIds =
                                               meshcomListenGroupIdsFromSnapshot(
                                                 meshcomPanelActions.deviceCommands.settings,
                                               );
                                             const wasBooked = listenGroupIds.includes(id);
-                                            removeMeshcomGrcLocalChannel(id);
-                                            hideMeshcomGrcChannel(id);
                                             if (!wasBooked) return;
-                                            if (!meshcomPanelActions.deviceCommands.available) {
-                                              const name = meshcomGrcChannelLabel(id, (gid) =>
-                                                t('meshcom.channelGroup', { id: gid }),
+                                            const name = meshcomGrcChannelLabel(id, (gid) =>
+                                              t('meshcom.channelGroup', { id: gid }),
+                                            );
+                                            // Unbook only on the radio that owned the pill when
+                                            // the confirm opened — a reconnect mid-dialog must not
+                                            // rewrite another node's --setgrc list.
+                                            if (
+                                              radioNodeId <= 0 ||
+                                              chatSelfNodeNum <= 0 ||
+                                              radioNodeId !== chatSelfNodeNum
+                                            ) {
+                                              addToast(
+                                                t('meshcom.grc.removeGroupListenRadioChanged', {
+                                                  name,
+                                                }),
+                                                'warning',
                                               );
+                                              return;
+                                            }
+                                            if (!meshcomPanelActions.deviceCommands.available) {
                                               addToast(
                                                 t('meshcom.grc.removeGroupListenNotUpdated', {
                                                   name,
@@ -7950,6 +7974,9 @@ function AppContent() {
               contacts={tabSlotIds.includes('Nodes') ? launcherContacts : undefined}
               contactsLabel={displayTabLabels[tabSlotIds.indexOf('Nodes')]}
               onOpenChannel={(index) => {
+                if (protocol === 'meshcom' && index > 0) {
+                  addMeshcomGrcLocalChannel(index);
+                }
                 setPendingChannelTarget({ protocol, channel: index });
                 openTabFromLauncher(tabSlotIds.indexOf('Chat'));
               }}

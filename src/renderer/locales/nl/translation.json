@@ -9211,7 +9211,8 @@
       "removeGroupTitle": "{{name}} verwijderen?",
       "removeGroupMessage": "Verberg deze groep in de chatbalk. Als het op het knooppunt is geboekt, wordt het ook uit het luisterfilter verwijderd (--setgrc). Reeds opgeslagen berichten blijven in de geschiedenis staan; open de groep opnieuw met + om deze weer te geven.",
       "removeGroupFailed": "Kon {{name}} niet verwijderen: {{message}}",
-      "removeGroupListenNotUpdated": "{{name}} was hier verborgen, maar het luisterfilter van het knooppunt is niet bijgewerkt (radiocommando's niet beschikbaar)."
+      "removeGroupListenNotUpdated": "{{name}} was hier verborgen, maar het luisterfilter van het knooppunt is niet bijgewerkt (radiocommando's niet beschikbaar).",
+      "removeGroupListenRadioChanged": "{{name}} was hier verborgen, maar het luisterfilter van het knooppunt is niet bijgewerkt (aangesloten radio is gewijzigd)."
     },
     "netConsoleHint": "NET Console is TCP poort 2323 (LAN in platte tekst). Schakel --netconsole in op het knooppunt; optioneel --passwd voor HMAC-login."
   },

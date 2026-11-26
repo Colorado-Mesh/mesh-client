@@ -9211,7 +9211,8 @@
       "removeGroupTitle": "{{name}} kaldırılsın mı?",
       "removeGroupMessage": "Bu grubu sohbet şeridinde gizleyin. Düğümde kayıtlıysa dinleme filtresinden de kaldırılır (--setgrc). Daha önce kaydedilmiş olan mesajlar geçmişte kalır; göstermek için grubu + ile tekrar açın.",
       "removeGroupFailed": "{{name}} kaldırılamadı: {{message}}",
-      "removeGroupListenNotUpdated": "{{name}} burada gizlendi, ancak düğüm dinleme filtresi güncellenmedi (radyo komutları kullanılamıyor)."
+      "removeGroupListenNotUpdated": "{{name}} burada gizlendi, ancak düğüm dinleme filtresi güncellenmedi (radyo komutları kullanılamıyor).",
+      "removeGroupListenRadioChanged": "{{name}} burada gizlendi, ancak düğüm dinleme filtresi güncellenmedi (bağlı radyo değişti)."
     },
     "netConsoleHint": "NET Konsolu TCP bağlantı noktası 2323'tür (düz metin LAN). Düğümde --netconsole'u etkinleştirin; HMAC oturum açması için isteğe bağlı --passwd."
   },

@@ -9211,7 +9211,8 @@
       "removeGroupTitle": "¿Eliminar {{name}}?",
       "removeGroupMessage": "Ocultar este grupo de la barra de chat. Si está registrado en el nodo, también se elimina del filtro de escucha (--setgrc). Los mensajes ya guardados permanecen en el historial; vuelve a abrir el grupo con + para mostrarlos.",
       "removeGroupFailed": "No se ha podido eliminar {{name}}: {{message}}",
-      "removeGroupListenNotUpdated": "{{name}} estaba oculto aquí, pero el filtro de escucha de nodos no se actualizó (comandos de radio no disponibles)."
+      "removeGroupListenNotUpdated": "{{name}} estaba oculto aquí, pero el filtro de escucha de nodos no se actualizó (comandos de radio no disponibles).",
+      "removeGroupListenRadioChanged": "{{name}} estaba oculto aquí, pero el filtro de escucha de nodos no se actualizó (la radio conectada cambió)."
     },
     "netConsoleHint": "La consola NET es TCP puerto 2323 (LAN de texto sin cifrar). Habilite --netconsole en el nodo; --passwd es opcional para el inicio de sesión HMAC."
   },

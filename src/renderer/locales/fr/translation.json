@@ -9211,7 +9211,8 @@
       "removeGroupTitle": "Supprimer {{name}} ?",
       "removeGroupMessage": "Masquer ce groupe de la barre de chat. Si elle est réservée sur le nœud, elle est également supprimée du filtre d’écoute (--setgrc). Les messages déjà enregistrés restent dans l’historique ; ouvrez à nouveau le groupe avec + pour l’afficher.",
       "removeGroupFailed": "Impossible de supprimer {{name}} : {{message}}",
-      "removeGroupListenNotUpdated": "{{name}} était masqué ici, mais le filtre d’écoute des nœuds n’a pas été mis à jour (commandes radio indisponibles)."
+      "removeGroupListenNotUpdated": "{{name}} était masqué ici, mais le filtre d’écoute des nœuds n’a pas été mis à jour (commandes radio indisponibles).",
+      "removeGroupListenRadioChanged": "{{name}} était masqué ici, mais le filtre d’écoute des nœuds n’a pas été mis à jour (la radio connectée a changé)."
     },
     "netConsoleHint": "La console NET est TCP port 2323 (LAN en texte brut). Activez --netconsole sur le nœud ; --passwd est facultatif pour la connexion HMAC."
   },

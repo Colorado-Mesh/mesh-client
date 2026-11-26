@@ -3485,6 +3485,7 @@
       "removeGroupMessage": "Hide this group from the chat strip. If it is booked on the node, it is also removed from the listen filter (--setgrc). Messages already saved stay in history; open the group again with + to show it.",
       "removeGroupFailed": "Couldn't remove {{name}}: {{message}}",
       "removeGroupListenNotUpdated": "{{name}} was hidden here, but the node listen filter was not updated (radio commands unavailable).",
+      "removeGroupListenRadioChanged": "{{name}} was hidden here, but the node listen filter was not updated (connected radio changed).",
       "notes": {
         "eu": "Europe",
         "us": "USA",

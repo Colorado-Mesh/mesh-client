@@ -9211,7 +9211,8 @@
       "removeGroupTitle": "是否移除{{name}}？",
       "removeGroupMessage": "在聊天栏中隐藏此群组。如果它在节点上被预订，它也会从监听过滤器（--setgrc）中移除。已保存的消息将保留在历史记录中；使用“+”再次打开群组即可显示。",
       "removeGroupFailed": "无法移除{{name}}：{{message}}",
-      "removeGroupListenNotUpdated": "{{name}}曾被隐藏在此处，但节点监听过滤器未更新（无线电命令不可用）。"
+      "removeGroupListenNotUpdated": "{{name}}曾被隐藏在此处，但节点监听过滤器未更新（无线电命令不可用）。",
+      "removeGroupListenRadioChanged": "{{name}}曾在此处隐藏，但节点监听筛选器未更新（已连接的无线电已更改）。"
     },
     "netConsoleHint": "NET Console 是 TCP 端口 2323（明文 LAN）。在节点上启用 --netconsole；可选 --passwd 用于 HMAC 登录。"
   },

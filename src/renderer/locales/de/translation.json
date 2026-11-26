@@ -9211,7 +9211,8 @@
       "removeGroupTitle": "{{name}} entfernen?",
       "removeGroupMessage": "Diese Gruppe im Chat-Bereich ausblenden. Wenn sie auf dem Knoten gebucht ist, wird sie auch aus dem Abhörfilter entfernt (--setgrc). Bereits gespeicherte Nachrichten bleiben im Verlauf; öffne die Gruppe erneut mit +, um sie anzuzeigen.",
       "removeGroupFailed": "{{name}} konnte nicht entfernt werden: {{message}}",
-      "removeGroupListenNotUpdated": "{{name}} wurde hier ausgeblendet, aber der Knoten-Abhörfilter wurde nicht aktualisiert (Funkbefehle nicht verfügbar)."
+      "removeGroupListenNotUpdated": "{{name}} wurde hier ausgeblendet, aber der Knoten-Abhörfilter wurde nicht aktualisiert (Funkbefehle nicht verfügbar).",
+      "removeGroupListenRadioChanged": "{{name}} wurde hier ausgeblendet, aber der Knoten-Abhörfilter wurde nicht aktualisiert (angeschlossenes Funkgerät geändert)."
     },
     "netConsoleHint": "NET-Konsole ist TCP Port 2323 (LAN im Klartext). Aktivieren Sie --netconsole auf dem Knoten; optional --passwd für die HMAC-Anmeldung."
   },

@@ -9211,7 +9211,8 @@
       "removeGroupTitle": "{{name}}を削除しますか？",
       "removeGroupMessage": "このグループをチャットストリップに表示しないようにします。ノードに登録されている場合、リスンフィルター（--setgrc）からも削除されます。すでに保存されているメッセージは履歴に残ります。グループを+で再度開き、表示します。",
       "removeGroupFailed": "{{name}}を削除できませんでした：{{message}}",
-      "removeGroupListenNotUpdated": "{{name}}はここに非表示にされていましたが、ノードリスンフィルターは更新されていませんでした（無線コマンドは利用できません）。"
+      "removeGroupListenNotUpdated": "{{name}}はここに非表示にされていましたが、ノードリスンフィルターは更新されていませんでした（無線コマンドは利用できません）。",
+      "removeGroupListenRadioChanged": "{{name}}はここに非表示になっていましたが、ノードリスンフィルターは更新されていませんでした（接続された無線が変更されました）。"
     },
     "netConsoleHint": "NETコンソールはTCPポート2323（プレーンテキストLAN）です。ノードで--netconsoleを有効にします。HMACログインにはオプションの--passwdを使用します。"
   },

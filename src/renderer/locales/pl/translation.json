@@ -9355,7 +9355,8 @@
       "removeGroupTitle": "Usunąć {{name}}?",
       "removeGroupMessage": "Ukryj tę grupę na pasku czatu. Jeśli jest zarezerwowana na węźle, jest również usuwana z filtra nasłuchu (--setgrc). Wiadomości już zapisane pozostają w historii; otwórz ponownie grupę za pomocą przycisku +, aby je wyświetlić.",
       "removeGroupFailed": "Nie udało się usunąć elementu {{name}}: {{message}}",
-      "removeGroupListenNotUpdated": "Element {{name}} był tutaj ukryty, ale filtr nasłuchu węzła nie został zaktualizowany (polecenia radiowe są niedostępne)."
+      "removeGroupListenNotUpdated": "Element {{name}} był tutaj ukryty, ale filtr nasłuchu węzła nie został zaktualizowany (polecenia radiowe są niedostępne).",
+      "removeGroupListenRadioChanged": "{{name}} był tutaj ukryty, ale filtr nasłuchu węzła nie został zaktualizowany (zmieniono podłączone radio)."
     },
     "netConsoleHint": "Konsola sieciowa to TCP port 2323 (sieć LAN w formie zwykłego tekstu). Włącz --netconsole na węźle; opcjonalnie --passwd do logowania HMAC."
   },

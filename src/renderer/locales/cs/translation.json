@@ -9296,7 +9296,8 @@
       "removeGroupTitle": "Odstranit {{name}}?",
       "removeGroupMessage": "Skrýt tuto skupinu z panelu chatu. Pokud je rezervována na uzlu, je také odstraněna z filtru poslechu (--setgrc). Již uložené zprávy zůstávají v historii. Chcete-li je zobrazit, otevřete skupinu znovu pomocí +.",
       "removeGroupFailed": "{{name}} se nepodařilo odebrat: {{message}}",
-      "removeGroupListenNotUpdated": "{{name}} byl zde skryt, ale filtr poslechu uzlu nebyl aktualizován (rádiové příkazy nejsou k dispozici)."
+      "removeGroupListenNotUpdated": "{{name}} byl zde skryt, ale filtr poslechu uzlu nebyl aktualizován (rádiové příkazy nejsou k dispozici).",
+      "removeGroupListenRadioChanged": "{{name}} byl zde skryt, ale filtr poslechu uzlu nebyl aktualizován (připojené rádio se změnilo)."
     },
     "netConsoleHint": "NET Console je TCP port 2323 (nešifrovaná LAN). Povolte --netconsole na uzlu; volitelné --passwd pro přihlášení HMAC."
   },

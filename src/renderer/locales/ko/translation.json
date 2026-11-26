@@ -9211,7 +9211,8 @@
       "removeGroupTitle": "{{name}}을(를) 삭제하시겠어요?",
       "removeGroupMessage": "채팅 스트립에서 이 그룹을 숨깁니다. 노드에 예약된 경우, 수신 필터(--setgrc)에서도 제거됩니다. 이미 저장된 메시지는 기록에 남아 있습니다. +로 그룹을 다시 열어 표시하세요.",
       "removeGroupFailed": "{{name}}을(를) 제거할 수 없습니다. {{message}}",
-      "removeGroupListenNotUpdated": "{{name}}이(가) 여기에 숨겨졌지만 노드 수신 필터가 업데이트되지 않았습니다(무선 명령 사용 불가)."
+      "removeGroupListenNotUpdated": "{{name}}이(가) 여기에 숨겨졌지만 노드 수신 필터가 업데이트되지 않았습니다(무선 명령 사용 불가).",
+      "removeGroupListenRadioChanged": "{{name}}이(가) 여기에 숨겨졌지만 노드 수신 필터가 업데이트되지 않았습니다(연결된 라디오 변경됨)."
     },
     "netConsoleHint": "NET 콘솔은 TCP 포트 2323(일반 텍스트 LAN)입니다. 노드에서 --netconsole을 활성화합니다. HMAC 로그인을 위한 --passwd는 선택 사항입니다."
   },
