@@ -443,6 +443,108 @@ function NodeIdentitySection({
   );
 }
 
+function NodeSnrRows({
+  node,
+  protocol,
+  showSnr,
+  showLastHopSnr,
+  snrColor,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  showSnr: boolean;
+  showLastHopSnr: boolean;
+  snrColor: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {showSnr && (
+        <InfoRow
+          label={t('nodeInfoBody.snr')}
+          value={node.snr != null && node.snr !== 0 ? `${node.snr.toFixed(1)} dB` : '—'}
+          className={snrColor}
+        />
+      )}
+      {showLastHopSnr && !showSnr && (
+        <InfoRow
+          label={t('nodeInfoBody.lastHopSnr')}
+          value={`${node.snr?.toFixed(1) ?? '—'} dB`}
+          className={snrColor}
+        />
+      )}
+      {protocol === 'meshcom' && node.rssi != null && node.rssi !== 0 && (
+        <InfoRow label={t('nodeInfoBody.rssi')} value={`${node.rssi} dBm`} />
+      )}
+    </>
+  );
+}
+
+function BatteryLevelBar({ percent }: { percent: number }) {
+  return (
+    <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
+      <div
+        className={`h-full rounded-full transition-all ${
+          percent > 50 ? 'bg-brand-green' : percent > 20 ? 'bg-orange-500' : 'bg-red-500'
+        }`}
+        style={{ width: `${Math.min(percent, 100)}%` }}
+      />
+    </div>
+  );
+}
+
+function VoltageBatteryRow({ node, batteryColor }: { node: MeshNode; batteryColor: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+      <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
+      <div className="flex items-center gap-2">
+        {node.battery > 0 && <BatteryLevelBar percent={node.battery} />}
+        <span className={`text-sm font-medium ${batteryColor}`}>
+          {node.voltage?.toFixed(2)} V{node.battery > 0 ? ` (${node.battery}%)` : ''}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PercentBatteryRow({ node, batteryColor }: { node: MeshNode; batteryColor: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+      <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
+      <div className="flex items-center gap-2">
+        {node.battery > 0 && <BatteryLevelBar percent={node.battery} />}
+        <span className={`text-sm font-medium ${batteryColor}`}>
+          {node.battery > 0 ? `${node.battery}%` : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function NodeBatterySection({
+  node,
+  protocol,
+  batteryColor,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  batteryColor: string;
+}) {
+  const { t } = useTranslation();
+  if (protocol === 'meshcore' || protocol === 'meshcom') {
+    if (node.voltage != null && node.voltage > 0) {
+      return <VoltageBatteryRow node={node} batteryColor={batteryColor} />;
+    }
+    if (node.battery > 0) {
+      return <PercentBatteryRow node={node} batteryColor={batteryColor} />;
+    }
+    return <InfoRow label={t('nodeInfoBody.battery')} value="—" className="text-muted" />;
+  }
+  return <PercentBatteryRow node={node} batteryColor={batteryColor} />;
+}
+
 export default function NodeInfoBody({
   node,
   homeNode,
@@ -620,96 +722,15 @@ export default function NodeInfoBody({
         meshcomFirmware={meshcomFirmware}
       />
 
-      {/* SNR: direct 0-hop RF or our node; otherwise Last-Hop SNR when multi-hop RF context */}
-      {showSnr && (
-        <InfoRow
-          label={t('nodeInfoBody.snr')}
-          value={node.snr != null && node.snr !== 0 ? `${node.snr.toFixed(1)} dB` : '—'}
-          className={snrColor}
-        />
-      )}
-      {showLastHopSnr && !showSnr && (
-        <InfoRow
-          label={t('nodeInfoBody.lastHopSnr')}
-          value={`${node.snr?.toFixed(1) ?? '—'} dB`}
-          className={snrColor}
-        />
-      )}
-      {protocol === 'meshcom' && node.rssi != null && node.rssi !== 0 && (
-        <InfoRow label={t('nodeInfoBody.rssi')} value={`${node.rssi} dBm`} />
-      )}
+      <NodeSnrRows
+        node={node}
+        protocol={protocol}
+        showSnr={showSnr}
+        showLastHopSnr={showLastHopSnr}
+        snrColor={snrColor}
+      />
 
-      {/* Battery — Meshtastic % ; MeshCore/MeshCom: voltage when known + % bar */}
-      {protocol === 'meshcore' || protocol === 'meshcom' ? (
-        node.voltage != null && node.voltage > 0 ? (
-          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-            <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
-            <div className="flex items-center gap-2">
-              {node.battery > 0 && (
-                <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      node.battery > 50
-                        ? 'bg-brand-green'
-                        : node.battery > 20
-                          ? 'bg-orange-500'
-                          : 'bg-red-500'
-                    }`}
-                    style={{ width: `${Math.min(node.battery, 100)}%` }}
-                  />
-                </div>
-              )}
-              <span className={`text-sm font-medium ${batteryColor}`}>
-                {node.voltage.toFixed(2)} V{node.battery > 0 ? ` (${node.battery}%)` : ''}
-              </span>
-            </div>
-          </div>
-        ) : node.battery > 0 ? (
-          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-            <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
-            <div className="flex items-center gap-2">
-              <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    node.battery > 50
-                      ? 'bg-brand-green'
-                      : node.battery > 20
-                        ? 'bg-orange-500'
-                        : 'bg-red-500'
-                  }`}
-                  style={{ width: `${Math.min(node.battery, 100)}%` }}
-                />
-              </div>
-              <span className={`text-sm font-medium ${batteryColor}`}>{node.battery}%</span>
-            </div>
-          </div>
-        ) : (
-          <InfoRow label={t('nodeInfoBody.battery')} value="—" className="text-muted" />
-        )
-      ) : (
-        <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-          <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
-          <div className="flex items-center gap-2">
-            {node.battery > 0 && (
-              <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    node.battery > 50
-                      ? 'bg-brand-green'
-                      : node.battery > 20
-                        ? 'bg-orange-500'
-                        : 'bg-red-500'
-                  }`}
-                  style={{ width: `${Math.min(node.battery, 100)}%` }}
-                />
-              </div>
-            )}
-            <span className={`text-sm font-medium ${batteryColor}`}>
-              {node.battery > 0 ? `${node.battery}%` : '—'}
-            </span>
-          </div>
-        </div>
-      )}
+      <NodeBatterySection node={node} protocol={protocol} batteryColor={batteryColor} />
 
       {/* Timing */}
       <InfoRow label={t('nodeInfoBody.lastHeard')} value={formatTime(node.last_heard, t)} />
