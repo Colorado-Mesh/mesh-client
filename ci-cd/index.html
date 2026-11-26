@@ -4095,7 +4095,7 @@
 <h2 id="ci-build-ciyaml">CI Build (<code>ci.yaml</code>)<a class="headerlink" href="#ci-build-ciyaml" title="Permanent link">&para;</a></h2>
 <p>Runs on every push, pull request, and merge-queue <code>merge_group</code> for <code>main</code> (and <code>workflow_dispatch</code>). Independent lanes start concurrently; only Flatpak waits for change detection:</p>
 <ul>
-<li><strong>Code quality:</strong> format, markdownlint, license allowlist, actionlint, dependency audit, and yamllint</li>
+<li><strong>Code quality:</strong> format, markdownlint, license allowlist, actionlint (from the <code>github-actionlint</code> devDependency), dependency audit, and yamllint</li>
 <li><strong>ESLint:</strong> full repository lint, split over four parallel shards (<code>ESLint (1/4)</code> to <code>ESLint (4/4)</code>). <code>scripts/ci-eslint-shard.mjs</code> deals every Git-visible file to exactly one shard and runs ESLint on that list with two workers, using <code>eslint.ci.config.mjs</code> to avoid running Prettier again for extensions already covered by the required Code quality job. All type-aware rules and the zero-warning gate remain enabled on every shard. Local development uses the default ESLint config via <code>pnpm run lint</code> (single process, raised heap). CI runs the sharded <code>eslint.ci.config.mjs</code> pass; release preflight runs <code>pnpm run lint --concurrency 2 --config eslint.ci.config.mjs</code> from <code>scripts/release.sh</code>. To change the shard count, edit the <code>shard</code> list in <code>ci.yaml</code>.</li>
 <li><strong>Typecheck:</strong> <code>pnpm run typecheck</code></li>
 <li><strong>Application build:</strong> <code>pnpm run build</code></li>
@@ -4541,7 +4541,7 @@ The workflow does not change repository security settings. Existing global cover
 <h2 id="required-status-checks">Required Status Checks<a class="headerlink" href="#required-status-checks" title="Permanent link">&para;</a></h2>
 <p>All PRs (and merge-queue groups) for <code>main</code> must pass the <strong>required check names</strong> listed above. Those jobs cover:</p>
 <ul>
-<li>Lint, format, markdown, licenses, actionlint, yamllint (<code>pnpm run lint</code> and related steps in <code>ci.yaml</code>)</li>
+<li>Lint, format, markdown, licenses, actionlint (<code>pnpm exec github-actionlint</code>, no separate install), yamllint (<code>pnpm run lint</code> and related steps in <code>ci.yaml</code>)</li>
 <li>Cheap always-on policy scanners (<code>check:electron-security</code>, log/XSS/console/IPC/protocol-string gates, and the matching cheap <code>check:*</code> set; Semgrep is not in CI — use <code>core.hooksPath=.githooks</code> locally)</li>
 <li>Typecheck and build (<code>pnpm run typecheck</code>, <code>pnpm run build</code>)</li>
 <li>Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on <code>merge_group</code>, <code>main</code>, and manual runs</li>
@@ -4553,9 +4553,9 @@ The workflow does not change repository security settings. Existing global cover
 <li><strong>Staged-file</strong> Prettier + markdownlint (not a full-tree <code>pnpm run format</code> / <code>lint:md</code>)</li>
 <li><code>pnpm dedupe</code> when dependency manifests are staged</li>
 <li><code>pnpm run i18n:auto-translate</code> when <code>en/translation.json</code> is staged (fills new English keys vs <code>HEAD</code>) + re-stages locales</li>
-<li>Staged ESLint (<code>--cache</code>) + full <code>typecheck</code>; path-gated <code>typecheck:strict-shared</code> when shared paths staged; always-on cheap <code>check:*</code> scanners; path-gated flatpak / DB / IPC / reticulum catalog / full-feature sidecar checks (sidecar also requires <code>cargo</code> on <code>PATH</code> when sidecar paths are staged; <code>check:i18n</code> when English locale staged, else <code>check:i18n:branch</code>)</li>
+<li>Staged ESLint (<code>--cache</code>) + staged oxlint (<code>correctness</code>/<code>suspicious</code>/<code>perf</code> via <code>.oxlintrc.json</code>) + full <code>typecheck</code>; path-gated <code>typecheck:strict-shared</code> when shared paths staged; always-on cheap <code>check:*</code> scanners and <code>fallow audit --type-aware --staged</code>; path-gated flatpak / DB / IPC / reticulum catalog / full-feature sidecar checks (sidecar also requires <code>cargo</code> on <code>PATH</code> when sidecar paths are staged; <code>check:i18n</code> when English locale staged, else <code>check:i18n:branch</code>)</li>
 <li>Before PR: <code>pnpm run check:pr</code> (full lint + typecheck + strict-shared + <code>test:run</code> + path-aware sidecar)</li>
-<li><code>pnpm audit</code> only when dependency manifests staged; <code>actionlint</code> / <code>yamllint</code> only when relevant files are staged</li>
+<li><code>pnpm audit</code> only when dependency manifests staged; <code>pnpm exec github-actionlint</code> / <code>yamllint</code> only when relevant files are staged</li>
 <li><code>pnpm run test:staged</code> (<code>scripts/precommit-tests.mjs</code>: staged-only <code>vitest related</code>; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)</li>
 </ul>
 <p><strong>PR CI</strong> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>tests.yaml</code></a>) selects merge-base-related Vitest work and fails closed to the full suite when scoping is unsafe. The merge queue and <strong><code>pnpm run release</code></strong> always run full Vitest; green pre-commit does not replace those gates.</p>
@@ -4779,7 +4779,7 @@ The workflow does not change repository security settings. Existing global cover
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 24, 2026 02:43:38 UTC">November 24, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 26, 2026 03:57:40 UTC">November 26, 2026</span>
   </span>
 
     

@@ -2080,6 +2080,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="6) Git hooks and pre-commit behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-push-branch-gate-and-why-it-repeats-some-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-push (branch gate) and why it repeats some checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -4387,6 +4404,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="6) Git hooks and pre-commit behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-push-branch-gate-and-why-it-repeats-some-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-push (branch gate) and why it repeats some checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -4881,7 +4915,7 @@
 <p>Use this short recipe on a fresh clone (agents: same order):</p>
 <ol>
 <li><code>node scripts/check-environment.mjs</code> (works before pnpm is installed).</li>
-<li>After Node/pnpm exist, prefer <code>pnpm run setup:dev</code> — installs Semgrep, yamllint, native build deps, and actionlint; ensures Rust/<code>cargo</code> + clippy; sets <code>git config core.hooksPath .githooks</code>; re-runs <code>check:environment</code>; then smokes with <code>pnpm run typecheck</code> when <code>node_modules</code> exists. Or follow printed <code>→</code> hints / individual <code>setup:*</code> scripts.</li>
+<li>After Node/pnpm exist, prefer <code>pnpm run setup:dev</code> — installs Semgrep, yamllint, and native build deps; ensures Rust/<code>cargo</code> + clippy; sets <code>git config core.hooksPath .githooks</code>; re-runs <code>check:environment</code>; then smokes with <code>pnpm run typecheck</code> when <code>node_modules</code> exists. <code>actionlint</code> comes from the <code>github-actionlint</code> devDependency installed by <code>pnpm install</code>. Or follow printed <code>→</code> hints / individual <code>setup:*</code> scripts.</li>
 <li><code>pnpm install</code> (or <code>pnpm install --frozen-lockfile</code> on a clean clone).</li>
 <li><code>pnpm run setup:dev</code> again (or at least <code>pnpm run check:environment</code>) — must exit 0.</li>
 <li>Optional UI smoke: <code>pnpm run dev</code>.</li>
@@ -4897,8 +4931,8 @@
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
 </code></pre></div>
 <p><strong>Required</strong> checks (must pass): Git, Node.js, pnpm, <code>node_modules</code>, platform-native build tools (Xcode CLT on macOS, <code>g++</code>/<code>make</code> on Linux, MSVC <code>cl</code> on Windows), <strong>Semgrep</strong>, <strong>yamllint</strong>, <strong>Rust/<code>cargo</code></strong>, and <strong>cargo clippy</strong>. Semgrep App login / <code>SEMGREP_APP_TOKEN</code> are <strong>not</strong> required (registry network access is needed for the public rule packs).</p>
-<p><strong>Optional</strong> checks (warnings only): Python/pip, <code>cargo llvm-cov</code>, actionlint, a Docker-compatible container engine (Podman preferred), act, Playwright, and Linux <code>dialout</code> group membership. For local CI you can use <strong>container mode</strong> (<code>pnpm run act:ci</code> — act + Podman/Docker) or <strong>host mode</strong> (<code>pnpm run act:ci:native</code> — no container engine). Fix optional items when you need docs builds, workflow linting, local CI parity, sidecar coverage reports, or USB serial on Linux.</p>
-<p>Use the printed <code>→</code> hints and <code>setup:*</code> scripts (<code>setup:dev</code>, <code>setup:semgrep</code>, <code>setup:yamllint</code>, <code>setup:build-deps</code>, <code>setup:actionlint</code>, <code>setup:dialout</code>) to fix failures. See <a href="#8-helper-scripts-auto-install-where-possible">Helper scripts (auto-install where possible)</a> below.</p>
+<p><strong>Optional</strong> checks (warnings only): Python/pip, <code>cargo llvm-cov</code>, actionlint (provided by <code>pnpm install</code> via <code>github-actionlint</code>), a Docker-compatible container engine (Podman preferred), act, Playwright, and Linux <code>dialout</code> group membership. For local CI you can use <strong>container mode</strong> (<code>pnpm run act:ci</code> — act + Podman/Docker) or <strong>host mode</strong> (<code>pnpm run act:ci:native</code> — no container engine). Fix optional items when you need docs builds, workflow linting, local CI parity, sidecar coverage reports, or USB serial on Linux.</p>
+<p>Use the printed <code>→</code> hints and <code>setup:*</code> scripts (<code>setup:dev</code>, <code>setup:semgrep</code>, <code>setup:yamllint</code>, <code>setup:build-deps</code>, <code>setup:dialout</code>) to fix failures. See <a href="#8-helper-scripts-auto-install-where-possible">Helper scripts (auto-install where possible)</a> below.</p>
 <h3 id="mkdocs-documentation-tooling">MkDocs (documentation) tooling<a class="headerlink" href="#mkdocs-documentation-tooling" title="Permanent link">&para;</a></h3>
 <p>Docs are built with MkDocs Material.</p>
 <ol>
@@ -5385,6 +5419,10 @@ to verify each mode.</p>
 </thead>
 <tbody>
 <tr>
+<td><code>check:actions</code></td>
+<td>Lint <code>.github/workflows</code> with the <code>github-actionlint</code> devDependency</td>
+</tr>
+<tr>
 <td><code>check:audit-ignores</code></td>
 <td>Warn when an ignored audit GHSA has a patch (needs network)</td>
 </tr>
@@ -5411,6 +5449,10 @@ to verify each mode.</p>
 <tr>
 <td><code>check:environment</code></td>
 <td>Verify local dev prerequisites (run after clone)</td>
+</tr>
+<tr>
+<td><code>check:fallow</code></td>
+<td>Changed-file dead-code / complexity / duplication audit (<code>fallow audit --type-aware</code>)</td>
 </tr>
 <tr>
 <td><code>check:flatpak</code></td>
@@ -5455,6 +5497,10 @@ to verify each mode.</p>
 <tr>
 <td><code>check:main-bundle</code></td>
 <td>Production main <code>index.js</code> size budget (same suite as <code>bundle-size.yaml</code>)</td>
+</tr>
+<tr>
+<td><code>check:oxlint</code></td>
+<td>Fast ESLint-compatible lint pass (<code>correctness</code> + <code>suspicious</code> + <code>perf</code> errors)</td>
 </tr>
 <tr>
 <td><code>check:pinned-majors</code></td>
@@ -5658,10 +5704,6 @@ to verify each mode.</p>
 <td>Full-feature <code>cargo test</code> (clones the <code>.rsstack/</code> workspace if needed)</td>
 </tr>
 <tr>
-<td><code>setup:actionlint</code></td>
-<td>Install actionlint for GitHub workflow linting</td>
-</tr>
-<tr>
 <td><code>setup:build-deps</code></td>
 <td>Install native build dependencies</td>
 </tr>
@@ -5739,12 +5781,13 @@ to verify each mode.</p>
 <li><code>vitest</code>, <code>@vitest/coverage-v8</code>, and renderer/main test dependencies</li>
 <li><code>@playwright/test</code> (Electron E2E; browser downloads skipped via <code>PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1</code> in <code>.npmrc</code>)</li>
 <li><code>eslint</code>, <code>typescript</code>, <code>typescript-eslint</code></li>
+<li><code>github-actionlint</code> (workflow linting; <code>pnpm exec github-actionlint</code>)</li>
+<li><code>oxlint</code>, <code>fallow</code>, <code>fallow-type-aware</code> (fast lint / type-aware changed-file audit gates in pre-commit)</li>
 <li><code>prettier</code>, <code>prettier-plugin-sh</code>, <code>prettier-plugin-tailwindcss</code></li>
 <li><code>markdownlint-cli2</code>, <code>vitest-axe</code></li>
 </ul>
 <p>Not installed by pnpm (install separately when needed):</p>
 <ul>
-<li><code>actionlint</code> (recommended for workflow linting; run <code>pnpm run setup:actionlint</code> or <code>pnpm run setup:dev</code>)</li>
 <li><code>yamllint</code> (<strong>required</strong> for <code>check:environment</code> and pre-commit YAML lint; <code>pnpm run setup:yamllint</code> or brew/apt/pip)</li>
 <li><strong>Semgrep</strong> (<strong>required locally</strong> for <code>check:environment</code> and always-on pre-commit <code>check:semgrep</code>; not run in GitHub Actions). Run <code>git config core.hooksPath .githooks</code> and <code>pnpm run setup:semgrep</code> (pin in <code>scripts/requirements-semgrep.txt</code>; brew/pipx/pip). App login is <strong>not</strong> required. Config is tracked at <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.semgrep.yml"><code>.semgrep.yml</code></a>. Findings may be false positives — research before dismissing; if wrong for this repo, update <code>.semgrep.yml</code> or add a narrow <code>nosemgrep</code> with a reason (see <code>scripts/check-semgrep.mjs</code>). Semgrep and ESLint are separate: after Semgrep-driven edits, lint the touched files — <code>nosemgrep</code> does not replace <code>eslint-disable</code> (see AGENTS.md <strong>Semgrep × ESLint</strong>).</li>
 <li><strong>Rust / <code>cargo</code> + clippy</strong> (<strong>required</strong> for <code>check:environment</code>; prefer <a href="https://rustup.rs/">rustup</a>; <code>pnpm run setup:dev</code> prints a non-interactive rustup recipe and can <code>rustup component add clippy</code>). Needed for the Reticulum sidecar — see <a href="#reticulum-sidecar-optional">Reticulum sidecar</a>. <code>rust-toolchain.toml</code> installs clippy/rustfmt/llvm-tools-preview on first build in <code>reticulum-sidecar/</code>. Optional: <code>cargo install cargo-llvm-cov</code> for <code>pnpm run reticulum:sidecar:coverage</code>.</li>
@@ -5879,7 +5922,7 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 <li>Minification effectiveness</li>
 </ul>
 <h3 id="6-git-hooks-and-pre-commit-behavior">6) Git hooks and pre-commit behavior<a class="headerlink" href="#6-git-hooks-and-pre-commit-behavior" title="Permanent link">&para;</a></h3>
-<p>After <code>pnpm install</code>, repo hooks are enabled via <code>core.hooksPath</code> (see the <code>prepare</code> script in <code>package.json</code>). The pre-commit hook runs on every commit. Typical commits run <strong>staged-related Vitest only</strong> (<code>pnpm run test:staged</code> → <code>vitest related</code> on staged source/test files, optionally narrowed to matching Vitest projects). Unstaged WIP is ignored. Full typecheck still runs every commit; ESLint runs on staged JS/TS with <code>--cache</code> (CI still runs full-tree lint). Path-gated <code>typecheck:strict-shared</code> runs when <code>src/shared/</code> (or <code>tsconfig.strict.json</code>) is staged. Several expensive <code>check:*</code> steps and <code>pnpm audit</code> / full-feature sidecar builds are <strong>path-gated</strong>.</p>
+<p>After <code>pnpm install</code>, repo hooks are enabled via <code>core.hooksPath</code> (see the <code>prepare</code> script in <code>package.json</code>). The pre-commit hook runs on every commit. Typical commits run <strong>staged-related Vitest only</strong> (<code>pnpm run test:staged</code> → <code>vitest related</code> on staged source/test files, optionally narrowed to matching Vitest projects). Unstaged WIP is ignored. Full typecheck still runs every commit; ESLint runs on staged JS/TS with <code>--cache</code> (CI still runs full-tree lint), oxlint runs on staged JS/TS using <code>.oxlintrc.json</code>, and <code>fallow audit --type-aware --staged</code> checks the change for introduced dead code/complexity/debt. Path-gated <code>typecheck:strict-shared</code> runs when <code>src/shared/</code> (or <code>tsconfig.strict.json</code>) is staged. Several expensive <code>check:*</code> steps and <code>pnpm audit</code> / full-feature sidecar builds are <strong>path-gated</strong>.</p>
 <p>ESLint: production <code>src/**</code> enforces <code>no-unsafe-*</code>; test files keep those off. <code>no-unnecessary-condition</code> is enforced for <code>src/shared/**</code> and <code>src/renderer/lib/**</code> only.</p>
 <p>Green pre-commit does <strong>not</strong> replace PR CI: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>.github/workflows/tests.yaml</code></a> runs merge-base-related tests on pull requests and fails closed to full Vitest when scoping is unsafe. The merge queue always reruns full Vitest with coverage. Use <code>pnpm run check:pr</code> for a comprehensive local gate before opening a PR.</p>
 <p>Hook order (authoritative source: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.githooks/pre-commit"><code>.githooks/pre-commit</code></a>):</p>
@@ -5889,17 +5932,39 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 <li>markdownlint-cli2 on staged <code>.md</code> files only (not full <code>pnpm run lint:md</code> unless you run it manually)</li>
 <li>When <code>package.json</code> or <code>pnpm-lock.yaml</code> is staged: <code>pnpm dedupe</code>, re-stage <code>pnpm-lock.yaml</code>, then re-stage the originally staged paths</li>
 <li>When <code>src/renderer/locales/en/translation.json</code> is staged: <code>pnpm run i18n:auto-translate</code> (incremental vs <code>HEAD</code> English, not <code>--all</code>) and re-stage <code>src/renderer/locales/</code> — see <a href="#9-internationalization-i18n">Internationalization</a></li>
-<li>ESLint on <strong>staged</strong> JS/TS with <code>--cache</code> (skip when none staged)</li>
+<li>ESLint on <strong>staged</strong> JS/TS with <code>--cache</code> (skip when none staged); <strong>oxlint</strong> on staged JS/TS (<code>correctness</code> + <code>suspicious</code> + <code>perf</code> as errors via <code>.oxlintrc.json</code>; skip when none staged)</li>
 <li><code>pnpm run typecheck</code> (full tree); path-gated <code>typecheck:strict-shared</code> when <code>src/shared/</code> or <code>tsconfig.strict.json</code> staged</li>
-<li>Always-on: <code>check:electron-security</code>, <code>check:log-injection</code>, <code>check:log-service-sinks</code>, <code>check:codeql-extensions</code>, <code>check:insecure-temp-files</code>, <code>check:console-log</code>, <code>check:silent-catches</code>, <code>check:log-ids</code>, <code>check:semgrep</code> (<code>p/typescript</code>, <code>p/javascript</code>, <code>p/nodejs</code>, <code>p/security-audit</code>, <code>.semgrep.yml</code>; findings may be wrong — research before dismissing, then update <code>.semgrep.yml</code> / narrow <code>nosemgrep</code> if truly incorrect), <code>check:url-hostname-sanitization</code>, <code>check:xss-patterns</code>, <code>check:protocol-string-gates</code>, <code>check:log-panel-filter</code>, <code>check:licenses</code>; <code>check:i18n</code> when English locale staged else <code>check:i18n:branch</code></li>
+<li>Always-on: <code>check:electron-security</code>, <code>check:log-injection</code>, <code>check:log-service-sinks</code>, <code>check:codeql-extensions</code>, <code>check:insecure-temp-files</code>, <code>check:console-log</code>, <code>check:silent-catches</code>, <code>check:log-ids</code>, <code>check:semgrep</code> (<code>p/typescript</code>, <code>p/javascript</code>, <code>p/nodejs</code>, <code>p/security-audit</code>, <code>.semgrep.yml</code>; findings may be wrong — research before dismissing, then update <code>.semgrep.yml</code> / narrow <code>nosemgrep</code> if truly incorrect), <code>check:url-hostname-sanitization</code>, <code>check:xss-patterns</code>, <code>check:protocol-string-gates</code>, <code>check:log-panel-filter</code>, <code>check:licenses</code>, <code>fallow audit --type-aware --staged</code>; <code>check:i18n</code> when English locale staged else <code>check:i18n:branch</code></li>
 <li>Path-gated: <code>check:flatpak</code>, <code>check:db-migrations</code>, <code>check:main-bundle</code> (when <code>src/main/</code> or esbuild main-build scripts staged), <code>check:ipc-contract</code>, <code>check:reticulum-interface-modes</code>, <code>check:reticulum-decommissioned-hubs</code>, <code>check:reticulum-sidecar</code> (when <code>cargo</code> on <code>PATH</code> and sidecar paths staged)</li>
-<li><code>pnpm audit --audit-level=high</code> only when dependency manifests staged; <code>actionlint</code> when <code>.github/workflows/*</code> staged; <code>yamllint</code> when any <code>*.yaml</code> / <code>*.yml</code> staged</li>
+<li><code>pnpm audit --audit-level=high</code> only when dependency manifests staged; <code>pnpm exec github-actionlint</code> when <code>.github/workflows/*</code> staged; <code>yamllint</code> when any <code>*.yaml</code> / <code>*.yml</code> staged</li>
 <li><code>pnpm run test:staged</code> (<code>scripts/precommit-tests.mjs</code>: staged-only <code>vitest related</code>; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)</li>
 </ol>
-<p><strong>Release / protected CI full suite:</strong> <code>pnpm run release</code> (<code>scripts/release.sh</code>), merge-queue <code>merge_group</code>, <code>main</code> push, and manual <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>tests.yaml</code></a> runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated <code>check:*</code> set and requires actionlint + yamllint. Use <code>pnpm run check:pr</code> for the comprehensive Vitest/lint/typecheck surface locally before a PR.</p>
-<p>Install hook dependencies via <a href="#8-helper-scripts-auto-install-where-possible">Helper scripts</a> (<code>setup:actionlint</code>, yamllint via pip/brew/apt).</p>
+<h4 id="pre-push-branch-gate-and-why-it-repeats-some-checks">Pre-push (branch gate) and why it repeats some checks<a class="headerlink" href="#pre-push-branch-gate-and-why-it-repeats-some-checks" title="Permanent link">&para;</a></h4>
+<p><code>.githooks/pre-push</code> runs <code>pnpm run check:changed</code> (<code>scripts/prepush-check.mjs</code>) over the union of
+<code>origin/main…HEAD</code>, staged, and unstaged paths: Prettier <code>--check</code>, ESLint with the <strong>CI shard/config</strong>
+(<code>scripts/ci-eslint-shard.mjs</code>), full <code>typecheck</code>, and <code>vitest related</code> for the whole branch diff.</p>
+<p>It deliberately repeats work pre-commit already did, because the two gates answer different questions:</p>
+<ul>
+<li><strong>Scope:</strong> pre-commit only sees the files in <em>that</em> commit. Cross-commit interactions (a later commit
+  touching a shared module whose consumers' tests were not staged) are only visible branch-wide.</li>
+<li><strong>Invocation:</strong> pre-push runs the same ESLint shard arguments as CI, so a staged-file local invocation
+  cannot hide a config/ignore-driven CI failure.</li>
+<li><strong>Bypassed state:</strong> <code>--no-verify</code>, GUI clients, agent VMs with a non-repo <code>core.hooksPath</code>, and commits
+  pulled or merged into the branch never ran <em>your</em> pre-commit. Pre-push is the last local gate.</li>
+<li><strong>Cost:</strong> a red PR costs a full CI round-trip; the branch check is the cheap version of that signal.</li>
+</ul>
+<p><strong>Tree-hash cache.</strong> The first successful branch check writes <code>&lt;git-dir&gt;/prepush-check-cache.json</code>, keyed by
+HEAD, the merge-base, the tracked diff vs <code>HEAD</code> (staged + unstaged), and untracked file hashes. Pushing the
+exact same tree again (push retry, second remote, no-op amend/rebase) skips instantly. Set
+<code>PREPUSH_CHECK_NO_CACHE=1</code> or delete the cache file to force a rerun. The cache lives inside the git dir —
+never tracked, per worktree — and is only written after a passing run.</p>
 <p>Emergency bypass (temporary only):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>git<span class="w"> </span>commit<span class="w"> </span>--no-verify
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>git<span class="w"> </span>push<span class="w"> </span>--no-verify
+</code></pre></div>
+<p><strong>Release / protected CI full suite:</strong> <code>pnpm run release</code> (<code>scripts/release.sh</code>), merge-queue <code>merge_group</code>, <code>main</code> push, and manual <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>tests.yaml</code></a> runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated <code>check:*</code> set and requires actionlint (from <code>pnpm install</code>) + yamllint. Use <code>pnpm run check:pr</code> for the comprehensive Vitest/lint/typecheck surface locally before a PR.</p>
+<p>Install hook dependencies via <a href="#8-helper-scripts-auto-install-where-possible">Helper scripts</a> (yamllint via pip/brew/apt; actionlint comes with <code>pnpm install</code>).</p>
+<p>Emergency bypass (temporary only):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>git<span class="w"> </span>commit<span class="w"> </span>--no-verify
 </code></pre></div>
 <p>Run any skipped checks manually as soon as possible.</p>
 <h3 id="7-ci-workflow-tooling-optional-but-recommended">7) CI workflow tooling (optional but recommended)<a class="headerlink" href="#7-ci-workflow-tooling-optional-but-recommended" title="Permanent link">&para;</a></h3>
@@ -5953,27 +6018,27 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:pull-images<span class="w"> </span><span class="c1"># container mode only</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:list
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:ci<span class="w">    </span><span class="c1"># or act:ci:native</span>
-<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:tests<span class="w"> </span><span class="c1"># or act:tests:native</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:pull-images<span class="w"> </span><span class="c1"># container mode only</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:list
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:ci<span class="w">    </span><span class="c1"># or act:ci:native</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:tests<span class="w"> </span><span class="c1"># or act:tests:native</span>
 </code></pre></div>
 <p>On macOS, podman exposes a Docker-compatible socket at <code>/var/run/docker.sock</code>; pass that path to <code>act</code> via <code>ACT_DOCKER_SOCKET</code>, or let it auto-detect if Podman created the socket symlink. If you use Docker Desktop instead of Podman, its socket is typically under <code>~/.docker/run/docker.sock</code>.</p>
 <p>macOS and Windows <strong>installer</strong> builds still require native <code>pnpm run dist:mac</code> / <code>pnpm run dist:win</code>. See <a href="../ci-cd/#running-ci-locally-with-act">ci-cd.md</a>.</p>
 <ul>
-<li><strong>actionlint</strong>: required for local pre-commit if workflow files are touched.</li>
+<li><strong>actionlint</strong>: required for local pre-commit if workflow files are touched; provided by the <code>github-actionlint</code> devDependency (<code>pnpm exec github-actionlint</code>).</li>
 </ul>
 <h3 id="8-helper-scripts-auto-install-where-possible">8) Helper scripts (auto-install where possible)<a class="headerlink" href="#8-helper-scripts-auto-install-where-possible" title="Permanent link">&para;</a></h3>
 <p>These scripts try to install required and optional tooling automatically. If they fail (for example, missing <code>sudo</code>/admin rights), follow the manual steps in this doc instead.</p>
 <ol>
 <li>Preferred one-shot after Node/pnpm exist (and again after <code>pnpm install</code>):</li>
-<li><code>pnpm run setup:dev</code> — build-deps, Semgrep, yamllint, Rust/clippy hints, actionlint, <code>core.hooksPath=.githooks</code>, then <code>check:environment</code> + typecheck smoke</li>
+<li><code>pnpm run setup:dev</code> — build-deps, Semgrep, yamllint, Rust/clippy hints, <code>core.hooksPath=.githooks</code>, then <code>check:environment</code> + typecheck smoke</li>
 <li>Verify your environment only:</li>
 <li><code>node scripts/check-environment.mjs</code> (before <code>pnpm install</code>)</li>
 <li><code>pnpm run check:environment</code> (after <code>pnpm install</code>)</li>
-<li>Install <code>actionlint</code> (used by the git pre-commit hook when workflows are staged):</li>
-<li><code>pnpm run setup:actionlint</code></li>
-<li>This installs into <code>.githooks/bin</code> so the hook can find it.</li>
+<li><code>actionlint</code> (used by the git pre-commit hook when workflows are staged):</li>
+<li>Comes with <code>pnpm install</code> via the <code>github-actionlint</code> devDependency; run <code>pnpm exec github-actionlint</code>.</li>
+<li>No separate install script or <code>.githooks/bin</code> entry is needed.</li>
 <li>Install <code>yamllint</code> (<strong>required</strong> by <code>check:environment</code> and the git pre-commit hook):</li>
 <li><code>pnpm run setup:yamllint</code></li>
 <li>Or: <code>brew install yamllint</code> / <code>sudo apt install yamllint</code> / hash-locked <code>pip install --user --require-hashes --only-binary=:all: -r scripts/requirements-yamllint.txt</code></li>
@@ -6015,25 +6080,25 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 <h3 id="install-prerequisites">Install prerequisites<a class="headerlink" href="#install-prerequisites" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Install Git (Xcode CLT includes it):
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>xcode-select<span class="w"> </span>--install
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>xcode-select<span class="w"> </span>--install
 </code></pre></div></li>
 <li>Install Node 22 (22.15.0+ recommended via nvm) and npm:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span>-o<span class="w"> </span>install_nvm.sh
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>less<span class="w"> </span>install_nvm.sh
-<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>bash<span class="w"> </span>install_nvm.sh
-<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>rm<span class="w"> </span>install_nvm.sh
-<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NVM_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.nvm"</span>
-<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="o">[</span><span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>.<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span>
-<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>nvm<span class="w"> </span>install<span class="w"> </span><span class="m">22</span>
-<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>nvm<span class="w"> </span>use<span class="w"> </span><span class="m">22</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span>-o<span class="w"> </span>install_nvm.sh
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>less<span class="w"> </span>install_nvm.sh
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>bash<span class="w"> </span>install_nvm.sh
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>rm<span class="w"> </span>install_nvm.sh
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NVM_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.nvm"</span>
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a><span class="o">[</span><span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>.<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span>
+<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>nvm<span class="w"> </span>install<span class="w"> </span><span class="m">22</span>
+<a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>nvm<span class="w"> </span>use<span class="w"> </span><span class="m">22</span>
 </code></pre></div>
 <h3 id="buildrun-flow">Build/run flow<a class="headerlink" href="#buildrun-flow" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Colorado-Mesh/mesh-client
-<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="nb">cd</span><span class="w"> </span>mesh-client
-<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>pnpm<span class="w"> </span>install
-<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Colorado-Mesh/mesh-client
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="nb">cd</span><span class="w"> </span>mesh-client
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>pnpm<span class="w"> </span>install
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
 </code></pre></div>
 <h3 id="local-ci-container-engine">Local CI container engine<a class="headerlink" href="#local-ci-container-engine" title="Permanent link">&para;</a></h3>
 <p><a href="https://podman.io/">Podman Desktop</a> is the preferred cross-platform Docker-compatible engine for local CI. When Docker compatibility is enabled, Podman exposes a Docker-compatible socket at <code>/var/run/docker.sock</code>; pass that path to <code>act</code> via <code>ACT_DOCKER_SOCKET</code>, or let it auto-detect if Podman Desktop created the socket symlink. If you use Docker Desktop instead, see the socket note above.</p>
@@ -6051,25 +6116,25 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 <h3 id="install-prerequisites_1">Install prerequisites<a class="headerlink" href="#install-prerequisites_1" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Install Git and Node.js (winget primary path):
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">git</span><span class="p">.</span><span class="n">git</span>
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">OpenJS</span><span class="p">.</span><span class="n">NodeJS</span>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">git</span><span class="p">.</span><span class="n">git</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">OpenJS</span><span class="p">.</span><span class="n">NodeJS</span>
 </code></pre></div></li>
 <li>Allow npm script execution in current user scope:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nb">Set-ExecutionPolicy</span> <span class="n">-ExecutionPolicy</span> <span class="n">RemoteSigned</span> <span class="n">-Scope</span> <span class="n">CurrentUser</span>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nb">Set-ExecutionPolicy</span> <span class="n">-ExecutionPolicy</span> <span class="n">RemoteSigned</span> <span class="n">-Scope</span> <span class="n">CurrentUser</span>
 </code></pre></div></li>
 <li>Install <strong>Visual Studio Build Tools</strong> with <strong>Desktop development with C++</strong> workload.</li>
 <li>Install Python 3 and ensure it is on PATH:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">Python</span><span class="p">.</span><span class="n">Python</span><span class="p">.</span><span class="n">3</span><span class="p">.</span><span class="n">12</span>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">Python</span><span class="p">.</span><span class="n">Python</span><span class="p">.</span><span class="n">3</span><span class="p">.</span><span class="n">12</span>
 </code></pre></div>
    If needed, set npm Python path explicitly:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="n">npm</span> <span class="n">config</span> <span class="nb">set </span><span class="n">python</span> <span class="s2">"C:\\Path\\To\\python.exe"</span>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="n">npm</span> <span class="n">config</span> <span class="nb">set </span><span class="n">python</span> <span class="s2">"C:\\Path\\To\\python.exe"</span>
 </code></pre></div></li>
 </ol>
 <h3 id="buildrun-flow_1">Build/run flow<a class="headerlink" href="#buildrun-flow_1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">://</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">Colorado-Mesh</span><span class="p">/</span><span class="n">mesh-client</span>
-<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="nb">cd </span><span class="n">mesh-client</span>
-<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="n">pnpm</span> <span class="n">install</span>
-<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="n">pnpm</span> <span class="n">run</span> <span class="n">dev</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">://</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">Colorado-Mesh</span><span class="p">/</span><span class="n">mesh-client</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="nb">cd </span><span class="n">mesh-client</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="n">pnpm</span> <span class="n">install</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="n">pnpm</span> <span class="n">run</span> <span class="n">dev</span>
 </code></pre></div>
 <h3 id="windows-packaging-note">Windows packaging note<a class="headerlink" href="#windows-packaging-note" title="Permanent link">&para;</a></h3>
 <p>The Windows build (<code>dist:win</code>) uses pnpm's <code>node-linker=hoisted</code> mode to work around asar packaging issues on Windows. The build command automatically reinstalls with hoisted mode, packages, then restores the default structure.</p>
@@ -6082,32 +6147,32 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 <p>Install Node 22 (22.15.0+ recommended), <code>make</code>, and C++ build tools (<code>g++</code>/<code>gcc-c++</code>) with native build dependencies.</p>
 <p>NixOS: use <code>nix develop</code> instead of the package lists below; see <a href="#nix-nixos-and-macos">Nix (NixOS and macOS)</a>.</p>
 <p>Debian/Ubuntu:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
-<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NVM_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.nvm"</span>
-<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="o">[</span><span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>.<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span>
-<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>nvm<span class="w"> </span>install<span class="w"> </span><span class="m">22</span>
-<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>nvm<span class="w"> </span>use<span class="w"> </span><span class="m">22</span>
-<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>build-essential
-<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>libnspr4<span class="w"> </span>libnss3
-</code></pre></div>
-<p>Fedora/RedHat:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
 <a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NVM_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.nvm"</span>
 <a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="o">[</span><span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>.<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span>
 <a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>nvm<span class="w"> </span>install<span class="w"> </span><span class="m">22</span>
 <a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>nvm<span class="w"> </span>use<span class="w"> </span><span class="m">22</span>
-<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>@development-tools
-<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>nspr<span class="w"> </span>nss
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>build-essential
+<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>libnspr4<span class="w"> </span>libnss3
+</code></pre></div>
+<p>Fedora/RedHat:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NVM_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.nvm"</span>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="o">[</span><span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>.<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>nvm<span class="w"> </span>install<span class="w"> </span><span class="m">22</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>nvm<span class="w"> </span>use<span class="w"> </span><span class="m">22</span>
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>@development-tools
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>nspr<span class="w"> </span>nss
 </code></pre></div>
 <h3 id="buildrun-flow_2">Build/run flow<a class="headerlink" href="#buildrun-flow_2" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Colorado-Mesh/mesh-client
-<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="nb">cd</span><span class="w"> </span>mesh-client
-<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>pnpm<span class="w"> </span>install
-<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Colorado-Mesh/mesh-client
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="nb">cd</span><span class="w"> </span>mesh-client
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>pnpm<span class="w"> </span>install
+<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
 </code></pre></div>
 <h3 id="serial-permissions">Serial permissions<a class="headerlink" href="#serial-permissions" title="Permanent link">&para;</a></h3>
 <p>Add your user to <code>dialout</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>sudo<span class="w"> </span>usermod<span class="w"> </span>-a<span class="w"> </span>-G<span class="w"> </span>dialout<span class="w"> </span><span class="nv">$USER</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>sudo<span class="w"> </span>usermod<span class="w"> </span>-a<span class="w"> </span>-G<span class="w"> </span>dialout<span class="w"> </span><span class="nv">$USER</span>
 </code></pre></div>
 <p>Log out/in after changing groups.</p>
 <h3 id="linux-bluetooth-ble">Linux Bluetooth (BLE)<a class="headerlink" href="#linux-bluetooth-ble" title="Permanent link">&para;</a></h3>
@@ -6121,12 +6186,12 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 <p>Pairing failures and BlueZ steps: <a href="../troubleshooting/#ble-known-issues">BLE known issues</a>.</p>
 <h3 id="linux-launch-notes">Linux launch notes<a class="headerlink" href="#linux-launch-notes" title="Permanent link">&para;</a></h3>
 <p>The supported dev and local run flows are:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
-<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>pnpm<span class="w"> </span>start
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>pnpm<span class="w"> </span>start
 </code></pre></div>
 <p>ARM (for example Raspberry Pi) may also require:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>zlib1g-dev<span class="w"> </span>libfuse2
-<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>-w<span class="w"> </span>kernel.unprivileged_userns_clone<span class="o">=</span><span class="m">1</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>zlib1g-dev<span class="w"> </span>libfuse2
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>-w<span class="w"> </span>kernel.unprivileged_userns_clone<span class="o">=</span><span class="m">1</span>
 </code></pre></div>
 <h3 id="troubleshooting_1">Troubleshooting<a class="headerlink" href="#troubleshooting_1" title="Permanent link">&para;</a></h3>
 <p>See <a href="#linux-development-sigill-during-pnpm-install">Linux development: SIGILL / SIGSEGV</a> and <a href="../troubleshooting/#linux-serial-port-access-denied">Linux: serial port access denied</a>.</p>
@@ -6177,17 +6242,17 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 <h3 id="linux-development-sigill-during-pnpm-install">Linux development: SIGILL during <code>pnpm install</code><a class="headerlink" href="#linux-development-sigill-during-pnpm-install" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom</strong>: <code>electron exited with signal SIGILL</code> during install/rebuild (common in sandboxes or VMs without instructions the prebuilt Electron binary expects).</p>
 <p><strong>Fix</strong>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nv">MESHTASTIC_SKIP_ELECTRON_REBUILD</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pnpm<span class="w"> </span>install
-<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>rebuild
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="nv">MESHTASTIC_SKIP_ELECTRON_REBUILD</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pnpm<span class="w"> </span>install
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>rebuild
 </code></pre></div>
 <p>Run <code>pnpm run rebuild</code> on a host where the bundled Electron binary executes correctly.</p>
 <h3 id="linux-development-sigsegv-on-startup">Linux development: SIGSEGV on startup<a class="headerlink" href="#linux-development-sigsegv-on-startup" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom</strong>: <code>electron exited with signal SIGSEGV</code> when running from source (GPU process; see <a href="https://github.com/electron/electron/issues/41980">electron#41980</a>).</p>
 <p><strong>Fix</strong>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>pnpm<span class="w"> </span>dlx<span class="w"> </span>electron<span class="w"> </span>.<span class="w"> </span>--disable-gpu
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>pnpm<span class="w"> </span>dlx<span class="w"> </span>electron<span class="w"> </span>.<span class="w"> </span>--disable-gpu
 </code></pre></div>
 <p>Or:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>electron:open<span class="w"> </span>--<span class="w"> </span>--disable-gpu
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>electron:open<span class="w"> </span>--<span class="w"> </span>--disable-gpu
 </code></pre></div>
 <p>Optional persistent mitigation:</p>
 <ul>
@@ -6240,7 +6305,7 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
 </ol>
 <h3 id="dep0169--urlparse-deprecation-warning"><code>[DEP0169]</code> / <code>url.parse()</code> deprecation warning<a class="headerlink" href="#dep0169--urlparse-deprecation-warning" title="Permanent link">&para;</a></h3>
 <p>The app uses npm package overrides to force <code>follow-redirects</code> and <code>cacheable-request</code> onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>trace-deprecation
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>trace-deprecation
 </code></pre></div>
 
 
@@ -6262,7 +6327,7 @@ developer explicitly asks (agents must prompt — see <a href="https://github.co
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 24, 2026 02:43:38 UTC">November 24, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 26, 2026 03:57:40 UTC">November 26, 2026</span>
   </span>
 
     
