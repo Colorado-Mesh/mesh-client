@@ -14,6 +14,8 @@ import type { RfConnectAutomaticFn, RfConnectFn } from './rfConnectionTypes';
  * Keep-alive flags cleared and re-armed together when a protocol switch commits.
  * Chat is intentionally omitted — it uses per-protocol keep-alive in App (like Map)
  * so MT/MC ↔ RN switches after idle do not tear down / remount Chat.
+ * Rooms is a MeshCore-only panel; its visited flag is carried across a protocol
+ * switch so the selected room and scroll state survive (keep-alive in App).
  */
 export interface ProtocolVisitFlags {
   rooms: boolean;
@@ -39,7 +41,8 @@ const CLEARED_VISIT_FLAGS: ProtocolVisitFlags = {
  * Visit flags for one protocol commit. A protocol change clears every flag, then arms
  * the destination panel. The same protocol only arms the destination. Peers stay off
  * unless the destination protocol has a peers list (Meshtastic nodes are not peers).
- * Chat is not tracked here (per-protocol `visitedChatProtocols` in App).
+ * Chat is not tracked here (per-protocol `visitedChatProtocols` in App). Rooms keeps
+ * its visited flag across a protocol change (MeshCore-only keep-alive).
  * A null panel (cancel, or a tab that does not exist) leaves the base flags as they are.
  */
 export function visitFlagsForProtocolCommit(
@@ -48,7 +51,9 @@ export function visitFlagsForProtocolCommit(
   protocolChanged: boolean,
   enablePeers: boolean,
 ): ProtocolVisitFlags {
-  const base: ProtocolVisitFlags = protocolChanged ? { ...CLEARED_VISIT_FLAGS } : { ...current };
+  const base: ProtocolVisitFlags = protocolChanged
+    ? { ...CLEARED_VISIT_FLAGS, rooms: current.rooms }
+    : { ...current };
   if (panel === CHAT_PANEL_INDEX) return base;
   if (panel === ROOMS_PANEL_INDEX) return { ...base, rooms: true };
   if (panel === GAMES_PANEL_INDEX) return { ...base, games: true };
