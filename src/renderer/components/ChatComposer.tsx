@@ -299,6 +299,12 @@ function buildMacroInsertion(
   return { next: before + insert + current.slice(end), caret: start + insert.length };
 }
 
+function normalizeChatComposerDraft(text: string, meshcoreOpenWireCompat: boolean): string {
+  const trimmed = text.trim();
+  if (!meshcoreOpenWireCompat) return trimmed;
+  return normalizeMeshcoreGifOutboundWire(trimmed) ?? trimmed;
+}
+
 export function ChatComposer({
   protocol,
   viewKey,
@@ -789,23 +795,51 @@ export function ChatComposer({
   const handleSend = useCallback(async () => {
     if (!input.trim() || sending || disabled) return;
     const draftSnapshot = input;
-    let trimmedSend = input.trim();
-    if (meshcoreOpenWireCompat) {
-      const gifWire = normalizeMeshcoreGifOutboundWire(trimmedSend);
-      if (gifWire != null) trimmedSend = gifWire;
-    }
-    if (onInterceptSend) {
+    const trimmedSend = normalizeChatComposerDraft(input, meshcoreOpenWireCompat);
+
+    const markSent = () => {
+      clearSentDraft(draftSnapshot);
+      setMentionQuery(null);
+      onReplyClear?.();
+      onSendSuccess?.();
+    };
+    // A view the user has left keeps the reason until a composer shows it again.
+    const reportSendError = (message: string) => {
+      if (mountedRef.current && prevViewKeyRef.current === viewKey) {
+        setChatActionError({ message, viewKey });
+      } else {
+        holdSendError(protocol, viewKey, message);
+      }
+    };
+    const queueChunks = async (texts: string[]): Promise<void> => {
+      const groupId = texts.length > 1 ? crypto.randomUUID() : null;
+      for (let i = 0; i < texts.length; i++) {
+        await queueOutbox({
+          protocol,
+          viewKey,
+          channel: outboxChannel,
+          toNode: outboxDestination ?? null,
+          payload: texts[i],
+          replyId: i === 0 && typeof replyKey === 'number' ? replyKey : null,
+          status: 'queued',
+          error: null,
+          nextRetryAt: null,
+          groupId,
+          groupIndex: groupId ? i : null,
+          groupTotal: groupId ? texts.length : null,
+        });
+      }
+      markSent();
+    };
+    const runInterceptedSend = async (text: string): Promise<'sent' | 'declined' | 'failed'> => {
+      if (!onInterceptSend) return 'declined';
       setSending(true);
       setChatActionError(null);
       try {
-        const handled = await onInterceptSend(trimmedSend);
-        if (handled) {
-          clearSentDraft(draftSnapshot);
-          setMentionQuery(null);
-          onReplyClear?.();
-          onSendSuccess?.();
-          return;
-        }
+        const handled = await onInterceptSend(text);
+        if (!handled) return 'declined';
+        markSent();
+        return 'sent';
       } catch (err) {
         console.error('mcL0377 [ChatComposer] Intercept send failed: ' + errLikeToLogString(err));
         const fallbackKey = variant === 'room' ? 'roomsPanel.postFailed' : 'chatPanel.sendFailed';
@@ -813,31 +847,74 @@ export function ChatComposer({
           fallbackKey,
           passthroughUnknown: true,
         });
-        // A view the user has left keeps the reason until a composer shows it again.
-        if (mountedRef.current && prevViewKeyRef.current === viewKey) {
-          setChatActionError({ message, viewKey });
-        } else {
-          holdSendError(protocol, viewKey, message);
-        }
-        return;
+        reportSendError(message);
+        return 'failed';
       } finally {
         setSending(false);
       }
-    }
-    // suppressLimits: slash / no hub cap — never multi-part split this draft.
-    let textsToSend: string[];
-    if (suppressLimits) {
-      textsToSend = [trimmedSend];
-    } else {
+    };
+    const splitDraft = (text: string): string[] | null => {
+      // suppressLimits: slash / no hub cap — never multi-part split this draft.
+      if (suppressLimits) return [text];
       const chunks = splitChatMessage(
-        trimmedSend,
+        text,
         protocol,
         limitStatus.singleMessageLimit,
         wireOverheadFirstChunk,
       );
-      if (chunks === null) return;
-      textsToSend = chunks.length === 0 ? [trimmedSend] : chunks;
-    }
+      if (chunks === null) return null;
+      return chunks.length === 0 ? [text] : chunks;
+    };
+    const sendChunks = async (texts: string[]): Promise<void> => {
+      setSending(true);
+      setChatActionError(null);
+      // Advisory fast-send cadence: capture before recording this send so the warning reflects
+      // proximity to the *previous* single-packet-protocol send. Never blocks or delays the send.
+      const sendTooFast = tracksSendCadence && isMeshcoreSendTooFast();
+      try {
+        for (let i = 0; i < texts.length; i++) {
+          const sendChunk = () =>
+            onSendChunk(texts[i], {
+              replyId: i === 0 && typeof replyKey === 'number' ? replyKey : undefined,
+              replyHash: i === 0 ? reticulumReplyHash : undefined,
+              chunkIndex: i,
+              floodScopeOverride:
+                floodScopeOverride === FLOOD_SCOPE_OVERRIDE_UNSCOPED
+                  ? ''
+                  : floodScopeOverride
+                    ? floodScopeOverride
+                    : undefined,
+            });
+          // Shared Meshtastic TEXT_MESSAGE_APP pacing (with outbox drain) — firmware rejects
+          // a second locally-originated text within ~2s (RATE_LIMIT_EXCEEDED).
+          if (protocol === 'meshtastic') {
+            await withMeshtasticTextSendPacing(sendChunk);
+          } else {
+            await sendChunk();
+          }
+        }
+        finishSendCadence(sendTooFast);
+        rememberFloodScopeIfNeeded(floodScopeOverride);
+        markSent();
+      } catch (err) {
+        console.error('mcL0378 [ChatComposer] Send failed: ' + errLikeToLogString(err));
+        const fallbackKey = variant === 'room' ? 'roomsPanel.postFailed' : 'chatPanel.sendFailed';
+        const errMsg = translateChatSendError(t, err, { fallbackKey });
+        if (allowOutbox && queueOutboxProp) {
+          await queueChunks(texts);
+          return;
+        }
+        reportSendError(errMsg);
+      } finally {
+        setSending(false);
+      }
+    };
+
+    const interceptOutcome = await runInterceptedSend(trimmedSend);
+    if (interceptOutcome !== 'declined') return;
+
+    const textsToSend = splitDraft(trimmedSend);
+    if (!textsToSend) return;
 
     if (replyTo && protocol === 'meshtastic' && (replyKey == null || replyKey === 0)) {
       setChatActionError({
@@ -849,33 +926,11 @@ export function ChatComposer({
 
     const shouldQueue =
       allowOutbox && (!isConnected || (isMqttOnly && !protocolMqttProvidesChatSend(protocol)));
-
     if (shouldQueue) {
       if (!queueOutboxProp) return;
-      const groupId = textsToSend.length > 1 ? crypto.randomUUID() : null;
-      for (let i = 0; i < textsToSend.length; i++) {
-        await queueOutbox({
-          protocol,
-          viewKey,
-          channel: outboxChannel,
-          toNode: outboxDestination ?? null,
-          payload: textsToSend[i],
-          replyId: i === 0 && typeof replyKey === 'number' ? replyKey : null,
-          status: 'queued',
-          error: null,
-          nextRetryAt: null,
-          groupId,
-          groupIndex: groupId ? i : null,
-          groupTotal: groupId ? textsToSend.length : null,
-        });
-      }
-      clearSentDraft(draftSnapshot);
-      setMentionQuery(null);
-      onReplyClear?.();
-      onSendSuccess?.();
+      await queueChunks(textsToSend);
       return;
     }
-
     if (!isConnected) {
       setChatActionError({
         message: t('chatPanel.composePlaceholderConnectFirst'),
@@ -883,76 +938,7 @@ export function ChatComposer({
       });
       return;
     }
-
-    setSending(true);
-    setChatActionError(null);
-    // Advisory fast-send cadence: capture before recording this send so the warning reflects
-    // proximity to the *previous* single-packet-protocol send. Never blocks or delays the send.
-    const sendTooFast = tracksSendCadence && isMeshcoreSendTooFast();
-    try {
-      for (let i = 0; i < textsToSend.length; i++) {
-        const sendChunk = () =>
-          onSendChunk(textsToSend[i], {
-            replyId: i === 0 && typeof replyKey === 'number' ? replyKey : undefined,
-            replyHash: i === 0 ? reticulumReplyHash : undefined,
-            chunkIndex: i,
-            floodScopeOverride:
-              floodScopeOverride === FLOOD_SCOPE_OVERRIDE_UNSCOPED
-                ? ''
-                : floodScopeOverride
-                  ? floodScopeOverride
-                  : undefined,
-          });
-        // Shared Meshtastic TEXT_MESSAGE_APP pacing (with outbox drain) — firmware rejects
-        // a second locally-originated text within ~2s (RATE_LIMIT_EXCEEDED).
-        if (protocol === 'meshtastic') {
-          await withMeshtasticTextSendPacing(sendChunk);
-        } else {
-          await sendChunk();
-        }
-      }
-      finishSendCadence(sendTooFast);
-      rememberFloodScopeIfNeeded(floodScopeOverride);
-      clearSentDraft(draftSnapshot);
-      setMentionQuery(null);
-      onReplyClear?.();
-      onSendSuccess?.();
-    } catch (err) {
-      console.error('mcL0378 [ChatComposer] Send failed: ' + errLikeToLogString(err));
-      const fallbackKey = variant === 'room' ? 'roomsPanel.postFailed' : 'chatPanel.sendFailed';
-      const errMsg = translateChatSendError(t, err, { fallbackKey });
-      if (allowOutbox && queueOutbox) {
-        const groupId = textsToSend.length > 1 ? crypto.randomUUID() : null;
-        for (let i = 0; i < textsToSend.length; i++) {
-          await queueOutbox({
-            protocol,
-            viewKey,
-            channel: outboxChannel,
-            toNode: outboxDestination ?? null,
-            payload: textsToSend[i],
-            replyId: i === 0 && typeof replyKey === 'number' ? replyKey : null,
-            status: 'queued',
-            error: null,
-            nextRetryAt: null,
-            groupId,
-            groupIndex: groupId ? i : null,
-            groupTotal: groupId ? textsToSend.length : null,
-          });
-        }
-        clearSentDraft(draftSnapshot);
-        setMentionQuery(null);
-        onReplyClear?.();
-        onSendSuccess?.();
-        return;
-      }
-      if (mountedRef.current && prevViewKeyRef.current === viewKey) {
-        setChatActionError({ message: errMsg, viewKey });
-      } else {
-        holdSendError(protocol, viewKey, errMsg);
-      }
-    } finally {
-      setSending(false);
-    }
+    await sendChunks(textsToSend);
   }, [
     allowOutbox,
     clearSentDraft,
