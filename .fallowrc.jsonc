@@ -69,6 +69,10 @@
     "maxCrap": 0,
   },
   "rules": {
+    // Cognitive complexity is dominated by JSX-heavy React components, where nesting depth is
+    // structural rather than avoidable branching. Cyclomatic complexity stays gated as the
+    // branch-count signal; cognitive scores are still visible with an explicit `--max-cognitive`.
+    "complexity-cognitive": "off",
     "private-type-leaks": "error",
     // Renderer libraries are bundled by Vite from devDependencies; no production install is needed.
     "dev-dependencies-in-production": "off",
