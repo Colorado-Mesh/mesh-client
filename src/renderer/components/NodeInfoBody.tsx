@@ -327,6 +327,122 @@ function NodeEnvironmentSection({
   );
 }
 
+function MeshcomIdentityRows({
+  node,
+  meshcomHardware,
+  meshcomFirmware,
+}: {
+  node: MeshNode;
+  meshcomHardware: string | null;
+  meshcomFirmware: string | null;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {node.long_name && <InfoRow label={t('nodeInfoBody.callsign')} value={node.long_name} />}
+      {meshcomHardware != null && (
+        <InfoRow label={t('nodeInfoBody.hardware')} value={meshcomHardware} />
+      )}
+      {meshcomFirmware != null && (
+        <InfoRow label={t('nodeInfoBody.firmware')} value={meshcomFirmware} />
+      )}
+    </>
+  );
+}
+
+function StandardIdentityRows({
+  node,
+  protocol,
+  isOurNode,
+  meshcoreManufacturerModel,
+  awaitingNodeInfo,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  isOurNode: boolean;
+  meshcoreManufacturerModel?: string;
+  awaitingNodeInfo: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {node.long_name && <InfoRow label={t('nodeInfoBody.longName')} value={node.long_name} />}
+      {protocol !== 'meshcore' && node.short_name && (
+        <InfoRow label={t('nodeInfoBody.shortName')} value={node.short_name} />
+      )}
+
+      {protocol === 'meshcore' ? (
+        <>
+          <InfoRow label={t('nodeInfoBody.type')} value={node.hw_model || '---'} />
+          <InfoRow
+            label={t('nodeInfoBody.hardware')}
+            value={
+              isOurNode
+                ? (meshcoreManufacturerModel ?? '—')
+                : t('nodeInfoBody.notAvailableRemotely')
+            }
+          />
+        </>
+      ) : (
+        <>
+          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+            <span className="text-muted text-sm">{t('nodeInfoBody.role')}</span>
+            <div className="flex items-center gap-2">
+              <RoleDisplay role={node.role} />
+              {awaitingNodeInfo && (
+                <span className="text-2xs text-muted" title={t('nodeInfoBody.pendingTitle')}>
+                  {t('nodeInfoBody.pending')}
+                </span>
+              )}
+            </div>
+          </div>
+          <InfoRow
+            label={t('nodeInfoBody.hardware')}
+            value={meshtasticHwModelDisplay(node.hw_model) ?? '—'}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+function NodeIdentitySection({
+  node,
+  protocol,
+  isOurNode,
+  meshcoreManufacturerModel,
+  awaitingNodeInfo,
+  meshcomHardware,
+  meshcomFirmware,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  isOurNode: boolean;
+  meshcoreManufacturerModel?: string;
+  awaitingNodeInfo: boolean;
+  meshcomHardware: string | null;
+  meshcomFirmware: string | null;
+}) {
+  if (protocol === 'meshcom') {
+    return (
+      <MeshcomIdentityRows
+        node={node}
+        meshcomHardware={meshcomHardware}
+        meshcomFirmware={meshcomFirmware}
+      />
+    );
+  }
+  return (
+    <StandardIdentityRows
+      node={node}
+      protocol={protocol}
+      isOurNode={isOurNode}
+      meshcoreManufacturerModel={meshcoreManufacturerModel}
+      awaitingNodeInfo={awaitingNodeInfo}
+    />
+  );
+}
+
 export default function NodeInfoBody({
   node,
   homeNode,
@@ -494,57 +610,15 @@ export default function NodeInfoBody({
 
   return (
     <>
-      {/* Names / identity */}
-      {protocol === 'meshcom' ? (
-        <>
-          {node.long_name && <InfoRow label={t('nodeInfoBody.callsign')} value={node.long_name} />}
-          {meshcomHardware != null && (
-            <InfoRow label={t('nodeInfoBody.hardware')} value={meshcomHardware} />
-          )}
-          {meshcomFirmware != null && (
-            <InfoRow label={t('nodeInfoBody.firmware')} value={meshcomFirmware} />
-          )}
-        </>
-      ) : (
-        <>
-          {node.long_name && <InfoRow label={t('nodeInfoBody.longName')} value={node.long_name} />}
-          {protocol !== 'meshcore' && node.short_name && (
-            <InfoRow label={t('nodeInfoBody.shortName')} value={node.short_name} />
-          )}
-
-          {protocol === 'meshcore' ? (
-            <>
-              <InfoRow label={t('nodeInfoBody.type')} value={node.hw_model || '---'} />
-              <InfoRow
-                label={t('nodeInfoBody.hardware')}
-                value={
-                  isOurNode
-                    ? (meshcoreManufacturerModel ?? '—')
-                    : t('nodeInfoBody.notAvailableRemotely')
-                }
-              />
-            </>
-          ) : (
-            <>
-              <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-                <span className="text-muted text-sm">{t('nodeInfoBody.role')}</span>
-                <div className="flex items-center gap-2">
-                  <RoleDisplay role={node.role} />
-                  {awaitingNodeInfo && (
-                    <span className="text-2xs text-muted" title={t('nodeInfoBody.pendingTitle')}>
-                      {t('nodeInfoBody.pending')}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <InfoRow
-                label={t('nodeInfoBody.hardware')}
-                value={meshtasticHwModelDisplay(node.hw_model) ?? '—'}
-              />
-            </>
-          )}
-        </>
-      )}
+      <NodeIdentitySection
+        node={node}
+        protocol={protocol}
+        isOurNode={isOurNode}
+        meshcoreManufacturerModel={meshcoreManufacturerModel}
+        awaitingNodeInfo={awaitingNodeInfo}
+        meshcomHardware={meshcomHardware}
+        meshcomFirmware={meshcomFirmware}
+      />
 
       {/* SNR: direct 0-hop RF or our node; otherwise Last-Hop SNR when multi-hop RF context */}
       {showSnr && (
