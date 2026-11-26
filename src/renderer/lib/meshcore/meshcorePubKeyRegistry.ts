@@ -3,7 +3,7 @@ import { pubKeyPrefixHex } from '../meshcoreUtils';
 const pubKeyByNodeId = new Map<number, Uint8Array>();
 const pubKeyPrefixByHex = new Map<string, number>();
 
-type MeshcorePubKeyRegistryRefSync = () => void;
+export type MeshcorePubKeyRegistryRefSync = () => void;
 
 let refSyncImpl: MeshcorePubKeyRegistryRefSync | null = null;
 

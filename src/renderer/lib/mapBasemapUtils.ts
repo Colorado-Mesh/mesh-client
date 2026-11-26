@@ -97,7 +97,7 @@ export function isValidMapBasemapId(value: unknown): value is MapBasemapId {
   return isOfflineMapBasemapId(value) || isCustomMapSourceId(value);
 }
 /** Leaflet config for a user-confirmed custom source (attribution escaped: plain text → HTML). */
-export function buildCustomBasemapConfig(info: CustomMapSourceInfo): MapBasemapConfig {
+function buildCustomBasemapConfig(info: CustomMapSourceInfo): MapBasemapConfig {
   return {
     id: info.id,
     url: `mesh-tiles://${info.id}/{z}/{x}/{y}.png`,

@@ -68,7 +68,7 @@ export interface ConversationSummary {
   /** Completed follow-up turns, oldest first. */
   followUps?: AiFollowUpTurnState[];
 }
-interface AiState {
+export interface AiState {
   status: AiProviderStatus | null;
   /** Saved opt-in exposes setup only while authoritative status is unavailable. */
   cachedEnabled: boolean;

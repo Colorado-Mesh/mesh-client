@@ -1,5 +1,5 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
+import { setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import { parseConnectHostPort } from '@/shared/connectHost';
 import {
   MESHCOM_EXTUDP_PORT,
@@ -53,10 +53,7 @@ export function isConnectionHistoryProtocol(
 }
 
 /** Default port matching connection dispatch when the stored address omits one. */
-export function defaultPortForConnectionHistory(
-  type: ConnectionType,
-  protocol?: MeshProtocol,
-): number {
+function defaultPortForConnectionHistory(type: ConnectionType, protocol?: MeshProtocol): number {
   if (type === 'tcp') return MESHTASTIC_NATIVE_TCP_PORT;
   if (type === 'udp') return MESHCOM_EXTUDP_PORT;
   if (type === 'netconsole') return MESHCOM_NETCONSOLE_PORT;
@@ -153,18 +150,29 @@ export function isValidLastConnectionForHistory(last: LastConnection): boolean {
   return connectionHistoryIdentityKey(last) != null;
 }
 
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string';
+}
+
+function isOptionalNumber(value: unknown): boolean {
+  return value === undefined || typeof value === 'number';
+}
+
 function isStoredSavedConnection(v: unknown): v is SavedConnection {
   if (!v || typeof v !== 'object') return false;
   const c = v as Record<string, unknown>;
   if (typeof c.id !== 'string' || c.id.length === 0) return false;
   if (typeof c.lastUsedAt !== 'number' || !Number.isFinite(c.lastUsedAt)) return false;
   if (!isConnectionType(c.type)) return false;
-  if (c.httpAddress !== undefined && typeof c.httpAddress !== 'string') return false;
-  if (c.bleDeviceId !== undefined && typeof c.bleDeviceId !== 'string') return false;
-  if (c.bleDeviceName !== undefined && typeof c.bleDeviceName !== 'string') return false;
-  if (c.bleMac !== undefined && typeof c.bleMac !== 'string') return false;
-  if (c.bleRssi !== undefined && typeof c.bleRssi !== 'number') return false;
-  if (c.serialPortId !== undefined && typeof c.serialPortId !== 'string') return false;
+  const optionalStrings = [
+    'httpAddress',
+    'bleDeviceId',
+    'bleDeviceName',
+    'bleMac',
+    'serialPortId',
+  ] as const;
+  if (!optionalStrings.every((key) => isOptionalString(c[key]))) return false;
+  if (!isOptionalNumber(c.bleRssi)) return false;
   return connectionHistoryIdentityKey(c as unknown as LastConnection) != null;
 }
 
@@ -342,16 +350,6 @@ export function deleteConnectionHistory(
 }
 
 /** Clear the entire history list and the lastConnection MRU for the protocol. */
-export function clearConnectionHistory(protocol: MeshProtocol): void {
-  if (!isConnectionHistoryProtocol(protocol)) return;
-  try {
-    removeRendererStorageItem(connectionHistoryStorageKey(protocol));
-  } catch (e: unknown) {
-    console.debug('[connectionHistoryStorage] clearConnectionHistory ' + errLikeToLogString(e));
-  }
-  clearLastConnection(protocol);
-}
-
 /** Primary label for a saved/last connection row (BLE name, host:port, or serial path). */
 export function savedConnectionPrimaryLabel(conn: LastConnection): string | null {
   if (conn.type === 'ble') {

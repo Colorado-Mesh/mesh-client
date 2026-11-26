@@ -5,7 +5,7 @@ import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 export type ConnectionTransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'udp' | 'netconsole';
 
-type IconTrigger = 'hover' | 'parent-hover' | 'manual';
+export type IconTrigger = 'hover' | 'parent-hover' | 'manual';
 
 export function ConnectionIcon({
   type,

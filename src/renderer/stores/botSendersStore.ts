@@ -5,7 +5,7 @@ import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/li
 
 import { type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 
-export const BOT_SENDERS_STORAGE_KEY = 'mesh-client:botSenders';
+const BOT_SENDERS_STORAGE_KEY = 'mesh-client:botSenders';
 /** Per-protocol cap; the oldest detections are evicted first (Sets keep insertion order). */
 export const BOT_SENDERS_MAX_PER_PROTOCOL = 500;
 

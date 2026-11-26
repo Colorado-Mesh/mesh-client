@@ -217,7 +217,7 @@ export function listMeshcorePathPrefixMatches(
 }
 
 /** Stable negative id for an unresolved on-air path segment (avoids real node_id space). */
-export function syntheticHeardNodeIdFromPathSegment(segment: Uint8Array): number {
+function syntheticHeardNodeIdFromPathSegment(segment: Uint8Array): number {
   let h = 0x811c9dc5;
   for (const byte of segment) {
     h ^= byte;
@@ -241,7 +241,7 @@ function pathSegmentHex(segment: Uint8Array): string {
  * MeshCore flood paths do **not** include the originator — only forwarders append
  * hashes — so this is used to skip self if it ever appears, not as an origin gate.
  */
-export function meshcorePathOriginIsSelf(
+function meshcorePathOriginIsSelf(
   firstSegment: Uint8Array,
   myNodeNum: number,
   pathHashSizeBytes: MeshcoreHashSizeBytes,

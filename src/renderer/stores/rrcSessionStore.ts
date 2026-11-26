@@ -137,7 +137,7 @@ function coalesceRoomAliases(
 const hubGenerationCeiling = new Map<string, number>();
 
 /** Next monotonic generation for `hub` (also advances the clear/recreate ceiling). */
-export function nextRrcHubGeneration(hub: string, existingGeneration = 0): number {
+function nextRrcHubGeneration(hub: string, existingGeneration = 0): number {
   const ceiling = hubGenerationCeiling.get(hub) ?? 0;
   const next = Math.max(existingGeneration, ceiling) + 1;
   hubGenerationCeiling.set(hub, next);
@@ -145,7 +145,7 @@ export function nextRrcHubGeneration(hub: string, existingGeneration = 0): numbe
 }
 
 /** Test/helper: reset clear/recreate generation ceilings. */
-export function resetRrcHubGenerationCeilings(): void {
+function resetRrcHubGenerationCeilings(): void {
   hubGenerationCeiling.clear();
 }
 
@@ -192,7 +192,7 @@ export interface RrcHubSessionState {
   whoReplyPendingRooms: Set<string>;
 }
 
-export function emptyHubSession(): RrcHubSessionState {
+function emptyHubSession(): RrcHubSessionState {
   return {
     status: 'disconnected',
     generation: 0,
@@ -390,7 +390,7 @@ function learnNicksFromMembers(
   get().learnHubNicks(hubHash ?? get().focusedHubHash, nicks);
 }
 
-interface RrcSessionStoreState {
+export interface RrcSessionStoreState {
   /** All tracked hub sessions, keyed by lowercase hub destination hash. */
   sessionsByHub: Map<string, RrcHubSessionState>;
   /** Per-hub nick cache (hash → nick), hydrated from SQLite and grown as peers speak. */

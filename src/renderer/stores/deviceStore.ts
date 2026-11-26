@@ -188,10 +188,6 @@ export function setSecurityConfig(id: IdentityId, securityConfig: SecurityConfig
   patch(id, { securityConfig });
 }
 
-export function setDeviceOwner(id: IdentityId, deviceOwner: DeviceOwner): void {
-  patch(id, { deviceOwner });
-}
-
 export function setDeviceGpsState(
   id: IdentityId,
   deviceGpsMode: number,
@@ -202,10 +198,6 @@ export function setDeviceGpsState(
 
 export function setTelemetryDeviceUpdateInterval(id: IdentityId, interval: number | null): void {
   patch(id, { telemetryDeviceUpdateInterval: interval });
-}
-
-export function setOurPosition(id: IdentityId, ourPosition: OurPosition | null): void {
-  patch(id, { ourPosition });
 }
 
 export function appendRawPacket(id: IdentityId, entry: RawPacketEntry): void {
@@ -222,10 +214,6 @@ export function appendRawPacket(id: IdentityId, entry: RawPacketEntry): void {
   });
 }
 
-export function clearRawPackets(id: IdentityId): void {
-  patch(id, { rawPackets: [] });
-}
-
 export function appendDeviceLog(id: IdentityId, entry: DeviceLogEntry): void {
   const MAX = 500;
   useDeviceStore.setState((s) => {
@@ -238,10 +226,6 @@ export function appendDeviceLog(id: IdentityId, entry: DeviceLogEntry): void {
       },
     };
   });
-}
-
-export function setRingtone(id: IdentityId, ringtone: string | null): void {
-  patch(id, { ringtone });
 }
 
 // --- MeshCore-side device state setters (PacketRouter writes these on
@@ -284,88 +268,6 @@ export function setMeshcoreChannels(id: IdentityId, channels: MeshcoreChannelEve
 }
 
 // --- Meshtastic per-port packet buffers ---
-
-const MAX_PORT_BUFFER = 200;
-
-type ArrayPort =
-  | 'atak'
-  | 'storeForward'
-  | 'rangeTest'
-  | 'serial'
-  | 'remoteHardware'
-  | 'ipTunnel'
-  | 'detectionSensor'
-  | 'audio'
-  | 'zps'
-  | 'simulator';
-
-type ScalarPort = 'pax' | 'mapReport' | 'pingResponse';
-
-export function appendPortPacket(
-  id: IdentityId,
-  port: ArrayPort,
-  nodeId: number,
-  entry: PortPacketEntry,
-): void {
-  useDeviceStore.setState((s) => {
-    const rec = s.devices[id] ?? defaultRecord;
-    const buffers = rec.meshtasticPortBuffers;
-    const next = new Map(buffers[port]);
-    const list = next.get(nodeId) ?? [];
-    const trimmed = list.length >= MAX_PORT_BUFFER ? list.slice(-(MAX_PORT_BUFFER - 1)) : list;
-    next.set(nodeId, [...trimmed, entry]);
-    return {
-      devices: {
-        ...s.devices,
-        [id]: {
-          ...rec,
-          meshtasticPortBuffers: { ...buffers, [port]: next },
-        },
-      },
-    };
-  });
-}
-
-export function setPortScalar(
-  id: IdentityId,
-  port: 'pingResponse',
-  nodeId: number,
-  entry: PortPacketEntry,
-): void;
-export function setPortScalar(
-  id: IdentityId,
-  port: 'pax',
-  nodeId: number,
-  entry: PaxCounterEntry,
-): void;
-export function setPortScalar(
-  id: IdentityId,
-  port: 'mapReport',
-  nodeId: number,
-  entry: MapReportEntry,
-): void;
-export function setPortScalar(
-  id: IdentityId,
-  port: ScalarPort,
-  nodeId: number,
-  entry: PortPacketEntry | PaxCounterEntry | MapReportEntry,
-): void {
-  useDeviceStore.setState((s) => {
-    const rec = s.devices[id] ?? defaultRecord;
-    const buffers = rec.meshtasticPortBuffers;
-    const next = new Map(buffers[port] as Map<number, typeof entry>);
-    next.set(nodeId, entry);
-    return {
-      devices: {
-        ...s.devices,
-        [id]: {
-          ...rec,
-          meshtasticPortBuffers: { ...buffers, [port]: next as never },
-        },
-      },
-    };
-  });
-}
 
 export function clearDeviceIdentity(id: IdentityId): void {
   useDeviceStore.setState((s) => ({

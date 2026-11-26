@@ -26,7 +26,7 @@ pnpm --version
 Use this short recipe on a fresh clone (agents: same order):
 
 1. `node scripts/check-environment.mjs` (works before pnpm is installed).
-2. After Node/pnpm exist, prefer `pnpm run setup:dev` — installs Semgrep, yamllint, native build deps, and actionlint; ensures Rust/`cargo` + clippy; sets `git config core.hooksPath .githooks`; re-runs `check:environment`; then smokes with `pnpm run typecheck` when `node_modules` exists. Or follow printed `→` hints / individual `setup:*` scripts.
+2. After Node/pnpm exist, prefer `pnpm run setup:dev` — installs Semgrep, yamllint, and native build deps; ensures Rust/`cargo` + clippy; sets `git config core.hooksPath .githooks`; re-runs `check:environment`; then smokes with `pnpm run typecheck` when `node_modules` exists. `actionlint` comes from the `github-actionlint` devDependency installed by `pnpm install`. Or follow printed `→` hints / individual `setup:*` scripts.
 3. `pnpm install` (or `pnpm install --frozen-lockfile` on a clean clone).
 4. `pnpm run setup:dev` again (or at least `pnpm run check:environment`) — must exit 0.
 5. Optional UI smoke: `pnpm run dev`.
@@ -48,9 +48,9 @@ pnpm run dev
 
 **Required** checks (must pass): Git, Node.js, pnpm, `node_modules`, platform-native build tools (Xcode CLT on macOS, `g++`/`make` on Linux, MSVC `cl` on Windows), **Semgrep**, **yamllint**, **Rust/`cargo`**, and **cargo clippy**. Semgrep App login / `SEMGREP_APP_TOKEN` are **not** required (registry network access is needed for the public rule packs).
 
-**Optional** checks (warnings only): Python/pip, `cargo llvm-cov`, actionlint, a Docker-compatible container engine (Podman preferred), act, Playwright, and Linux `dialout` group membership. For local CI you can use **container mode** (`pnpm run act:ci` — act + Podman/Docker) or **host mode** (`pnpm run act:ci:native` — no container engine). Fix optional items when you need docs builds, workflow linting, local CI parity, sidecar coverage reports, or USB serial on Linux.
+**Optional** checks (warnings only): Python/pip, `cargo llvm-cov`, actionlint (provided by `pnpm install` via `github-actionlint`), a Docker-compatible container engine (Podman preferred), act, Playwright, and Linux `dialout` group membership. For local CI you can use **container mode** (`pnpm run act:ci` — act + Podman/Docker) or **host mode** (`pnpm run act:ci:native` — no container engine). Fix optional items when you need docs builds, workflow linting, local CI parity, sidecar coverage reports, or USB serial on Linux.
 
-Use the printed `→` hints and `setup:*` scripts (`setup:dev`, `setup:semgrep`, `setup:yamllint`, `setup:build-deps`, `setup:actionlint`, `setup:dialout`) to fix failures. See [Helper scripts (auto-install where possible)](#8-helper-scripts-auto-install-where-possible) below.
+Use the printed `→` hints and `setup:*` scripts (`setup:dev`, `setup:semgrep`, `setup:yamllint`, `setup:build-deps`, `setup:dialout`) to fix failures. See [Helper scripts (auto-install where possible)](#8-helper-scripts-auto-install-where-possible) below.
 
 ### MkDocs (documentation) tooling
 
@@ -454,6 +454,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 | Script                                | Description                                                                                                                           |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `check:actions`                       | Lint `.github/workflows` with the `github-actionlint` devDependency                                                                   |
 | `check:audit-ignores`                 | Warn when an ignored audit GHSA has a patch (needs network)                                                                           |
 | `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                                                                                  |
 | `check:console-log`                   | Fail on bare `console.log` in production paths                                                                                        |
@@ -461,6 +462,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `check:db-migrations`                 | Verify SQLite migrations are valid                                                                                                    |
 | `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                                                                                |
 | `check:environment`                   | Verify local dev prerequisites (run after clone)                                                                                      |
+| `check:fallow`                        | Changed-file dead-code / complexity / duplication audit (`fallow audit --type-aware`)                                                 |
 | `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                                                                                             |
 | `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage                                                                          |
 | `check:i18n`                          | Verify English keys, unused keys, and locale quality rules                                                                            |
@@ -472,6 +474,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `check:log-panel-filter`              | Verify log panel filter wiring                                                                                                        |
 | `check:log-service-sinks`             | Verify log service sink configuration                                                                                                 |
 | `check:main-bundle`                   | Production main `index.js` size budget (same suite as `bundle-size.yaml`)                                                             |
+| `check:oxlint`                        | Fast ESLint-compatible lint pass (`correctness` + `suspicious` + `perf` errors)                                                       |
 | `check:pinned-majors`                 | Warn when a pinned override is behind a newer npm major (needs network)                                                               |
 | `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                                                                                |
 | `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                                                                                         |
@@ -529,7 +532,6 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `reticulum:sidecar:fmt`         | `cargo fmt` in `reticulum-sidecar/`                                                                                             |
 | `reticulum:sidecar:fmt:check`   | `cargo fmt --check`                                                                                                             |
 | `reticulum:sidecar:test`        | Full-feature `cargo test` (clones the `.rsstack/` workspace if needed)                                                          |
-| `setup:actionlint`              | Install actionlint for GitHub workflow linting                                                                                  |
 | `setup:build-deps`              | Install native build dependencies                                                                                               |
 | `setup:dev`                     | First-run: required tools + hooksPath + `check:environment` + typecheck smoke                                                   |
 | `setup:dialout`                 | Add user to dialout group for serial port access (Linux)                                                                        |
@@ -582,12 +584,13 @@ Installed via `pnpm install` (from `package.json`):
 - `vitest`, `@vitest/coverage-v8`, and renderer/main test dependencies
 - `@playwright/test` (Electron E2E; browser downloads skipped via `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` in `.npmrc`)
 - `eslint`, `typescript`, `typescript-eslint`
+- `github-actionlint` (workflow linting; `pnpm exec github-actionlint`)
+- `oxlint`, `fallow`, `fallow-type-aware` (fast lint / type-aware changed-file audit gates in pre-commit)
 - `prettier`, `prettier-plugin-sh`, `prettier-plugin-tailwindcss`
 - `markdownlint-cli2`, `vitest-axe`
 
 Not installed by pnpm (install separately when needed):
 
-- `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or `pnpm run setup:dev`)
 - `yamllint` (**required** for `check:environment` and pre-commit YAML lint; `pnpm run setup:yamllint` or brew/apt/pip)
 - **Semgrep** (**required locally** for `check:environment` and always-on pre-commit `check:semgrep`; not run in GitHub Actions). Run `git config core.hooksPath .githooks` and `pnpm run setup:semgrep` (pin in `scripts/requirements-semgrep.txt`; brew/pipx/pip). App login is **not** required. Config is tracked at [`.semgrep.yml`](../.semgrep.yml). Findings may be false positives — research before dismissing; if wrong for this repo, update `.semgrep.yml` or add a narrow `nosemgrep` with a reason (see `scripts/check-semgrep.mjs`). Semgrep and ESLint are separate: after Semgrep-driven edits, lint the touched files — `nosemgrep` does not replace `eslint-disable` (see AGENTS.md **Semgrep × ESLint**).
 - **Rust / `cargo` + clippy** (**required** for `check:environment`; prefer [rustup](https://rustup.rs/); `pnpm run setup:dev` prints a non-interactive rustup recipe and can `rustup component add clippy`). Needed for the Reticulum sidecar — see [Reticulum sidecar](#reticulum-sidecar-optional). `rust-toolchain.toml` installs clippy/rustfmt/llvm-tools-preview on first build in `reticulum-sidecar/`. Optional: `cargo install cargo-llvm-cov` for `pnpm run reticulum:sidecar:coverage`.
@@ -719,7 +722,7 @@ This generates `dist-electron/main/meta.json`. Upload this file to [esbuild's on
 
 ### 6) Git hooks and pre-commit behavior
 
-After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prepare` script in `package.json`). The pre-commit hook runs on every commit. Typical commits run **staged-related Vitest only** (`pnpm run test:staged` → `vitest related` on staged source/test files, optionally narrowed to matching Vitest projects). Unstaged WIP is ignored. Full typecheck still runs every commit; ESLint runs on staged JS/TS with `--cache` (CI still runs full-tree lint). Path-gated `typecheck:strict-shared` runs when `src/shared/` (or `tsconfig.strict.json`) is staged. Several expensive `check:*` steps and `pnpm audit` / full-feature sidecar builds are **path-gated**.
+After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prepare` script in `package.json`). The pre-commit hook runs on every commit. Typical commits run **staged-related Vitest only** (`pnpm run test:staged` → `vitest related` on staged source/test files, optionally narrowed to matching Vitest projects). Unstaged WIP is ignored. Full typecheck still runs every commit; ESLint runs on staged JS/TS with `--cache` (CI still runs full-tree lint), oxlint runs on staged JS/TS using `.oxlintrc.json`, and `fallow audit --type-aware --staged` checks the change for introduced dead code/complexity/debt. Path-gated `typecheck:strict-shared` runs when `src/shared/` (or `tsconfig.strict.json`) is staged. Several expensive `check:*` steps and `pnpm audit` / full-feature sidecar builds are **path-gated**.
 
 ESLint: production `src/**` enforces `no-unsafe-*`; test files keep those off. `no-unnecessary-condition` is enforced for `src/shared/**` and `src/renderer/lib/**` only.
 
@@ -732,16 +735,44 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 3. markdownlint-cli2 on staged `.md` files only (not full `pnpm run lint:md` unless you run it manually)
 4. When `package.json` or `pnpm-lock.yaml` is staged: `pnpm dedupe`, re-stage `pnpm-lock.yaml`, then re-stage the originally staged paths
 5. When `src/renderer/locales/en/translation.json` is staged: `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
-6. ESLint on **staged** JS/TS with `--cache` (skip when none staged)
+6. ESLint on **staged** JS/TS with `--cache` (skip when none staged); **oxlint** on staged JS/TS (`correctness` + `suspicious` + `perf` as errors via `.oxlintrc.json`; skip when none staged)
 7. `pnpm run typecheck` (full tree); path-gated `typecheck:strict-shared` when `src/shared/` or `tsconfig.strict.json` staged
-8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:log-ids`, `check:semgrep` (`p/typescript`, `p/javascript`, `p/nodejs`, `p/security-audit`, `.semgrep.yml`; findings may be wrong — research before dismissing, then update `.semgrep.yml` / narrow `nosemgrep` if truly incorrect), `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`; `check:i18n` when English locale staged else `check:i18n:branch`
+8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:log-ids`, `check:semgrep` (`p/typescript`, `p/javascript`, `p/nodejs`, `p/security-audit`, `.semgrep.yml`; findings may be wrong — research before dismissing, then update `.semgrep.yml` / narrow `nosemgrep` if truly incorrect), `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`, `fallow audit --type-aware --staged`; `check:i18n` when English locale staged else `check:i18n:branch`
 9. Path-gated: `check:flatpak`, `check:db-migrations`, `check:main-bundle` (when `src/main/` or esbuild main-build scripts staged), `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged)
-10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
+10. `pnpm audit --audit-level=high` only when dependency manifests staged; `pnpm exec github-actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
-**Release / protected CI full suite:** `pnpm run release` (`scripts/release.sh`), merge-queue `merge_group`, `main` push, and manual [`tests.yaml`](../.github/workflows/tests.yaml) runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated `check:*` set and requires actionlint + yamllint. Use `pnpm run check:pr` for the comprehensive Vitest/lint/typecheck surface locally before a PR.
+#### Pre-push (branch gate) and why it repeats some checks
 
-Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (`setup:actionlint`, yamllint via pip/brew/apt).
+`.githooks/pre-push` runs `pnpm run check:changed` (`scripts/prepush-check.mjs`) over the union of
+`origin/main…HEAD`, staged, and unstaged paths: Prettier `--check`, ESLint with the **CI shard/config**
+(`scripts/ci-eslint-shard.mjs`), full `typecheck`, and `vitest related` for the whole branch diff.
+
+It deliberately repeats work pre-commit already did, because the two gates answer different questions:
+
+- **Scope:** pre-commit only sees the files in _that_ commit. Cross-commit interactions (a later commit
+  touching a shared module whose consumers' tests were not staged) are only visible branch-wide.
+- **Invocation:** pre-push runs the same ESLint shard arguments as CI, so a staged-file local invocation
+  cannot hide a config/ignore-driven CI failure.
+- **Bypassed state:** `--no-verify`, GUI clients, agent VMs with a non-repo `core.hooksPath`, and commits
+  pulled or merged into the branch never ran _your_ pre-commit. Pre-push is the last local gate.
+- **Cost:** a red PR costs a full CI round-trip; the branch check is the cheap version of that signal.
+
+**Tree-hash cache.** The first successful branch check writes `<git-dir>/prepush-check-cache.json`, keyed by
+HEAD, the merge-base, the tracked diff vs `HEAD` (staged + unstaged), and untracked file hashes. Pushing the
+exact same tree again (push retry, second remote, no-op amend/rebase) skips instantly. Set
+`PREPUSH_CHECK_NO_CACHE=1` or delete the cache file to force a rerun. The cache lives inside the git dir —
+never tracked, per worktree — and is only written after a passing run.
+
+Emergency bypass (temporary only):
+
+```bash
+git push --no-verify
+```
+
+**Release / protected CI full suite:** `pnpm run release` (`scripts/release.sh`), merge-queue `merge_group`, `main` push, and manual [`tests.yaml`](../.github/workflows/tests.yaml) runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated `check:*` set and requires actionlint (from `pnpm install`) + yamllint. Use `pnpm run check:pr` for the comprehensive Vitest/lint/typecheck surface locally before a PR.
+
+Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (yamllint via pip/brew/apt; actionlint comes with `pnpm install`).
 
 Emergency bypass (temporary only):
 
@@ -781,20 +812,20 @@ On macOS, podman exposes a Docker-compatible socket at `/var/run/docker.sock`; p
 
 macOS and Windows **installer** builds still require native `pnpm run dist:mac` / `pnpm run dist:win`. See [ci-cd.md](ci-cd.md#running-ci-locally-with-act).
 
-- **actionlint**: required for local pre-commit if workflow files are touched.
+- **actionlint**: required for local pre-commit if workflow files are touched; provided by the `github-actionlint` devDependency (`pnpm exec github-actionlint`).
 
 ### 8) Helper scripts (auto-install where possible)
 
 These scripts try to install required and optional tooling automatically. If they fail (for example, missing `sudo`/admin rights), follow the manual steps in this doc instead.
 
 0. Preferred one-shot after Node/pnpm exist (and again after `pnpm install`):
-   - `pnpm run setup:dev` — build-deps, Semgrep, yamllint, Rust/clippy hints, actionlint, `core.hooksPath=.githooks`, then `check:environment` + typecheck smoke
+   - `pnpm run setup:dev` — build-deps, Semgrep, yamllint, Rust/clippy hints, `core.hooksPath=.githooks`, then `check:environment` + typecheck smoke
 1. Verify your environment only:
    - `node scripts/check-environment.mjs` (before `pnpm install`)
    - `pnpm run check:environment` (after `pnpm install`)
-2. Install `actionlint` (used by the git pre-commit hook when workflows are staged):
-   - `pnpm run setup:actionlint`
-   - This installs into `.githooks/bin` so the hook can find it.
+2. `actionlint` (used by the git pre-commit hook when workflows are staged):
+   - Comes with `pnpm install` via the `github-actionlint` devDependency; run `pnpm exec github-actionlint`.
+   - No separate install script or `.githooks/bin` entry is needed.
 3. Install `yamllint` (**required** by `check:environment` and the git pre-commit hook):
    - `pnpm run setup:yamllint`
    - Or: `brew install yamllint` / `sudo apt install yamllint` / hash-locked `pip install --user --require-hashes --only-binary=:all: -r scripts/requirements-yamllint.txt`

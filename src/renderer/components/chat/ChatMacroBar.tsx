@@ -23,7 +23,7 @@ export function macroDisplayLabel(slot: ChatMacroSlot): string {
   return slot.text.trim();
 }
 
-export const CHAT_MACRO_MIN_VISIBLE = 6;
+const CHAT_MACRO_MIN_VISIBLE = 6;
 
 /** Approximate button width per size in rem; drives how many fit before "More". */
 const BUTTON_WIDTH_REM: Record<ChatMacroSize, number> = { small: 5.5, medium: 6.5, large: 7 };

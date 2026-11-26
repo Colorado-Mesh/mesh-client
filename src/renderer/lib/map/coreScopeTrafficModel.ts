@@ -191,123 +191,327 @@ function consecutiveSegments(
 }
 
 /** CoreScope repeats transmission first_seen on WebSocket observations; live callers supply receipt time. */
-export function normalizeCoreScopeObservation(
-  value: unknown,
+function normalizeCoreScopeRawHex(packet: Record<string, unknown>): string | null {
+  const raw = packet.raw_hex;
+  return typeof raw === 'string' &&
+    raw.length <= 8_192 &&
+    raw.length % 2 === 0 &&
+    /^[a-f\d]+$/i.test(raw)
+    ? raw.toLowerCase()
+    : null;
+}
+
+function normalizeCoreScopeRouteType(packet: Record<string, unknown>): number | null {
+  const routeType = packet.route_type;
+  return typeof routeType === 'number' &&
+    Number.isInteger(routeType) &&
+    routeType >= 0 &&
+    routeType <= 3
+    ? routeType
+    : null;
+}
+
+type CoreScopeParsedPacket = Extract<ReturnType<typeof parseMeshCoreRfPacket>, { ok: true }>;
+
+interface CoreScopeSourceResolution {
+  source: CoreScopeTrafficPoint | null;
+  senderLabel: string | undefined;
+}
+
+function overlayCoreScopeAdvertPoint(
+  parsed: CoreScopeParsedPacket,
+  key: string,
+  senderLabel: string,
+  source: CoreScopeTrafficPoint | null,
+): CoreScopeTrafficPoint | null {
+  if (!parsed.advert || bytesToHex(parsed.advert.publicKey) !== key) return source;
+  return (
+    pointFromNode(
+      {
+        name: senderLabel,
+        lat: parsed.advert.latitudeDeg,
+        lon: parsed.advert.longitudeDeg,
+      },
+      key,
+    ) ?? source
+  );
+}
+
+/** Resolve the advert/anon-request origin node and its display label. */
+function resolveCoreScopeSource(
+  packet: Record<string, unknown>,
+  parsed: CoreScopeParsedPacket | null,
+  validRaw: boolean,
   index: CoreScopeTrafficNodeIndex,
-  now: number,
-  messages?: ReadonlyMap<string, BeaconTrafficMessage>,
-  options?: { receivedAt: number },
-): LiveTrafficEvent | null {
-  const packet = packetRecord(value);
-  if (!packet) return null;
-  const packetHash = text(packet.hash, 128)?.toLowerCase();
-  const sourceFirstSeenTs = timestamp(packet.timestamp) ?? timestamp(packet.first_seen);
-  const ts = options ? finiteNumber(options.receivedAt) : sourceFirstSeenTs;
-  if (!packetHash || ts == null || ts > now || now - ts > LIVE_TRAFFIC_MAX_AGE_MS) return null;
-  const rawHex =
-    typeof packet.raw_hex === 'string' &&
-    packet.raw_hex.length <= 8_192 &&
-    packet.raw_hex.length % 2 === 0 &&
-    /^[a-f\d]+$/i.test(packet.raw_hex)
-      ? packet.raw_hex.toLowerCase()
-      : null;
-  const parsed = rawHex ? parseMeshCoreRfPacket(hexToBytesLenient(rawHex)) : null;
-  const validRaw = parsed?.ok && [1, 2, 3].includes(parsed.pathHashSizeBytes);
-  const path = observationPath(packet.path_json);
-  const routeType =
-    typeof packet.route_type === 'number' &&
-    Number.isInteger(packet.route_type) &&
-    packet.route_type >= 0 &&
-    packet.route_type <= 3
-      ? packet.route_type
-      : null;
-  const valid = path !== null && routeType !== null;
-  const flood = valid && (routeType === 0 || routeType === 1);
-  const observerId = publicKey(packet.observer_id) ?? text(packet.observer_id, 128);
-  const observerKey = publicKey(observerId);
-  const receiver = observerKey ? (index.pointsByPublicKey.get(observerKey) ?? null) : null;
-  let source: CoreScopeTrafficPoint | null = null;
-  let senderLabel: string | undefined;
+): CoreScopeSourceResolution {
   if (
-    validRaw &&
-    (parsed.payloadTypeString === 'ADVERT' || parsed.payloadTypeString === 'ANON_REQ')
+    !validRaw ||
+    !parsed ||
+    (parsed.payloadTypeString !== 'ADVERT' && parsed.payloadTypeString !== 'ANON_REQ')
   ) {
-    const offset = parsed.payloadTypeString === 'ANON_REQ' ? 1 : 0;
-    const keyBytes = parsed.innerPayload.subarray(offset, offset + 32);
-    if (keyBytes.length === 32) {
-      const key = bytesToHex(keyBytes);
-      source = index.pointsByPublicKey.get(key) ?? null;
-      const payload = parsed.payloadTypeString === 'ADVERT' ? decodedPayload(packet) : null;
-      const decodedName = publicKey(payload?.pubKey) === key ? text(payload?.name) : null;
-      senderLabel =
-        text(parsed.advert?.name) ??
-        decodedName ??
-        index.labelsByPublicKey?.get(key) ??
-        source?.label ??
-        key.slice(0, 8);
-      // The advert's own coordinates describe this observation, including a newly seen or
-      // moving node. Directory positions are only a fallback when it supplies no valid fix.
-      if (parsed.advert && bytesToHex(parsed.advert.publicKey) === key) {
-        source =
-          pointFromNode(
-            {
-              name: senderLabel,
-              lat: parsed.advert.latitudeDeg,
-              lon: parsed.advert.longitudeDeg,
-            },
-            key,
-          ) ?? source;
-      }
-    }
+    return { source: null, senderLabel: undefined };
   }
+  const offset = parsed.payloadTypeString === 'ANON_REQ' ? 1 : 0;
+  const keyBytes = parsed.innerPayload.subarray(offset, offset + 32);
+  if (keyBytes.length !== 32) return { source: null, senderLabel: undefined };
+  const key = bytesToHex(keyBytes);
+  const source = index.pointsByPublicKey.get(key) ?? null;
+  const payload = parsed.payloadTypeString === 'ADVERT' ? decodedPayload(packet) : null;
+  const decodedName = publicKey(payload?.pubKey) === key ? text(payload?.name) : null;
+  const senderLabel =
+    text(parsed.advert?.name) ??
+    decodedName ??
+    index.labelsByPublicKey?.get(key) ??
+    source?.label ??
+    key.slice(0, 8);
+  // The advert's own coordinates describe this observation, including a newly seen or
+  // moving node. Directory positions are only a fallback when it supplies no valid fix.
+  return {
+    source: overlayCoreScopeAdvertPoint(parsed, key, senderLabel, source),
+    senderLabel,
+  };
+}
+
+interface CoreScopeHopResolution {
+  point: CoreScopeTrafficPoint | null;
+  estimate: boolean;
+}
+
+function resolveCoreScopeHop(
+  prefix: string,
+  indexInPath: number,
+  resolved: unknown[] | null,
+  index: CoreScopeTrafficNodeIndex,
+): CoreScopeHopResolution {
+  const key = index.keysByPrefix.get(prefix);
+  const resolvedKey = resolved ? publicKey(resolved[indexInPath]) : null;
+  const candidateKey = resolved ? resolvedKey : key;
+  const point = candidateKey?.startsWith(prefix)
+    ? (index.pointsByPublicKey.get(candidateKey) ?? null)
+    : null;
+  // CoreScope's chosen candidate is an estimate on colliding prefixes. Never choose
+  // a candidate locally, bridge null resolutions, or promote an estimate to confirmed.
+  return { point, estimate: Boolean(point && key === null && resolvedKey) };
+}
+
+interface CoreScopeRouteResolution {
+  route: (CoreScopeTrafficPoint | null)[];
+  estimated: boolean;
+}
+
+function buildCoreScopeRoute(
+  packet: Record<string, unknown>,
+  path: string[],
+  flood: boolean,
+  index: CoreScopeTrafficNodeIndex,
+  source: CoreScopeTrafficPoint | null,
+  receiver: CoreScopeTrafficPoint | null,
+): CoreScopeRouteResolution {
   const route: (CoreScopeTrafficPoint | null)[] = [source];
   const estimatedHops = new Set<number>();
   if (flood) {
     const resolved = Array.isArray(packet.resolved_path) ? packet.resolved_path : null;
     for (let i = 0; i < path.length; i++) {
-      const prefix = path[i];
-      const key = index.keysByPrefix.get(prefix);
-      const resolvedKey = resolved ? publicKey(resolved[i]) : null;
-      const candidateKey = resolved ? resolvedKey : key;
-      const point = candidateKey?.startsWith(prefix)
-        ? (index.pointsByPublicKey.get(candidateKey) ?? null)
-        : null;
-      // CoreScope's chosen candidate is an estimate on colliding prefixes. Never choose
-      // a candidate locally, bridge null resolutions, or promote an estimate to confirmed.
-      if (point && key === null && resolvedKey) estimatedHops.add(i + 1);
-      route.push(point);
+      const hop = resolveCoreScopeHop(path[i], i, resolved, index);
+      if (hop.estimate) estimatedHops.add(i + 1);
+      route.push(hop.point);
     }
   }
   route.push(receiver);
-  const points = [
+  return { route, estimated: estimatedHops.size > 0 };
+}
+
+function dedupeCoreScopeRoutePoints(
+  route: (CoreScopeTrafficPoint | null)[],
+): CoreScopeTrafficPoint[] {
+  return [
     ...new Map(
       route
         .filter((point): point is CoreScopeTrafficPoint => point !== null)
         .map((point) => [point.publicKey, point]),
     ).values(),
   ];
-  const segments = flood ? consecutiveSegments(route) : [];
-  const estimated = estimatedHops.size > 0;
-  const kind = validRaw
-    ? parsed.payloadTypeString
-    : (
-        text(record(record(packet.decoded)?.header)?.payloadTypeName, 48) ?? 'UNKNOWN'
-      ).toUpperCase();
-  const payload = decodedPayload(packet);
-  const controlSubtype = liveTrafficControlSubtype(
-    kind,
-    payload?.ctrlSubtype,
-    validRaw ? parsed.innerPayload : payload?.raw,
-  );
-  const message = normalizeCoreScopeMessage(packet) ?? messages?.get(packetHash);
-  const reportedObservationCount = finiteNumber(packet.observation_count);
+}
+
+function resolveCoreScopeRouteStatus(
+  valid: boolean,
+  flood: boolean,
+  points: CoreScopeTrafficPoint[],
+  estimated: boolean,
+  route: (CoreScopeTrafficPoint | null)[],
+): LiveTrafficEvent['routeStatus'] {
+  if (!valid) return 'unparsed';
+  if (!flood) return 'direct';
+  if (points.length === 0) return 'unlocated';
+  if (estimated) return 'estimated';
+  return route.every((point) => point !== null) ? 'resolved' : 'partial';
+}
+
+function resolveCoreScopeKind(
+  validRaw: boolean,
+  parsed: CoreScopeParsedPacket | null,
+  packet: Record<string, unknown>,
+): string {
+  if (validRaw && parsed) return parsed.payloadTypeString;
+  return (
+    text(record(record(packet.decoded)?.header)?.payloadTypeName, 48) ?? 'UNKNOWN'
+  ).toUpperCase();
+}
+
+interface CoreScopeEventInput {
+  packet: Record<string, unknown>;
+  packetHash: string;
+  observerId: string | null;
+  ts: number;
+  sourceFirstSeenTs: number | null;
+  now: number;
+  kind: string;
+  controlSubtype: LiveTrafficEvent['controlSubtype'];
+  senderLabel: string | undefined;
+  segments: LiveTrafficSegment[];
+  points: CoreScopeTrafficPoint[];
+  routeStatus: LiveTrafficEvent['routeStatus'];
+  validRaw: boolean;
+  parsed: CoreScopeParsedPacket | null;
+  message: BeaconTrafficMessage | null | undefined;
+  pathIdentity: string;
+  hopCount: number | null;
+}
+
+interface CoreScopeTiming {
+  packetHash: string;
+  sourceFirstSeenTs: number | null;
+  ts: number;
+}
+
+function resolveCoreScopeTiming(
+  packet: Record<string, unknown>,
+  now: number,
+  options: { receivedAt: number } | undefined,
+): CoreScopeTiming | null {
+  const packetHash = text(packet.hash, 128)?.toLowerCase();
+  const sourceFirstSeenTs = timestamp(packet.timestamp) ?? timestamp(packet.first_seen);
+  const ts = options ? finiteNumber(options.receivedAt) : sourceFirstSeenTs;
+  if (!packetHash || ts == null || ts > now || now - ts > LIVE_TRAFFIC_MAX_AGE_MS) return null;
+  return { packetHash, sourceFirstSeenTs, ts };
+}
+
+interface CoreScopePacketShape {
+  parsed: CoreScopeParsedPacket | null;
+  validRaw: boolean;
+  path: string[] | null;
+  routeType: number | null;
+  valid: boolean;
+  flood: boolean;
+}
+
+function resolveCoreScopePacketShape(packet: Record<string, unknown>): CoreScopePacketShape {
+  const rawHex = normalizeCoreScopeRawHex(packet);
+  const parsedRaw = rawHex ? parseMeshCoreRfPacket(hexToBytesLenient(rawHex)) : null;
+  const parsed = parsedRaw?.ok === true ? parsedRaw : null;
+  const validRaw = parsed != null && [1, 2, 3].includes(parsed.pathHashSizeBytes);
+  const path = observationPath(packet.path_json);
+  const routeType = normalizeCoreScopeRouteType(packet);
+  const valid = path !== null && routeType !== null;
+  const flood = valid && (routeType === 0 || routeType === 1);
+  return { parsed, validRaw, path, routeType, valid, flood };
+}
+
+interface CoreScopeObserver {
+  observerId: string | null;
+  receiver: CoreScopeTrafficPoint | null;
+}
+
+function resolveCoreScopeObserver(
+  packet: Record<string, unknown>,
+  index: CoreScopeTrafficNodeIndex,
+): CoreScopeObserver {
+  const observerId = publicKey(packet.observer_id) ?? text(packet.observer_id, 128);
+  const observerKey = publicKey(observerId);
+  const receiver = observerKey ? (index.pointsByPublicKey.get(observerKey) ?? null) : null;
+  return { observerId, receiver };
+}
+
+function resolveCoreScopeControlSubtype(
+  kind: string,
+  shape: CoreScopePacketShape,
+  payload: Record<string, unknown> | null,
+): LiveTrafficEvent['controlSubtype'] {
+  const rawPayload = shape.validRaw && shape.parsed ? shape.parsed.innerPayload : payload?.raw;
+  return liveTrafficControlSubtype(kind, payload?.ctrlSubtype, rawPayload);
+}
+
+function resolveCoreScopeReportedObservationCount(
+  packet: Record<string, unknown>,
+): number | undefined {
+  const count = finiteNumber(packet.observation_count);
+  return count != null && Number.isSafeInteger(count) && count > 0 ? count : undefined;
+}
+
+function resolveCoreScopeTransportCodes(
+  validRaw: boolean,
+  parsed: CoreScopeParsedPacket | null,
+): { scopeCode: number | null; returnScopeCode: number | null } {
+  if (!validRaw || !parsed) return { scopeCode: null, returnScopeCode: null };
+  return {
+    scopeCode: parsed.transportCodes?.[0] ?? null,
+    returnScopeCode: parsed.transportCodes?.[1] ?? null,
+  };
+}
+
+function resolveCoreScopeContentFields(
+  message: BeaconTrafficMessage | null | undefined,
+  kind: string,
+): Partial<LiveTrafficEvent> {
+  if (message) {
+    return {
+      messageText: message.messageText,
+      senderLabel: message.senderLabel,
+      contentStatus: 'decoded',
+    };
+  }
+  if (kind === 'GRP_TXT' || kind === 'TXT_MSG') return { contentStatus: 'unavailable' };
+  return {};
+}
+
+function buildCoreScopeEventId(
+  packetHash: string,
+  observerId: string | null,
+  pathIdentity: string,
+  sourceFirstSeenTs: number | null,
+  packet: Record<string, unknown>,
+): string {
   const transmissionId =
     typeof packet.id === 'number' && Number.isSafeInteger(packet.id)
       ? String(packet.id)
       : (text(packet.id) ?? '');
-  const pathIdentity = valid ? `${routeType}:${path.join(',')}` : 'unknown';
+  return `corescope:${packetHash}:${observerId ?? 'unknown'}:${pathIdentity}:${sourceFirstSeenTs ?? 'unknown'}:${transmissionId}`;
+}
+
+function buildCoreScopeEvent(input: CoreScopeEventInput): LiveTrafficEvent {
+  const {
+    packet,
+    packetHash,
+    observerId,
+    ts,
+    sourceFirstSeenTs,
+    now,
+    kind,
+    controlSubtype,
+    senderLabel,
+    segments,
+    points,
+    routeStatus,
+    validRaw,
+    parsed,
+    message,
+    pathIdentity,
+    hopCount,
+  } = input;
+  const reportedObservationCount = resolveCoreScopeReportedObservationCount(packet);
+  const { scopeCode, returnScopeCode } = resolveCoreScopeTransportCodes(validRaw, parsed);
   return {
-    id: `corescope:${packetHash}:${observerId ?? 'unknown'}:${pathIdentity}:${sourceFirstSeenTs ?? 'unknown'}:${transmissionId}`,
+    id: buildCoreScopeEventId(packetHash, observerId, pathIdentity, sourceFirstSeenTs, packet),
     packetHash,
     ...(observerId ? { observerId } : {}),
     ts,
@@ -318,35 +522,64 @@ export function normalizeCoreScopeObservation(
     ...(senderLabel ? { senderLabel } : {}),
     segments,
     points,
-    routeStatus: !valid
-      ? 'unparsed'
-      : !flood
-        ? 'direct'
-        : points.length === 0
-          ? 'unlocated'
-          : estimated
-            ? 'estimated'
-            : route.every((point) => point !== null)
-              ? 'resolved'
-              : 'partial',
-    scopeCode: validRaw ? (parsed.transportCodes?.[0] ?? null) : null,
-    returnScopeCode: validRaw ? (parsed.transportCodes?.[1] ?? null) : null,
+    routeStatus,
+    scopeCode,
+    returnScopeCode,
     rssi: finiteNumber(packet.rssi) ?? Number.NaN,
     snr: finiteNumber(packet.snr) ?? Number.NaN,
-    hopCount: path?.length ?? null,
-    ...(reportedObservationCount != null &&
-    Number.isSafeInteger(reportedObservationCount) &&
-    reportedObservationCount > 0
-      ? { reportedObservationCount }
-      : {}),
-    ...(message
-      ? {
-          messageText: message.messageText,
-          senderLabel: message.senderLabel,
-          contentStatus: 'decoded' as const,
-        }
-      : kind === 'GRP_TXT' || kind === 'TXT_MSG'
-        ? { contentStatus: 'unavailable' as const }
-        : {}),
+    hopCount,
+    ...(reportedObservationCount != null ? { reportedObservationCount } : {}),
+    ...resolveCoreScopeContentFields(message, kind),
   };
+}
+
+export function normalizeCoreScopeObservation(
+  value: unknown,
+  index: CoreScopeTrafficNodeIndex,
+  now: number,
+  messages?: ReadonlyMap<string, BeaconTrafficMessage>,
+  options?: { receivedAt: number },
+): LiveTrafficEvent | null {
+  const packet = packetRecord(value);
+  if (!packet) return null;
+  const timing = resolveCoreScopeTiming(packet, now, options);
+  if (!timing) return null;
+  const { packetHash, sourceFirstSeenTs, ts } = timing;
+  const shape = resolveCoreScopePacketShape(packet);
+  const { validRaw, path, routeType, valid, flood } = shape;
+  const { observerId, receiver } = resolveCoreScopeObserver(packet, index);
+  const { source, senderLabel } = resolveCoreScopeSource(packet, shape.parsed, validRaw, index);
+  const { route, estimated } = buildCoreScopeRoute(
+    packet,
+    path ?? [],
+    flood,
+    index,
+    source,
+    receiver,
+  );
+  const points = dedupeCoreScopeRoutePoints(route);
+  const segments = flood ? consecutiveSegments(route) : [];
+  const kind = resolveCoreScopeKind(validRaw, shape.parsed, packet);
+  const payload = decodedPayload(packet);
+  const controlSubtype = resolveCoreScopeControlSubtype(kind, shape, payload);
+  const message = normalizeCoreScopeMessage(packet) ?? messages?.get(packetHash);
+  return buildCoreScopeEvent({
+    packet,
+    packetHash,
+    observerId,
+    ts,
+    sourceFirstSeenTs,
+    now,
+    kind,
+    controlSubtype,
+    senderLabel,
+    segments,
+    points,
+    routeStatus: resolveCoreScopeRouteStatus(valid, flood, points, estimated, route),
+    validRaw,
+    parsed: shape.parsed,
+    message,
+    pathIdentity: valid ? `${routeType}:${path?.join(',')}` : 'unknown',
+    hopCount: path?.length ?? null,
+  });
 }

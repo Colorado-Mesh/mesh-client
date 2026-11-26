@@ -11,7 +11,7 @@ import { MS_PER_SECOND } from '@/shared/timeConstants';
 /** Same publication rate as the regional feed: a pop-out redraws at most four times a second. */
 const PUBLISH_INTERVAL_MS = MS_PER_SECOND / 4;
 
-export interface DockedLiveMapView {
+interface DockedLiveMapView {
   view: LiveMapView | null;
   /** Changes each time a pop-out closes, so the docked map remounts with its view. */
   revision: number;

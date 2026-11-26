@@ -37,7 +37,7 @@ export interface RncpPendingOfferRecord {
   receivedAt: number;
 }
 
-interface RncpTransferStoreState {
+export interface RncpTransferStoreState {
   transfers: Map<string, RncpTransferRecord>;
   pendingOffers: Map<string, RncpPendingOfferRecord>;
   listener: RncpListenerStatus | null;
@@ -94,6 +94,39 @@ function upsertByFileName(
   return undefined;
 }
 
+function firstDefined<T>(...values: readonly (T | null | undefined)[]): T | null {
+  for (const value of values) {
+    if (value != null) return value;
+  }
+  return null;
+}
+
+function transferRecord(
+  id: string,
+  existing: RncpTransferRecord | undefined,
+  now: number,
+  overrides: Partial<RncpTransferRecord> = {},
+): RncpTransferRecord {
+  return {
+    transfer_id: id,
+    kind: firstDefined(existing?.kind) ?? 'send',
+    destination_hash: firstDefined(existing?.destination_hash) ?? '',
+    file_name: firstDefined(existing?.file_name),
+    bytes: firstDefined(existing?.bytes),
+    path: firstDefined(existing?.path),
+    progress: firstDefined(existing?.progress) ?? 0,
+    status: 'active',
+    error: null,
+    reason_key: null,
+    identity_hash: firstDefined(existing?.identity_hash),
+    retryCount: firstDefined(existing?.retryCount) ?? 0,
+    retryArgs: firstDefined(existing?.retryArgs) ?? undefined,
+    createdAt: firstDefined(existing?.createdAt) ?? now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
 export const useRncpTransferStore = create<RncpTransferStoreState>((set) => ({
   transfers: new Map(),
   pendingOffers: new Map(),
@@ -104,23 +137,17 @@ export const useRncpTransferStore = create<RncpTransferStoreState>((set) => ({
       const transfers = new Map(s.transfers);
       const now = Date.now();
       const existing = transfers.get(transfer_id);
-      transfers.set(transfer_id, {
+      transfers.set(
         transfer_id,
-        kind,
-        destination_hash: destination_hash.toLowerCase(),
-        file_name: file_name ?? existing?.file_name ?? null,
-        bytes: existing?.bytes ?? null,
-        path: existing?.path ?? null,
-        progress: 0,
-        status: 'active',
-        error: null,
-        reason_key: null,
-        identity_hash: existing?.identity_hash ?? null,
-        retryCount: retryCount ?? existing?.retryCount ?? 0,
-        retryArgs: retryArgs ?? existing?.retryArgs,
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-      });
+        transferRecord(transfer_id, existing, now, {
+          kind,
+          destination_hash: destination_hash.toLowerCase(),
+          file_name: file_name ?? existing?.file_name ?? null,
+          progress: 0,
+          retryCount: retryCount ?? existing?.retryCount ?? 0,
+          retryArgs: retryArgs ?? existing?.retryArgs,
+        }),
+      );
       return { transfers };
     });
   },
@@ -147,27 +174,23 @@ export const useRncpTransferStore = create<RncpTransferStoreState>((set) => ({
         ? transfers.get(payload.transfer_id)
         : upsertByFileName(transfers, payload.file_name);
       const id = payload.transfer_id ?? existing?.transfer_id ?? `inbound-${now}`;
-      transfers.set(id, {
-        transfer_id: id,
-        kind: existing?.kind ?? 'fetch',
-        destination_hash: (
-          payload.destination_hash ??
-          existing?.destination_hash ??
-          ''
-        ).toLowerCase(),
-        file_name: payload.file_name,
-        bytes: payload.bytes,
-        path: payload.path ?? existing?.path ?? null,
-        progress: 100,
-        status: 'completed',
-        error: null,
-        reason_key: null,
-        identity_hash: payload.identity_hash ?? existing?.identity_hash ?? null,
-        retryCount: existing?.retryCount ?? 0,
-        retryArgs: existing?.retryArgs,
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-      });
+      transfers.set(
+        id,
+        transferRecord(id, existing, now, {
+          kind: existing?.kind ?? 'fetch',
+          destination_hash: (
+            payload.destination_hash ??
+            existing?.destination_hash ??
+            ''
+          ).toLowerCase(),
+          file_name: payload.file_name,
+          bytes: payload.bytes,
+          path: payload.path ?? existing?.path ?? null,
+          progress: 100,
+          status: 'completed',
+          identity_hash: payload.identity_hash ?? existing?.identity_hash ?? null,
+        }),
+      );
       // Ask-mode offers are accepted via rncp.accept then complete — clear the pending offer.
       const pendingOffers = new Map(s.pendingOffers);
       pendingOffers.delete(id);
@@ -183,27 +206,22 @@ export const useRncpTransferStore = create<RncpTransferStoreState>((set) => ({
         ? transfers.get(payload.transfer_id)
         : upsertByFileName(transfers, payload.file_name);
       const id = payload.transfer_id ?? existing?.transfer_id ?? `failed-${now}`;
-      transfers.set(id, {
-        transfer_id: id,
-        kind: existing?.kind ?? 'send',
-        destination_hash: (
-          payload.destination_hash ??
-          existing?.destination_hash ??
-          ''
-        ).toLowerCase(),
-        file_name: payload.file_name ?? existing?.file_name ?? null,
-        bytes: existing?.bytes ?? null,
-        path: existing?.path ?? null,
-        progress: existing?.progress ?? 0,
-        status: 'failed',
-        error: payload.error ?? null,
-        reason_key: payload.reason ?? null,
-        identity_hash: payload.identity_hash ?? existing?.identity_hash ?? null,
-        retryCount: existing?.retryCount ?? 0,
-        retryArgs: existing?.retryArgs,
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-      });
+      transfers.set(
+        id,
+        transferRecord(id, existing, now, {
+          kind: existing?.kind ?? 'send',
+          destination_hash: (
+            payload.destination_hash ??
+            existing?.destination_hash ??
+            ''
+          ).toLowerCase(),
+          file_name: payload.file_name ?? existing?.file_name ?? null,
+          status: 'failed',
+          error: payload.error ?? null,
+          reason_key: payload.reason ?? null,
+          identity_hash: payload.identity_hash ?? existing?.identity_hash ?? null,
+        }),
+      );
       return { transfers };
     });
   },
@@ -213,23 +231,13 @@ export const useRncpTransferStore = create<RncpTransferStoreState>((set) => ({
       const existing = s.transfers.get(payload.transfer_id);
       const transfers = new Map(s.transfers);
       const now = Date.now();
-      transfers.set(payload.transfer_id, {
-        transfer_id: payload.transfer_id,
-        kind: existing?.kind ?? 'send',
-        destination_hash: existing?.destination_hash ?? '',
-        file_name: existing?.file_name ?? null,
-        bytes: existing?.bytes ?? null,
-        path: existing?.path ?? null,
-        progress: existing?.progress ?? 0,
-        status: 'cancelled',
-        error: null,
-        reason_key: payload.reason ?? 'cancelled',
-        identity_hash: existing?.identity_hash ?? null,
-        retryCount: existing?.retryCount ?? 0,
-        retryArgs: existing?.retryArgs,
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-      });
+      transfers.set(
+        payload.transfer_id,
+        transferRecord(payload.transfer_id, existing, now, {
+          status: 'cancelled',
+          reason_key: payload.reason ?? 'cancelled',
+        }),
+      );
       const pendingOffers = new Map(s.pendingOffers);
       pendingOffers.delete(payload.transfer_id);
       return { transfers, pendingOffers };

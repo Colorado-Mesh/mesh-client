@@ -9,7 +9,7 @@
 export const LOG_MESSAGE_ID_RE = /\bmcL\d{4,}\b/;
 
 /** Full-string form used when validating registry keys / helper args. */
-export const LOG_MESSAGE_ID_FULL_RE = /^mcL\d{4,}$/;
+const LOG_MESSAGE_ID_FULL_RE = /^mcL\d{4,}$/;
 
 export type LogMessageId = `mcL${string}`;
 

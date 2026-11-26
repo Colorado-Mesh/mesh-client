@@ -23,7 +23,7 @@ import {
 /** A `wx` request this long before a requester-located reply is taken as its trigger. */
 export const WEATHER_REQUEST_MATCH_WINDOW_MS = 2 * MS_PER_MINUTE;
 /** Multipart continuations attach to the sender's head post when they arrive within this window. */
-export const WEATHER_CONTINUATION_WINDOW_MS = 5 * MS_PER_MINUTE;
+const WEATHER_CONTINUATION_WINDOW_MS = 5 * MS_PER_MINUTE;
 const MAX_SEEN_IDS = 5000;
 
 export interface LatLon {
@@ -95,7 +95,7 @@ function sameChannel(a: MessageRecord, b: MessageRecord): boolean {
 }
 
 /** Latest `wx` / `weather` command on the same channel shortly before the bot reply. */
-export function findWeatherRequest(
+function findWeatherRequest(
   snapshot: ForecastProtocolSnapshot,
   reply: MessageRecord,
 ): MessageRecord | null {

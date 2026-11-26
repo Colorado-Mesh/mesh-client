@@ -1,8 +1,9 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
 import { chatReceivedAtMs, compareChatReceiveOrder } from './chatReceiveOrder';
-import { reticulumHashToNodeId } from './reticulum/destHash';
-import type { ChatMessage } from './types';
+import type { GlobalMessageSearchHit, PendingMessageFocus } from './globalMessageSearchTypes';
+
+export type { GlobalMessageSearchHit, PendingMessageFocus } from './globalMessageSearchTypes';
 
 /** Cap per protocol so a single query stays responsive. */
 export const GLOBAL_MESSAGE_SEARCH_LIMIT = 50;
@@ -32,33 +33,7 @@ export interface GlobalMessageSearchFilters {
   ownReticulumHashes?: ReadonlySet<string>;
 }
 
-export interface GlobalMessageSearchHit {
-  protocol: MeshProtocol;
-  /** Database row id when available. */
-  dbId: number | null;
-  /** Stamped time, as the bubble shows it. */
-  timestamp: number;
-  /** When this app received the row, if saved with it; hits are ordered and dated by it. */
-  receivedAt?: number;
-  senderId: number | null;
-  senderName: string;
-  payload: string;
-  /** Channel index for broadcast; null for DM / Reticulum DM-only. */
-  channel: number | null;
-  /** LoRa DM peer node id, or Reticulum synthetic node id after open. */
-  dmPeer: number | null;
-  /** LoRa DM recipient (`to_node`). Kept so an inbound row still names our node. */
-  toNode?: number | null;
-  /** Reticulum conversation peer hash (counterparty), not necessarily the wire sender. */
-  reticulumPeerHash: string | null;
-  /** Reticulum `sender_id` / from-hash for direction filtering (preserved separately from peer). */
-  reticulumSenderHash?: string | null;
-  /** LXMF message hash for scroll targeting. */
-  reticulumMessageHash: string | null;
-  packetId: number | null;
-}
-
-interface MeshtasticSearchRow {
+export interface MeshtasticSearchRow {
   id?: number;
   sender_id?: number;
   sender_name?: string | null;
@@ -72,7 +47,7 @@ interface MeshtasticSearchRow {
   packet_id?: number | null;
 }
 
-interface MeshcoreSearchRow {
+export interface MeshcoreSearchRow {
   id?: number;
   sender_id?: number;
   sender_name?: string | null;
@@ -83,7 +58,7 @@ interface MeshcoreSearchRow {
   to_node?: number | null;
 }
 
-interface ReticulumSearchRow {
+export interface ReticulumSearchRow {
   id?: number;
   sender_id?: string | null;
   sender_name?: string | null;
@@ -118,7 +93,7 @@ function asString(value: unknown): string {
 }
 
 /** DM counterparty: `to` only when we sent the row; otherwise the sender is the peer. */
-export function resolveLoRaDmPeer(
+function resolveLoRaDmPeer(
   senderId: number | null,
   toNode: number | null,
   ownNodeIds?: ReadonlySet<number>,
@@ -338,56 +313,6 @@ export async function runGlobalMessageSearch(opts: {
   return filtered.slice(0, limit * 3);
 }
 
-/** Pending ChatPanel focus after opening a search hit. */
-export interface PendingMessageFocus {
-  timestamp: number;
-  packetId?: number | null;
-  reticulumMessageHash?: string | null;
-  dbId?: number | null;
-  /** Highlight query for in-bubble mark tags. The dialog query, never a payload prefix. */
-  highlightQuery?: string;
-  /** Row to insert when the open thread does not already contain the hit. */
-  focusRow?: ChatMessage;
-  /** Protocol the focus belongs to, so a panel can keep the row after focus is consumed. */
-  protocol?: MeshProtocol;
-}
-
-/** Build a chat row from a search/inbox hit so the open thread can show it. */
-export function chatMessageFromSearchHit(hit: GlobalMessageSearchHit): ChatMessage {
-  const dm = hit.channel == null;
-  const senderFromHash =
-    hit.protocol === 'reticulum' && hit.reticulumSenderHash
-      ? reticulumHashToNodeId(hit.reticulumSenderHash)
-      : null;
-  const senderId = senderFromHash ?? hit.senderId ?? hit.dmPeer ?? 0;
-  const inbound =
-    hit.protocol === 'reticulum'
-      ? hit.dmPeer != null && senderId === hit.dmPeer
-      : hit.dmPeer != null && hit.senderId != null && hit.senderId === hit.dmPeer;
-  const to = !dm
-    ? undefined
-    : inbound
-      ? hit.toNode != null && hit.toNode !== 0
-        ? hit.toNode
-        : undefined
-      : (hit.dmPeer ?? undefined);
-  return {
-    id: hit.dbId ?? undefined,
-    storeId: hit.reticulumMessageHash ?? undefined,
-    sender_id: senderId,
-    sender_name: hit.senderName,
-    payload: hit.payload,
-    channel: dm ? (hit.protocol === 'meshcore' ? -1 : 0) : (hit.channel ?? 0),
-    to,
-    timestamp: hit.timestamp,
-    ...(hit.receivedAt != null ? { receivedAt: hit.receivedAt } : {}),
-    packetId: hit.packetId ?? undefined,
-    reticulum_message_hash: hit.reticulumMessageHash ?? undefined,
-    reticulum_sender_hash: hit.reticulumSenderHash ?? undefined,
-    status: 'acked',
-  };
-}
-
 /** Prepend nothing: append the focus row only when the thread does not already contain it. */
 export function withFocusRowLoaded<
   T extends {
@@ -438,7 +363,3 @@ export function findMessageIndexForFocus(
 }
 
 /** Ctrl/Cmd+Shift+F — global message search (not the launcher). */
-export function isGlobalMessageSearchShortcut(e: KeyboardEvent, platform: string): boolean {
-  const mod = platform === 'darwin' ? e.metaKey : e.ctrlKey;
-  return mod && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'f';
-}

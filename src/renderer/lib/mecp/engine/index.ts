@@ -8,23 +8,7 @@
  * No I/O, no platform dependencies, no side effects.
  */
 
-export { decode, getCategory, isBeacon, isBeaconAck, isBeaconCancel, isMECP } from './decoder';
-export { encode, getByteLength, validate } from './encoder';
-export type {
-  CategoryDef,
-  CategoryLetter,
-  EncodeResult,
-  LanguageFile,
-  ParsedMessage,
-  Severity,
-  SeverityDef,
-  ValidationResult,
-} from './types';
-export {
-  CATEGORIES,
-  CODE_REGEX,
-  MAX_MESSAGE_BYTES,
-  MECP_PREFIX,
-  MECP_PROTOCOL_VERSION,
-  VALID_SEVERITIES,
-} from './types';
+export { decode, isBeacon, isBeaconAck, isBeaconCancel } from './decoder';
+export { encode, getByteLength } from './encoder';
+export type { CategoryLetter, EncodeResult, LanguageFile, ParsedMessage, Severity } from './types';
+export { CATEGORIES, CODE_REGEX, MAX_MESSAGE_BYTES, MECP_PROTOCOL_VERSION } from './types';

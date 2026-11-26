@@ -36,10 +36,10 @@ const KeyVerificationSchema = (
 ).KeyVerificationSchema;
 
 /** First firmware release that ships `KeyVerificationModule` (admin tag 67). */
-export const MESHTASTIC_KEY_VERIFICATION_MIN_FIRMWARE = { major: 2, minor: 7 } as const;
+const MESHTASTIC_KEY_VERIFICATION_MIN_FIRMWARE = { major: 2, minor: 7 } as const;
 
 /** Firmware security numbers are 1..999999 (six digits, zero-padded for display). */
-export const KEY_VERIFICATION_SECURITY_NUMBER_MAX = 999_999;
+const KEY_VERIFICATION_SECURITY_NUMBER_MAX = 999_999;
 
 /**
  * True when the firmware string (e.g. `2.7.15.abc1234`) is at least 2.7.

@@ -154,8 +154,8 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
 
   it('never treats synthetic [hub] / @dm names as JOIN targets from join-info NOTICE', () => {
     expect(SOURCE).toContain('Never treat synthetic `[hub]` / `@dm` names as hub JOIN targets');
-    expect(SOURCE).toMatch(/!topic\.room\.startsWith\('\['\)/);
-    expect(SOURCE).toMatch(/!topic\.room\.startsWith\('@'\)/);
+    expect(SOURCE).toMatch(/if \(!isRrcJoinInfoNotice\(body\) \|\| !topic\) return;/);
+    expect(SOURCE).toMatch(/topic\.room\.startsWith\('\['\) \|\| topic\.room\.startsWith\('@'\)/);
   });
 
   it('uses neutral hubParted banner for involuntary parts (not kick/ban wording)', () => {
@@ -176,7 +176,7 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
 
   it('reserves removedFromRoom banner for moderation NOTICE/ERROR language', () => {
     expect(SOURCE).toMatch(
-      /isRrcModerationLanguage\(p\.body\)[\s\S]*?setModerationBanner\('rrc\.moderation\.removedFromRoom'/,
+      /isRrcModerationLanguage\(body\)[\s\S]*?setModerationBanner\('rrc\.moderation\.removedFromRoom'/,
     );
     expect(SOURCE).toMatch(
       /isRrcModerationLanguage\(p\.message\)[\s\S]*?setModerationBanner\('rrc\.moderation\.removedFromRoom'/,

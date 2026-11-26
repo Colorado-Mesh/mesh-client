@@ -5,7 +5,7 @@
 
 import type { MeshProtocol } from './types';
 
-type Listener = () => void;
+export type Listener = () => void;
 
 let pending: MeshProtocol | null = null;
 const listeners = new Set<Listener>();

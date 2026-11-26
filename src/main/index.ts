@@ -548,6 +548,18 @@ let lastTrayUnreadCount = 0;
  * Graceful main-process exit used by app:quit / app:relaunch.
  * Mirrors historical app:quit cleanup; optional relaunch schedules a new instance before exit.
  */
+/** Relaunch after quit, tolerating platforms where relaunch throws. */
+function relaunchMainApp(): void {
+  try {
+    app.relaunch();
+  } catch (e: unknown) {
+    console.debug(
+      '[main/index] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  }
+}
+
 async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void> {
   if (quitMainInFlight) return;
   quitMainInFlight = true;
@@ -577,25 +589,14 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
 
     tray?.destroy();
     tray = null;
-    if (opts.relaunch) {
-      app.relaunch();
-    }
+    if (opts.relaunch) relaunchMainApp();
     app.exit(0);
   } catch (err) {
     console.error(
       'mcL0041 [main] quitMainProcess failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
-    if (opts.relaunch) {
-      try {
-        app.relaunch();
-      } catch (e: unknown) {
-        console.debug(
-          '[main/index] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
-    }
+    if (opts.relaunch) relaunchMainApp();
     app.quit();
   }
 }
@@ -845,7 +846,7 @@ function safeMeshcoreRadioNodeId(value: unknown): number {
   return n;
 }
 
-function validateSaveMessage(message: unknown): asserts message is Record<string, unknown> & {
+type SaveMessageInput = Record<string, unknown> & {
   sender_id: number;
   sender_name: string;
   payload: string;
@@ -859,52 +860,99 @@ function validateSaveMessage(message: unknown): asserts message is Record<string
   to?: number;
   mqttStatus?: string;
   receivedVia?: string;
-} {
+};
+
+type SaveMeshcoreMessageInput = Record<string, unknown> & {
+  payload: string;
+  timestamp: number;
+};
+
+type ValidationRule = readonly [ok: boolean, message: string];
+
+/** Throws the first failing rule's message, preserving declaration order. */
+function assertValidationRules(rules: readonly ValidationRule[]): void {
+  for (const rule of rules) {
+    if (!rule[0]) throw new Error(rule[1]);
+  }
+}
+
+function isOptionalStringWithin(value: unknown, max: number): boolean {
+  return value == null || typeof value !== 'string' || value.length <= max;
+}
+
+function isOptionalIntWithin(value: unknown, min: number, max: number): boolean {
+  if (value == null) return true;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= min && n <= max;
+}
+
+function isOptionalSafeNonNegativeInt(value: unknown): boolean {
+  if (value == null) return true;
+  const n = Number(value);
+  return Number.isSafeInteger(n) && n >= 0;
+}
+
+function requireFiniteNodeId(target: Record<string, unknown>, key: string, message: string): void {
+  const raw = Number(target[key]);
+  if (!Number.isFinite(raw)) throw new Error(message);
+  target[key] = raw >>> 0;
+}
+
+function normalizeOptionalNodeId(
+  target: Record<string, unknown>,
+  key: string,
+  message: string,
+): void {
+  if (target[key] == null) return;
+  const raw = Number(target[key]);
+  if (!Number.isFinite(raw)) throw new Error(message);
+  target[key] = raw >>> 0;
+}
+
+function validateSaveMessage(message: unknown): asserts message is SaveMessageInput {
   if (!message || typeof message !== 'object')
     throw new Error('db:saveMessage: message must be an object');
   const m = message as Record<string, unknown>;
-  if (typeof m.payload !== 'string') throw new Error('db:saveMessage: payload must be a string');
-  if (m.payload.length > MAX_PAYLOAD_LENGTH) throw new Error('db:saveMessage: payload too long');
-  const rawSenderId = Number(m.sender_id);
-  if (!Number.isFinite(rawSenderId))
-    throw new Error('db:saveMessage: sender_id must be a finite number');
-  m.sender_id = rawSenderId >>> 0;
-  if (m.to != null) {
-    const rawTo = Number(m.to);
-    if (!Number.isFinite(rawTo)) throw new Error('db:saveMessage: to must be a finite number');
-    m.to = rawTo >>> 0;
-  }
-  if (typeof m.sender_name !== 'string')
-    throw new Error('db:saveMessage: sender_name must be a string');
-  if (m.sender_name.length > MAX_NODE_STRING)
-    throw new Error('db:saveMessage: sender_name too long');
-  if (m.status != null && typeof m.status === 'string' && m.status.length > MAX_STATUS_STRING)
-    throw new Error('db:saveMessage: status too long');
-  if (m.error != null && typeof m.error === 'string' && m.error.length > MAX_STATUS_STRING)
-    throw new Error('db:saveMessage: error too long');
-  if (
-    m.mqttStatus != null &&
-    typeof m.mqttStatus === 'string' &&
-    m.mqttStatus.length > MAX_STATUS_STRING
-  )
-    throw new Error('db:saveMessage: mqttStatus too long');
+  assertValidationRules([
+    [typeof m.payload === 'string', 'db:saveMessage: payload must be a string'],
+    [
+      typeof m.payload === 'string' && m.payload.length <= MAX_PAYLOAD_LENGTH,
+      'db:saveMessage: payload too long',
+    ],
+  ]);
+  requireFiniteNodeId(m, 'sender_id', 'db:saveMessage: sender_id must be a finite number');
+  normalizeOptionalNodeId(m, 'to', 'db:saveMessage: to must be a finite number');
   safeNonNegativeInt(m.channel);
-  if (typeof m.timestamp !== 'number' && typeof m.timestamp !== 'undefined')
-    throw new Error('db:saveMessage: timestamp must be a number');
-  if (m.timestamp != null && !Number.isFinite(m.timestamp))
-    throw new Error('db:saveMessage: invalid timestamp');
-  if (m.rxHops != null) {
-    const h = Number(m.rxHops);
-    if (!Number.isInteger(h) || h < 0)
-      throw new Error('db:saveMessage: rxHops must be a non-negative integer');
-  }
-  if (m.radioNodeId != null) {
-    const radio = Number(m.radioNodeId);
-    if (!Number.isSafeInteger(radio) || radio < 0)
-      throw new Error('db:saveMessage: radioNodeId must be a non-negative integer');
-  }
-  if (m.channelKey != null && !isChannelIdentityKey(m.channelKey))
-    throw new Error('db:saveMessage: channelKey must be a channel identity key');
+  assertValidationRules([
+    [typeof m.sender_name === 'string', 'db:saveMessage: sender_name must be a string'],
+    [
+      typeof m.sender_name === 'string' && m.sender_name.length <= MAX_NODE_STRING,
+      'db:saveMessage: sender_name too long',
+    ],
+    [isOptionalStringWithin(m.status, MAX_STATUS_STRING), 'db:saveMessage: status too long'],
+    [isOptionalStringWithin(m.error, MAX_STATUS_STRING), 'db:saveMessage: error too long'],
+    [
+      isOptionalStringWithin(m.mqttStatus, MAX_STATUS_STRING),
+      'db:saveMessage: mqttStatus too long',
+    ],
+    [
+      typeof m.timestamp === 'number' || typeof m.timestamp === 'undefined',
+      'db:saveMessage: timestamp must be a number',
+    ],
+    [m.timestamp == null || Number.isFinite(m.timestamp), 'db:saveMessage: invalid timestamp'],
+    [
+      isOptionalIntWithin(m.rxHops, 0, Number.MAX_SAFE_INTEGER),
+      'db:saveMessage: rxHops must be a non-negative integer',
+    ],
+    [
+      isOptionalSafeNonNegativeInt(m.radioNodeId),
+      'db:saveMessage: radioNodeId must be a non-negative integer',
+    ],
+    [
+      m.channelKey == null || isChannelIdentityKey(m.channelKey),
+      'db:saveMessage: channelKey must be a channel identity key',
+    ],
+  ]);
 }
 
 function validateSaveNode(
@@ -926,71 +974,70 @@ function validateSaveNode(
   checkStr('source', 64);
 }
 
-function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string, unknown> & {
-  payload: string;
-  timestamp: number;
-} {
+function validateSaveMeshcoreMessage(msg: unknown): asserts msg is SaveMeshcoreMessageInput {
   if (!msg || typeof msg !== 'object')
     throw new Error('db:saveMeshcoreMessage: message must be an object');
   const m = msg as Record<string, unknown>;
-  if (typeof m.payload !== 'string')
-    throw new Error('db:saveMeshcoreMessage: payload must be a string');
-  if (m.payload.length > MAX_PAYLOAD_LENGTH)
-    throw new Error('db:saveMeshcoreMessage: payload too long');
-  if (typeof m.timestamp !== 'number' || !Number.isFinite(m.timestamp))
-    throw new Error('db:saveMeshcoreMessage: timestamp must be a finite number');
-  if (
-    m.sender_name != null &&
-    typeof m.sender_name === 'string' &&
-    m.sender_name.length > MAX_NODE_STRING
-  )
-    throw new Error('db:saveMeshcoreMessage: sender_name too long');
-  if (m.status != null && typeof m.status === 'string' && m.status.length > MAX_STATUS_STRING)
-    throw new Error('db:saveMeshcoreMessage: status too long');
-  const validReceivedVia = ['rf', 'mqtt', 'both'];
-  if (m.received_via != null) {
-    if (typeof m.received_via !== 'string' || m.received_via.length > 8)
-      throw new Error('db:saveMeshcoreMessage: received_via invalid');
-    if (!validReceivedVia.includes(m.received_via))
-      throw new Error('db:saveMeshcoreMessage: received_via must be rf, mqtt, or both');
-  }
-  if (m.rx_packet_fingerprint != null) {
-    if (
-      typeof m.rx_packet_fingerprint !== 'string' ||
-      !/^[0-9A-Fa-f]{8}$/.test(m.rx_packet_fingerprint)
-    )
-      throw new Error('db:saveMeshcoreMessage: rx_packet_fingerprint must be 8 hex chars');
-  }
+  assertValidationRules([
+    [typeof m.payload === 'string', 'db:saveMeshcoreMessage: payload must be a string'],
+    [
+      typeof m.payload === 'string' && m.payload.length <= MAX_PAYLOAD_LENGTH,
+      'db:saveMeshcoreMessage: payload too long',
+    ],
+    [
+      typeof m.timestamp === 'number' && Number.isFinite(m.timestamp),
+      'db:saveMeshcoreMessage: timestamp must be a finite number',
+    ],
+    [
+      isOptionalStringWithin(m.sender_name, MAX_NODE_STRING),
+      'db:saveMeshcoreMessage: sender_name too long',
+    ],
+    [
+      isOptionalStringWithin(m.status, MAX_STATUS_STRING),
+      'db:saveMeshcoreMessage: status too long',
+    ],
+    [
+      m.received_via == null || (typeof m.received_via === 'string' && m.received_via.length <= 8),
+      'db:saveMeshcoreMessage: received_via invalid',
+    ],
+    [
+      m.received_via == null || ['rf', 'mqtt', 'both'].includes(m.received_via as string),
+      'db:saveMeshcoreMessage: received_via must be rf, mqtt, or both',
+    ],
+    [
+      m.rx_packet_fingerprint == null ||
+        (typeof m.rx_packet_fingerprint === 'string' &&
+          /^[0-9A-Fa-f]{8}$/.test(m.rx_packet_fingerprint)),
+      'db:saveMeshcoreMessage: rx_packet_fingerprint must be 8 hex chars',
+    ],
+  ]);
   validateMeshcoreMessageLocalOrder(m.local_order);
-  if (m.rx_hops != null) {
-    const h = Number(m.rx_hops);
-    if (!Number.isInteger(h) || h < 0)
-      throw new Error('db:saveMeshcoreMessage: rx_hops must be a non-negative integer');
-  }
-  if (m.room_server_id != null) {
-    const rs = Number(m.room_server_id);
-    if (!Number.isInteger(rs) || rs < 0)
-      throw new Error('db:saveMeshcoreMessage: room_server_id must be a non-negative integer');
-  }
-  if (m.sender_id != null) {
-    const rawSender = Number(m.sender_id);
-    if (!Number.isFinite(rawSender))
-      throw new Error('db:saveMeshcoreMessage: sender_id must be a finite number');
-    m.sender_id = rawSender >>> 0;
-  }
-  if (m.to_node != null) {
-    const rawTo = Number(m.to_node);
-    if (!Number.isFinite(rawTo))
-      throw new Error('db:saveMeshcoreMessage: to_node must be a finite number');
-    m.to_node = rawTo >>> 0;
-  }
-  if (m.radio_node_id != null) {
-    const radio = Number(m.radio_node_id);
-    if (!Number.isSafeInteger(radio) || radio < 0)
-      throw new Error('db:saveMeshcoreMessage: radio_node_id must be a non-negative integer');
-  }
-  if (m.channel_key != null && !isChannelIdentityKey(m.channel_key))
-    throw new Error('db:saveMeshcoreMessage: channel_key must be a channel identity key');
+  assertValidationRules([
+    [
+      isOptionalIntWithin(m.rx_hops, 0, Number.MAX_SAFE_INTEGER),
+      'db:saveMeshcoreMessage: rx_hops must be a non-negative integer',
+    ],
+    [
+      isOptionalIntWithin(m.room_server_id, 0, Number.MAX_SAFE_INTEGER),
+      'db:saveMeshcoreMessage: room_server_id must be a non-negative integer',
+    ],
+  ]);
+  normalizeOptionalNodeId(
+    m,
+    'sender_id',
+    'db:saveMeshcoreMessage: sender_id must be a finite number',
+  );
+  normalizeOptionalNodeId(m, 'to_node', 'db:saveMeshcoreMessage: to_node must be a finite number');
+  assertValidationRules([
+    [
+      isOptionalSafeNonNegativeInt(m.radio_node_id),
+      'db:saveMeshcoreMessage: radio_node_id must be a non-negative integer',
+    ],
+    [
+      m.channel_key == null || isChannelIdentityKey(m.channel_key),
+      'db:saveMeshcoreMessage: channel_key must be a channel identity key',
+    ],
+  ]);
 }
 
 function validateSaveMeshcoreContact(contact: unknown): asserts contact is Record<
@@ -1004,35 +1051,221 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
     throw new Error('db:saveMeshcoreContact: contact must be an object');
   const c = contact as Record<string, unknown>;
   const nodeId = Number(c.node_id);
-  if (!Number.isFinite(nodeId) || nodeId < 0)
-    throw new Error('db:saveMeshcoreContact: node_id must be a finite non-negative number');
-  if (typeof c.public_key !== 'string')
-    throw new Error('db:saveMeshcoreContact: public_key must be a string');
-  if (c.public_key.length > 128) throw new Error('db:saveMeshcoreContact: public_key too long');
-  if (c.adv_name != null && typeof c.adv_name === 'string' && c.adv_name.length > MAX_NODE_STRING)
-    throw new Error('db:saveMeshcoreContact: adv_name too long');
-  if (c.nickname != null && typeof c.nickname === 'string' && c.nickname.length > MAX_NODE_STRING)
-    throw new Error('db:saveMeshcoreContact: nickname too long');
-  if (c.contact_flags != null) {
-    const f = Number(c.contact_flags);
-    if (!Number.isInteger(f) || f < 0 || f > 255)
-      throw new Error('db:saveMeshcoreContact: contact_flags must be 0–255');
+  assertValidationRules([
+    [
+      Number.isFinite(nodeId) && nodeId >= 0,
+      'db:saveMeshcoreContact: node_id must be a finite non-negative number',
+    ],
+    [typeof c.public_key === 'string', 'db:saveMeshcoreContact: public_key must be a string'],
+    [
+      typeof c.public_key === 'string' && c.public_key.length <= 128,
+      'db:saveMeshcoreContact: public_key too long',
+    ],
+    [
+      isOptionalStringWithin(c.adv_name, MAX_NODE_STRING),
+      'db:saveMeshcoreContact: adv_name too long',
+    ],
+    [
+      isOptionalStringWithin(c.nickname, MAX_NODE_STRING),
+      'db:saveMeshcoreContact: nickname too long',
+    ],
+    [
+      isOptionalIntWithin(c.contact_flags, 0, 255),
+      'db:saveMeshcoreContact: contact_flags must be 0–255',
+    ],
+    [
+      isOptionalIntWithin(c.hops_away, 0, Number.MAX_SAFE_INTEGER),
+      'db:saveMeshcoreContact: hops_away must be a non-negative integer',
+    ],
+    [
+      c.on_radio == null || Number(c.on_radio) === 0 || Number(c.on_radio) === 1,
+      'db:saveMeshcoreContact: on_radio must be 0 or 1',
+    ],
+    [
+      isOptionalStringWithin(c.last_synced_from_radio, 128),
+      'db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128',
+    ],
+  ]);
+}
+
+function buildMeshtasticMessageCore(
+  message: SaveMessageInput,
+): Pick<
+  Parameters<typeof persistMeshtasticMessage>[1],
+  | 'sender_id'
+  | 'sender_name'
+  | 'payload'
+  | 'channel'
+  | 'timestamp'
+  | 'packet_id'
+  | 'status'
+  | 'error'
+  | 'emoji'
+  | 'reply_id'
+  | 'to_node'
+> {
+  return {
+    sender_id: safeNonNegativeInt(message.sender_id),
+    sender_name: message.sender_name,
+    payload: message.payload,
+    channel: safeNonNegativeInt(message.channel),
+    timestamp: message.timestamp,
+    packet_id: message.packetId != null ? safeNonNegativeInt(message.packetId) : null,
+    status: message.status ?? 'acked',
+    error: message.error ?? null,
+    emoji: message.emoji != null ? (sanitizeUnicodeReactionScalar(message.emoji) ?? null) : null,
+    reply_id: message.replyId != null ? safeNonNegativeInt(message.replyId) : null,
+    to_node: message.to != null ? safeNonNegativeInt(message.to) : null,
+  };
+}
+
+function buildMeshtasticMessageMeta(
+  message: SaveMessageInput,
+): Pick<
+  Parameters<typeof persistMeshtasticMessage>[1],
+  | 'mqtt_status'
+  | 'received_via'
+  | 'reply_preview_text'
+  | 'reply_preview_sender'
+  | 'rx_hops'
+  | 'via_store_forward'
+  | 'radio_node_id'
+  | 'channel_key'
+  | 'received_at'
+> {
+  const radioNodeId = message.radioNodeId != null ? Number(message.radioNodeId) >>> 0 : 0;
+  const validReceivedVia = ['rf', 'mqtt', 'both'];
+  return {
+    mqtt_status: message.mqttStatus ?? null,
+    received_via:
+      message.receivedVia != null && validReceivedVia.includes(message.receivedVia)
+        ? message.receivedVia
+        : null,
+    reply_preview_text:
+      typeof message.replyPreviewText === 'string' ? message.replyPreviewText : null,
+    reply_preview_sender:
+      typeof message.replyPreviewSender === 'string' ? message.replyPreviewSender : null,
+    rx_hops:
+      message.rxHops != null &&
+      typeof message.rxHops === 'number' &&
+      Number.isFinite(message.rxHops)
+        ? Math.trunc(message.rxHops)
+        : null,
+    via_store_forward: message.viaStoreForward ? 1 : 0,
+    radio_node_id: radioNodeId > 0 ? radioNodeId : null,
+    channel_key: isChannelIdentityKey(message.channelKey) ? message.channelKey : null,
+    received_at: chatReceivedAtForDb(message.receivedAt),
+  };
+}
+
+function buildPersistableMeshtasticMessage(
+  message: SaveMessageInput,
+): Parameters<typeof persistMeshtasticMessage>[1] {
+  return { ...buildMeshtasticMessageCore(message), ...buildMeshtasticMessageMeta(message) };
+}
+
+function resolveMeshcoreReplyId(m: SaveMeshcoreMessageInput): number | null {
+  const replyId = m.reply_id != null ? Number(m.reply_id) : null;
+  if (replyId != null && (!Number.isFinite(replyId) || replyId < 0)) {
+    throw new Error('db:saveMeshcoreMessage: reply_id must be a non-negative finite number');
   }
-  if (c.hops_away != null) {
-    const h = Number(c.hops_away);
-    if (!Number.isInteger(h) || h < 0)
-      throw new Error('db:saveMeshcoreContact: hops_away must be a non-negative integer');
-  }
-  if (c.on_radio != null) {
-    const o = Number(c.on_radio);
-    if (o !== 0 && o !== 1) throw new Error('db:saveMeshcoreContact: on_radio must be 0 or 1');
-  }
-  if (
-    c.last_synced_from_radio != null &&
-    (typeof c.last_synced_from_radio !== 'string' || c.last_synced_from_radio.length > 128)
-  ) {
-    throw new Error('db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128');
-  }
+  return replyId;
+}
+
+function buildMeshcoreMessageIdentity(
+  m: SaveMeshcoreMessageInput,
+  replyId: number | null,
+): Pick<
+  Parameters<typeof persistMeshcoreMessage>[1],
+  | 'sender_id'
+  | 'sender_name'
+  | 'payload'
+  | 'channel_idx'
+  | 'local_order'
+  | 'packet_id'
+  | 'reply_id'
+  | 'to_node'
+  | 'room_server_id'
+  | 'radio_node_id'
+  | 'channel_key'
+> {
+  const radioNodeId = (() => {
+    if (m.radio_node_id == null) return null;
+    const radio = Number(m.radio_node_id) >>> 0;
+    return radio > 0 ? radio : null;
+  })();
+  return {
+    sender_id: m.sender_id != null ? Number(m.sender_id) >>> 0 : null,
+    sender_name: typeof m.sender_name === 'string' ? m.sender_name : null,
+    payload: m.payload,
+    channel_idx: meshcoreMessageChannelIndex(
+      m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
+      m.to_node != null ? Number(m.to_node) >>> 0 : null,
+      m.room_server_id != null ? Number(m.room_server_id) : null,
+    ),
+    local_order: m.local_order != null ? Number(m.local_order) : null,
+    packet_id: m.packet_id != null ? Number(m.packet_id) : null,
+    reply_id: replyId,
+    to_node: m.to_node != null ? Number(m.to_node) >>> 0 : null,
+    room_server_id:
+      m.room_server_id != null && Number.isFinite(Number(m.room_server_id))
+        ? Math.trunc(Number(m.room_server_id))
+        : null,
+    radio_node_id: radioNodeId,
+    channel_key: isChannelIdentityKey(m.channel_key) ? m.channel_key : null,
+  };
+}
+
+function buildMeshcoreMessageDelivery(
+  m: SaveMeshcoreMessageInput,
+): Pick<
+  Parameters<typeof persistMeshcoreMessage>[1],
+  | 'timestamp'
+  | 'status'
+  | 'emoji'
+  | 'received_via'
+  | 'rx_packet_fingerprint'
+  | 'reply_preview_text'
+  | 'reply_preview_sender'
+  | 'rx_hops'
+  | 'rx_path_hash_bytes'
+  | 'received_at'
+> {
+  const validReceivedVia = ['rf', 'mqtt', 'both'] as const;
+  const receivedViaRaw = m.received_via;
+  const received_via =
+    typeof receivedViaRaw === 'string' &&
+    (validReceivedVia as readonly string[]).includes(receivedViaRaw)
+      ? receivedViaRaw
+      : null;
+  return {
+    timestamp: effectiveMessageTimestampMs(m.timestamp),
+    status: typeof m.status === 'string' ? m.status : 'acked',
+    emoji: m.emoji != null ? (sanitizeUnicodeReactionScalar(m.emoji) ?? null) : null,
+    received_via,
+    rx_packet_fingerprint:
+      typeof m.rx_packet_fingerprint === 'string' ? m.rx_packet_fingerprint.toUpperCase() : null,
+    reply_preview_text:
+      typeof m.reply_preview_text === 'string' ? m.reply_preview_text.slice(0, 50) : null,
+    reply_preview_sender:
+      typeof m.reply_preview_sender === 'string' ? m.reply_preview_sender.slice(0, 64) : null,
+    rx_hops:
+      m.rx_hops != null && Number.isFinite(Number(m.rx_hops))
+        ? Math.trunc(Number(m.rx_hops))
+        : null,
+    rx_path_hash_bytes: m.rx_path_hash_bytes == null ? null : Number(m.rx_path_hash_bytes),
+    received_at: chatReceivedAtForDb(m.received_at),
+  };
+}
+
+function buildMeshcoreMessageRowParams(
+  m: SaveMeshcoreMessageInput,
+): Parameters<typeof persistMeshcoreMessage>[1] {
+  const replyId = resolveMeshcoreReplyId(m);
+  return {
+    ...buildMeshcoreMessageIdentity(m, replyId),
+    ...buildMeshcoreMessageDelivery(m),
+  };
 }
 
 function validateTakSettings(settings: unknown): asserts settings is TAKSettings {
@@ -1061,32 +1294,17 @@ function validateMqttSettings(settings: unknown): void {
   const port = Number(s.port);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw new Error('mqtt:connect: port must be 1–65535');
-  if (s.topicPrefix != null && typeof s.topicPrefix !== 'string')
-    throw new Error('mqtt:connect: topicPrefix must be a string');
-  if (s.username != null && typeof s.username !== 'string')
-    throw new Error('mqtt:connect: username must be a string');
-  if (s.password != null && typeof s.password !== 'string')
-    throw new Error('mqtt:connect: password must be a string');
-  if (s.tlsInsecure != null && typeof s.tlsInsecure !== 'boolean')
-    throw new Error('mqtt:connect: tlsInsecure must be a boolean');
-  if (s.tlsEnabled != null && typeof s.tlsEnabled !== 'boolean')
-    throw new Error('mqtt:connect: tlsEnabled must be a boolean');
-  if (s.useWebSocket != null && typeof s.useWebSocket !== 'boolean')
-    throw new Error('mqtt:connect: useWebSocket must be a boolean');
-  if (s.meshcorePacketLoggerEnabled != null && typeof s.meshcorePacketLoggerEnabled !== 'boolean') {
-    throw new Error('mqtt:connect: meshcorePacketLoggerEnabled must be a boolean');
-  }
-  if (s.mqttTransportProtocol != null) {
-    if (
-      s.mqttTransportProtocol !== 'meshtastic' &&
-      s.mqttTransportProtocol !== 'meshcore' &&
-      s.mqttTransportProtocol !== 'meshcom'
-    ) {
-      throw new Error(
-        'mqtt:connect: mqttTransportProtocol must be meshtastic, meshcore, or meshcom',
-      );
-    }
-  }
+  assertOptionalString(s.topicPrefix, 'mqtt:connect: topicPrefix must be a string');
+  assertOptionalString(s.username, 'mqtt:connect: username must be a string');
+  assertOptionalString(s.password, 'mqtt:connect: password must be a string');
+  assertOptionalBoolean(s.tlsInsecure, 'mqtt:connect: tlsInsecure must be a boolean');
+  assertOptionalBoolean(s.tlsEnabled, 'mqtt:connect: tlsEnabled must be a boolean');
+  assertOptionalBoolean(s.useWebSocket, 'mqtt:connect: useWebSocket must be a boolean');
+  assertOptionalBoolean(
+    s.meshcorePacketLoggerEnabled,
+    'mqtt:connect: meshcorePacketLoggerEnabled must be a boolean',
+  );
+  assertMqttTransportProtocol(s.mqttTransportProtocol);
 }
 
 const MAX_MESHCORE_MQTT_TEXT = 16000;
@@ -1095,23 +1313,28 @@ function validateMqttPublishMeshcoreArgs(args: unknown): void {
   if (!args || typeof args !== 'object')
     throw new Error('mqtt:publishMeshcore: args must be an object');
   const a = args as Record<string, unknown>;
-  if (typeof a.text !== 'string') throw new Error('mqtt:publishMeshcore: text must be a string');
-  if (a.text.length > MAX_MESHCORE_MQTT_TEXT)
-    throw new Error('mqtt:publishMeshcore: text too long');
   const ch = Number(a.channelIdx);
-  if (!Number.isFinite(ch) || ch < 0 || ch > 255)
-    throw new Error('mqtt:publishMeshcore: channelIdx must be 0–255');
-  if (a.senderName != null && (typeof a.senderName !== 'string' || a.senderName.length > 200)) {
-    throw new Error('mqtt:publishMeshcore: senderName invalid');
-  }
-  if (a.senderNodeId != null) {
-    const id = Number(a.senderNodeId);
-    if (!Number.isFinite(id) || id < 0)
-      throw new Error('mqtt:publishMeshcore: senderNodeId invalid');
-  }
-  if (a.timestamp != null && !Number.isFinite(Number(a.timestamp))) {
-    throw new Error('mqtt:publishMeshcore: timestamp invalid');
-  }
+  assertValidationRules([
+    [typeof a.text === 'string', 'mqtt:publishMeshcore: text must be a string'],
+    [
+      typeof a.text === 'string' && a.text.length <= MAX_MESHCORE_MQTT_TEXT,
+      'mqtt:publishMeshcore: text too long',
+    ],
+    [Number.isFinite(ch) && ch >= 0 && ch <= 255, 'mqtt:publishMeshcore: channelIdx must be 0–255'],
+    [
+      a.senderName == null || (typeof a.senderName === 'string' && a.senderName.length <= 200),
+      'mqtt:publishMeshcore: senderName invalid',
+    ],
+    [
+      a.senderNodeId == null ||
+        (Number.isFinite(Number(a.senderNodeId)) && Number(a.senderNodeId) >= 0),
+      'mqtt:publishMeshcore: senderNodeId invalid',
+    ],
+    [
+      a.timestamp == null || Number.isFinite(Number(a.timestamp)),
+      'mqtt:publishMeshcore: timestamp invalid',
+    ],
+  ]);
 }
 
 const MAX_MESHCORE_PACKET_LOG_ORIGIN = 200;
@@ -1145,6 +1368,27 @@ function validateOptionalPskBase64(value: unknown, channel: string): void {
   if (!parsePsk(value)) throw new Error(`${channel}: pskBase64 must decode to 16 or 32 bytes`);
 }
 
+function validateMqttChannelKeyEntry(entry: unknown): void {
+  if (!entry || typeof entry !== 'object')
+    throw new Error('mqtt:updateChannelKeys: each entry must be an object');
+  const e = entry as Record<string, unknown>;
+  assertValidationRules([
+    [
+      typeof e.name === 'string' && e.name.trim().length > 0,
+      'mqtt:updateChannelKeys: name must be a non-empty string',
+    ],
+    [typeof e.name === 'string' && e.name.length <= 64, 'mqtt:updateChannelKeys: name too long'],
+  ]);
+  validateOptionalPskBase64(e.pskBase64, 'mqtt:updateChannelKeys');
+  assertValidationRules([
+    [
+      e.index === undefined ||
+        (typeof e.index === 'number' && Number.isInteger(e.index) && e.index >= 0 && e.index <= 7),
+      'mqtt:updateChannelKeys: index must be an integer 0–7',
+    ],
+  ]);
+}
+
 function validateMqttUpdateChannelKeysArgs(args: unknown): void {
   if (!args || typeof args !== 'object')
     throw new Error('mqtt:updateChannelKeys: args must be an object');
@@ -1152,26 +1396,18 @@ function validateMqttUpdateChannelKeysArgs(args: unknown): void {
   if (!Array.isArray(a.entries))
     throw new Error('mqtt:updateChannelKeys: entries must be an array');
   if (a.entries.length > 32) throw new Error('mqtt:updateChannelKeys: too many entries');
-  for (const entry of a.entries) {
-    if (!entry || typeof entry !== 'object')
-      throw new Error('mqtt:updateChannelKeys: each entry must be an object');
-    const e = entry as Record<string, unknown>;
-    if (typeof e.name !== 'string' || !e.name.trim())
-      throw new Error('mqtt:updateChannelKeys: name must be a non-empty string');
-    if (e.name.length > 64) throw new Error('mqtt:updateChannelKeys: name too long');
-    validateOptionalPskBase64(e.pskBase64, 'mqtt:updateChannelKeys');
-    if (e.index !== undefined) {
-      if (typeof e.index !== 'number' || !Number.isInteger(e.index) || e.index < 0 || e.index > 7) {
-        throw new Error('mqtt:updateChannelKeys: index must be an integer 0–7');
-      }
-    }
-  }
-  if (a.radioSessionId !== undefined) {
-    if (typeof a.radioSessionId !== 'string')
-      throw new Error('mqtt:updateChannelKeys: radioSessionId must be a string');
-    if (a.radioSessionId.length > 64)
-      throw new Error('mqtt:updateChannelKeys: radioSessionId too long');
-  }
+  for (const entry of a.entries) validateMqttChannelKeyEntry(entry);
+  assertValidationRules([
+    [
+      a.radioSessionId === undefined || typeof a.radioSessionId === 'string',
+      'mqtt:updateChannelKeys: radioSessionId must be a string',
+    ],
+    [
+      a.radioSessionId === undefined ||
+        (typeof a.radioSessionId === 'string' && a.radioSessionId.length <= 64),
+      'mqtt:updateChannelKeys: radioSessionId too long',
+    ],
+  ]);
 }
 
 function validateMqttUpdateTopicPrefixArgs(args: unknown): void {
@@ -1183,38 +1419,59 @@ function validateMqttUpdateTopicPrefixArgs(args: unknown): void {
   if (a.topicPrefix.length > 128) throw new Error('mqtt:updateTopicPrefix: topicPrefix too long');
 }
 
+function assertPositiveFiniteNodeId(value: unknown, label: string): void {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error(`mqtt:publish: ${label} must be a positive node id`);
+  }
+}
+
+function assertNonNegativeInteger(value: unknown, label: string): void {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error(`mqtt:publish: ${label} must be a non-negative integer`);
+  }
+}
+
+function assertOptionalNonNegativeInteger(value: unknown, label: string): void {
+  if (value == null) return;
+  assertNonNegativeInteger(value, label);
+}
+
+function assertOptionalString(value: unknown, message: string): void {
+  if (value != null && typeof value !== 'string') throw new Error(message);
+}
+
+function assertOptionalBoolean(value: unknown, message: string): void {
+  if (value != null && typeof value !== 'boolean') throw new Error(message);
+}
+
+function assertMqttTransportProtocol(value: unknown): void {
+  if (value == null) return;
+  if (value === 'meshtastic' || value === 'meshcore' || value === 'meshcom') return;
+  throw new Error('mqtt:connect: mqttTransportProtocol must be meshtastic, meshcore, or meshcom');
+}
+
 function validateMqttPublishArgs(args: unknown): void {
   if (!args || typeof args !== 'object') throw new Error('mqtt:publish: args must be an object');
   const a = args as Record<string, unknown>;
   if (typeof a.text !== 'string') throw new Error('mqtt:publish: text must be a string');
   if (a.text.length > MAX_PAYLOAD_LENGTH) throw new Error('mqtt:publish: text too long');
-  const from = Number(a.from);
-  if (!Number.isFinite(from) || from <= 0)
-    throw new Error('mqtt:publish: from must be a positive node id');
-  const channel = Number(a.channel);
-  if (!Number.isFinite(channel) || channel < 0)
-    throw new Error('mqtt:publish: channel must be a non-negative integer');
-  if (a.destination != null) {
-    const dest = Number(a.destination);
-    if (!Number.isFinite(dest) || dest < 0)
-      throw new Error('mqtt:publish: destination must be a non-negative integer');
-  }
-  if (a.channelName != null && typeof a.channelName !== 'string')
-    throw new Error('mqtt:publish: channelName must be a string');
-  if (a.emoji != null) {
-    const emoji = Number(a.emoji);
-    if (!Number.isFinite(emoji) || emoji < 0)
-      throw new Error('mqtt:publish: emoji must be a non-negative integer');
-  }
-  if (a.replyId != null) {
-    const replyId = Number(a.replyId);
-    if (!Number.isFinite(replyId) || replyId < 0)
-      throw new Error('mqtt:publish: replyId must be a non-negative integer');
-  }
+  assertPositiveFiniteNodeId(a.from, 'from');
+  assertNonNegativeInteger(a.channel, 'channel');
+  assertOptionalNonNegativeInteger(a.destination, 'destination');
+  assertOptionalString(a.channelName, 'mqtt:publish: channelName must be a string');
+  assertOptionalNonNegativeInteger(a.emoji, 'emoji');
+  assertOptionalNonNegativeInteger(a.replyId, 'replyId');
   if (typeof a.publishJsonMirror !== 'boolean') {
     throw new Error('mqtt:publish: publishJsonMirror must be a boolean');
   }
   validateOptionalPskBase64(a.pskBase64, 'mqtt:publish');
+}
+
+function isPublishProxyDataWithinLimit(data: unknown): boolean {
+  if (data instanceof Uint8Array) return data.byteLength <= 512 * 1024;
+  return new Uint8Array(data as ArrayBuffer).byteLength <= 512 * 1024;
 }
 
 function validateMqttPublishProxyArgs(args: unknown): void {
@@ -1222,32 +1479,26 @@ function validateMqttPublishProxyArgs(args: unknown): void {
     throw new Error('mqtt:publishProxy: args must be an object');
   }
   const a = args as Record<string, unknown>;
-  if (typeof a.topic !== 'string' || !a.topic.trim()) {
-    throw new Error('mqtt:publishProxy: topic must be a non-empty string');
-  }
-  if (a.topic.length > 512) {
-    throw new Error('mqtt:publishProxy: topic too long');
-  }
   const hasData = a.data != null;
   const hasText = typeof a.text === 'string';
-  if (!hasData && !hasText) {
-    throw new Error('mqtt:publishProxy: data or text required');
-  }
-  if (hasText && (a.text as string).length > 512 * 1024) {
-    throw new Error('mqtt:publishProxy: text too long');
-  }
-  if (hasData && !(a.data instanceof Uint8Array) && !ArrayBuffer.isView(a.data)) {
-    throw new Error('mqtt:publishProxy: data must be Uint8Array');
-  }
-  if (hasData) {
-    const dataBytes = a.data instanceof Uint8Array ? a.data : new Uint8Array(a.data as ArrayBuffer);
-    if (dataBytes.byteLength > 512 * 1024) {
-      throw new Error('mqtt:publishProxy: data too long');
-    }
-  }
-  if (a.retained != null && typeof a.retained !== 'boolean') {
-    throw new Error('mqtt:publishProxy: retained must be a boolean');
-  }
+  assertValidationRules([
+    [
+      typeof a.topic === 'string' && a.topic.trim().length > 0,
+      'mqtt:publishProxy: topic must be a non-empty string',
+    ],
+    [typeof a.topic === 'string' && a.topic.length <= 512, 'mqtt:publishProxy: topic too long'],
+    [hasData || hasText, 'mqtt:publishProxy: data or text required'],
+    [!hasText || (a.text as string).length <= 512 * 1024, 'mqtt:publishProxy: text too long'],
+    [
+      !hasData || a.data instanceof Uint8Array || ArrayBuffer.isView(a.data),
+      'mqtt:publishProxy: data must be Uint8Array',
+    ],
+    [!hasData || isPublishProxyDataWithinLimit(a.data), 'mqtt:publishProxy: data too long'],
+    [
+      a.retained == null || typeof a.retained === 'boolean',
+      'mqtt:publishProxy: retained must be a boolean',
+    ],
+  ]);
 }
 
 // Enable Web Serial at the process level (LoRa BLE uses sidecar btleplug, not Web Bluetooth).
@@ -1709,6 +1960,34 @@ function setupAppMenu() {
  * macOS: native checker; still ensure the session flag is on. Re-run after load in case
  * dictionary lists populate asynchronously.
  */
+function pickSpellcheckerLanguages(available: string[], locale: string): string[] {
+  // Normalize codes for matching (both sides to hyphens) but pass original codes through.
+  const normAvailable = available.map((c) => c.replace(/_/g, '-'));
+  const loc = locale.replace(/_/g, '-');
+  const picked: string[] = [];
+
+  const exactIdx = normAvailable.indexOf(loc);
+  if (exactIdx !== -1) picked.push(available[exactIdx]);
+  const region = loc.split(/[-_]/)[0];
+  if (region) {
+    for (let i = 0; i < available.length; i++) {
+      const normCode = normAvailable[i];
+      if (
+        (normCode === region || normCode.startsWith(`${region}-`)) &&
+        !picked.includes(available[i])
+      ) {
+        picked.push(available[i]);
+      }
+    }
+  }
+  if (picked.length === 0) {
+    const enIdx = normAvailable.indexOf('en-US');
+    if (enIdx !== -1) picked.push(available[enIdx]);
+  }
+  if (picked.length === 0) picked.push(available[0]);
+  return picked.slice(0, 3);
+}
+
 function configureRendererSpellcheck(sess: Session): void {
   try {
     sess.setSpellCheckerEnabled(true);
@@ -1718,39 +1997,7 @@ function configureRendererSpellcheck(sess: Session): void {
       console.warn('mcL0058 [main] spellcheck: no dictionaries listed yet (retry after load)');
       return;
     }
-    // Normalize codes for matching (both sides to hyphens) but pass original
-    // codes to setSpellCheckerLanguages.
-    const normAvailable = available.map((c) => c.replace(/_/g, '-'));
-    const loc = app.getLocale().replace(/_/g, '-');
-    const picked: string[] = [];
-
-    const exactIdx = normAvailable.indexOf(loc);
-    if (exactIdx !== -1) {
-      picked.push(available[exactIdx]);
-    }
-    const region = loc.split(/[-_]/)[0];
-    if (region) {
-      for (let i = 0; i < available.length; i++) {
-        const normCode = normAvailable[i];
-        if (
-          (normCode === region || normCode.startsWith(`${region}-`)) &&
-          !picked.includes(available[i])
-        ) {
-          picked.push(available[i]);
-        }
-      }
-    }
-    if (picked.length === 0) {
-      const enIdx = normAvailable.indexOf('en-US');
-      if (enIdx !== -1) {
-        picked.push(available[enIdx]);
-      }
-    }
-    if (picked.length === 0) {
-      picked.push(available[0]);
-    }
-
-    sess.setSpellCheckerLanguages(picked.slice(0, 3));
+    sess.setSpellCheckerLanguages(pickSpellcheckerLanguages(available, app.getLocale()));
   } catch (e) {
     console.warn(
       'mcL0059 [main] configureRendererSpellcheck',
@@ -4023,40 +4270,7 @@ ipcMain.handle('db:saveMessage', (event, message) => {
     validateSaveMessage(message);
     const db = getDbForIpc('db:saveMessage');
     if (!db) return { changes: 0 };
-    const radioNodeId = message.radioNodeId != null ? Number(message.radioNodeId) >>> 0 : 0;
-    const validReceivedVia = ['rf', 'mqtt', 'both'];
-    return persistMeshtasticMessage(db, {
-      sender_id: safeNonNegativeInt(message.sender_id),
-      sender_name: message.sender_name,
-      payload: message.payload,
-      channel: safeNonNegativeInt(message.channel),
-      timestamp: message.timestamp,
-      packet_id: message.packetId != null ? safeNonNegativeInt(message.packetId) : null,
-      status: message.status ?? 'acked',
-      error: message.error ?? null,
-      emoji: message.emoji != null ? (sanitizeUnicodeReactionScalar(message.emoji) ?? null) : null,
-      reply_id: message.replyId != null ? safeNonNegativeInt(message.replyId) : null,
-      to_node: message.to != null ? safeNonNegativeInt(message.to) : null,
-      mqtt_status: message.mqttStatus ?? null,
-      received_via:
-        message.receivedVia != null && validReceivedVia.includes(message.receivedVia)
-          ? message.receivedVia
-          : null,
-      reply_preview_text:
-        typeof message.replyPreviewText === 'string' ? message.replyPreviewText : null,
-      reply_preview_sender:
-        typeof message.replyPreviewSender === 'string' ? message.replyPreviewSender : null,
-      rx_hops:
-        message.rxHops != null &&
-        typeof message.rxHops === 'number' &&
-        Number.isFinite(message.rxHops)
-          ? Math.trunc(message.rxHops)
-          : null,
-      via_store_forward: message.viaStoreForward ? 1 : 0,
-      radio_node_id: radioNodeId > 0 ? radioNodeId : null,
-      channel_key: isChannelIdentityKey(message.channelKey) ? message.channelKey : null,
-      received_at: chatReceivedAtForDb(message.receivedAt),
-    });
+    return persistMeshtasticMessage(db, buildPersistableMeshtasticMessage(message));
   } catch (err) {
     finishDbIpcHandler('db:saveMessage', err);
   }
@@ -4117,28 +4331,7 @@ ipcMain.handle('db:saveNodes', (event, nodes) => {
       if (nodes.length > 0) throw new Error('db:saveNodes: database unavailable');
       return { saved: 0, dropped: 0 };
     }
-    const params = [];
-    let dropped = 0;
-    for (const node of nodes) {
-      try {
-        validateSaveNode(node);
-        if (node.path != null) {
-          const pathJson = JSON.stringify(node.path);
-          if (pathJson.length > DB_SAVE_NODE_PATH_MAX_BYTES) {
-            dropped++;
-            continue;
-          }
-        }
-        params.push(toNodeUpsertParams(node));
-      } catch (e: unknown) {
-        console.debug(
-          '[main/index] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        dropped++;
-      }
-    }
+    const { params, dropped } = buildNodeUpsertParams(nodes);
     const result = saveNodesBatch(params);
     return { saved: result.saved, dropped: result.dropped + dropped };
   } catch (err) {
@@ -5100,36 +5293,93 @@ ipcMain.handle('mecp:exportReceivedLog', async (event) => {
   }
 });
 
-ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
-  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+interface GpsHistoryRow {
+  node_id: number;
+  latitude: number;
+  longitude: number;
+  recorded_at: number;
+  source: string;
+}
+
+function parseGpsExportOptions(opts: unknown): { nodeId: number | undefined; sinceMs: number } {
   const o = opts && typeof opts === 'object' ? (opts as Record<string, unknown>) : {};
   const nodeId = typeof o.nodeId === 'number' && Number.isFinite(o.nodeId) ? o.nodeId : undefined;
   const sinceMs =
     typeof o.sinceMs === 'number' && Number.isFinite(o.sinceMs) && o.sinceMs >= 0 ? o.sinceMs : 0;
+  return { nodeId, sinceMs };
+}
+
+function queryGpsHistoryRows(
+  db: NonNullable<ReturnType<typeof getDbForIpc>>,
+  nodeId: number | undefined,
+  sinceMs: number,
+): GpsHistoryRow[] {
+  if (nodeId !== undefined) {
+    return db
+      .prepareOnce(
+        'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? AND node_id = ? ORDER BY recorded_at ASC LIMIT ?',
+      )
+      .all(sinceMs, nodeId, GPX_EXPORT_MAX_POINTS) as GpsHistoryRow[];
+  }
+  return db
+    .prepareOnce(
+      'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? ORDER BY node_id, recorded_at ASC LIMIT ?',
+    )
+    .all(sinceMs, GPX_EXPORT_MAX_POINTS) as GpsHistoryRow[];
+}
+
+function parseAttachmentSaveOptions(opts: unknown): {
+  fileName: string;
+  dataBase64: string;
+  promptSave: boolean;
+} {
+  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
+  const o = opts as Record<string, unknown>;
+  return {
+    fileName: typeof o.fileName === 'string' ? path.basename(o.fileName) : 'attachment',
+    dataBase64: typeof o.dataBase64 === 'string' ? o.dataBase64 : '',
+    promptSave: o.promptSave !== false,
+  };
+}
+
+interface NodeUpsertBatch {
+  params: ReturnType<typeof toNodeUpsertParams>[];
+  dropped: number;
+}
+
+function buildNodeUpsertParams(nodes: unknown[]): NodeUpsertBatch {
+  const params: ReturnType<typeof toNodeUpsertParams>[] = [];
+  let dropped = 0;
+  for (const node of nodes) {
+    try {
+      validateSaveNode(node);
+      if (node.path != null) {
+        const pathJson = JSON.stringify(node.path);
+        if (pathJson.length > DB_SAVE_NODE_PATH_MAX_BYTES) {
+          dropped++;
+          continue;
+        }
+      }
+      params.push(toNodeUpsertParams(node));
+    } catch (e: unknown) {
+      console.debug(
+        '[main/index] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      dropped++;
+    }
+  }
+  return { params, dropped };
+}
+
+ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  const { nodeId, sinceMs } = parseGpsExportOptions(opts);
   try {
     const db = getDbForIpc('gps:exportGpx');
     if (!db) return { success: false, reason: 'no_db' as const };
     if (!mainWindow) return { success: false, reason: 'no_window' as const };
-    let rows: {
-      node_id: number;
-      latitude: number;
-      longitude: number;
-      recorded_at: number;
-      source: string;
-    }[];
-    if (nodeId !== undefined) {
-      rows = db
-        .prepareOnce(
-          'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? AND node_id = ? ORDER BY recorded_at ASC LIMIT ?',
-        )
-        .all(sinceMs, nodeId, GPX_EXPORT_MAX_POINTS) as typeof rows;
-    } else {
-      rows = db
-        .prepareOnce(
-          'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? ORDER BY node_id, recorded_at ASC LIMIT ?',
-        )
-        .all(sinceMs, GPX_EXPORT_MAX_POINTS) as typeof rows;
-    }
+    const rows = queryGpsHistoryRows(db, nodeId, sinceMs);
     if (rows.length === 0) return { success: false, reason: 'empty' as const };
     const result = await dialog.showSaveDialog(mainWindow, {
       title: 'Export GPX',
@@ -5152,29 +5402,14 @@ ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
 
 ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
-  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
-  const o = opts as Record<string, unknown>;
-  const fileName = typeof o.fileName === 'string' ? path.basename(o.fileName) : 'attachment';
-  const dataBase64 = typeof o.dataBase64 === 'string' ? o.dataBase64 : '';
-  const promptSave = o.promptSave !== false;
+  const { fileName, dataBase64, promptSave } = parseAttachmentSaveOptions(opts);
   if (!dataBase64 || dataBase64.length > 16 * 1024 * 1024) {
     throw new Error('dataBase64 invalid or too large');
   }
   try {
     const buf = Buffer.from(dataBase64, 'base64');
     if (buf.length > 16 * 1024 * 1024) throw new Error('decoded attachment too large');
-    let targetPath: string;
-    if (promptSave) {
-      if (!mainWindow) return { success: false };
-      const ext = path.extname(fileName) || '';
-      const result = await dialog.showSaveDialog(mainWindow, {
-        title: 'Save attachment',
-        defaultPath: fileName,
-        filters: ext ? [{ name: ext.slice(1), extensions: [ext.slice(1)] }] : undefined,
-      });
-      if (result.canceled || !result.filePath) return { success: false };
-      targetPath = result.filePath;
-    } else {
+    if (!promptSave) {
       // Safe-receive: sanitised name, risky extensions quarantined, mode 0600, no overwrite.
       const written = await writeReticulumAttachmentCacheFile(
         path.join(app.getPath('userData'), 'reticulum', 'attachments'),
@@ -5183,6 +5418,8 @@ ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
       );
       return { success: true, path: written.path };
     }
+    const targetPath = await showAttachmentSaveDialog(fileName);
+    if (!targetPath) return { success: false };
     await fs.promises.writeFile(targetPath, buf);
     return { success: true, path: targetPath };
   } catch (err) {
@@ -5347,17 +5584,28 @@ ipcMain.handle('chat:outbox:list', (event, protocol: unknown) => {
   }
 });
 
+function validateOutboxAddEntry(entry: unknown): Record<string, unknown> {
+  if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
+  const e = entry as Record<string, unknown>;
+  assertValidationRules([
+    [
+      typeof e.protocol === 'string' && OUTBOX_VALID_PROTOCOLS.has(e.protocol),
+      'chat:outbox:add: invalid protocol',
+    ],
+    [typeof e.viewKey === 'string', 'chat:outbox:add: invalid viewKey'],
+    [typeof e.channel === 'number', 'chat:outbox:add: invalid channel'],
+    [
+      typeof e.payload === 'string' && !(e.payload.length === 0 || e.payload.length > 2048),
+      'chat:outbox:add: invalid payload',
+    ],
+  ]);
+  return e;
+}
+
 ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
   try {
     assertIpcSender(event, 'chat:outbox:add');
-    if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
-    const e = entry as Record<string, unknown>;
-    if (typeof e.protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(e.protocol))
-      throw new Error('chat:outbox:add: invalid protocol');
-    if (typeof e.viewKey !== 'string') throw new Error('chat:outbox:add: invalid viewKey');
-    if (typeof e.channel !== 'number') throw new Error('chat:outbox:add: invalid channel');
-    if (typeof e.payload !== 'string' || e.payload.length === 0 || e.payload.length > 2048)
-      throw new Error('chat:outbox:add: invalid payload');
+    const e = validateOutboxAddEntry(entry);
     const now = Date.now();
     const db = getDbForIpc('chat:outbox:add');
     if (!db) throw new Error('chat:outbox:add: database closed');
@@ -5396,6 +5644,51 @@ ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
   }
 });
 
+/** Save dialog for a chat attachment; null when cancelled or no window. */
+async function showAttachmentSaveDialog(fileName: string): Promise<string | null> {
+  if (!mainWindow) return null;
+  const ext = path.extname(fileName) || '';
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save attachment',
+    defaultPath: fileName,
+    filters: ext ? [{ name: ext.slice(1), extensions: [ext.slice(1)] }] : undefined,
+  });
+  return result.canceled || !result.filePath ? null : result.filePath;
+}
+
+interface OutboxStatusUpdate {
+  id: number;
+  status: string;
+  error: string | null;
+  nextRetryAt: number | null;
+  attemptCount: number | undefined;
+}
+
+function parseOutboxStatusUpdate(args: {
+  id: unknown;
+  status: unknown;
+  error: unknown;
+  nextRetryAt: unknown;
+  attemptCount: unknown;
+}): OutboxStatusUpdate {
+  if (typeof args.id !== 'number' || !Number.isInteger(args.id)) {
+    throw new Error('chat:outbox:updateStatus: invalid id');
+  }
+  if (typeof args.status !== 'string' || !OUTBOX_VALID_STATUSES.has(args.status)) {
+    throw new Error('chat:outbox:updateStatus: invalid status');
+  }
+  return {
+    id: args.id,
+    status: args.status,
+    error: typeof args.error === 'string' ? args.error : null,
+    nextRetryAt: typeof args.nextRetryAt === 'number' ? args.nextRetryAt : null,
+    attemptCount:
+      typeof args.attemptCount === 'number' && Number.isInteger(args.attemptCount)
+        ? args.attemptCount
+        : undefined,
+  };
+}
+
 ipcMain.handle(
   'chat:outbox:updateStatus',
   (
@@ -5408,34 +5701,25 @@ ipcMain.handle(
   ) => {
     try {
       assertIpcSender(event, 'chat:outbox:updateStatus');
-      if (typeof id !== 'number' || !Number.isInteger(id))
-        throw new Error('chat:outbox:updateStatus: invalid id');
-      if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
-        throw new Error('chat:outbox:updateStatus: invalid status');
+      const update = parseOutboxStatusUpdate({ id, status, error, nextRetryAt, attemptCount });
       const db = getDbForIpc('chat:outbox:updateStatus');
       if (!db) return;
-      if (typeof attemptCount === 'number' && Number.isInteger(attemptCount)) {
+      if (update.attemptCount !== undefined) {
         db.prepareOnce(
           'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, attempt_count = ?, updated_at = ? WHERE id = ?',
         ).run(
-          status,
-          typeof error === 'string' ? error : null,
-          typeof nextRetryAt === 'number' ? nextRetryAt : null,
-          attemptCount,
+          update.status,
+          update.error,
+          update.nextRetryAt,
+          update.attemptCount,
           Date.now(),
-          id,
+          update.id,
         );
-      } else {
-        db.prepareOnce(
-          'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
-        ).run(
-          status,
-          typeof error === 'string' ? error : null,
-          typeof nextRetryAt === 'number' ? nextRetryAt : null,
-          Date.now(),
-          id,
-        );
+        return;
       }
+      db.prepareOnce(
+        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
+      ).run(update.status, update.error, update.nextRetryAt, Date.now(), update.id);
     } catch (err) {
       finishDbIpcHandler('chat:outbox:updateStatus', err);
     }
@@ -5636,64 +5920,9 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
   if (!validateIpcSender(event)) throw new Error('db:saveMeshcoreMessage: unauthorized sender');
   try {
     validateSaveMeshcoreMessage(message);
-    const m = message as Record<string, unknown>;
-    const replyId = m.reply_id != null ? Number(m.reply_id) : null;
-    if (replyId != null && (!Number.isFinite(replyId) || replyId < 0)) {
-      throw new Error('db:saveMeshcoreMessage: reply_id must be a non-negative finite number');
-    }
+    const rowParams = buildMeshcoreMessageRowParams(message);
     const db = getDbForIpc('db:saveMeshcoreMessage');
     if (!db) return { changes: 0 };
-    const validReceivedVia = ['rf', 'mqtt', 'both'] as const;
-    const receivedViaRaw = m.received_via;
-    const received_via =
-      typeof receivedViaRaw === 'string' &&
-      (validReceivedVia as readonly string[]).includes(receivedViaRaw)
-        ? receivedViaRaw
-        : null;
-    const rxFp =
-      typeof m.rx_packet_fingerprint === 'string' ? m.rx_packet_fingerprint.toUpperCase() : null;
-    const replyPreviewText =
-      typeof m.reply_preview_text === 'string' ? m.reply_preview_text.slice(0, 50) : null;
-    const replyPreviewSender =
-      typeof m.reply_preview_sender === 'string' ? m.reply_preview_sender.slice(0, 64) : null;
-    const rowParams = {
-      sender_id: m.sender_id != null ? Number(m.sender_id) >>> 0 : null,
-      sender_name: typeof m.sender_name === 'string' ? m.sender_name : null,
-      payload: m.payload as string,
-      channel_idx: meshcoreMessageChannelIndex(
-        m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
-        m.to_node != null ? Number(m.to_node) >>> 0 : null,
-        m.room_server_id != null ? Number(m.room_server_id) : null,
-      ),
-      local_order: m.local_order != null ? Number(m.local_order) : null,
-      timestamp: effectiveMessageTimestampMs(Number(m.timestamp)),
-      status: typeof m.status === 'string' ? m.status : 'acked',
-      packet_id: m.packet_id != null ? Number(m.packet_id) : null,
-      emoji: m.emoji != null ? (sanitizeUnicodeReactionScalar(m.emoji) ?? null) : null,
-      reply_id: replyId,
-      to_node: m.to_node != null ? Number(m.to_node) >>> 0 : null,
-      received_via,
-      rx_packet_fingerprint: rxFp,
-      reply_preview_text: replyPreviewText,
-      reply_preview_sender: replyPreviewSender,
-      rx_hops:
-        m.rx_hops != null && Number.isFinite(Number(m.rx_hops))
-          ? Math.trunc(Number(m.rx_hops))
-          : null,
-      rx_path_hash_bytes: m.rx_path_hash_bytes == null ? null : Number(m.rx_path_hash_bytes),
-      room_server_id:
-        m.room_server_id != null && Number.isFinite(Number(m.room_server_id))
-          ? Math.trunc(Number(m.room_server_id))
-          : null,
-      radio_node_id: (() => {
-        if (m.radio_node_id == null) return null;
-        const radio = Number(m.radio_node_id) >>> 0;
-        return radio > 0 ? radio : null;
-      })(),
-      channel_key: isChannelIdentityKey(m.channel_key) ? m.channel_key : null,
-      received_at: chatReceivedAtForDb(m.received_at),
-    };
-
     return persistMeshcoreMessage(db, rowParams);
   } catch (err) {
     finishDbIpcHandler('db:saveMeshcoreMessage', err);
@@ -6959,6 +7188,141 @@ app.on('child-process-gone', (_event, details) => {
   );
 });
 
+async function registerMeshcomDbIpcWithFallback(): Promise<void> {
+  // Production ships `meshcom-db-handlers.js` beside index.js (out of measured budget).
+  try {
+    const meshcomDbMod = (
+      process.env.VITEST
+        ? await import('./ipc/meshcom-db-handlers')
+        : await import(pathToFileURL(path.join(__dirname, 'meshcom-db-handlers.js')).href)
+    ) as {
+      registerMeshcomDbIpcHandlers: (deps: { ipcMain: typeof ipcMain }) => void;
+    };
+    meshcomDbMod.registerMeshcomDbIpcHandlers({ ipcMain });
+  } catch (err: unknown) {
+    console.error(
+      'mcL0143 [main] meshcom-db IPC registration failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    const meshcomDbFallbackMod = (
+      process.env.VITEST
+        ? await import('./ipc/meshcom-db-handlers-fallback')
+        : await import(pathToFileURL(path.join(__dirname, 'meshcom-db-handlers-fallback.js')).href)
+    ) as {
+      registerMeshcomDbIpcFallbackHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+      }) => void;
+    };
+    meshcomDbFallbackMod.registerMeshcomDbIpcFallbackHandlers({ ipcMain, assertIpcSender });
+  }
+}
+
+async function registerTeamRosterIpcWithFallback(): Promise<void> {
+  // Production ships `team-roster-handlers.js` beside index.js (out of measured budget).
+  try {
+    const mod = (
+      process.env.VITEST
+        ? await import('./ipc/team-roster-handlers')
+        : await import(pathToFileURL(path.join(__dirname, 'team-roster-handlers.js')).href)
+    ) as {
+      registerTeamRosterIpcHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+        getDatabase: typeof getDatabase;
+      }) => void;
+    };
+    mod.registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
+  } catch (err: unknown) {
+    console.error(
+      'mcL0141 [main] team-roster IPC registration failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    const fallbackMod = (
+      process.env.VITEST
+        ? await import('./ipc/team-roster-handlers-fallback')
+        : await import(pathToFileURL(path.join(__dirname, 'team-roster-handlers-fallback.js')).href)
+    ) as {
+      registerTeamRosterIpcFallbackHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+      }) => void;
+    };
+    fallbackMod.registerTeamRosterIpcFallbackHandlers({ ipcMain, assertIpcSender });
+  }
+}
+
+async function registerEnvironmentTelemetryIpcWithFallback(): Promise<void> {
+  // Production ships `environment-telemetry-handlers.js` beside index.js (out of measured budget).
+  try {
+    const envTelMod = (
+      process.env.VITEST
+        ? await import('./ipc/environment-telemetry-handlers')
+        : await import(
+            pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers.js')).href
+          )
+    ) as {
+      registerEnvironmentTelemetryIpcHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+      }) => void;
+    };
+    envTelMod.registerEnvironmentTelemetryIpcHandlers({ ipcMain, assertIpcSender });
+  } catch (err: unknown) {
+    console.error(
+      'mcL0142 [main] environment-telemetry IPC registration failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    const envTelFallbackMod = (
+      process.env.VITEST
+        ? await import('./ipc/environment-telemetry-handlers-fallback')
+        : await import(
+            pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers-fallback.js')).href
+          )
+    ) as {
+      registerEnvironmentTelemetryIpcFallbackHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+      }) => void;
+    };
+    envTelFallbackMod.registerEnvironmentTelemetryIpcFallbackHandlers({
+      ipcMain,
+      assertIpcSender,
+    });
+  }
+}
+
+function registerLxmProtocolClient(): string | null | undefined {
+  // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient('lxm');
+  }
+  const coldStartUrl = findLxmUrlInArgv(process.argv);
+  return coldStartUrl;
+}
+
+function loadVerboseLoggingSetting(): void {
+  try {
+    const verboseRow = getDatabase()
+      .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+      .get(VERBOSE_LOGGING_SETTING_KEY) as { value: string } | undefined;
+    if (verboseRow?.value === '1' || process.env.MESH_CLIENT_VERBOSE_LOG === '1') {
+      setVerboseLoggingEnabled(true);
+    } else {
+      setVerboseLoggingEnabled(false);
+    }
+  } catch (e: unknown) {
+    console.warn(
+      'mcL0140 [main] verboseLogging setting load failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  }
+}
+
 void app
   .whenReady()
   .then(async () => {
@@ -6975,135 +7339,15 @@ void app
         );
       }
 
-      // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
-      if (process.defaultApp) {
-        if (process.argv.length >= 2) {
-          app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
-        }
-      } else {
-        app.setAsDefaultProtocolClient('lxm');
-      }
-      const coldStartUrl = findLxmUrlInArgv(process.argv);
-      if (coldStartUrl) pendingOpenUrl = coldStartUrl;
-
       initDatabase();
-      try {
-        const verboseRow = getDatabase()
-          .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
-          .get(VERBOSE_LOGGING_SETTING_KEY) as { value: string } | undefined;
-        if (verboseRow?.value === '1' || process.env.MESH_CLIENT_VERBOSE_LOG === '1') {
-          setVerboseLoggingEnabled(true);
-        } else {
-          setVerboseLoggingEnabled(false);
-        }
-      } catch (e: unknown) {
-        console.warn(
-          'mcL0140 [main] verboseLogging setting load failed:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
+      loadVerboseLoggingSetting();
+      await registerTeamRosterIpcWithFallback();
+      await registerEnvironmentTelemetryIpcWithFallback();
+      await registerMeshcomDbIpcWithFallback();
+      const coldStartUrl = registerLxmProtocolClient();
+      if (coldStartUrl) pendingOpenUrl = coldStartUrl;
       registerIncidentIpcHandlers();
       registerScheduledBroadcastIpcHandlers();
-      // Production ships `team-roster-handlers.js` beside index.js (out of measured budget).
-      try {
-        const mod = (
-          process.env.VITEST
-            ? await import('./ipc/team-roster-handlers')
-            : await import(pathToFileURL(path.join(__dirname, 'team-roster-handlers.js')).href)
-        ) as {
-          registerTeamRosterIpcHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-            getDatabase: typeof getDatabase;
-          }) => void;
-        };
-        mod.registerTeamRosterIpcHandlers({ ipcMain, assertIpcSender, getDatabase });
-      } catch (err: unknown) {
-        console.error(
-          'mcL0141 [main] team-roster IPC registration failed:',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-        const fallbackMod = (
-          process.env.VITEST
-            ? await import('./ipc/team-roster-handlers-fallback')
-            : await import(
-                pathToFileURL(path.join(__dirname, 'team-roster-handlers-fallback.js')).href
-              )
-        ) as {
-          registerTeamRosterIpcFallbackHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-          }) => void;
-        };
-        fallbackMod.registerTeamRosterIpcFallbackHandlers({ ipcMain, assertIpcSender });
-      }
-      // Production ships `environment-telemetry-handlers.js` beside index.js (out of measured budget).
-      try {
-        const envTelMod = (
-          process.env.VITEST
-            ? await import('./ipc/environment-telemetry-handlers')
-            : await import(
-                pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers.js')).href
-              )
-        ) as {
-          registerEnvironmentTelemetryIpcHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-          }) => void;
-        };
-        envTelMod.registerEnvironmentTelemetryIpcHandlers({ ipcMain, assertIpcSender });
-      } catch (err: unknown) {
-        console.error(
-          'mcL0142 [main] environment-telemetry IPC registration failed:',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-        const envTelFallbackMod = (
-          process.env.VITEST
-            ? await import('./ipc/environment-telemetry-handlers-fallback')
-            : await import(
-                pathToFileURL(path.join(__dirname, 'environment-telemetry-handlers-fallback.js'))
-                  .href
-              )
-        ) as {
-          registerEnvironmentTelemetryIpcFallbackHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-          }) => void;
-        };
-        envTelFallbackMod.registerEnvironmentTelemetryIpcFallbackHandlers({
-          ipcMain,
-          assertIpcSender,
-        });
-      }
-      // Production ships `meshcom-db-handlers.js` beside index.js (out of measured budget).
-      try {
-        const meshcomDbMod = (
-          process.env.VITEST
-            ? await import('./ipc/meshcom-db-handlers')
-            : await import(pathToFileURL(path.join(__dirname, 'meshcom-db-handlers.js')).href)
-        ) as {
-          registerMeshcomDbIpcHandlers: (deps: { ipcMain: typeof ipcMain }) => void;
-        };
-        meshcomDbMod.registerMeshcomDbIpcHandlers({ ipcMain });
-      } catch (err: unknown) {
-        console.error(
-          'mcL0143 [main] meshcom-db IPC registration failed:',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-        const meshcomDbFallbackMod = (
-          process.env.VITEST
-            ? await import('./ipc/meshcom-db-handlers-fallback')
-            : await import(
-                pathToFileURL(path.join(__dirname, 'meshcom-db-handlers-fallback.js')).href
-              )
-        ) as {
-          registerMeshcomDbIpcFallbackHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-          }) => void;
-        };
-        meshcomDbFallbackMod.registerMeshcomDbIpcFallbackHandlers({ ipcMain, assertIpcSender });
-      }
       const loadUdpBridgeMod = (
         process.env.VITEST
           ? await import('./ipc/loadMeshcomUdpBridge')

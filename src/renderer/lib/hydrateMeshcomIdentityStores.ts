@@ -19,7 +19,7 @@ import {
   repairMeshcomZeroFromRows,
 } from './meshcom/meshcomSelfCallsign';
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
-import type { IdentityId, MeshNode } from './types';
+import type { ChatMessage, IdentityId, MeshNode } from './types';
 
 export interface HydrateMeshcomIdentityOptions {
   nodes?: boolean;
@@ -44,40 +44,55 @@ export interface MeshcomDbMessageRow {
   received_via?: string | null;
 }
 
+function optionalNumber(value: unknown): number | undefined {
+  return typeof value === 'number' ? value : undefined;
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function meshcomRowStatus(value: unknown): ChatMessage['status'] {
+  if (value === 'sending' || value === 'failed' || value === 'queued' || value === 'blocked') {
+    return value;
+  }
+  return 'acked';
+}
+
+function meshcomRowReceivedVia(value: unknown): ChatMessage['receivedVia'] {
+  if (value === 'mqtt' || value === 'both' || value === 'rf') return value;
+  return 'rf';
+}
+
+function meshcomRowStoreId(row: MeshcomDbMessageRow, senderId: number, ts: number): string {
+  const msgId = optionalString(row.msg_id);
+  if (msgId) return msgId;
+  const id = optionalNumber(row.id);
+  return id != null ? `meshcom-db:${id}` : `meshcom:${senderId}:${ts}`;
+}
+
 /** @internal Exported for hydrate merge tests. */
 export function rowsToMessageRecords(rows: MeshcomDbMessageRow[]): MessageRecord[] {
   return rows.map((row) => {
-    const fromCall = typeof row.from_call === 'string' ? row.from_call : '';
+    const fromCall = optionalString(row.from_call) ?? '';
     const senderId = fromCall ? callsignToNodeId(fromCall) : 0;
-    const toCall = typeof row.to_call_or_group === 'string' ? row.to_call_or_group : '';
-    const channel = typeof row.channel_idx === 'number' ? row.channel_idx : 0;
-    const ts = typeof row.timestamp === 'number' ? row.timestamp : Date.now();
-    const storeId =
-      (typeof row.msg_id === 'string' && row.msg_id) ||
-      (typeof row.id === 'number' ? `meshcom-db:${row.id}` : `meshcom:${senderId}:${ts}`);
+    const toCall = optionalString(row.to_call_or_group) ?? '';
+    const channel = optionalNumber(row.channel_idx) ?? 0;
+    const ts = optionalNumber(row.timestamp) ?? Date.now();
     return chatMessageToMessageRecord({
-      storeId,
-      id: typeof row.id === 'number' ? row.id : undefined,
+      storeId: meshcomRowStoreId(row, senderId, ts),
+      id: optionalNumber(row.id),
       sender_id: senderId,
       sender_name: fromCall || 'Unknown',
-      payload: typeof row.text === 'string' ? row.text : '',
+      payload: optionalString(row.text) ?? '',
       channel,
       timestamp: ts,
-      receivedAt: typeof row.received_at === 'number' ? row.received_at : undefined,
+      receivedAt: optionalNumber(row.received_at),
       to: toCall && toCall !== '*' ? callsignToNodeId(toCall) : undefined,
-      status:
-        row.status === 'sending' ||
-        row.status === 'failed' ||
-        row.status === 'queued' ||
-        row.status === 'blocked'
-          ? row.status
-          : 'acked',
-      receivedVia:
-        row.received_via === 'mqtt' || row.received_via === 'both' || row.received_via === 'rf'
-          ? row.received_via
-          : 'rf',
-      rxRssi: typeof row.rssi === 'number' ? row.rssi : undefined,
-      rxSnr: typeof row.snr === 'number' ? row.snr : undefined,
+      status: meshcomRowStatus(row.status),
+      receivedVia: meshcomRowReceivedVia(row.received_via),
+      rxRssi: optionalNumber(row.rssi),
+      rxSnr: optionalNumber(row.snr),
     });
   });
 }
@@ -121,6 +136,141 @@ export function mergeMeshcomHydrateMessageRecords(
   return [...byId.values()];
 }
 
+interface MeshcomContactRow {
+  callsign?: string | null;
+  node_id?: number | null;
+  lat?: number | null;
+  lon?: number | null;
+  batt?: number | null;
+  hw_id?: number | null;
+  last_heard?: number | null;
+  favorited?: number | null;
+}
+
+function meshcomContactNode(c: MeshcomContactRow): MeshNode | null {
+  const callsign = typeof c.callsign === 'string' ? c.callsign.trim() : '';
+  if (!callsign) return null;
+  const nodeId =
+    typeof c.node_id === 'number' && Number.isFinite(c.node_id) && c.node_id > 0
+      ? c.node_id >>> 0
+      : callsignToNodeId(callsign);
+  return {
+    node_id: nodeId,
+    long_name: callsign,
+    short_name: callsign.slice(0, 4),
+    hw_model: meshcomHwLabel(c.hw_id) || '',
+    snr: 0,
+    rssi: 0,
+    battery: typeof c.batt === 'number' ? c.batt : 0,
+    last_heard: typeof c.last_heard === 'number' ? c.last_heard : 0,
+    latitude: typeof c.lat === 'number' ? c.lat : null,
+    longitude: typeof c.lon === 'number' ? c.lon : null,
+    favorited: c.favorited === 1,
+    source: 'rf',
+  };
+}
+
+async function loadMeshcomNodes(
+  persistId: IdentityId,
+  identityId: IdentityId,
+  rebindFailed: boolean,
+): Promise<MeshNode[]> {
+  const contacts = (await window.electronAPI.db.getMeshcomContacts(
+    persistId,
+  )) as MeshcomContactRow[];
+  const nodes = contacts.map(meshcomContactNode).filter((node): node is MeshNode => node != null);
+  if (!rebindFailed || identityId === persistId) return nodes;
+  const legacyContacts = (await window.electronAPI.db.getMeshcomContacts(
+    identityId,
+  )) as MeshcomContactRow[];
+  nodes.push(
+    ...legacyContacts.map(meshcomContactNode).filter((node): node is MeshNode => node != null),
+  );
+  return nodes;
+}
+
+async function loadMeshcomMessageRecords(
+  persistId: IdentityId,
+  identityId: IdentityId,
+  rebindFailed: boolean,
+): Promise<MessageRecord[]> {
+  const rows = (await window.electronAPI.db.getMeshcomMessages(
+    persistId,
+    undefined,
+    500,
+  )) as MeshcomDbMessageRow[];
+  let combined = rowsToMessageRecords(rows);
+  if (rebindFailed && identityId !== persistId) {
+    const legacyRows = (await window.electronAPI.db.getMeshcomMessages(
+      identityId,
+      undefined,
+      500,
+    )) as MeshcomDbMessageRow[];
+    combined = mergeMeshcomHydrateMessageRecords(
+      combined,
+      rowsToMessageRecords(legacyRows),
+      legacyRows,
+    );
+  }
+  return combined;
+}
+
+async function rebindMeshcomIdentity(
+  identityId: IdentityId,
+  persistId: IdentityId,
+): Promise<boolean> {
+  try {
+    if (identityId !== persistId) {
+      await window.electronAPI.db.rebindMeshcomIdentity(identityId, persistId);
+    }
+    await window.electronAPI.db.rebindMeshcomIdentity('*', persistId);
+    return false;
+  } catch (e: unknown) {
+    // Failed rebind may leave orphaned id-* (or empty-identity) rows unread. Do not
+    // replace in-memory stores with a possibly incomplete offline-only snapshot —
+    // force upsert and also load the session identity bucket when it differs.
+    console.warn('mcL1505 [hydrateMeshcom] rebindMeshcomIdentity ' + errLikeToLogString(e));
+    return true;
+  }
+}
+
+function resolveHydrateModes(
+  rebindFailed: boolean,
+  nodesMode: 'upsert' | 'replace',
+  messagesMode: 'upsert' | 'replace',
+): { applyNodesMode: 'upsert' | 'replace'; applyMessagesMode: 'upsert' | 'replace' } {
+  // Never wipe the live bucket after a failed rebind (incomplete offline read).
+  return {
+    applyNodesMode: rebindFailed && nodesMode === 'replace' ? 'upsert' : nodesMode,
+    applyMessagesMode: rebindFailed && messagesMode === 'replace' ? 'upsert' : messagesMode,
+  };
+}
+
+function applyHydratedMeshcomNodes(
+  identityId: IdentityId,
+  nodes: MeshNode[],
+  mode: 'upsert' | 'replace',
+): void {
+  const records = nodes.map((node) => meshNodeToNodeRecord(node));
+  if (mode === 'replace') replaceNodeRecordsForIdentity(identityId, records);
+  else upsertNodeRecordsForIdentity(identityId, records);
+}
+
+function applyHydratedMeshcomMessages(
+  identityId: IdentityId,
+  combined: MessageRecord[],
+  mode: 'upsert' | 'replace',
+): void {
+  const finalRecords = trimChatMessagesToMax(combined, MAX_IN_MEMORY_CHAT_MESSAGES);
+  if (mode === 'replace') replaceMessageRecordsForIdentity(identityId, finalRecords);
+  else upsertMessageRecordsForIdentity(identityId, finalRecords);
+
+  // Settings may have learned self before hydrate finished — repair from:0 / Unknown now.
+  const my = getConnection(identityId)?.myNodeNum ?? 0;
+  const selfCall = meshcomSelfCallsignForIdentity(identityId);
+  if (my > 0 && selfCall) repairMeshcomZeroFromRows(identityId, selfCall, my);
+}
+
 export async function hydrateMeshcomIdentity(
   identityId: IdentityId,
   opts: HydrateMeshcomIdentityOptions,
@@ -128,140 +278,23 @@ export async function hydrateMeshcomIdentity(
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;
-  const messagesMode = opts.messagesMode ?? 'upsert';
-  const nodesMode = opts.nodesMode ?? 'upsert';
-
-  // SQLite is always keyed by the stable offline slot; apply rows into the session bucket.
   const persistId = meshcomPersistIdentityId();
-  let rebindFailed = false;
-  try {
-    if (identityId !== persistId) {
-      await window.electronAPI.db.rebindMeshcomIdentity(identityId, persistId);
-    }
-    await window.electronAPI.db.rebindMeshcomIdentity('*', persistId);
-  } catch (e: unknown) {
-    // Failed rebind may leave orphaned id-* (or empty-identity) rows unread. Do not
-    // replace in-memory stores with a possibly incomplete offline-only snapshot —
-    // force upsert and also load the session identity bucket when it differs.
-    rebindFailed = true;
-    console.warn('mcL1505 [hydrateMeshcom] rebindMeshcomIdentity ' + errLikeToLogString(e));
-  }
+  const rebindFailed = await rebindMeshcomIdentity(identityId, persistId);
   if (!isCurrent()) return;
-
-  // Never wipe the live bucket after a failed rebind (incomplete offline read).
-  const applyNodesMode = rebindFailed && nodesMode === 'replace' ? 'upsert' : nodesMode;
-  const applyMessagesMode = rebindFailed && messagesMode === 'replace' ? 'upsert' : messagesMode;
+  const { applyNodesMode, applyMessagesMode } = resolveHydrateModes(
+    rebindFailed,
+    opts.nodesMode ?? 'upsert',
+    opts.messagesMode ?? 'upsert',
+  );
 
   if (loadNodes) {
-    const contacts = (await window.electronAPI.db.getMeshcomContacts(persistId)) as {
-      callsign?: string | null;
-      node_id?: number | null;
-      lat?: number | null;
-      lon?: number | null;
-      batt?: number | null;
-      hw_id?: number | null;
-      last_heard?: number | null;
-      favorited?: number | null;
-    }[];
+    const nodes = await loadMeshcomNodes(persistId, identityId, rebindFailed);
     if (!isCurrent()) return;
-    const nodes: MeshNode[] = [];
-    for (const c of contacts) {
-      const callsign = typeof c.callsign === 'string' ? c.callsign.trim() : '';
-      if (!callsign) continue;
-      const nodeId =
-        typeof c.node_id === 'number' && Number.isFinite(c.node_id) && c.node_id > 0
-          ? c.node_id >>> 0
-          : callsignToNodeId(callsign);
-      nodes.push({
-        node_id: nodeId,
-        long_name: callsign,
-        short_name: callsign.slice(0, 4),
-        hw_model: meshcomHwLabel(c.hw_id) || '',
-        snr: 0,
-        rssi: 0,
-        battery: typeof c.batt === 'number' ? c.batt : 0,
-        last_heard: typeof c.last_heard === 'number' ? c.last_heard : 0,
-        latitude: typeof c.lat === 'number' ? c.lat : null,
-        longitude: typeof c.lon === 'number' ? c.lon : null,
-        favorited: c.favorited === 1,
-        source: 'rf',
-      });
-    }
-    if (rebindFailed && identityId !== persistId) {
-      const legacyContacts = (await window.electronAPI.db.getMeshcomContacts(identityId)) as {
-        callsign?: string | null;
-        node_id?: number | null;
-        lat?: number | null;
-        lon?: number | null;
-        batt?: number | null;
-        hw_id?: number | null;
-        last_heard?: number | null;
-        favorited?: number | null;
-      }[];
-      for (const c of legacyContacts) {
-        const callsign = typeof c.callsign === 'string' ? c.callsign.trim() : '';
-        if (!callsign) continue;
-        const nodeId =
-          typeof c.node_id === 'number' && Number.isFinite(c.node_id) && c.node_id > 0
-            ? c.node_id >>> 0
-            : callsignToNodeId(callsign);
-        nodes.push({
-          node_id: nodeId,
-          long_name: callsign,
-          short_name: callsign.slice(0, 4),
-          hw_model: meshcomHwLabel(c.hw_id) || '',
-          snr: 0,
-          rssi: 0,
-          battery: typeof c.batt === 'number' ? c.batt : 0,
-          last_heard: typeof c.last_heard === 'number' ? c.last_heard : 0,
-          latitude: typeof c.lat === 'number' ? c.lat : null,
-          longitude: typeof c.lon === 'number' ? c.lon : null,
-          favorited: c.favorited === 1,
-          source: 'rf',
-        });
-      }
-    }
-    if (!isCurrent()) return;
-    const records = nodes.map((node) => meshNodeToNodeRecord(node));
-    if (applyNodesMode === 'replace') {
-      replaceNodeRecordsForIdentity(identityId, records);
-    } else {
-      upsertNodeRecordsForIdentity(identityId, records);
-    }
+    applyHydratedMeshcomNodes(identityId, nodes, applyNodesMode);
   }
-
   if (loadMessages) {
-    const rows = (await window.electronAPI.db.getMeshcomMessages(
-      persistId,
-      undefined,
-      500,
-    )) as MeshcomDbMessageRow[];
-    let combined = rowsToMessageRecords(rows);
-    if (rebindFailed && identityId !== persistId) {
-      const legacyRows = (await window.electronAPI.db.getMeshcomMessages(
-        identityId,
-        undefined,
-        500,
-      )) as MeshcomDbMessageRow[];
-      combined = mergeMeshcomHydrateMessageRecords(
-        combined,
-        rowsToMessageRecords(legacyRows),
-        legacyRows,
-      );
-    }
+    const combined = await loadMeshcomMessageRecords(persistId, identityId, rebindFailed);
     if (!isCurrent()) return;
-    const finalRecords = trimChatMessagesToMax(combined, MAX_IN_MEMORY_CHAT_MESSAGES);
-    if (applyMessagesMode === 'replace') {
-      replaceMessageRecordsForIdentity(identityId, finalRecords);
-    } else {
-      upsertMessageRecordsForIdentity(identityId, finalRecords);
-    }
-
-    // Settings may have learned self before hydrate finished — repair from:0 / Unknown now.
-    const my = getConnection(identityId)?.myNodeNum ?? 0;
-    const selfCall = meshcomSelfCallsignForIdentity(identityId);
-    if (my > 0 && selfCall) {
-      repairMeshcomZeroFromRows(identityId, selfCall, my);
-    }
+    applyHydratedMeshcomMessages(identityId, combined, applyMessagesMode);
   }
 }

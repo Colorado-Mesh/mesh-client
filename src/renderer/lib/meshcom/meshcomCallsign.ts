@@ -5,7 +5,7 @@ export const MESHCOM_CALLSIGN_MAX_LEN = 11;
 export const MESHCOM_EXTUDP_DST_MAX_LEN = 9;
 
 /** Permissive soft-warn pattern — does not block Save/Send. */
-export const MESHCOM_CALLSIGN_SOFT_PATTERN = /^[A-Z0-9]{1,7}-[0-9]{1,2}$/;
+const MESHCOM_CALLSIGN_SOFT_PATTERN = /^[A-Z0-9]{1,7}-[0-9]{1,2}$/;
 
 /**
  * Uppercase, trim, collapse leading SSID zero (`OE1KFR-02` → `OE1KFR-2`),

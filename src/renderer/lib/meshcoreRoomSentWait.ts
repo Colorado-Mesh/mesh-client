@@ -3,11 +3,9 @@ import {
   type MeshcoreUserMessage,
   serializeMeshcoreUserMessage,
 } from './meshcore/meshcoreMessageI18n';
-import { meshcoreRadioErrMessage } from './meshcoreRadioErr';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
 import { runMeshcoreRoomPostSend } from './meshcoreRoomPostRpc';
 import type { MeshcoreCompanionTransport } from './timeConstants';
-import type { DiagnosticTextI18n } from './types';
 
 export type MeshcoreRoomPostSendConn = MeshcoreRadioConnection;
 
@@ -47,11 +45,6 @@ export function meshcoreRoomPostSendErrorMessage(e: unknown): MeshcoreUserMessag
 /** Serialize for Error.message / SQLite status fields. */
 export function meshcoreRoomPostSendErrorStored(e: unknown): string {
   return serializeMeshcoreUserMessage(meshcoreRoomPostSendErrorMessage(e));
-}
-
-export function meshcoreRoomPostRadioErrStored(errCode: number | null | undefined): string {
-  const ref: DiagnosticTextI18n = meshcoreRadioErrMessage(errCode);
-  return serializeMeshcoreUserMessage(ref);
 }
 
 /**

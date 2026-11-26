@@ -4,7 +4,7 @@ import { useNodeStore } from '../stores/nodeStore';
 import { getOfflineIdentityIdForProtocol } from './offlineProtocolIdentities';
 import type { IdentityId, MeshProtocol } from './types';
 
-export function countStoreKeys(map: Record<string, unknown> | undefined): number {
+function countStoreKeys(map: Record<string, unknown> | undefined): number {
   return map ? Object.keys(map).length : 0;
 }
 

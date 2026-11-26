@@ -95,66 +95,16 @@ export class LiveTrafficAnimationScheduler {
     const visible = new Map(
       inputs.map((input) => [input.id, new Set(input.segments.map(liveTrafficSegmentKey))]),
     );
-    const cancelled = new Set<string>();
-    this.active = this.active.filter((hop) => {
-      if (visible.get(hop.eventId)?.has(hop.segmentKey)) return true;
-      if (hop.endsAt > now) cancelled.add(hop.key);
-      else this.predecessors.delete(hop.key);
-      this.groups.get(hop.eventId)?.edges.set(hop.segmentKey, null);
-      return false;
-    });
-    if (cancelled.size > 0) {
-      let changed = true;
-      while (changed) {
-        changed = false;
-        this.active = this.active.filter((hop) => {
-          const predecessor = this.predecessors.get(hop.key);
-          if (!predecessor || !cancelled.has(predecessor)) return true;
-          cancelled.add(hop.key);
-          this.groups.get(hop.eventId)?.edges.set(hop.segmentKey, null);
-          changed = true;
-          return false;
-        });
-      }
-      for (const key of cancelled) this.predecessors.delete(key);
-    }
-    for (const [id, group] of this.groups) {
-      if (!visible.has(id) && wallNow - group.lastPresent > LIVE_TRAFFIC_MAX_AGE_MS) {
-        this.forgetGroup(id, group);
-      }
-    }
+    const cancelled = this.pruneCancelledFlights(visible, now);
+    this.cascadeCancelledFlights(cancelled);
+    this.forgetStaleGroups(visible, wallNow);
 
     for (const input of inputs.slice(-this.maxGroups)) {
-      let group = this.groups.get(input.id);
-      if (group && wallNow - group.lastPresent > LIVE_TRAFFIC_MAX_AGE_MS) {
-        this.forgetGroup(input.id, group);
-        group = undefined;
-      }
-      if (!group) {
-        if (this.groups.size >= this.maxGroups) {
-          const oldest = this.groups.entries().next().value;
-          if (oldest) this.forgetGroup(...oldest);
-        }
-        group = { lastPresent: wallNow, edges: new Map(), saturated: false };
-      }
-      group.lastPresent = wallNow;
-      this.groups.delete(input.id);
-      this.groups.set(input.id, group);
+      const group = this.touchGroup(input, wallNow);
       const segments = new Map(
         input.segments.map((segment) => [liveTrafficSegmentKey(segment), segment]),
       );
-      const newKeys = new Set<string>();
-      for (const key of segments.keys()) {
-        if (group.edges.has(key) || group.saturated) continue;
-        if (this.seenEdges >= this.maxSeenEdges) {
-          // Keep a compact tombstone for overflow instead of replaying it on every refresh.
-          group.saturated = true;
-          break;
-        }
-        group.edges.set(key, null);
-        this.seenEdges += 1;
-        newKeys.add(key);
-      }
+      const newKeys = this.registerGroupEdges(group, segments);
       if (!animate || newKeys.size === 0) continue;
 
       const paths =
@@ -164,81 +114,238 @@ export class LiveTrafficAnimationScheduler {
           segmentKeys: [liveTrafficSegmentKey(segment)],
         }));
       for (const path of paths) {
-        // A clipped run is not a new route starting at its remaining suffix.
-        if (path.segmentKeys.some((key) => !segments.has(key) || !group.edges.has(key))) continue;
-        const planned = new Map<string, LiveTrafficHop>();
-        const traversed = new Set<string>();
-        let cursor = now;
-        let interrupted = false;
-        for (const key of path.segmentKeys) {
-          const previous = planned.get(key) ?? group.edges.get(key);
-          if (previous === 'historical') continue;
-          if (previous) {
-            cursor = Math.max(
-              cursor,
-              previous.startedAt > now && !traversed.has(key)
-                ? Math.max(previous.startedAt, cursor) + LIVE_TRAFFIC_HOP_DURATION_MS
-                : previous.endsAt,
-            );
-            traversed.add(key);
-            continue;
-          }
-          if (!newKeys.has(key)) {
-            interrupted = true;
-            break;
-          }
-          const segment = segments.get(key)!;
-          const receivedAt = observedAt(segment, path.observedAt);
-          if (!Number.isFinite(receivedAt) || receivedAt > wallNow || receivedAt < observedSince) {
-            interrupted = true;
-            break;
-          }
-          if (wallNow - receivedAt > FRESH_EVENT_WINDOW_MS) {
-            group.edges.set(key, 'historical');
-            newKeys.delete(key);
-            continue;
-          }
-          const hop: LiveTrafficHop = {
-            key: JSON.stringify([input.id, key]),
-            eventId: input.id,
-            segmentKey: key,
-            segment,
-            startedAt: cursor,
-            endsAt: cursor + LIVE_TRAFFIC_HOP_DURATION_MS,
-          };
-          planned.set(key, hop);
-          traversed.add(key);
-          cursor = hop.endsAt;
-        }
-        // Admit whole runs, so pressure never drops an accepted trunk but keeps its tail.
-        if (interrupted || this.active.length + planned.size > maxFlights) {
-          for (const key of path.segmentKeys) newKeys.delete(key);
-          continue;
-        }
-        for (const [key, hop] of planned) {
-          group.edges.set(key, hop);
-          newKeys.delete(key);
-          this.active.push(hop);
-        }
-        const visited = new Set<string>();
-        let predecessor: LiveTrafficHop | undefined;
-        for (const key of path.segmentKeys) {
-          const hop = group.edges.get(key);
-          if (hop === 'historical') {
-            predecessor = undefined;
-            continue;
-          }
-          if (!hop || visited.has(key)) continue;
-          visited.add(key);
-          if (predecessor && !this.dependsOn(predecessor.key, hop.key)) {
-            if (planned.has(key) || hop.startedAt > now) {
-              this.predecessors.set(hop.key, predecessor.key);
-            }
-            this.delayPending(hop, predecessor.endsAt, now);
-          }
-          predecessor = hop;
-        }
+        this.admitObservedPath(input, path, group, segments, newKeys, {
+          now,
+          wallNow,
+          observedSince,
+          maxFlights,
+        });
       }
+    }
+  }
+
+  /** Drops flights whose segment vanished from the visible set; returns newly cancelled keys. */
+  private pruneCancelledFlights(visible: Map<string, Set<string>>, now: number): Set<string> {
+    const cancelled = new Set<string>();
+    this.active = this.active.filter((hop) => {
+      if (visible.get(hop.eventId)?.has(hop.segmentKey)) return true;
+      if (hop.endsAt > now) cancelled.add(hop.key);
+      else this.predecessors.delete(hop.key);
+      this.groups.get(hop.eventId)?.edges.set(hop.segmentKey, null);
+      return false;
+    });
+    return cancelled;
+  }
+
+  /** Propagates cancellation downstream until no flight depends on a cancelled predecessor. */
+  private cascadeCancelledFlights(cancelled: Set<string>): void {
+    if (cancelled.size === 0) return;
+    let changed = true;
+    while (changed) {
+      changed = false;
+      this.active = this.active.filter((hop) => {
+        const predecessor = this.predecessors.get(hop.key);
+        if (!predecessor || !cancelled.has(predecessor)) return true;
+        cancelled.add(hop.key);
+        this.groups.get(hop.eventId)?.edges.set(hop.segmentKey, null);
+        changed = true;
+        return false;
+      });
+    }
+    for (const key of cancelled) this.predecessors.delete(key);
+  }
+
+  private forgetStaleGroups(visible: Map<string, Set<string>>, wallNow: number): void {
+    for (const [id, group] of this.groups) {
+      if (!visible.has(id) && wallNow - group.lastPresent > LIVE_TRAFFIC_MAX_AGE_MS) {
+        this.forgetGroup(id, group);
+      }
+    }
+  }
+
+  /** Returns the live group for this event, creating/evicting/reordering as needed. */
+  private touchGroup(input: LiveTrafficAnimationInput, wallNow: number): SeenGroup {
+    let group = this.groups.get(input.id);
+    if (group && wallNow - group.lastPresent > LIVE_TRAFFIC_MAX_AGE_MS) {
+      this.forgetGroup(input.id, group);
+      group = undefined;
+    }
+    if (!group) {
+      if (this.groups.size >= this.maxGroups) {
+        const oldest = this.groups.entries().next().value;
+        if (oldest) this.forgetGroup(...oldest);
+      }
+      group = { lastPresent: wallNow, edges: new Map(), saturated: false };
+    }
+    group.lastPresent = wallNow;
+    this.groups.delete(input.id);
+    this.groups.set(input.id, group);
+    return group;
+  }
+
+  /** Records unseen edges as historical tombstones; returns the keys newly admitted this pass. */
+  private registerGroupEdges(
+    group: SeenGroup,
+    segments: Map<string, LiveTrafficSegment>,
+  ): Set<string> {
+    const newKeys = new Set<string>();
+    for (const key of segments.keys()) {
+      if (group.edges.has(key) || group.saturated) continue;
+      if (this.seenEdges >= this.maxSeenEdges) {
+        // Keep a compact tombstone for overflow instead of replaying it on every refresh.
+        group.saturated = true;
+        break;
+      }
+      group.edges.set(key, null);
+      this.seenEdges += 1;
+      newKeys.add(key);
+    }
+    return newKeys;
+  }
+
+  private resolvePathHop(
+    input: LiveTrafficAnimationInput,
+    key: string,
+    segments: Map<string, LiveTrafficSegment>,
+    group: SeenGroup,
+    newKeys: Set<string>,
+    cursor: number,
+    wallNow: number,
+    observedSince: number,
+    pathObservedAt: number,
+  ): { kind: 'planned'; hop: LiveTrafficHop } | { kind: 'historical' } | { kind: 'interrupt' } {
+    const segment = segments.get(key);
+    if (!segment) return { kind: 'interrupt' };
+    const receivedAt = observedAt(segment, pathObservedAt);
+    if (!Number.isFinite(receivedAt) || receivedAt > wallNow || receivedAt < observedSince) {
+      return { kind: 'interrupt' };
+    }
+    if (wallNow - receivedAt > FRESH_EVENT_WINDOW_MS) {
+      group.edges.set(key, 'historical');
+      newKeys.delete(key);
+      return { kind: 'historical' };
+    }
+    return {
+      kind: 'planned',
+      hop: {
+        key: JSON.stringify([input.id, key]),
+        eventId: input.id,
+        segmentKey: key,
+        segment,
+        startedAt: cursor,
+        endsAt: cursor + LIVE_TRAFFIC_HOP_DURATION_MS,
+      },
+    };
+  }
+
+  private advancePathCursor(
+    previous: LiveTrafficHop,
+    key: string,
+    cursor: number,
+    now: number,
+    traversed: Set<string>,
+  ): number {
+    if (previous.startedAt > now && !traversed.has(key)) {
+      return Math.max(cursor, Math.max(previous.startedAt, cursor) + LIVE_TRAFFIC_HOP_DURATION_MS);
+    }
+    return Math.max(cursor, previous.endsAt);
+  }
+
+  private planObservedPath(
+    input: LiveTrafficAnimationInput,
+    path: { observedAt: number; segmentKeys: readonly string[] },
+    group: SeenGroup,
+    segments: Map<string, LiveTrafficSegment>,
+    newKeys: Set<string>,
+    timing: { now: number; wallNow: number; observedSince: number },
+  ): { planned: Map<string, LiveTrafficHop>; interrupted: boolean } {
+    const { now, wallNow, observedSince } = timing;
+    const planned = new Map<string, LiveTrafficHop>();
+    const traversed = new Set<string>();
+    let cursor = now;
+    for (const key of path.segmentKeys) {
+      const previous = planned.get(key) ?? group.edges.get(key);
+      if (previous === 'historical') continue;
+      if (previous) {
+        cursor = this.advancePathCursor(previous, key, cursor, now, traversed);
+        traversed.add(key);
+        continue;
+      }
+      if (!newKeys.has(key)) return { planned, interrupted: true };
+      const step = this.resolvePathHop(
+        input,
+        key,
+        segments,
+        group,
+        newKeys,
+        cursor,
+        wallNow,
+        observedSince,
+        path.observedAt,
+      );
+      if (step.kind === 'interrupt') return { planned, interrupted: true };
+      if (step.kind === 'historical') continue;
+      planned.set(key, step.hop);
+      traversed.add(key);
+      cursor = step.hop.endsAt;
+    }
+    return { planned, interrupted: false };
+  }
+
+  private admitObservedPath(
+    input: LiveTrafficAnimationInput,
+    path: { observedAt: number; segmentKeys: readonly string[] },
+    group: SeenGroup,
+    segments: Map<string, LiveTrafficSegment>,
+    newKeys: Set<string>,
+    timing: { now: number; wallNow: number; observedSince: number; maxFlights: number },
+  ): void {
+    // A clipped run is not a new route starting at its remaining suffix.
+    if (path.segmentKeys.some((key) => !segments.has(key) || !group.edges.has(key))) return;
+    const { planned, interrupted } = this.planObservedPath(
+      input,
+      path,
+      group,
+      segments,
+      newKeys,
+      timing,
+    );
+    // Admit whole runs, so pressure never drops an accepted trunk but keeps its tail.
+    if (interrupted || this.active.length + planned.size > timing.maxFlights) {
+      for (const key of path.segmentKeys) newKeys.delete(key);
+      return;
+    }
+    for (const [key, hop] of planned) {
+      group.edges.set(key, hop);
+      newKeys.delete(key);
+      this.active.push(hop);
+    }
+    this.linkPathPredecessors(path.segmentKeys, group, planned, timing.now);
+  }
+
+  private linkPathPredecessors(
+    segmentKeys: readonly string[],
+    group: SeenGroup,
+    planned: Map<string, LiveTrafficHop>,
+    now: number,
+  ): void {
+    const visited = new Set<string>();
+    let predecessor: LiveTrafficHop | undefined;
+    for (const key of segmentKeys) {
+      const hop = group.edges.get(key);
+      if (hop === 'historical') {
+        predecessor = undefined;
+        continue;
+      }
+      if (!hop || visited.has(key)) continue;
+      visited.add(key);
+      if (predecessor && !this.dependsOn(predecessor.key, hop.key)) {
+        if (planned.has(key) || hop.startedAt > now) {
+          this.predecessors.set(hop.key, predecessor.key);
+        }
+        this.delayPending(hop, predecessor.endsAt, now);
+      }
+      predecessor = hop;
     }
   }
 

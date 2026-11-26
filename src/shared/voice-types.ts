@@ -84,14 +84,6 @@ export function parseVoiceAudioRequest(opts: unknown): VoiceAudioRequest | { err
     ? { channels, samples_b64: samplesB64 }
     : { profile, channels, samples_b64: samplesB64 };
 }
-
-export interface VoiceAudioPayload {
-  link_id: string;
-  profile: number;
-  channels: number;
-  samples_b64: string;
-}
-
 const VOICE_CALL_ROLES: ReadonlySet<string> = new Set(['incoming', 'outgoing']);
 const VOICE_SIGNALLING_STATUSES: ReadonlySet<string> = new Set([
   'busy',

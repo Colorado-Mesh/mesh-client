@@ -62,8 +62,6 @@ import {
 export {
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
-  MESHCORE_DM_RF_DEDUP_WINDOW_MS,
-  MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
   MESHCORE_TAPBACK_ECHO_DEDUP_WINDOW_MS,
 } from '../../lib/timeConstants';
 import type { ChatMessage, DeviceState, MeshNode } from '../../lib/types';
@@ -72,8 +70,6 @@ import type { ChatMessage, DeviceState, MeshNode } from '../../lib/types';
 export function meshcoreDmAckKeyU32(crc: number): number {
   return crc >>> 0;
 }
-
-export { MESHCORE_DM_ACK_TIMEOUT_MIN_MS } from '../../lib/timeConstants';
 
 /** Register pending DM ACK under every JS number the stack might use for the same CRC (signed vs unsigned). */
 export function meshcorePendingDmAckMapKeys(ackCrc: number): number[] {
@@ -198,7 +194,7 @@ export const MESHCORE_INIT_TIMEOUT_MS = 60_000;
 /** Companion Ok/Err for `sendFloodAdvert` — meshcore.js has no internal timeout. */
 export const MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS = 25_000;
 /** Companion Ok/Err for `removeContact` — meshcore.js has no internal timeout. */
-export const MESHCORE_REMOVE_CONTACT_TIMEOUT_MS = 25_000;
+const MESHCORE_REMOVE_CONTACT_TIMEOUT_MS = 25_000;
 /** Base wait for PathUpdated (129) after a flood advert when priming trace route. */
 export const MESHCORE_TRACE_PRIME_WAIT_BASE_MS = 15_000;
 /** Per-hop add-on for {@link computeMeshcoreTracePrimeWaitMs}. */
@@ -615,15 +611,6 @@ function meshcoreRoomPostContentMatch(
  * Strict sender match only — Unknown↔named bridging is handled by
  * {@link findMeshcoreRoomPostDuplicate} when exactly one resolved candidate exists.
  */
-export function meshcoreRoomPostMatch(
-  existing: ChatMessage,
-  incoming: ChatMessage,
-  windowMs: number = MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
-): boolean {
-  if (!meshcoreRoomPostContentMatch(existing, incoming, windowMs)) return false;
-  return meshcoreSenderMatchesForDedup(existing, incoming);
-}
-
 /**
  * Find a room post duplicate to merge with `incoming`.
  * Ambiguous Unknown/`sender_id` 0 may attach to a resolved twin only when content

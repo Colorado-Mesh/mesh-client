@@ -10,11 +10,11 @@ const DEFAULT_SAMPLE_COUNT = 64;
 const MAX_ANTENNA_M = 500;
 const MAX_PATH_KM = 500;
 
-export function isFiniteNumber(v: unknown): v is number {
+function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
 }
 
-export function isLatLon(v: { lat?: unknown; lon?: unknown } | null | undefined): boolean {
+function isLatLon(v: { lat?: unknown; lon?: unknown } | null | undefined): boolean {
   if (v == null) return false;
   return (
     isFiniteNumber(v.lat) &&
@@ -26,12 +26,12 @@ export function isLatLon(v: { lat?: unknown; lon?: unknown } | null | undefined)
   );
 }
 
-export function parseFrequencyMhz(raw: unknown): ElevationFrequencyMhz {
+function parseFrequencyMhz(raw: unknown): ElevationFrequencyMhz {
   if (raw === 433 || raw === 868 || raw === 915) return raw;
   return 915;
 }
 
-export function clampSampleCount(raw: unknown): number {
+function clampSampleCount(raw: unknown): number {
   if (!isFiniteNumber(raw)) return DEFAULT_SAMPLE_COUNT;
   const n = Math.round(raw);
   if (n < MIN_SAMPLE_COUNT) return MIN_SAMPLE_COUNT;
@@ -39,7 +39,7 @@ export function clampSampleCount(raw: unknown): number {
   return n;
 }
 
-export function clampAntennaHeightM(raw: unknown, fallback = 2): number {
+function clampAntennaHeightM(raw: unknown, fallback = 2): number {
   if (!isFiniteNumber(raw)) return fallback;
   if (raw < 0) return 0;
   if (raw > MAX_ANTENNA_M) return MAX_ANTENNA_M;
@@ -78,4 +78,4 @@ export function parseHgtEstimateRequest(raw: unknown): ElevationHgtEstimateReque
   return { south: v.south, west: v.west, north: v.north, east: v.east };
 }
 
-export { DEFAULT_SAMPLE_COUNT, MAX_PATH_KM, MAX_SAMPLE_COUNT, MIN_SAMPLE_COUNT };
+export { MAX_PATH_KM };

@@ -12,7 +12,7 @@ export function loadRrcRoomFavourites(hubHash: string): string[] {
   return loadCanonicalStringList(FAV_PREFIX + hubHash.toLowerCase(), canonicalizeRoomList);
 }
 
-export function saveRrcRoomFavourites(hubHash: string, rooms: string[]): void {
+function saveRrcRoomFavourites(hubHash: string, rooms: string[]): void {
   writeStringList(FAV_PREFIX + hubHash.toLowerCase(), canonicalizeRoomList(rooms));
 }
 
@@ -28,7 +28,7 @@ export function loadRrcAutoJoinRooms(hubHash: string): string[] {
   return loadCanonicalStringList(AUTO_PREFIX + hubHash.toLowerCase(), canonicalizeRoomList);
 }
 
-export function saveRrcAutoJoinRooms(hubHash: string, rooms: string[]): void {
+function saveRrcAutoJoinRooms(hubHash: string, rooms: string[]): void {
   writeStringList(AUTO_PREFIX + hubHash.toLowerCase(), canonicalizeRoomList(rooms));
 }
 

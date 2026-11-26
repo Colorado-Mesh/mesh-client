@@ -56,11 +56,11 @@ export interface MeshcoreAnonBasicParsed {
 }
 
 /** Feature bit: UART bridge (firmware WITH_RS232_BRIDGE). */
-export const MC_ANON_BASIC_FEATURE_BRIDGE_UART = 0x01;
+const MC_ANON_BASIC_FEATURE_BRIDGE_UART = 0x01;
 /** Feature bits: ESP-NOW bridge (firmware WITH_ESPNOW_BRIDGE sets 0x03). */
-export const MC_ANON_BASIC_FEATURE_BRIDGE_ESPNOW = 0x03;
+const MC_ANON_BASIC_FEATURE_BRIDGE_ESPNOW = 0x03;
 /** Feature bit: repeater forwarding currently disabled. */
-export const MC_ANON_BASIC_FEATURE_FWD_DISABLED = 0x80;
+const MC_ANON_BASIC_FEATURE_FWD_DISABLED = 0x80;
 
 /**
  * Build `[0x39][pubkey:32][subtype][replyPathLen:0]` for a zero-hop anonymous request.

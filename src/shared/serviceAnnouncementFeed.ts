@@ -10,14 +10,14 @@ export const SERVICE_ANNOUNCEMENT_FEED_REPO_PATH = 'announcements/announcements.
 
 export const SERVICE_ANNOUNCEMENT_FEED_URL = `https://raw.githubusercontent.com/Colorado-Mesh/mesh-client/main/${SERVICE_ANNOUNCEMENT_FEED_REPO_PATH}`;
 
-export const SERVICE_ANNOUNCEMENT_SCHEMA_VERSION = 1;
+const SERVICE_ANNOUNCEMENT_SCHEMA_VERSION = 1;
 export const SERVICE_ANNOUNCEMENT_MAX_ENTRIES = 20;
 export const SERVICE_ANNOUNCEMENT_MAX_FEED_BYTES = 64 * 1024;
 export const SERVICE_ANNOUNCEMENT_TITLE_MAX = 120;
 export const SERVICE_ANNOUNCEMENT_BODY_MAX = 1000;
-export const SERVICE_ANNOUNCEMENT_URL_LABEL_MAX = 40;
-export const SERVICE_ANNOUNCEMENT_URL_MAX = 2048;
-export const SERVICE_ANNOUNCEMENT_MAX_LOCALES = 32;
+const SERVICE_ANNOUNCEMENT_URL_LABEL_MAX = 40;
+const SERVICE_ANNOUNCEMENT_URL_MAX = 2048;
+const SERVICE_ANNOUNCEMENT_MAX_LOCALES = 32;
 
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)$/;
@@ -38,7 +38,7 @@ function isLocaleTag(tag: string): boolean {
   );
 }
 
-export const SERVICE_ANNOUNCEMENT_SEVERITIES = ['info', 'warning', 'critical'] as const;
+const SERVICE_ANNOUNCEMENT_SEVERITIES = ['info', 'warning', 'critical'] as const;
 export type ServiceAnnouncementSeverity = (typeof SERVICE_ANNOUNCEMENT_SEVERITIES)[number];
 
 export interface ServiceAnnouncementLocalizedText {
@@ -223,7 +223,7 @@ function optionalLocalized(
 }
 
 /** Validate one feed row. Unknown extra fields are ignored for forward compatibility. */
-export function parseServiceAnnouncementEntry(raw: unknown): FieldResult<ServiceAnnouncement> {
+function parseServiceAnnouncementEntry(raw: unknown): FieldResult<ServiceAnnouncement> {
   if (!isPlainObject(raw)) return { ok: false, reason: 'entry must be an object' };
 
   if (typeof raw.id !== 'string' || !ID_RE.test(raw.id)) {
@@ -369,7 +369,7 @@ export function isServiceAnnouncementInWindow(a: ServiceAnnouncement, nowMs: num
   return true;
 }
 
-export function isServiceAnnouncementActive(
+function isServiceAnnouncementActive(
   a: ServiceAnnouncement,
   ctx: ServiceAnnouncementFilterContext,
 ): boolean {

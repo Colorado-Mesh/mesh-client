@@ -4,21 +4,6 @@
  */
 
 export const RENDERER_TIMING_MAX_SAMPLES = 64;
-
-export type RendererTimingName =
-  | 'ingest'
-  | 'diagnosticsPass'
-  | 'topologyBuild'
-  | 'mapRender'
-  | 'reactCommit'
-  | 'encodeMessage'
-  | 'protocolSwitch'
-  | 'longTask'
-  | 'reticulumRefresh'
-  | 'reticulumApplyContacts'
-  | 'reticulumPoll'
-  | 'other';
-
 export interface RendererTimingSample {
   name: string;
   /** Elapsed ms from performance.now(). */
@@ -35,7 +20,7 @@ export interface RendererTimingsSnapshot {
   enabled: boolean;
 }
 
-interface TimingEnvironment {
+export interface TimingEnvironment {
   now: () => number;
   isIsolated: () => boolean;
   isEnabled: () => boolean;

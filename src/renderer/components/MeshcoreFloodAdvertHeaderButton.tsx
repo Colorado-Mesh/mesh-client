@@ -9,7 +9,7 @@ import { Menu, menuTriggerAria, useMenuState } from './ui/Menu';
 
 type AdvertKind = 'flood' | 'zeroHop';
 
-interface Props {
+export interface Props {
   disabled: boolean;
   onSend: () => Promise<void>;
   /** Zero-hop advert (radios in direct range only), offered from a chevron beside Flood Advert. */

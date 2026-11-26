@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-type ToastType = 'success' | 'error' | 'warning' | 'info' | 'emergency';
+export type ToastType = 'success' | 'error' | 'warning' | 'info' | 'emergency';
 
 const TOAST_ICON: Record<ToastType, typeof Info> = {
   success: CircleCheck,

@@ -5,15 +5,10 @@
  * Covered: WiFi `--setpwd`, web UI `--webpwd`, BLE `--btcode`, KISS/NET Console `--passwd`.
  */
 
-export const MESHCOM_COMMAND_REDACTED = '[redacted]';
+const MESHCOM_COMMAND_REDACTED = '[redacted]';
 
 /** Leading tokens whose following argument must never appear in logs or support bundles. */
-export const MESHCOM_SENSITIVE_COMMAND_TOKENS = [
-  '--setpwd',
-  '--webpwd',
-  '--btcode',
-  '--passwd',
-] as const;
+const MESHCOM_SENSITIVE_COMMAND_TOKENS = ['--setpwd', '--webpwd', '--btcode', '--passwd'] as const;
 
 export function isMeshcomSensitiveCommandLine(command: string): boolean {
   const lower = command.trim().toLowerCase();

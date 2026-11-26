@@ -22,7 +22,7 @@ import { notificationNodeName } from './useNodeStatusNotifier';
 import { useNowMs } from './useNowMs';
 
 /** Battery must recover this far above the threshold before a new low-battery alert can fire. */
-export const BATTERY_ALERT_RESET_HYSTERESIS = 5;
+const BATTERY_ALERT_RESET_HYSTERESIS = 5;
 /** Transient `disconnected` blips (power suspend, reconnect hand-off) settle within this window. */
 export const LINK_DOWN_GRACE_MS = 5 * MS_PER_SECOND;
 const SILENCE_TICK_MS = 30 * MS_PER_SECOND;

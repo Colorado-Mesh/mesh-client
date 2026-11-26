@@ -16,9 +16,7 @@ export function runTopologyBuildJob(request: TopologyBuildJobRequest): AnalysisJ
   return { kind: 'topologyBuild', sequence: request.sequence, graph };
 }
 
-export function runDiagnosticsAnalyzeBatchJob(
-  request: DiagnosticsAnalyzeBatchRequest,
-): AnalysisJobResult {
+function runDiagnosticsAnalyzeBatchJob(request: DiagnosticsAnalyzeBatchRequest): AnalysisJobResult {
   const anomalies: { nodeId: number; anomaly: NonNullable<ReturnType<typeof analyzeNode>> }[] = [];
   const clearedNodeIds: number[] = [];
   for (const row of request.nodes) {

@@ -1,6 +1,3 @@
-export type ReticulumPickerScanErrorCode =
-  'stack_required' | 'scan_busy' | 'ble_unavailable' | 'ble_feature_disabled' | 'scan_failed';
-
 const BLE_FEATURE_DISABLED_EN = 'rns-ble feature not enabled in this build';
 
 export function normalizeReticulumPickerScanError(raw: string): string {

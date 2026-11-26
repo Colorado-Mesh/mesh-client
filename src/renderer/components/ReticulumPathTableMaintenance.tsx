@@ -7,7 +7,7 @@ import { clearReticulumPathTable } from '@/renderer/lib/reticulum/reticulumClear
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from './Toast';
 
-interface ReticulumPathTableMaintenanceProps {
+export interface ReticulumPathTableMaintenanceProps {
   disabled?: boolean;
 }
 

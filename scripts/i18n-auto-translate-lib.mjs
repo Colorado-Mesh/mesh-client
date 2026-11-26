@@ -3,13 +3,13 @@
  */
 
 /** MyMemory/CAT often spaces out __PHn__ tokens (e.g. __ PH0 __, __ PH 1 __). */
-export const MT_PLACEHOLDER_TOKEN_RE = /__\s*PH\s*(\d+)\s*__/gi;
+const MT_PLACEHOLDER_TOKEN_RE = /__\s*PH\s*(\d+)\s*__/gi;
 
 /**
  * When MT drops the underscores entirely (whole-string brand shields → "PH0" / "Ph0").
  * Only used when a matching placeholder index exists — avoids rewriting prose "PH".
  */
-export const MT_BARE_PH_TOKEN_RE = /\bPH\s*(\d+)\b/gi;
+const MT_BARE_PH_TOKEN_RE = /\bPH\s*(\d+)\b/gi;
 
 /**
  * Strip CAT / XLIFF / Memsource tags that sometimes leak into free-API MT output.
@@ -17,7 +17,7 @@ export const MT_BARE_PH_TOKEN_RE = /\bPH\s*(\d+)\b/gi;
  * @param {string} text
  * @returns {string}
  */
-export function stripCatXmlTags(text) {
+function stripCatXmlTags(text) {
   const names = new Set([
     'ph',
     'g',
@@ -235,7 +235,7 @@ const SKIP_AUDIT_LEAF_KEYS = new Set([
  * Machine translation turns "ANZ" into sentences, "TAK" into "yes", and "Zinc"
  * into metal nouns, so these stay English everywhere.
  */
-export const KEEP_ENGLISH_KEY_PREFIXES = [
+const KEEP_ENGLISH_KEY_PREFIXES = [
   'radioPanel.regions.',
   'radioPanel.modemPresets.',
   'radioPanel.oledTypes.',
@@ -273,7 +273,7 @@ export function isKeepEnglishKey(key) {
  * only because letter runs survive stripping (MAC addresses, identity paths).
  * @param {string} enVal
  */
-export function looksLikeTechnicalSample(enVal) {
+function looksLikeTechnicalSample(enVal) {
   const t = enVal.trim();
   if (t.length === 0) return false;
   // MAC / colon-hex (split avoids nested-quantifier regex)
@@ -313,7 +313,7 @@ function looksLikePathOrUriSample(t) {
  * placeholders and known loanwords/brands are skipped in --audit mode.
  * @param {string} enVal
  */
-export function hasTranslatableContent(enVal) {
+function hasTranslatableContent(enVal) {
   if (looksLikeTechnicalSample(enVal)) return false;
   const stripped = enVal
     .replace(/\{\{[^}]+\}\}/g, '') // remove i18next {{placeholders}}

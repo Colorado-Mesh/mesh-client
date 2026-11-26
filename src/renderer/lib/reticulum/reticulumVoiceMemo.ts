@@ -303,7 +303,7 @@ export async function stopReticulumVoiceMemoRecorder(): Promise<string | null> {
 }
 
 /** Stop recording and store Ogg result on the memo store. */
-export async function stopReticulumVoiceMemo(): Promise<void> {
+async function stopReticulumVoiceMemo(): Promise<void> {
   const sessionId = await stopReticulumVoiceMemoRecorder();
   if (!sessionId) return;
   try {

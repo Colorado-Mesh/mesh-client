@@ -89,7 +89,7 @@ export function meshcoreMaxContactsFromDeviceQuery(info: unknown): number | null
  * Fallback TX ceiling when companion `getSelfInfo` omits `maxTxPower` (common on current firmware).
  * SX1262-class radios are typically limited to ~22 dBm.
  */
-export const MESHCORE_TX_POWER_FALLBACK_MAX = 22;
+const MESHCORE_TX_POWER_FALLBACK_MAX = 22;
 
 export function meshcoreResolvedTxPowerMax(selfInfo?: { maxTxPower?: number } | null): {
   max: number;
@@ -454,7 +454,7 @@ export function meshcoreConnectionImpliesUsbPower(connectionType: ConnectionType
 }
 
 /** MeshCore roles excluded from user contact-group membership (infrastructure / rooms). */
-export const MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS: ReadonlySet<string> = new Set([
+const MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS: ReadonlySet<string> = new Set([
   CONTACT_TYPE_LABELS[2],
   CONTACT_TYPE_LABELS[3],
 ]);
@@ -469,7 +469,7 @@ export function isMeshcoreDmExcludedHwModel(hwModel: string | undefined): boolea
   return hwModel != null && MESHCORE_HW_MODELS_EXCLUDED_FROM_CONTACT_GROUPS.has(hwModel);
 }
 
-interface MeshCoreContact {
+export interface MeshCoreContact {
   publicKey: Uint8Array;
   type: number;
   advName: string;
@@ -880,10 +880,7 @@ export function meshcoreSelfInfoBwToDisplayKhz(bw: number): number {
   return bw;
 }
 
-export {
-  MESHCORE_REPEATER_AUTH_HINT_KEY,
-  meshcoreAppendRepeaterAuthHint,
-} from './meshcore/meshcoreMessageI18n';
+export { meshcoreAppendRepeaterAuthHint } from './meshcore/meshcoreMessageI18n';
 
 /**
  * Raw SNR quarter-dB to dB scale factor.

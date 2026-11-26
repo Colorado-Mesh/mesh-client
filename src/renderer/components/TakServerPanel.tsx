@@ -22,7 +22,7 @@ import TakUnitFiltersSection from './TakUnitFiltersSection';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 import { SettingsSection } from './ui/SettingsSection';
 
-interface AtakMessage {
+export interface AtakMessage {
   from: number;
   data: Uint8Array;
   timestamp: number;
@@ -61,7 +61,7 @@ function formatTimeAgo(ts: number, t: TFunction): string {
   return t('common.minutesAgo', { count: Math.floor(diff / MS_PER_MINUTE) });
 }
 
-interface Props {
+export interface Props {
   atakMessages?: Map<number, AtakMessage[]>;
   capabilities?: ProtocolCapabilities;
   /** Meshtastic identity whose channels may be served to TAK. */

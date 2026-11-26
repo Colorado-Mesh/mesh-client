@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/purity */
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
@@ -576,6 +575,44 @@ export interface MapPanelProps {
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
 }
 
+function selfFallbackNames(
+  myNodeNum: number,
+  protocol: MeshProtocol,
+  homeNode: MeshNode | null | undefined,
+): { longName: string; shortName: string } {
+  const longName = homeNode?.long_name || `Node-${myNodeNum.toString(16).toUpperCase()}`;
+  const shortName =
+    protocol === 'meshcore'
+      ? (homeNode?.short_name ?? '')
+      : homeNode?.short_name || longName.slice(0, 4);
+  return { longName, shortName };
+}
+
+function buildSelfFallbackNode(
+  myNodeNum: number,
+  protocol: MeshProtocol,
+  homeNode: MeshNode | null | undefined,
+  ourPosition: { lat: number; lon: number },
+): MeshNode {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const { longName, shortName } = selfFallbackNames(myNodeNum, protocol, homeNode);
+  return {
+    node_id: myNodeNum,
+    long_name: longName,
+    short_name: shortName,
+    hw_model: homeNode?.hw_model ?? 'Unknown',
+    battery: homeNode?.battery ?? 0,
+    snr: homeNode?.snr ?? 0,
+    rssi: homeNode?.rssi ?? 0,
+    last_heard: homeNode?.last_heard ?? nowSec,
+    latitude: ourPosition.lat,
+    longitude: ourPosition.lon,
+    favorited: homeNode?.favorited ?? false,
+    heard_via_mqtt_only: homeNode?.heard_via_mqtt_only,
+    channel_utilization: homeNode?.channel_utilization,
+  };
+}
+
 function MapPanel(props: MapPanelProps) {
   const { t } = useTranslation();
   const active = props.active ?? true;
@@ -1024,26 +1061,7 @@ function OverviewMapPanel({
   const selfFallbackNode = useMemo<MeshNode | null>(() => {
     // myNodeNum 0 would synthesize a ghost "Node-0" star beside the real self contact.
     if (myNodeNum <= 0 || selfInNodesToRender || !ourPosition) return null;
-    const nowSec = Math.floor(Date.now() / 1000);
-    const longName = homeNode?.long_name || `Node-${myNodeNum.toString(16).toUpperCase()}`;
-    return {
-      node_id: myNodeNum,
-      long_name: longName,
-      short_name:
-        protocol === 'meshcore'
-          ? (homeNode?.short_name ?? '')
-          : homeNode?.short_name || longName.slice(0, 4),
-      hw_model: homeNode?.hw_model ?? 'Unknown',
-      battery: homeNode?.battery ?? 0,
-      snr: homeNode?.snr ?? 0,
-      rssi: homeNode?.rssi ?? 0,
-      last_heard: homeNode?.last_heard ?? nowSec,
-      latitude: ourPosition.lat,
-      longitude: ourPosition.lon,
-      favorited: homeNode?.favorited ?? false,
-      heard_via_mqtt_only: homeNode?.heard_via_mqtt_only,
-      channel_utilization: homeNode?.channel_utilization,
-    };
+    return buildSelfFallbackNode(myNodeNum, protocol, homeNode, ourPosition);
   }, [selfInNodesToRender, ourPosition, homeNode, myNodeNum, protocol]);
 
   const nodesWithStatusAndHaloOffsetForRender = useMemo(() => {

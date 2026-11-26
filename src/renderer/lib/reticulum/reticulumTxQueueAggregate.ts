@@ -29,7 +29,7 @@ function fillRatio(used: number, max: number): number {
 const RNODE_TX_BUFFERING_MIN_RATIO = 0.0625;
 const RNODE_TX_BUFFERING_MIN_USED = 16;
 
-export function isReticulumHostTxQueueBuffering(used: number, max: number): boolean {
+function isReticulumHostTxQueueBuffering(used: number, max: number): boolean {
   if (used <= 0) return false;
   return (
     used >= RNODE_TX_BUFFERING_MIN_USED || fillRatio(used, max) >= RNODE_TX_BUFFERING_MIN_RATIO

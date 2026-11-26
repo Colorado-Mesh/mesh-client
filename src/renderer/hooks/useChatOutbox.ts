@@ -49,7 +49,7 @@ export type { OutboxEntry };
 const RETRY_DELAYS_MS = [30_000, 120_000, 600_000];
 export const MAX_ATTEMPTS = 1 + REGULAR_MESSAGE_MAX_AUTO_RESENDS;
 /** Emergency rows retry until acknowledged: 30s, 1m, 2m, then every 5m. */
-export const EMERGENCY_RETRY_DELAYS_MS = [30_000, 60_000, 120_000, 300_000];
+const EMERGENCY_RETRY_DELAYS_MS = [30_000, 60_000, 120_000, 300_000];
 /** Drop outbox rows older than this from automatic drain (manual retry still allowed). */
 export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /**
@@ -60,7 +60,7 @@ export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 export const EMERGENCY_OUTBOX_SOFT_CAP = 20;
 const EMERGENCY_CAP_BLOCKED_KEY = 'chatPanel.outboxEmergencyCapBlocked';
 /** Per-row send watchdog so a hung TX cannot hold {@link withChatOutboxDrainLock} forever. */
-export const OUTBOX_DRAIN_ROW_TIMEOUT_MS = NETWORK_ACK_MAX_TIMEOUT_MS + 15_000;
+const OUTBOX_DRAIN_ROW_TIMEOUT_MS = NETWORK_ACK_MAX_TIMEOUT_MS + 15_000;
 const MAX_TIMER_DELAY_MS = 2_147_483_647;
 const MECP_MAYDAY_PAYLOAD_RE = /^MECP\/0\b/i;
 const MECP_SEVERITY_PAYLOAD_RE = /^MECP\/(\d)\b/i;
@@ -70,12 +70,12 @@ export function isEmergencyOutboxPriority(row: Pick<OutboxEntry, 'priority'>): b
 }
 
 /** Incident ACK rows tagged via {@link incidentAckViewKey} (normal priority, App-drained). */
-export function isIncidentAckOutboxRow(row: Pick<OutboxEntry, 'viewKey'>): boolean {
+function isIncidentAckOutboxRow(row: Pick<OutboxEntry, 'viewKey'>): boolean {
   return parseIncidentAckViewKey(row.viewKey) != null;
 }
 
 /** Rows the App-level drain may send without ChatPanel mounted. */
-export function isAppManagedOutboxRow(row: Pick<OutboxEntry, 'priority' | 'viewKey'>): boolean {
+function isAppManagedOutboxRow(row: Pick<OutboxEntry, 'priority' | 'viewKey'>): boolean {
   return isEmergencyOutboxPriority(row) || isIncidentAckOutboxRow(row);
 }
 
@@ -163,7 +163,7 @@ const LEGACY_MULTIPART_PREFIX_RE = /^\[\d+\/\d+\]\s/;
  * (`groupTotal > 1`) and/or payloads already prefixed with `[i/N] `. Single-packet protocols
  * must not TX these on upgrade — quarantine for user cancel/edit instead.
  */
-export function isLegacySinglePacketMultipartOutboxRow(row: OutboxEntry): boolean {
+function isLegacySinglePacketMultipartOutboxRow(row: OutboxEntry): boolean {
   if (!isMeshProtocol(row.protocol)) return false;
   if (getRadioCapabilities(row.protocol).composerMaxChunks > 1) return false;
   if (row.groupTotal != null && row.groupTotal > 1) return true;
@@ -451,7 +451,7 @@ export type ChatOutboxSendFn = (
   replyId?: number,
 ) => Promise<string | undefined> | string | undefined;
 
-type OutboxRowPatchFn = (id: number, patch: Partial<OutboxEntry>) => void;
+export type OutboxRowPatchFn = (id: number, patch: Partial<OutboxEntry>) => void;
 
 export interface DrainChatOutboxOnceOptions {
   protocol: MeshProtocol;

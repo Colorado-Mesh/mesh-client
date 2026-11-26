@@ -5,7 +5,7 @@ import type { registerNotificationSoundPlayWavIpc as RegisterFn } from './notifi
 
 const requireFromHere = createRequire(__filename);
 
-type Register = typeof RegisterFn;
+export type Register = typeof RegisterFn;
 
 let cached: Register | undefined;
 

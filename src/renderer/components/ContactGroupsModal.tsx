@@ -20,7 +20,7 @@ import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useToast } from './Toast';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 
-interface ContactGroupsModalProps {
+export interface ContactGroupsModalProps {
   groups: ContactGroup[];
   contacts: Map<number, MeshNode>;
   selfNodeId: number | null;

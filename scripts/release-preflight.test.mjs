@@ -26,7 +26,6 @@ describe('Release preflight (e2e.yaml job)', () => {
   it('keeps release tooling in the composite, not inline in Cut release', () => {
     for (const tool of [
       'dtolnay/rust-toolchain',
-      'setup:actionlint',
       'pip install --require-hashes --only-binary=:all:',
       'scripts/requirements-yamllint.txt',
     ]) {
@@ -37,6 +36,15 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(toolchain).not.toMatch(/requirements-semgrep|Install Semgrep/i);
     expect(cutRelease).not.toMatch(/uses: actions\/setup-node@/);
     expect(cutRelease).not.toMatch(/uses: pnpm\/action-setup@/);
+  });
+
+  it('uses the npm-installed actionlint rather than a setup script', () => {
+    expect(ci).toContain('pnpm exec github-actionlint');
+    for (const workflow of [toolchain, cutRelease, preflightJob, ci]) {
+      expect(workflow).not.toContain('setup:actionlint');
+      expect(workflow).not.toContain('install-actionlint');
+      expect(workflow).not.toContain('.githooks/bin');
+    }
   });
 
   it('does not install Semgrep in GitHub Actions (local pre-commit only)', () => {

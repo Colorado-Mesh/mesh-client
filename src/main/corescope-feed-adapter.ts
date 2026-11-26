@@ -9,8 +9,8 @@ const PAGE_SIZE = 500;
 const MAX_NODES = 5_000;
 const MAX_OBSERVERS = 1_000;
 
-type Snapshot = Extract<BeaconFeedUpdate, { type: 'snapshot' }>;
-type ReadResource = (path: string) => Promise<unknown>;
+export type Snapshot = Extract<BeaconFeedUpdate, { type: 'snapshot' }>;
+export type ReadResource = (path: string) => Promise<unknown>;
 
 /** CoreScope uses offsets and a separate observer directory, rather than Beacon's cursor API. */
 export async function readCoreScopeSnapshot(

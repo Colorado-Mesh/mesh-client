@@ -5,7 +5,7 @@
 import type { MeshBeaconPayload } from './meshBeaconCodec';
 import { MESHTASTIC_MAX_CHANNELS } from './meshBeaconConfig';
 
-interface ChannelSlot {
+export interface ChannelSlot {
   index: number;
   name: string;
   role: number;

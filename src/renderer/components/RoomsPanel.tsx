@@ -202,7 +202,7 @@ function readDetailsPinned(): boolean {
   }
 }
 
-interface Props {
+export interface Props {
   nodes: Map<number, MeshNode>;
   messages: ChatMessage[];
   myNodeNum: number;

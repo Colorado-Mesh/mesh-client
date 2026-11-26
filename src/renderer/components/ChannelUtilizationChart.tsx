@@ -6,7 +6,7 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 
 import type { MeshNode } from '../lib/types';
 
-interface ChannelUtilizationChartProps {
+export interface ChannelUtilizationChartProps {
   nodes: Map<number, MeshNode>;
 }
 

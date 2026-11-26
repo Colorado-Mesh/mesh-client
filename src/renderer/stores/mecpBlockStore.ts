@@ -12,7 +12,7 @@ const mecpBlockPersistence = createDurableRendererSetting(
 );
 
 /** One sender whose MECP reports no longer alert, open incidents, or get rebroadcast. */
-export interface MecpBlockedSender {
+interface MecpBlockedSender {
   protocol: MeshProtocol;
   /** Same `String(msg.from)` id the incident store keys senders by. */
   senderId: string;

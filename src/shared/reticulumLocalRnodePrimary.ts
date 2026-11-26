@@ -1,7 +1,7 @@
 import { isLocalConnectHost, parseConnectHostPort, stripConnectHostBrackets } from './connectHost';
 
 /** Reticulum serial interface types that can attach locally (USB, BLE, local TCP). */
-export const RETICULUM_LOCAL_SERIAL_INTERFACE_TYPES = new Set(['rnode', 'rnode_multi', 'kiss']);
+const RETICULUM_LOCAL_SERIAL_INTERFACE_TYPES = new Set(['rnode', 'rnode_multi', 'kiss']);
 
 const RNODE_TCP_SCHEME = 'tcp://';
 const BLE_SCHEME = 'ble://';
@@ -29,7 +29,7 @@ function parseRnodeTcpHost(serialPort: string): string | null {
   return stripConnectHostBrackets(parsed.host);
 }
 
-export function isReticulumLocalSerialInterfaceType(type: string): boolean {
+function isReticulumLocalSerialInterfaceType(type: string): boolean {
   return RETICULUM_LOCAL_SERIAL_INTERFACE_TYPES.has(type.trim().toLowerCase());
 }
 

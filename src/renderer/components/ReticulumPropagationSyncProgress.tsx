@@ -20,7 +20,7 @@ export function getReticulumPropagationSyncTargetName(localLabel: string): strin
   return resolveReticulumPropagationTargetLabel(nodes, discovered, syncTargetId, localLabel);
 }
 
-export function useReticulumPropagationSyncTargetName(): string | null {
+function useReticulumPropagationSyncTargetName(): string | null {
   const { t } = useTranslation();
   const nodes = useReticulumPropagationStore((s) => s.nodes);
   const discovered = useReticulumPropagationStore((s) => s.discovered);

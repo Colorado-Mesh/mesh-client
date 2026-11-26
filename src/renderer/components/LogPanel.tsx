@@ -14,12 +14,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import type { LogEntry } from '../../shared/electron-api.types';
 import { formatLogTimeOfDay } from '../../shared/formatLogTimestamp';
-import {
-  isAppLogLine,
-  isDeviceLogLine,
-  isOwnedByOther,
-  isProtocolExclusiveAppLogLine,
-} from '../../shared/logProtocolScope';
+import { isAppLogLine, isDeviceLogLine, isOwnedByOther } from '../../shared/logProtocolScope';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { MeshProtocol } from '../lib/types';
 import LogAnalyzeModal from './LogAnalyzeModal';
@@ -85,10 +80,6 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
 }
 
 /** App-panel tags scoped to one protocol tab (not device/SDK traffic). */
-export function isProtocolExclusiveAppEntry(entry: LogEntry, protocol: MeshProtocol): boolean {
-  return isProtocolExclusiveAppLogLine(entry, protocol);
-}
-
 /** True when the line belongs to a protocol other than the active tab. */
 export function isOwnedByOtherProtocol(entry: LogEntry, activeProtocol: MeshProtocol): boolean {
   return isOwnedByOther(entry, activeProtocol);
@@ -140,7 +131,7 @@ function persistPanelWidth(w: number): void {
   }
 }
 
-type LogPanelVariant = 'sidebar' | 'overlay';
+export type LogPanelVariant = 'sidebar' | 'overlay';
 
 export default function LogPanel({
   variant = 'sidebar',

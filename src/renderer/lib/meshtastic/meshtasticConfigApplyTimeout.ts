@@ -1,7 +1,7 @@
 import { MESHTASTIC_MODULE_APPLY_TIMEOUT_MS } from '../timeConstants';
 
 /** Sentinel message for config apply Promise.race timeouts (Modules / Radio). */
-export const MESHTASTIC_CONFIG_APPLY_TIMEOUT_MESSAGE = 'TIMEOUT';
+const MESHTASTIC_CONFIG_APPLY_TIMEOUT_MESSAGE = 'TIMEOUT';
 
 export function isMeshtasticConfigApplyTimeout(err: unknown): boolean {
   return err instanceof Error && err.message === MESHTASTIC_CONFIG_APPLY_TIMEOUT_MESSAGE;

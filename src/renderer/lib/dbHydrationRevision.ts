@@ -4,7 +4,7 @@
  * instead of reacting to every in-memory message insert.
  */
 
-type Listener = () => void;
+export type Listener = () => void;
 
 let revision = 0;
 const listeners = new Set<Listener>();

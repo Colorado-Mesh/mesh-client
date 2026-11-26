@@ -26,7 +26,7 @@ export const OFFLINE_MESHCORE_IDENTITY_ID = 'offline-meshcore' as IdentityId;
 export const OFFLINE_RETICULUM_IDENTITY_ID = 'offline-reticulum' as IdentityId;
 export const OFFLINE_MESHCOM_IDENTITY_ID = 'offline-meshcom' as IdentityId;
 
-export const OFFLINE_IDENTITY_BY_PROTOCOL: Record<MeshProtocol, IdentityId> = {
+const OFFLINE_IDENTITY_BY_PROTOCOL: Record<MeshProtocol, IdentityId> = {
   meshtastic: OFFLINE_MESHTASTIC_IDENTITY_ID,
   meshcore: OFFLINE_MESHCORE_IDENTITY_ID,
   reticulum: OFFLINE_RETICULUM_IDENTITY_ID,
@@ -51,7 +51,7 @@ export function getOfflineIdentityIdForProtocol(protocol: MeshProtocol): Identit
 }
 
 /** True when the identity has never had a live transport (still the pre-connect slot). */
-export function isReusableOfflineIdentity(record: IdentityRecord): boolean {
+function isReusableOfflineIdentity(record: IdentityRecord): boolean {
   return record.transports.length === 0;
 }
 

@@ -49,14 +49,14 @@ export interface MeshcoreRoomSession {
 export type MeshcoreRoomLoginConn = MeshcoreRadioConnection;
 
 /** Firmware PERM_ACL_ROLE_MASK values (CommonCLI / room server ACL). */
-export const MESHCORE_ROOM_PERM_GUEST = 0;
+const MESHCORE_ROOM_PERM_GUEST = 0;
 export const MESHCORE_ROOM_PERM_READ_ONLY = 1;
-export const MESHCORE_ROOM_PERM_READ_WRITE = 2;
-export const MESHCORE_ROOM_PERM_ADMIN = 3;
+const MESHCORE_ROOM_PERM_READ_WRITE = 2;
+const MESHCORE_ROOM_PERM_ADMIN = 3;
 
 const sessions = new Map<number, MeshcoreRoomSession>();
 
-type RoomSessionChangeListener = () => void;
+export type RoomSessionChangeListener = () => void;
 const roomSessionChangeListeners = new Set<RoomSessionChangeListener>();
 
 function notifyRoomSessionChanged(): void {
@@ -256,7 +256,7 @@ function roleFromPasswordHint(
  * Prefer v7+ `permissions` (PERM_ACL_*). Do not treat `reserved` as ACL — that byte is the
  * legacy admin/guest hint (0=RW, 1=admin, 2=guest) and inverts read-write vs guest.
  */
-export function parseLoginResponsePermissions(response: unknown): number | null {
+function parseLoginResponsePermissions(response: unknown): number | null {
   if (!response || typeof response !== 'object') return null;
   const r = response as Record<string, unknown>;
   if (typeof r.permissions === 'number' && Number.isFinite(r.permissions)) {
@@ -265,7 +265,7 @@ export function parseLoginResponsePermissions(response: unknown): number | null 
   return null;
 }
 
-export function resolveMeshcoreRoomLoginRole(
+function resolveMeshcoreRoomLoginRole(
   response: unknown,
   password: string,
   adminPassword: string,
@@ -322,7 +322,7 @@ export function meshcoreRoomEffectiveGuestPassword(password: string): string {
 }
 
 /** True when Login sent the older factory default guest password `"hello"`. */
-export function meshcoreRoomUsedDefaultGuestPassword(password: string): boolean {
+function meshcoreRoomUsedDefaultGuestPassword(password: string): boolean {
   return password === MESHCORE_ROOM_DEFAULT_GUEST_PASSWORD;
 }
 

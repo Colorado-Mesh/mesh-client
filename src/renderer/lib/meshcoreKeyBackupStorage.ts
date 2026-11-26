@@ -2,8 +2,8 @@ import { createEncryptedKeyBackupStorage } from './encryptedKeyBackupStorage';
 import { nodeNumDisplayHex } from './keyBackupBytes';
 import { MESHCORE_PUBLIC_KEY_LENGTH } from './letsMeshJwt';
 
-export const MESHCORE_KEY_BACKUP_PREFIX = 'mesh-client:meshcore-key-backup:';
-export const MESHCORE_KEY_BACKUP_INDEX_KEY = 'mesh-client:meshcore-key-backup-index';
+const MESHCORE_KEY_BACKUP_PREFIX = 'mesh-client:meshcore-key-backup:';
+const MESHCORE_KEY_BACKUP_INDEX_KEY = 'mesh-client:meshcore-key-backup-index';
 
 export interface MeshcoreKeyBackupPayload {
   protocol: 'meshcore';

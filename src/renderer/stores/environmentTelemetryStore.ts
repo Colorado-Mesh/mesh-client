@@ -27,16 +27,16 @@ export interface EnvironmentHistoryPoint {
   source: EnvironmentTelemetrySource;
 }
 
-type NodeSeriesMap = ReadonlyMap<number, readonly EnvironmentHistoryPoint[]>;
-type MutableNodeSeriesMap = Map<number, readonly EnvironmentHistoryPoint[]>;
+export type NodeSeriesMap = ReadonlyMap<number, readonly EnvironmentHistoryPoint[]>;
+export type MutableNodeSeriesMap = Map<number, readonly EnvironmentHistoryPoint[]>;
 
 const EMPTY_SERIES: readonly EnvironmentHistoryPoint[] = [];
 const EMPTY_NODE_MAP: NodeSeriesMap = new Map();
 
 /** protocol → identityId → nodeId → series */
-type HistoryMap = Map<MeshProtocol, Map<IdentityId, MutableNodeSeriesMap>>;
+export type HistoryMap = Map<MeshProtocol, Map<IdentityId, MutableNodeSeriesMap>>;
 
-interface EnvironmentTelemetryState {
+export interface EnvironmentTelemetryState {
   history: HistoryMap;
   /**
    * Store a reading for one node under an identity. Identical readings inside the dedup window

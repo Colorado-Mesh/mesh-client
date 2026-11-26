@@ -819,12 +819,8 @@ fi
 
 # GitHub Actions validation (required — do not soft-skip)
 echo "Validating GitHub Actions..."
-if ! command -v actionlint > /dev/null 2>&1; then
-  print_error "actionlint not found. Install via 'pnpm run setup:actionlint' — release does not skip workflow validation."
-  exit 1
-fi
-if ! actionlint; then
-  print_error "GitHub Actions validation failed."
+if ! pnpm exec github-actionlint; then
+  print_error "GitHub Actions validation failed. Ensure dependencies are installed (pnpm install) — release does not skip workflow validation."
   exit 1
 fi
 

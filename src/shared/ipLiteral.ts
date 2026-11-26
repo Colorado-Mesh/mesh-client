@@ -22,7 +22,7 @@ interface Cidr6 {
 }
 
 type Ipv4Octets = [number, number, number, number];
-type Ipv6Hextets = [number, number, number, number, number, number, number, number];
+export type Ipv6Hextets = [number, number, number, number, number, number, number, number];
 
 function parseIpv4Octets(host: string): Ipv4Octets | null {
   const parts = host.split('.');

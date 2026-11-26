@@ -62,7 +62,7 @@ function isGamesUpdatePayload(value: unknown): value is GamesUpdateEventPayload 
   return typeof v.app_id === 'string' && typeof v.session_id === 'string';
 }
 
-interface ReticulumGamesStoreState {
+export interface ReticulumGamesStoreState {
   sessions: GameSession[];
   selectedSessionId: string | null;
   apps: GamesAppManifest[];

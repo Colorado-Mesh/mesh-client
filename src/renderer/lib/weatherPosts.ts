@@ -44,7 +44,7 @@ export function compileWeatherPattern(pattern: string): RegExp | null | 'invalid
   }
 }
 
-type WeatherPostMessage = Pick<ChatMessage, 'sender_id' | 'payload'>;
+export type WeatherPostMessage = Pick<ChatMessage, 'sender_id' | 'payload'>;
 const cache = new WeakMap<WeatherPostMessage, { config: WeatherPostConfig; value: boolean }>();
 
 function matchWeatherPost(msg: WeatherPostMessage, config: WeatherPostConfig): boolean {

@@ -674,119 +674,218 @@ function reportFailure(error: unknown): void {
 }
 
 /** Return completed only after a verified copy or a healthy previously completed copy. */
+function shouldSkipRendererOriginMigration(
+  options: WebStorageOriginMigrationOptions,
+  env: NodeJS.ProcessEnv,
+): boolean {
+  return Boolean(
+    normalizeDevServerUrl(options.devServerUrl) ||
+    env[ENV_FORCE_FILE_ORIGIN] === '1' ||
+    env[ENV_SKIP_ORIGIN_MIGRATION] === '1',
+  );
+}
+
+/** Re-verifies or repairs an already-completed migration; null when state has not completed. */
+async function resolveCompletedOriginMigration(
+  options: WebStorageOriginMigrationOptions,
+  state: MigrationState | undefined,
+  snapshot: StorageExport | undefined,
+  env: NodeJS.ProcessEnv,
+): Promise<'completed' | null> {
+  if (!state?.hasCompleted) return null;
+  requireCompletedExport(state, snapshot);
+  const current = await readTarget(options);
+  if (env[ENV_FORCE_ORIGIN_REPAIR] !== '1' && storageHealthy(options, snapshot, current)) {
+    if (state.phase !== 'completed') await reverifyExistingStorage(options, snapshot, current);
+    else
+      await withTimeout(
+        Promise.resolve(options.seedDurableStorage(current)),
+        options.timeoutMs ?? MIGRATION_TIMEOUT_MS,
+      );
+    return 'completed';
+  }
+  await repairStorage(options, snapshot, current);
+  return 'completed';
+}
+
+/** Handles a surviving custom origin that still carries the migration sentinel. */
+async function resolveSentinelOriginMigration(
+  options: WebStorageOriginMigrationOptions,
+  snapshot: StorageExport | undefined,
+  untrackedCurrent: WebStorageEntries | undefined,
+  env: NodeJS.ProcessEnv,
+): Promise<'completed' | null> {
+  if (!untrackedCurrent || !Object.hasOwn(untrackedCurrent, RENDERER_ORIGIN_STORAGE_SENTINEL_KEY)) {
+    return null;
+  }
+  if (!snapshot || !storageHealthy(options, snapshot, untrackedCurrent)) {
+    throw new Error('Untracked renderer origin has no matching recovery export');
+  }
+  if (env[ENV_FORCE_ORIGIN_REPAIR] === '1') {
+    await repairStorage(options, snapshot, untrackedCurrent);
+  } else {
+    await reverifyExistingStorage(options, snapshot, untrackedCurrent);
+  }
+  return 'completed';
+}
+
+interface LegacyStorageBridge {
+  entries: WebStorageEntries;
+  liveLegacyEntries: WebStorageEntries | undefined;
+}
+
+async function bridgeLegacyStorageEntries(
+  options: WebStorageOriginMigrationOptions,
+  snapshot: StorageExport | undefined,
+): Promise<LegacyStorageBridge> {
+  let entries: WebStorageEntries;
+  let liveLegacyEntries: WebStorageEntries | undefined;
+  try {
+    entries = await inStorageWindow(options.legacyMigrationUrl, options, readStorage);
+    liveLegacyEntries = entries;
+  } catch (error) {
+    if (!snapshot) throw error;
+    console.warn(
+      'mcL0328 [Startup] Renderer origin legacy storage unavailable; resuming from the saved recovery export',
+    );
+    entries = snapshot.entries;
+  }
+  return { entries, liveLegacyEntries };
+}
+
+/** Keeps the existing recovery export when legacy lost keys, else writes the new snapshot. */
+function recordLegacyStorageSnapshot(
+  options: WebStorageOriginMigrationOptions,
+  snapshot: StorageExport | undefined,
+  entries: WebStorageEntries,
+): StorageExport {
+  if (
+    snapshot &&
+    (Object.keys(entries).length < snapshot.keyCount ||
+      Object.keys(snapshot.entries).some((key) => !Object.hasOwn(entries, key)))
+  ) {
+    console.warn(
+      'mcL0329 [Startup] Renderer origin keeping the existing recovery export; legacy snapshot lost keys',
+    );
+    return snapshot;
+  }
+  const next: StorageExport = {
+    formatVersion: RENDERER_ORIGIN_EXPORT_FORMAT_VERSION,
+    capturedAt: new Date().toISOString(),
+    appVersion: options.appVersion,
+    keyCount: Object.keys(entries).length,
+    sha256: storageDigest(entries),
+    entries,
+  };
+  writeJsonAtomic(migrationPath(options, LEGACY_STORAGE_EXPORT_FILENAME), next);
+  return next;
+}
+
+/** Repairs a surviving custom origin into the completed state; false when there is none. */
+async function repairUntrackedOriginWithSnapshot(
+  options: WebStorageOriginMigrationOptions,
+  snapshot: StorageExport | undefined,
+  untrackedCurrent: WebStorageEntries | undefined,
+): Promise<boolean> {
+  if (!untrackedCurrent || Object.keys(untrackedCurrent).length === 0 || !snapshot) return false;
+  await repairStorage(options, snapshot, untrackedCurrent);
+  return true;
+}
+
+function hasUntrackedOriginEntries(
+  untrackedCurrent: WebStorageEntries | undefined,
+): untrackedCurrent is WebStorageEntries {
+  return Boolean(untrackedCurrent && Object.keys(untrackedCurrent).length > 0);
+}
+
+/** Re-adds app fields the live legacy origin dropped, keeping its data authoritative. */
+function reconcileLegacyEntries(
+  snapshot: StorageExport | undefined,
+  entries: WebStorageEntries,
+  liveLegacyEntries: WebStorageEntries | undefined,
+): LegacyStorageBridge {
+  if (!snapshot) return { entries, liveLegacyEntries };
+  return {
+    entries: recoverMissingAppFields(snapshot.entries, entries),
+    liveLegacyEntries: liveLegacyEntries
+      ? recoverMissingAppFields(snapshot.entries, liveLegacyEntries)
+      : liveLegacyEntries,
+  };
+}
+
+/** Merge order: live target <- saved export <- live legacy (deletion journals stripped). */
+function buildOriginImportEntries(
+  current: WebStorageEntries,
+  snapshot: StorageExport,
+  liveLegacyEntries: WebStorageEntries | undefined,
+): WebStorageEntries {
+  return {
+    ...withoutDeletionJournal(current),
+    ...withoutDeletionJournal(snapshot.entries),
+    ...liveLegacyEntries,
+  };
+}
+
+async function commitLegacyDeletionIntents(
+  options: WebStorageOriginMigrationOptions,
+  liveLegacyEntries: WebStorageEntries | undefined,
+): Promise<void> {
+  const importedIntents = Object.fromEntries(
+    Object.entries(liveLegacyEntries ?? {})
+      .filter(([key]) => key.startsWith(RENDERER_STORAGE_DELETION_PREFIX))
+      .map(([key, value]) => [
+        key.slice(RENDERER_STORAGE_DELETION_PREFIX.length),
+        parseRendererStorageIntent(value),
+      ]),
+  );
+  if (Object.keys(importedIntents).length === 0) return;
+  await withTimeout(
+    Promise.resolve(options.commitImportedStorageIntents(importedIntents)),
+    options.timeoutMs ?? MIGRATION_TIMEOUT_MS,
+  );
+}
+
 export async function runWebStorageOriginMigration(
   options: WebStorageOriginMigrationOptions,
 ): Promise<RendererOriginMigrationResult> {
   const env = options.env ?? process.env;
-  if (
-    normalizeDevServerUrl(options.devServerUrl) ||
-    env[ENV_FORCE_FILE_ORIGIN] === '1' ||
-    env[ENV_SKIP_ORIGIN_MIGRATION] === '1'
-  ) {
-    return 'skipped';
-  }
+  if (shouldSkipRendererOriginMigration(options, env)) return 'skipped';
   let state: MigrationState | undefined;
   let snapshot: StorageExport | undefined;
   try {
     assertStorageResetCompleted(options);
     state = readState(options);
     snapshot = readStorageExport(options);
-    if (state?.hasCompleted) {
-      requireCompletedExport(state, snapshot);
-      const current = await readTarget(options);
-      if (env[ENV_FORCE_ORIGIN_REPAIR] !== '1' && storageHealthy(options, snapshot, current)) {
-        if (state.phase !== 'completed') await reverifyExistingStorage(options, snapshot, current);
-        else
-          await withTimeout(
-            Promise.resolve(options.seedDurableStorage(current)),
-            options.timeoutMs ?? MIGRATION_TIMEOUT_MS,
-          );
-        return 'completed';
-      }
-      await repairStorage(options, snapshot, current);
-      return 'completed';
-    }
+    const completed = await resolveCompletedOriginMigration(options, state, snapshot, env);
+    if (completed) return completed;
 
     // A missing state file does not make surviving custom-origin user data disposable.
     // A matching marker/export can re-earn completion through a full verification. Missing or
     // mismatched recovery evidence must fail before creating a replacement state file.
     const untrackedCurrent = state === undefined ? await readTarget(options) : undefined;
-    if (untrackedCurrent && Object.hasOwn(untrackedCurrent, RENDERER_ORIGIN_STORAGE_SENTINEL_KEY)) {
-      if (!snapshot || !storageHealthy(options, snapshot, untrackedCurrent)) {
-        throw new Error('Untracked renderer origin has no matching recovery export');
-      }
-      if (env[ENV_FORCE_ORIGIN_REPAIR] === '1') {
-        await repairStorage(options, snapshot, untrackedCurrent);
-      } else {
-        await reverifyExistingStorage(options, snapshot, untrackedCurrent);
-      }
-      return 'completed';
-    }
+    const sentinel = await resolveSentinelOriginMigration(options, snapshot, untrackedCurrent, env);
+    if (sentinel) return sentinel;
 
-    const untracked = untrackedCurrent && Object.keys(untrackedCurrent).length > 0;
-    if (untracked && snapshot) {
-      await repairStorage(options, snapshot, untrackedCurrent);
+    const untracked = hasUntrackedOriginEntries(untrackedCurrent);
+    if (await repairUntrackedOriginWithSnapshot(options, snapshot, untrackedCurrent)) {
       return 'completed';
     }
 
     // Preserve the untracked origin across interruptions: write its legacy recovery export
     // first, then repairStorage records hasCompleted before any target writes can occur.
     if (!untracked) saveState(options, 'pending', snapshot, false);
-    let entries: WebStorageEntries;
-    let liveLegacyEntries: WebStorageEntries | undefined;
-    try {
-      entries = await inStorageWindow(options.legacyMigrationUrl, options, readStorage);
-      liveLegacyEntries = entries;
-    } catch (error) {
-      if (!snapshot) throw error;
-      console.warn(
-        'mcL0328 [Startup] Renderer origin legacy storage unavailable; resuming from the saved recovery export',
-      );
-      entries = snapshot.entries;
-    }
-    if (snapshot) {
-      entries = recoverMissingAppFields(snapshot.entries, entries);
-      if (liveLegacyEntries)
-        liveLegacyEntries = recoverMissingAppFields(snapshot.entries, liveLegacyEntries);
-    }
-    if (
-      snapshot &&
-      (Object.keys(entries).length < snapshot.keyCount ||
-        Object.keys(snapshot.entries).some((key) => !Object.hasOwn(entries, key)))
-    ) {
-      console.warn(
-        'mcL0329 [Startup] Renderer origin keeping the existing recovery export; legacy snapshot lost keys',
-      );
-    } else {
-      snapshot = {
-        formatVersion: RENDERER_ORIGIN_EXPORT_FORMAT_VERSION,
-        capturedAt: new Date().toISOString(),
-        appVersion: options.appVersion,
-        keyCount: Object.keys(entries).length,
-        sha256: storageDigest(entries),
-        entries,
-      };
-      writeJsonAtomic(migrationPath(options, LEGACY_STORAGE_EXPORT_FILENAME), snapshot);
-    }
-    if (untracked) {
-      await repairStorage(options, snapshot, untrackedCurrent);
+    const bridge = await bridgeLegacyStorageEntries(options, snapshot);
+    const { entries, liveLegacyEntries } = reconcileLegacyEntries(
+      snapshot,
+      bridge.entries,
+      bridge.liveLegacyEntries,
+    );
+    snapshot = recordLegacyStorageSnapshot(options, snapshot, entries);
+    if (await repairUntrackedOriginWithSnapshot(options, snapshot, untrackedCurrent)) {
       return 'completed';
     }
     saveState(options, 'exported', snapshot, false);
-    const importedIntents = Object.fromEntries(
-      Object.entries(liveLegacyEntries ?? {})
-        .filter(([key]) => key.startsWith(RENDERER_STORAGE_DELETION_PREFIX))
-        .map(([key, value]) => [
-          key.slice(RENDERER_STORAGE_DELETION_PREFIX.length),
-          parseRendererStorageIntent(value),
-        ]),
-    );
-    if (Object.keys(importedIntents).length > 0) {
-      await withTimeout(
-        Promise.resolve(options.commitImportedStorageIntents(importedIntents)),
-        options.timeoutMs ?? MIGRATION_TIMEOUT_MS,
-      );
-    }
+    await commitLegacyDeletionIntents(options, liveLegacyEntries);
     // Preserve recovery-only and partially imported data, while the live legacy origin
     // remains authoritative until the first cutover. Only its current pending journal may
     // override SQLite; journals in the saved export or a prior partial import are historical.
@@ -794,11 +893,7 @@ export async function runWebStorageOriginMigration(
     await importAndVerify(
       options,
       snapshot,
-      {
-        ...withoutDeletionJournal(current),
-        ...withoutDeletionJournal(snapshot.entries),
-        ...liveLegacyEntries,
-      },
+      buildOriginImportEntries(current, snapshot, liveLegacyEntries),
       false,
     );
     return 'completed';

@@ -1,6 +1,5 @@
 /** Shared-location wire helpers for chat (plain text + OSM link; locale-independent parse). */
 
-import { buildRemoteTileUrl } from '@/shared/offlineMaps/basemapRegistry';
 import { latLonToTile as sharedLatLonToTile } from '@/shared/offlineMaps/tileMath';
 
 export interface ParsedLocationMessage {
@@ -217,11 +216,6 @@ export function buildStaticTileUrl(lat: number, lon: number, zoom = 14): string 
 }
 
 /** Exact remote host contacted by the OSM cache-miss path for a static chat tile. */
-export function buildStaticTileDestinationHost(lat: number, lon: number, zoom = 14): string {
-  const { x, y, z } = latLonToTile(lat, lon, zoom);
-  return new URL(buildRemoteTileUrl('osm', z, x, y)).hostname;
-}
-
 function formatCoord(n: number): string {
   // Trim trailing zeros while keeping enough precision for map pins.
   return Number(n.toFixed(6)).toString();

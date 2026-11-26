@@ -66,27 +66,6 @@ export interface EncodeResult {
   warnings: string[];
 }
 
-/** Validation result for a raw MECP string */
-export interface ValidationResult {
-  /** Whether the string is valid MECP */
-  valid: boolean;
-  /** Array of validation errors */
-  errors: string[];
-  /** Array of validation warnings */
-  warnings: string[];
-}
-
-/**
- * Upstream severity label pair. Stripped language packs do not include
- * `severities`; the app uses i18n keys (`mecp.severity.*`) instead.
- */
-export interface SeverityDef {
-  /** Localized label */
-  local: string;
-  /** Combined label (e.g., "URGENT / NALIEHAVÉ") */
-  label: string;
-}
-
 /** Category definition within a language file */
 export interface CategoryDef {
   /** Localized category name */

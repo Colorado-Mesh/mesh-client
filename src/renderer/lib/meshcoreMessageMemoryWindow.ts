@@ -128,7 +128,7 @@ export function trimMeshcoreMemoryWindow<T>(
 }
 
 /** Map a MeshCore chat row onto the fields the fair memory window groups by. */
-export function meshcoreChatMessageWindowFields(message: ChatMessage): MeshcoreMemoryWindowFields {
+function meshcoreChatMessageWindowFields(message: ChatMessage): MeshcoreMemoryWindowFields {
   return {
     timestamp: message.timestamp,
     receivedAt: message.receivedAt,

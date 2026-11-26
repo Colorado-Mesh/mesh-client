@@ -3,11 +3,8 @@ import { type NodeHashCandidate, resolveNodeId } from './meshcoreNodeHash';
 /** Companion / CLI path.hash.mode: 0 → 1-byte, 1 → 2-byte, 2 → 3-byte per hop. */
 export type MeshcorePathHashMode = 0 | 1 | 2;
 
-export const MESHCORE_PATH_HASH_MODE_MIN = 0 as const;
-export const MESHCORE_PATH_HASH_MODE_MAX = 2 as const;
-
 /** Max flood hop count per hash size (MeshCore firmware v1.14+). */
-export const MESHCORE_PATH_HASH_MAX_HOPS: Readonly<Record<1 | 2 | 3, number>> = {
+const MESHCORE_PATH_HASH_MAX_HOPS: Readonly<Record<1 | 2 | 3, number>> = {
   1: 64,
   2: 32,
   3: 21,
@@ -98,12 +95,6 @@ export function meshcorePubkeyPathPrefix(pubKey: Uint8Array, hashSizeBytes: 1 | 
     throw new Error(`Public key too short for ${hashSizeBytes}-byte path prefix`);
   }
   return pubKey.subarray(0, hashSizeBytes);
-}
-
-export function meshcorePubkeyPathPrefixHex(pubKey: Uint8Array, hashSizeBytes: 1 | 2 | 3): string {
-  return Array.from(meshcorePubkeyPathPrefix(pubKey, hashSizeBytes), (b) =>
-    b.toString(16).padStart(2, '0'),
-  ).join('');
 }
 
 /** Split flat path hash bytes into per-hop segments. */

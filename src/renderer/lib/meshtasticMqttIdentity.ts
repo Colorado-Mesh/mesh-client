@@ -4,13 +4,13 @@ import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 export type MqttOnlyIdentitySource = 'lastRf' | 'virtual';
 
 export const MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY = 'meshtasticLastRfSelfNodeId';
-export const MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY = 'meshtasticOwnNodeNumsByPublicKey';
+const MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY = 'meshtasticOwnNodeNumsByPublicKey';
 const MESHTASTIC_OWN_NODE_NUMS_PER_KEY_MAX = 8;
 const PUBLIC_KEY_HEX_RE = /^[0-9a-f]{64}$/;
 const ZERO_PUBLIC_KEY_HEX = '0'.repeat(64);
 
 /** Parse a stored last-RF node id; returns 0 when missing or out of range. */
-export function parseLastRfSelfNodeIdRaw(raw: unknown): number {
+function parseLastRfSelfNodeIdRaw(raw: unknown): number {
   const nodeNum = typeof raw === 'number' ? raw : Number(raw);
   if (!Number.isFinite(nodeNum) || nodeNum <= 0 || nodeNum >= 0xffffffff) return 0;
   return nodeNum >>> 0;

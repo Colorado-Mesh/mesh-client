@@ -13,7 +13,7 @@ import {
 import type { MeshNode } from '../lib/types';
 import { RFNoiseFloorCard } from './RFNoiseFloorCard';
 
-interface RFHistogramsPanelProps {
+export interface RFHistogramsPanelProps {
   nodes: Map<number, MeshNode>;
   /** Self node id for the active protocol (App.tsx already computes it). */
   myNodeId: number | null | undefined;

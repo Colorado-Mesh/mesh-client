@@ -11,12 +11,12 @@ import { writeToRadioWithoutQueue } from './meshtasticBacklogUtils';
 import { parseMeshtasticAdminKeyBase64 } from './meshtasticRemoteAdminKeyStorage';
 import { REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT } from './meshtasticRemoteAdminModuleFetches';
 
-interface AdminMessagePayloadVariant {
+export interface AdminMessagePayloadVariant {
   case: string;
   value?: unknown;
 }
 
-interface AdminMessage {
+export interface AdminMessage {
   sessionPasskey?: Uint8Array;
   payloadVariant: AdminMessagePayloadVariant;
 }
@@ -25,14 +25,14 @@ function adminMessage(init: Record<string, unknown>): AdminMessage {
   return create(Admin.AdminMessageSchema, init) as AdminMessage;
 }
 
-interface MeshPacketDecoded {
+export interface MeshPacketDecoded {
   portnum?: number;
   payload?: Uint8Array;
   requestId?: number;
   replyId?: number;
 }
 
-interface MeshPacket {
+export interface MeshPacket {
   id?: number;
   from?: number;
   to?: number;
@@ -44,15 +44,13 @@ interface MeshPacket {
 }
 
 /** Default hop budget for multi-hop PKI admin (protobuf otherwise defaults hopLimit to 0). */
-export const REMOTE_ADMIN_PACKET_HOP_LIMIT = 7;
+const REMOTE_ADMIN_PACKET_HOP_LIMIT = 7;
 
 function adminPayloadCase(message: AdminMessage): string | undefined {
   return message.payloadVariant.case;
 }
 
 /** Meshtastic Android PKC sentinel; channel field is omitted on wire for PKI admin. */
-export const REMOTE_ADMIN_PKC_CHANNEL_INDEX = 8;
-
 /** Firmware session_passkey TTL (AdminModule.cpp). */
 export const REMOTE_ADMIN_SESSION_TTL_MS = 300_000;
 
@@ -66,7 +64,7 @@ export const REMOTE_ADMIN_SESSION_ACTIVE_MS = 240_000;
 export const REMOTE_ADMIN_RESPONSE_TIMEOUT_MS = 120_000;
 
 /** Session-key exchange; fail faster so essential snapshot does not stall on one hop. */
-export const REMOTE_ADMIN_SESSION_KEY_TIMEOUT_MS = 45_000;
+const REMOTE_ADMIN_SESSION_KEY_TIMEOUT_MS = 45_000;
 
 /** Per-read timeout for essential snapshot when a response is not correlated promptly. */
 export const REMOTE_ADMIN_ESSENTIAL_RESPONSE_TIMEOUT_MS = 25_000;
@@ -161,12 +159,12 @@ export function delayMs(ms: number): Promise<void> {
 }
 
 /** Errors that may clear after session key exchange or a short BLE pause. */
-export function isRemoteAdminRetryableError(message: string): boolean {
+function isRemoteAdminRetryableError(message: string): boolean {
   return message === 'remoteAdmin.errors.timeout' || message === 'remoteAdmin.errors.badSessionKey';
 }
 
 /** ROUTING_APP codes that often precede a successful admin response on multi-hop reads. */
-export function isBenignRoutingErrorForRead(error: RemoteAdminRoutingErrorCode): boolean {
+function isBenignRoutingErrorForRead(error: RemoteAdminRoutingErrorCode): boolean {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const RoutingError = Mesh.Routing_Error as Record<string, number>;
   return (
@@ -179,7 +177,7 @@ export function isBenignRoutingErrorForRead(error: RemoteAdminRoutingErrorCode):
 
 export type RemoteAdminRoutingErrorCode = number;
 
-export interface RemoteAdminSessionEntry {
+interface RemoteAdminSessionEntry {
   passkey: Uint8Array;
   expiresAt: number;
 }
@@ -307,7 +305,7 @@ export function routingErrorToRemoteAdminKey(error: RemoteAdminRoutingErrorCode)
   }
 }
 
-export async function retryRemoteAdminOp<T>(
+async function retryRemoteAdminOp<T>(
   operation: () => Promise<T>,
   options?: {
     maxAttempts?: number;
@@ -336,13 +334,13 @@ export async function retryRemoteAdminOp<T>(
   throw lastError ?? new Error('remoteAdmin.errors.generic');
 }
 
-interface ResolveAdminRequestIdContext {
+export interface ResolveAdminRequestIdContext {
   pending?: Map<number, PendingRemoteAdmin>;
   from?: number;
 }
 
 /** Returns true when an ADMIN_APP response case cannot satisfy the pending read's expected cases. */
-export function isCrossTypeAdminReadResponse(
+function isCrossTypeAdminReadResponse(
   responseCase: string,
   expectedResponseCases: readonly string[] | undefined,
 ): boolean {
@@ -351,7 +349,7 @@ export function isCrossTypeAdminReadResponse(
 }
 
 /** Ignore stale cross-read ADMIN_APP instead of failing the active pending read. */
-export function shouldIgnoreStaleAdminResponse(params: {
+function shouldIgnoreStaleAdminResponse(params: {
   responseCase: string;
   expectedResponseCases?: readonly string[];
   tombstoneResponseCase?: string;
@@ -371,7 +369,7 @@ export function shouldIgnoreStaleAdminResponse(params: {
   );
 }
 
-export function resolveAdminRequestId(
+function resolveAdminRequestId(
   meshPacket: MeshPacket,
   dataRequestId: number,
   context?: ResolveAdminRequestIdContext,
@@ -506,7 +504,7 @@ export interface RemoteAdminSendOptions {
   expectedResponseCases?: readonly string[];
 }
 
-interface PendingRemoteAdmin {
+export interface PendingRemoteAdmin {
   destNodeNum: number;
   packetId: number;
   adminCase?: string;
@@ -1170,18 +1168,6 @@ export class MeshtasticRemoteAdminClient {
    * `AdminMessage.sensor_config` (= 103): per-sensor tuning such as the AS3935 lightning
    * detector's tuning capacitance, which the sensor does not retain across power loss.
    */
-  async setRemoteSensorConfig(destNodeNum: number, sensorConfig: unknown): Promise<void> {
-    await this.beginRemoteEdit(destNodeNum);
-    await this.sendAdminRequest(
-      destNodeNum,
-      () =>
-        adminMessage({
-          payloadVariant: { case: 'sensorConfig', value: sensorConfig as never },
-        }),
-      { wantResponse: false, requireSession: true },
-    );
-  }
-
   async setRemoteChannel(destNodeNum: number, channel: unknown): Promise<void> {
     await this.beginRemoteEdit(destNodeNum);
     await this.sendAdminRequest(

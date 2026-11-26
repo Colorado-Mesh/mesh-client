@@ -22,7 +22,7 @@ import type { IdentityId, MeshNode } from '../types';
 export const NODE_WRITE_COALESCE_MS = 250;
 export const NODE_WRITE_FLUSH_MAX_PENDING = 500;
 export const MAX_PENDING_NODE_WRITES = 8000;
-export const NODE_BATCH_IPC_CHUNK_ROWS = 250;
+const NODE_BATCH_IPC_CHUNK_ROWS = 250;
 
 export interface EnqueueNodeWriteOptions {
   /** Persist to SQLite on flush (default true). False for UI-only merges. */

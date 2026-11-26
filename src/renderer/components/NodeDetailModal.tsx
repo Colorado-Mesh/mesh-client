@@ -127,7 +127,7 @@ import { Switch } from './ui/Switch';
 const TRACE_ROUTE_UI_TIMEOUT_MS = 30_000;
 const POSITION_HISTORY_MAX_ROWS = 100;
 
-interface NodeDetailModalProps {
+export interface NodeDetailModalProps {
   /** Optional: enables originator list for Mesh Congestion (RF duplicate-prone by node). */
   nodes?: Map<number, MeshNode>;
   node: MeshNode | null;

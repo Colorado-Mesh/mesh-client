@@ -23,7 +23,7 @@ export const MACOS_DMG_NOTICE_NAME = 'IMPORTANT-Read-Me.txt';
 /** GitHub Releases companion asset (sorts near macOS ZIP downloads). */
 export const MACOS_RELEASE_ASSET_NAME = '00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt';
 
-export const MACOS_INSTALL_NOTE_MARKER = '<!-- mesh-client-macos-install -->';
+const MACOS_INSTALL_NOTE_MARKER = '<!-- mesh-client-macos-install -->';
 
 const TROUBLESHOOTING_ANCHOR =
   'https://colorado-mesh.github.io/mesh-client/troubleshooting/#macos-library-not-loaded-squirrelframework-after-zip-extract';

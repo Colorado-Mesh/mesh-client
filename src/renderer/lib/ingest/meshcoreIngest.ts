@@ -11,7 +11,7 @@ import {
 } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { getConnection } from '../../stores/connectionStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { deleteMessage, useMessageStore } from '../../stores/messageStore';
+import { deleteMessage, type MessageRecord, useMessageStore } from '../../stores/messageStore';
 import {
   type NodeRecord,
   patchMeshcoreNodeLastHeardAt,
@@ -253,24 +253,19 @@ export function relayInsertedMeshcoreMqttChannel(args: {
   });
 }
 
-function handleTextMessage(
+function readMeshcoreIngestRecord(
   identityId: IdentityId,
-  event: Extract<DomainEvent, { type: 'text_message' }>,
-  options: MeshcoreIngestOptions = {},
-): void {
+  messageId: string,
+): MessageRecord | undefined {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
-  const record = useMessageStore.getState().messages[identityId]?.[event.payload.id];
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
-  if (!record) return;
+  return useMessageStore.getState().messages[identityId]?.[messageId];
+}
 
-  const priorReplyId = record.replyTo != null ? Number(record.replyTo) : undefined;
-  const priorReplyPreviewText = record.replyPreviewText;
-  const priorReplyPreviewSender = record.replyPreviewSender;
-
-  const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
-  const messages = listChatMessages(identityId);
-  const wireTimestampMs = effectiveMessageTimestampMs(event.payload.timestamp);
-  const isChannel = event.payload.id.startsWith('ch:');
+function resolveMeshcoreIngestHops(
+  event: Extract<DomainEvent, { type: 'text_message' }>,
+  isChannel: boolean,
+  options: MeshcoreIngestOptions,
+): { hopCount: number | undefined; pathHashSizeBytes: 1 | 2 | 3 | undefined } {
   const eventPathHashSizeBytes =
     event.payload.pathHashSizeBytes === 1 ||
     event.payload.pathHashSizeBytes === 2 ||
@@ -288,10 +283,18 @@ function handleTextMessage(
         isChannel ? undefined : { fromNodeId: event.payload.from },
       )
     : {};
-  const hopCount = event.payload.hopCount ?? correlatedPath.hopCount;
-  const pathHashSizeBytes =
-    eventPathHashSizeBytes ??
-    (event.payload.hopCount == null ? correlatedPath.pathHashSizeBytes : undefined);
+  return {
+    hopCount: event.payload.hopCount ?? correlatedPath.hopCount,
+    pathHashSizeBytes:
+      eventPathHashSizeBytes ??
+      (event.payload.hopCount == null ? correlatedPath.pathHashSizeBytes : undefined),
+  };
+}
+
+function resolveMeshcoreRoomFlags(
+  identityId: IdentityId,
+  event: Extract<DomainEvent, { type: 'text_message' }>,
+): { isKnownRoomNode: boolean; isRoomEvent: boolean; roomServerId: number } {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
   const fromNode = useNodeStore.getState().nodes[identityId]?.[event.payload.from];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
@@ -305,104 +308,86 @@ function handleTextMessage(
     isKnownRoomNode,
   });
   const roomServerId = resolveRoomServerIdForIngest(identityId, event.payload);
-  const isRoomEvent = looksLikeRoom && roomServerId !== 0;
+  return { isKnownRoomNode, isRoomEvent: looksLikeRoom && roomServerId !== 0, roomServerId };
+}
 
-  // Room BBS branch: SignedPlain strip + plain store — not `parseMeshcoreChannelIncomingFromThread`.
-  // See `meshcoreRoomMessageRouting.ts` for wire vs chat and protocol-alignment notes.
-  if (isRoomEvent) {
-    const prefixMap = buildPrefixToNodeIdMap(identityId);
-    const { authorId: prefixAuthorId, payload } = meshcoreRoomPostBodyFromWire(
-      event.payload.payload,
-      event.payload.txtType,
-      prefixMap,
-      { isKnownRoomNode },
-    );
-    // A line with no author prefix (a PLAIN line such as "Bot Stats (24h):") is written by the
-    // room server itself, so the room is its author.
-    const authorId = isMeshcoreRoomOwnLine(
-      event.payload.payload,
-      event.payload.txtType,
-      isKnownRoomNode,
-    )
-      ? roomServerId
-      : prefixAuthorId;
-    const authorNode =
-      authorId !== 0
-        ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
-          useNodeStore.getState().nodes[identityId]?.[authorId]
-        : undefined;
-    const authorName =
-      authorNode?.longName?.trim() ||
-      (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
-    // Keep unresolved authors as sender_id 0 — never attribute them to self (myNodeNum).
-    const merged = buildMeshcoreRoomIncomingMessage({
-      rawText: payload,
-      roomServerId,
-      authorId,
-      authorName,
-      timestamp: wireTimestampMs,
-      receivedVia: record.receivedVia ?? 'rf',
-      rxHops: hopCount,
-      rxPathHashSizeBytes: pathHashSizeBytes,
-    });
-    // PacketRouter has just stored this event's raw copy under its id. A record there with no
-    // status was written only by the router (ingested, reloaded and own sending rows all carry
-    // one), so it is this post, not an earlier one: drop it, or the dedup below takes a line whose
-    // raw text is already its body (a PLAIN line) for a repeat of itself and never saves it.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
-    const routerCopy = useMessageStore.getState().messages[identityId]?.[event.payload.id];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent when its identity bucket is missing.
-    if (routerCopy != null && routerCopy.status == null) {
-      deleteMessage(identityId, event.payload.id);
-    }
-    const { inserted, message: stored } = upsertMeshcoreMessageWithDedup(
-      identityId,
-      // The router copy was this post's first sighting; the rebuilt row keeps its receipt.
-      { ...merged, receivedAt: record.receivedAt },
-      event.payload.id,
-    );
-    const isEcho = myNodeNum > 0 && authorId === myNodeNum;
-    if (!isEcho) {
-      bumpMeshcoreChatSenderLastHeard(identityId, authorId, {
-        timestampMs: wireTimestampMs,
-        displayName: authorName !== 'Unknown' ? authorName : undefined,
-        receivedVia: record.receivedVia,
-        hopCount,
-      });
-    }
-    if (inserted && !isEcho) {
-      void window.electronAPI.db
-        .saveMeshcoreMessage(messageToDbRow(stored, myNodeNum))
-        .catch((e: unknown) => {
-          console.warn(
-            'mcL0850 [meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e),
-          );
-        });
-    }
-    return;
-  }
+interface MeshcoreIngestPriorReply {
+  replyId: number | undefined;
+  previewText: string | undefined;
+  previewSender: string | undefined;
+}
 
-  const channelSender = isChannel
-    ? resolveMeshcoreChannelMessageSender({
-        rawText: event.payload.payload,
-        fromNodeId: event.payload.from,
-        recordSenderName: record.senderName,
-      })
-    : null;
-  const displayName = isChannel
-    ? channelSender!.displayName
-    : record.senderName?.trim() || 'Unknown';
-  const senderId = isChannel
-    ? channelSender!.senderId
-    : event.payload.from !== 0
-      ? event.payload.from
-      : displayName !== 'Unknown'
-        ? meshcoreChatStubNodeIdFromDisplayName(displayName)
-        : 0;
+function readMeshcoreIngestPriorReply(record: MessageRecord): MeshcoreIngestPriorReply {
+  return {
+    replyId: record.replyTo != null ? Number(record.replyTo) : undefined,
+    previewText: record.replyPreviewText,
+    previewSender: record.replyPreviewSender,
+  };
+}
 
-  const sortedPrior = messages;
+function isMeshcoreIngestReplyUpgraded(
+  stored: ChatMessage,
+  prior: MeshcoreIngestPriorReply,
+): boolean {
+  return (
+    stored.replyId !== prior.replyId ||
+    stored.replyPreviewText !== prior.previewText ||
+    stored.replyPreviewSender !== prior.previewSender
+  );
+}
 
-  const parsedRaw: ChatMessage = isChannel
+function mergeMeshcoreIngestRecord(parsedRaw: ChatMessage, record: MessageRecord): ChatMessage {
+  return {
+    ...parsedRaw,
+    rxSnr: record.rxSnr,
+    rxRssi: record.rxRssi,
+    localOrder: record.localOrder,
+    receivedAt: record.receivedAt,
+    status: record.status ?? parsedRaw.status,
+    receivedVia: record.receivedVia ?? parsedRaw.receivedVia,
+  };
+}
+
+function resolveMeshcoreDmFlags(
+  event: Extract<DomainEvent, { type: 'text_message' }>,
+  senderId: number,
+  isChannel: boolean,
+): { isDm: boolean; mayBumpDmSender: boolean } {
+  const isDm = !isChannel && event.payload.channelIndex === -1;
+  const mayBumpDmSender =
+    !isDm ||
+    (event.payload.from > 0 &&
+      senderId === event.payload.from &&
+      senderId !== MESHCORE_UNKNOWN_SENDER_STUB_ID &&
+      !meshcoreIsChatStubNodeId(senderId));
+  return { isDm, mayBumpDmSender };
+}
+
+interface MeshcoreIngestParseContext {
+  isChannel: boolean;
+  event: Extract<DomainEvent, { type: 'text_message' }>;
+  sortedPrior: ChatMessage[];
+  senderId: number;
+  displayName: string;
+  wireTimestampMs: number;
+  hopCount: number | undefined;
+  pathHashSizeBytes: 1 | 2 | 3 | undefined;
+  myNodeNum: number;
+}
+
+function parseMeshcoreIngestRaw(ctx: MeshcoreIngestParseContext): ChatMessage {
+  const {
+    isChannel,
+    event,
+    sortedPrior,
+    senderId,
+    displayName,
+    wireTimestampMs,
+    hopCount,
+    pathHashSizeBytes,
+    myNodeNum,
+  } = ctx;
+  return isChannel
     ? parseMeshcoreChannelIncomingFromThread(sortedPrior, {
         rawText: event.payload.payload,
         senderId,
@@ -425,20 +410,242 @@ function handleTextMessage(
         rxHops: hopCount,
         rxPathHashSizeBytes: pathHashSizeBytes,
       });
+}
 
-  const merged: ChatMessage = {
-    ...parsedRaw,
-    rxSnr: record.rxSnr,
-    rxRssi: record.rxRssi,
-    localOrder: record.localOrder,
-    receivedAt: record.receivedAt,
-    status: record.status ?? parsedRaw.status,
-    receivedVia: record.receivedVia ?? parsedRaw.receivedVia,
-  };
-  const reconciled =
-    isChannel && messages.length > 0
-      ? (meshcoreReconcileChannelSenderIds([...messages, merged]).at(-1) ?? merged)
-      : merged;
+function reconcileMeshcoreIngestRow(
+  isChannel: boolean,
+  messages: ChatMessage[],
+  merged: ChatMessage,
+): ChatMessage {
+  if (!isChannel || messages.length === 0) return merged;
+  return meshcoreReconcileChannelSenderIds([...messages, merged]).at(-1) ?? merged;
+}
+
+function shouldPersistMeshcoreIngestRow(
+  inserted: boolean,
+  storeUpdated: boolean,
+  replyUpgraded: boolean,
+  isDm: boolean,
+  isEcho: boolean,
+): boolean {
+  return (inserted || storeUpdated || replyUpgraded || isDm) && !isEcho;
+}
+
+interface MeshcoreRoomIngestContext {
+  identityId: IdentityId;
+  event: Extract<DomainEvent, { type: 'text_message' }>;
+  record: MessageRecord;
+  myNodeNum: number;
+  roomServerId: number;
+  isKnownRoomNode: boolean;
+  wireTimestampMs: number;
+  hopCount: number | undefined;
+  pathHashSizeBytes: 1 | 2 | 3 | undefined;
+}
+
+function handleMeshcoreRoomIngest(ctx: MeshcoreRoomIngestContext): void {
+  const {
+    identityId,
+    event,
+    record,
+    myNodeNum,
+    roomServerId,
+    isKnownRoomNode,
+    wireTimestampMs,
+    hopCount,
+    pathHashSizeBytes,
+  } = ctx;
+  const prefixMap = buildPrefixToNodeIdMap(identityId);
+  const { authorId: prefixAuthorId, payload } = meshcoreRoomPostBodyFromWire(
+    event.payload.payload,
+    event.payload.txtType,
+    prefixMap,
+    { isKnownRoomNode },
+  );
+  // A line with no author prefix (a PLAIN line such as "Bot Stats (24h):") is written by the
+  // room server itself, so the room is its author.
+  const authorId = isMeshcoreRoomOwnLine(
+    event.payload.payload,
+    event.payload.txtType,
+    isKnownRoomNode,
+  )
+    ? roomServerId
+    : prefixAuthorId;
+  const authorNode =
+    authorId !== 0
+      ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+        useNodeStore.getState().nodes[identityId]?.[authorId]
+      : undefined;
+  const authorName =
+    authorNode?.longName?.trim() ||
+    (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+  // Keep unresolved authors as sender_id 0 — never attribute them to self (myNodeNum).
+  const merged = buildMeshcoreRoomIncomingMessage({
+    rawText: payload,
+    roomServerId,
+    authorId,
+    authorName,
+    timestamp: wireTimestampMs,
+    receivedVia: record.receivedVia ?? 'rf',
+    rxHops: hopCount,
+    rxPathHashSizeBytes: pathHashSizeBytes,
+  });
+  // PacketRouter has just stored this event's raw copy under its id. A record there with no
+  // status was written only by the router (ingested, reloaded and own sending rows all carry
+  // one), so it is this post, not an earlier one: drop it, or the dedup below takes a line whose
+  // raw text is already its body (a PLAIN line) for a repeat of itself and never saves it.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+  const routerCopy = useMessageStore.getState().messages[identityId]?.[event.payload.id];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent when its identity bucket is missing.
+  if (routerCopy != null && routerCopy.status == null) {
+    deleteMessage(identityId, event.payload.id);
+  }
+  const { inserted, message: stored } = upsertMeshcoreMessageWithDedup(
+    identityId,
+    // The router copy was this post's first sighting; the rebuilt row keeps its receipt.
+    { ...merged, receivedAt: record.receivedAt },
+    event.payload.id,
+  );
+  const isEcho = myNodeNum > 0 && authorId === myNodeNum;
+  if (!isEcho) {
+    bumpMeshcoreChatSenderLastHeard(identityId, authorId, {
+      timestampMs: wireTimestampMs,
+      displayName: authorName !== 'Unknown' ? authorName : undefined,
+      receivedVia: record.receivedVia,
+      hopCount,
+    });
+  }
+  if (inserted && !isEcho) {
+    void window.electronAPI.db
+      .saveMeshcoreMessage(messageToDbRow(stored, myNodeNum))
+      .catch((e: unknown) => {
+        console.warn(
+          'mcL0850 [meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e),
+        );
+      });
+  }
+}
+
+type MeshcoreChannelSender = ReturnType<typeof resolveMeshcoreChannelMessageSender>;
+
+function resolveMeshcoreIngestSender(
+  event: Extract<DomainEvent, { type: 'text_message' }>,
+  record: MessageRecord,
+  isChannel: boolean,
+): { displayName: string; senderId: number; channelSender: MeshcoreChannelSender | null } {
+  const channelSender = isChannel
+    ? resolveMeshcoreChannelMessageSender({
+        rawText: event.payload.payload,
+        fromNodeId: event.payload.from,
+        recordSenderName: record.senderName,
+      })
+    : null;
+  const displayName = isChannel
+    ? channelSender!.displayName
+    : record.senderName?.trim() || 'Unknown';
+  const senderId = isChannel
+    ? channelSender!.senderId
+    : event.payload.from !== 0
+      ? event.payload.from
+      : displayName !== 'Unknown'
+        ? meshcoreChatStubNodeIdFromDisplayName(displayName)
+        : 0;
+  return { displayName, senderId, channelSender };
+}
+
+interface MeshcoreChannelTakRelayContext {
+  identityId: IdentityId;
+  event: Extract<DomainEvent, { type: 'text_message' }>;
+  stored: ChatMessage;
+  messages: ChatMessage[];
+  displayName: string;
+  channelSender: NonNullable<MeshcoreChannelSender>;
+  wireTimestampMs: number;
+  hopCount: number | undefined;
+}
+
+function relayMeshcoreChannelIngestToTak(ctx: MeshcoreChannelTakRelayContext): void {
+  const { identityId, event, stored, messages, displayName, channelSender, wireTimestampMs } = ctx;
+  const identityNodes = useNodeStore.getState().nodes[identityId] as
+    Record<number, NodeRecord> | undefined;
+  const senderNode = identityNodes?.[channelSender.senderId];
+  const reply = meshcoreTakReplyContext(stored, event.payload.payload, messages);
+  relayMeshcoreChannelToTak(identityId, {
+    channelIndex: event.payload.channelIndex,
+    senderName: displayName,
+    text: channelSender.payload,
+    wireText: event.payload.payload,
+    ...(reply ? { reply } : {}),
+    timestampMs: wireTimestampMs,
+    // This radio's own sends are left out above, so this is always another node.
+    fromOther: true,
+    ...(ctx.hopCount != null ? { hops: ctx.hopCount } : {}),
+    ...(senderNode?.latitude != null && senderNode.longitude != null
+      ? { latitude: senderNode.latitude, longitude: senderNode.longitude }
+      : {}),
+  });
+}
+
+function handleTextMessage(
+  identityId: IdentityId,
+  event: Extract<DomainEvent, { type: 'text_message' }>,
+  options: MeshcoreIngestOptions = {},
+): void {
+  const record = readMeshcoreIngestRecord(identityId, event.payload.id);
+
+  if (!record) return;
+
+  const priorReply = readMeshcoreIngestPriorReply(record);
+
+  const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
+  const messages = listChatMessages(identityId);
+  const wireTimestampMs = effectiveMessageTimestampMs(event.payload.timestamp);
+  const isChannel = event.payload.id.startsWith('ch:');
+  const { hopCount, pathHashSizeBytes } = resolveMeshcoreIngestHops(event, isChannel, options);
+  const { isKnownRoomNode, isRoomEvent, roomServerId } = resolveMeshcoreRoomFlags(
+    identityId,
+    event,
+  );
+
+  // Room BBS branch: SignedPlain strip + plain store — not `parseMeshcoreChannelIncomingFromThread`.
+  // See `meshcoreRoomMessageRouting.ts` for wire vs chat and protocol-alignment notes.
+  if (isRoomEvent) {
+    handleMeshcoreRoomIngest({
+      identityId,
+      event,
+      record,
+      myNodeNum,
+      roomServerId,
+      isKnownRoomNode,
+      wireTimestampMs,
+      hopCount,
+      pathHashSizeBytes,
+    });
+    return;
+  }
+
+  const { displayName, senderId, channelSender } = resolveMeshcoreIngestSender(
+    event,
+    record,
+    isChannel,
+  );
+
+  const sortedPrior = messages;
+
+  const parsedRaw = parseMeshcoreIngestRaw({
+    isChannel,
+    event,
+    sortedPrior,
+    senderId,
+    displayName,
+    wireTimestampMs,
+    hopCount,
+    pathHashSizeBytes,
+    myNodeNum,
+  });
+
+  const merged = mergeMeshcoreIngestRecord(parsedRaw, record);
+  const reconciled = reconcileMeshcoreIngestRow(isChannel, messages, merged);
 
   if (isMeshcoreRoomChatMessage(reconciled)) {
     return;
@@ -451,31 +658,17 @@ function handleTextMessage(
   } = upsertMeshcoreMessageWithDedup(identityId, reconciled, event.payload.id);
 
   const isEcho = myNodeNum > 0 && senderId === myNodeNum;
-  const isDm = !isChannel && event.payload.channelIndex === -1;
-  const mayBumpDmSender =
-    !isDm ||
-    (event.payload.from > 0 &&
-      senderId === event.payload.from &&
-      senderId !== MESHCORE_UNKNOWN_SENDER_STUB_ID &&
-      !meshcoreIsChatStubNodeId(senderId));
+  const { isDm, mayBumpDmSender } = resolveMeshcoreDmFlags(event, senderId, isChannel);
   if (isChannel && inserted && !isEcho && channelSender) {
-    const identityNodes = useNodeStore.getState().nodes[identityId] as
-      Record<number, NodeRecord> | undefined;
-    const senderNode = identityNodes?.[senderId];
-    const reply = meshcoreTakReplyContext(stored, event.payload.payload, messages);
-    relayMeshcoreChannelToTak(identityId, {
-      channelIndex: event.payload.channelIndex,
-      senderName: displayName,
-      text: channelSender.payload,
-      wireText: event.payload.payload,
-      ...(reply ? { reply } : {}),
-      timestampMs: wireTimestampMs,
-      // This radio's own sends are left out above, so this is always another node.
-      fromOther: true,
-      ...(hopCount != null ? { hops: hopCount } : {}),
-      ...(senderNode?.latitude != null && senderNode.longitude != null
-        ? { latitude: senderNode.latitude, longitude: senderNode.longitude }
-        : {}),
+    relayMeshcoreChannelIngestToTak({
+      identityId,
+      event,
+      stored,
+      messages,
+      displayName,
+      channelSender,
+      wireTimestampMs,
+      hopCount,
     });
   }
   // PacketRouter has stored a DM before this runs, so `inserted` cannot tell a first copy from
@@ -496,12 +689,9 @@ function handleTextMessage(
       hopCount,
     });
   }
-  const replyUpgraded =
-    stored.replyId !== priorReplyId ||
-    stored.replyPreviewText !== priorReplyPreviewText ||
-    stored.replyPreviewSender !== priorReplyPreviewSender;
+  const replyUpgraded = isMeshcoreIngestReplyUpgraded(stored, priorReply);
   // PacketRouter already inserts plain DMs; they still need their first local order saved.
-  if ((inserted || storeUpdated || replyUpgraded || isDm) && !isEcho) {
+  if (shouldPersistMeshcoreIngestRow(inserted, storeUpdated, replyUpgraded, isDm, isEcho)) {
     void window.electronAPI.db
       .saveMeshcoreMessage(messageToDbRow(stored, myNodeNum))
       .catch((e: unknown) => {

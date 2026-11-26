@@ -140,7 +140,7 @@ function validatePnHostingNodeName(nodeName: string | null): string | null {
   return null;
 }
 
-function validatePnHostingNumericRanges(policy: PnHostingPolicy): string | null {
+function validateNumericPolicyKeys(policy: PnHostingPolicy): string | null {
   for (const key of NUMERIC_POLICY_KEYS) {
     const n = policy[key];
     if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0) {
@@ -152,18 +152,16 @@ function validatePnHostingNumericRanges(policy: PnHostingPolicy): string | null 
       return 'non_finite_number';
     }
   }
-  if (policy.peering_cost > policy.max_peering_cost) {
-    return 'peering_cost_exceeds_max';
-  }
+  return null;
+}
+
+function validatePolicyBounds(policy: PnHostingPolicy): string | null {
+  if (policy.peering_cost > policy.max_peering_cost) return 'peering_cost_exceeds_max';
   if (policy.propagation_stamp_flex > policy.propagation_stamp_cost) {
     return 'stamp_flex_exceeds_cost';
   }
-  if (policy.autopeer_maxdepth > MAX_AUTOPEER_MAXDEPTH) {
-    return 'autopeer_maxdepth_out_of_range';
-  }
-  if (policy.max_peers === 0 || policy.max_peers > MAX_MAX_PEERS) {
-    return 'max_peers_out_of_range';
-  }
+  if (policy.autopeer_maxdepth > MAX_AUTOPEER_MAXDEPTH) return 'autopeer_maxdepth_out_of_range';
+  if (policy.max_peers === 0 || policy.max_peers > MAX_MAX_PEERS) return 'max_peers_out_of_range';
   if (policy.message_storage_limit_mb === 0 || policy.message_storage_limit_mb > MAX_STORAGE_MB) {
     return 'message_storage_limit_out_of_range';
   }
@@ -180,6 +178,10 @@ function validatePnHostingNumericRanges(policy: PnHostingPolicy): string | null 
     return 'pn_announce_interval_out_of_range';
   }
   return null;
+}
+
+function validatePnHostingNumericRanges(policy: PnHostingPolicy): string | null {
+  return validateNumericPolicyKeys(policy) ?? validatePolicyBounds(policy);
 }
 
 /** Semantic checks matching sidecar `PnHostingPolicy::validate`. */

@@ -61,7 +61,7 @@ export const VITEST_CORE_DEPS = [
 ] as const;
 
 /** Additional deps only needed in server.deps.inline (renderer-ui / jsdom). */
-export const VITEST_SERVER_INLINE_EXTRA_DEPS = [
+const VITEST_SERVER_INLINE_EXTRA_DEPS = [
   '@jsr/meshtastic__transport-web-serial',
   'dompurify',
   'i18next',

@@ -121,7 +121,7 @@ function pruneFingerprints(now: number): void {
   }
 }
 
-export function fingerprintKey(
+function fingerprintKey(
   payload: string,
   destProtocol: string,
   destChannel: number | string,
@@ -130,7 +130,7 @@ export function fingerprintKey(
 }
 
 /** Stable identity of an endpoint's destination (channel index, RRC room, or LXMF peer). */
-export function mecpEndpointKey(endpoint: MecpRebroadcastEndpoint): string | number {
+function mecpEndpointKey(endpoint: MecpRebroadcastEndpoint): string | number {
   if (endpoint.protocol === 'reticulum') {
     return endpoint.kind === 'rrc'
       ? `rrc:${endpoint.hubDestHash}:${endpoint.room.toLowerCase()}`

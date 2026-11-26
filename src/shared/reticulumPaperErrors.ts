@@ -11,9 +11,6 @@ export const RETICULUM_PAPER_API_ERROR_CODES = [
   'invalid_hash',
   'internal_error',
 ] as const;
-
-export type ReticulumPaperApiErrorCode = (typeof RETICULUM_PAPER_API_ERROR_CODES)[number];
-
 const CREATE_KEYS: Record<string, string> = {
   identity_unknown: 'chatPanel.shareAsPaperIdentityUnknown',
   paper_too_large: 'chatPanel.shareAsPaperTooLarge',

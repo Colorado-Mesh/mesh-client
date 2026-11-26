@@ -1,12 +1,19 @@
+import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 import { MESHCORE_TXT_TYPE_PLAIN } from './meshcoreChannelText';
+import { meshcoreRadioErrMessage } from './meshcoreRadioErr';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
-import { meshcoreRoomPostRadioErrStored } from './meshcoreRoomSentWait';
 import { MC_CMD_SEND_TXT_MSG, MC_RESP_ERR, MC_RESP_SENT } from './meshcoreWireCodes';
 import {
   computeRoomLoginExtraTimeoutMs,
   computeRoomLoginSentWaitMs,
   type MeshcoreCompanionTransport,
 } from './timeConstants';
+import type { DiagnosticTextI18n } from './types';
+
+function meshcoreRoomPostRadioErrStored(errCode: number | null | undefined): string {
+  const ref: DiagnosticTextI18n = meshcoreRadioErrMessage(errCode);
+  return serializeMeshcoreUserMessage(ref);
+}
 
 /** SignedPlain wire body: 4-byte author pubkey prefix + UTF-8 post text. */
 export function meshcoreRoomPostWireBytes(authorPubKey: Uint8Array, text: string): Uint8Array {

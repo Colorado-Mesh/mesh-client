@@ -1,12 +1,11 @@
 import type { DiagnosticTextI18n } from './types';
 
 /** meshcore.js Constants.ErrorCodes */
-export const MESHCORE_RADIO_ERR_UNSUPPORTED_CMD = 1;
+const MESHCORE_RADIO_ERR_UNSUPPORTED_CMD = 1;
 export const MESHCORE_RADIO_ERR_NOT_FOUND = 2;
 export const MESHCORE_RADIO_ERR_TABLE_FULL = 3;
 export const MESHCORE_RADIO_ERR_BAD_STATE = 4;
-export const MESHCORE_RADIO_ERR_FILE_IO = 5;
-export const MESHCORE_RADIO_ERR_ILLEGAL_ARG = 6;
+const MESHCORE_RADIO_ERR_ILLEGAL_ARG = 6;
 
 /** Companion `RESP_ERR` reply to a queued command, keeping the firmware error code. */
 export class MeshcoreRadioRejectedError extends Error {

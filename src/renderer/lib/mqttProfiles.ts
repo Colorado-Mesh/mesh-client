@@ -14,15 +14,15 @@ export type MqttProfilesProtocol = 'meshtastic' | 'meshcom';
 
 /** Non-secret profile metadata only; passwords are held by the main-owned credential service. */
 export const MQTT_PROFILES_STORAGE_KEY = 'mesh-client:mqttProfiles:meshtastic';
-export const MESHCOM_MQTT_PROFILES_STORAGE_KEY = 'mesh-client:mqttProfiles:meshcom';
+const MESHCOM_MQTT_PROFILES_STORAGE_KEY = 'mesh-client:mqttProfiles:meshcom';
 export const MQTT_PROFILE_NAME_MAX_LENGTH = 60;
-export const MQTT_PROFILES_MAX = 50;
+const MQTT_PROFILES_MAX = 50;
 
-export function getMqttProfilesStorageKey(protocol: MqttProfilesProtocol): string {
+function getMqttProfilesStorageKey(protocol: MqttProfilesProtocol): string {
   return protocol === 'meshcom' ? MESHCOM_MQTT_PROFILES_STORAGE_KEY : MQTT_PROFILES_STORAGE_KEY;
 }
 
-export function getMqttProfilesSecretKey(protocol: MqttProfilesProtocol): string {
+function getMqttProfilesSecretKey(protocol: MqttProfilesProtocol): string {
   return protocol === 'meshcom' ? MESHCOM_MQTT_PROFILES_SECRET_KEY : MQTT_PROFILES_SECRET_KEY;
 }
 
@@ -54,7 +54,7 @@ export function mqttProfileIdFromSelectValue(value: string): string | null {
   return value.startsWith('profile:') ? value.slice('profile:'.length) : null;
 }
 
-export function normalizeMqttProfileName(name: string): string {
+function normalizeMqttProfileName(name: string): string {
   return name.trim().slice(0, MQTT_PROFILE_NAME_MAX_LENGTH);
 }
 

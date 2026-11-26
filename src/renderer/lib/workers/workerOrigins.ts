@@ -2,7 +2,7 @@
  * Origins allowed to postMessage dedicated analysis workers.
  * Prefer Array.includes — CodeQL js/missing-origin-check recognizes InclusionTest.
  */
-export const ANALYSIS_WORKER_ALLOWED_ORIGINS = [
+const ANALYSIS_WORKER_ALLOWED_ORIGINS = [
   'mesh-client://renderer',
   'null',
   'file://',

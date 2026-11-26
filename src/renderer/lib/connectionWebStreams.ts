@@ -106,14 +106,14 @@ export function assertTransportReadyForMeshDevice(transport: unknown, context: s
   );
 }
 
-export interface MeshtasticSerialStreamDiagnostics {
+interface MeshtasticSerialStreamDiagnostics {
   portHasReadable: boolean | undefined;
   portHasWritable: boolean | undefined;
   fromDeviceLocked: boolean | undefined;
 }
 
 /** Snapshot Web Serial port + transport stream lock state for reconnect debugging. */
-export function getMeshtasticSerialStreamDiagnostics(
+function getMeshtasticSerialStreamDiagnostics(
   transport: unknown,
   port?: SerialPort | null,
 ): MeshtasticSerialStreamDiagnostics {

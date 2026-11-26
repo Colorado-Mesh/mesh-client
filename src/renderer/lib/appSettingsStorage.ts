@@ -260,6 +260,33 @@ export interface OperationalAlertSettings {
 export const MECP_REPEAT_ALERT_MAX_MINUTES = 60;
 
 /** Watched-node silence / battery, RF link-down and unseen-MECP repeat settings (App tab). */
+function clampRepeatAlertMinutes(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1
+    ? Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.floor(value))
+    : DEFAULT_APP_SETTINGS_SHARED.mecpRepeatAlertMinutes;
+}
+
+function positiveNumberOrDefault(value: unknown, fallback: number, max?: number): number;
+function positiveNumberOrDefault(
+  value: unknown,
+  fallback: number | null,
+  max?: number,
+): number | null;
+function positiveNumberOrDefault(
+  value: unknown,
+  fallback: number | null,
+  max?: number,
+): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return fallback;
+  if (max != null && value > max) return fallback;
+  return value;
+}
+
+function booleanOrDefault(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+/** Watched-node silence / battery, RF link-down and unseen-MECP repeat settings (App tab). */
 export function getOperationalAlertSettings(): OperationalAlertSettings {
   const parsed = parseStoredJson<{
     nodeSilenceAlertMinutes?: unknown;
@@ -269,37 +296,32 @@ export function getOperationalAlertSettings(): OperationalAlertSettings {
     mecpRepeatAlertMinutes?: unknown;
     mecpStandingAlertEnabled?: unknown;
   }>(getAppSettingsRaw(), 'getOperationalAlertSettings');
-  const silence = parsed?.nodeSilenceAlertMinutes;
-  const battery = parsed?.nodeBatteryLowThreshold;
-  const repeat = parsed?.mecpRepeatAlertMinutes;
-  const mecpRepeatAlertMinutes =
-    typeof repeat === 'number' && Number.isFinite(repeat) && repeat >= 1
-      ? Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.floor(repeat))
-      : DEFAULT_APP_SETTINGS_SHARED.mecpRepeatAlertMinutes;
+  const mecpRepeatAlertMinutes = clampRepeatAlertMinutes(parsed?.mecpRepeatAlertMinutes);
   // Users who opted into repeats before the standing toggle existed keep their station mode.
-  const mecpStandingAlertEnabled =
-    typeof parsed?.mecpStandingAlertEnabled === 'boolean'
-      ? parsed.mecpStandingAlertEnabled
-      : mecpRepeatAlertMinutes != null || DEFAULT_APP_SETTINGS_SHARED.mecpStandingAlertEnabled;
+  const mecpStandingAlertEnabled = booleanOrDefault(
+    parsed?.mecpStandingAlertEnabled,
+    mecpRepeatAlertMinutes != null || DEFAULT_APP_SETTINGS_SHARED.mecpStandingAlertEnabled,
+  );
   return {
     mecpStandingAlertEnabled,
     mecpRepeatAlertMinutes,
-    nodeSilenceAlertMinutes:
-      typeof silence === 'number' && Number.isFinite(silence) && silence > 0
-        ? silence
-        : DEFAULT_APP_SETTINGS_SHARED.nodeSilenceAlertMinutes,
-    nodeBatteryLowThreshold:
-      typeof battery === 'number' && Number.isFinite(battery) && battery > 0 && battery <= 100
-        ? battery
-        : DEFAULT_APP_SETTINGS_SHARED.nodeBatteryLowThreshold,
-    notifyOnLinkDown:
-      typeof parsed?.notifyOnLinkDown === 'boolean'
-        ? parsed.notifyOnLinkDown
-        : DEFAULT_APP_SETTINGS_SHARED.notifyOnLinkDown,
-    notifyOnDiagnosticErrors:
-      typeof parsed?.notifyOnDiagnosticErrors === 'boolean'
-        ? parsed.notifyOnDiagnosticErrors
-        : DEFAULT_APP_SETTINGS_SHARED.notifyOnDiagnosticErrors,
+    nodeSilenceAlertMinutes: positiveNumberOrDefault(
+      parsed?.nodeSilenceAlertMinutes,
+      DEFAULT_APP_SETTINGS_SHARED.nodeSilenceAlertMinutes,
+    ),
+    nodeBatteryLowThreshold: positiveNumberOrDefault(
+      parsed?.nodeBatteryLowThreshold,
+      DEFAULT_APP_SETTINGS_SHARED.nodeBatteryLowThreshold,
+      100,
+    ),
+    notifyOnLinkDown: booleanOrDefault(
+      parsed?.notifyOnLinkDown,
+      DEFAULT_APP_SETTINGS_SHARED.notifyOnLinkDown,
+    ),
+    notifyOnDiagnosticErrors: booleanOrDefault(
+      parsed?.notifyOnDiagnosticErrors,
+      DEFAULT_APP_SETTINGS_SHARED.notifyOnDiagnosticErrors,
+    ),
   };
 }
 

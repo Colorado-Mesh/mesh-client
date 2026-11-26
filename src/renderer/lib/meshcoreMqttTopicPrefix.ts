@@ -3,7 +3,7 @@ import { DEVICE_SIGNING_MESHCORE_PRESETS, type MeshcoreMqttPreset } from './mesh
 import type { MQTTSettings } from './types';
 
 /** i18n key used when an IATA-scoped MeshCore topic prefix is malformed. */
-export const MESHCORE_TOPIC_PREFIX_INVALID_IATA_KEY = 'connectionPanel.topicPrefixInvalidIata';
+const MESHCORE_TOPIC_PREFIX_INVALID_IATA_KEY = 'connectionPanel.topicPrefixInvalidIata';
 
 export interface MeshcoreIataTopicPrefixParseOk {
   ok: true;

@@ -120,7 +120,7 @@ export function overlayStoredStaticGpsOnSelfNode<
 }
 
 /** Sources that provide only city-level (~10–50 km) accuracy (browser WiFi/IP positioning included) */
-export const LOW_ACCURACY_SOURCES: ReadonlySet<GpsSource> = new Set(['ip', 'browser']);
+const LOW_ACCURACY_SOURCES: ReadonlySet<GpsSource> = new Set(['ip', 'browser']);
 
 export function isLowAccuracyPosition(source: GpsSource): boolean {
   return LOW_ACCURACY_SOURCES.has(source);

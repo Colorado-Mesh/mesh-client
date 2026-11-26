@@ -41,7 +41,7 @@ export function useTakRemoteStatus(): TAKRemoteStatus {
   return status;
 }
 
-interface UseTakRemoteRelayResult {
+export interface UseTakRemoteRelayResult {
   status: TAKRemoteStatus;
   /** Saved settings; undefined until loaded, null when none were saved. */
   savedSettings: TAKRemoteSettings | null | undefined;

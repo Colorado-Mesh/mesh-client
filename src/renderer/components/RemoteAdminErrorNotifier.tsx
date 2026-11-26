@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { RemoteAdminStatus } from '../lib/types';
 import { useToast } from './Toast';
 
-interface RemoteAdminErrorNotifierProps {
+export interface RemoteAdminErrorNotifierProps {
   status: RemoteAdminStatus;
   errorKey?: string;
 }

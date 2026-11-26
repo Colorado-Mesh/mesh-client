@@ -600,7 +600,10 @@ export interface DefaultHubPresetsSyncResult {
   failed: DefaultHubPresetSyncFailure[];
 }
 
-type ReticulumHubSyncApi = Pick<typeof window.electronAPI.reticulum, 'proxyPost' | 'proxyPut'>;
+export type ReticulumHubSyncApi = Pick<
+  typeof window.electronAPI.reticulum,
+  'proxyPost' | 'proxyPut'
+>;
 
 /** Apply sync plan via sidecar IPC; continues on individual preset failures. */
 export async function applyDefaultHubPresetsSync(

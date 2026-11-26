@@ -60,17 +60,6 @@ export function tempUnitLabel(unit: WeatherTempUnit): '°C' | '°F' {
   return unit === 'f' ? '°F' : '°C';
 }
 
-export function windUnitLabelKey(unit: WeatherWindUnit): string {
-  if (unit === 'mph') return 'internetWeather.unitMph';
-  if (unit === 'ms') return 'internetWeather.unitMs';
-  if (unit === 'kn') return 'internetWeather.unitKn';
-  return 'internetWeather.unitKmh';
-}
-
-export function precipUnitLabelKey(unit: WeatherPrecipUnit): string {
-  return unit === 'in' ? 'internetWeather.unitIn' : 'internetWeather.unitMm';
-}
-
 /** Round only at display time. */
 export function roundDisplay(value: number, digits = 0): number {
   const f = 10 ** digits;

@@ -7,7 +7,7 @@ import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import type { RemoteAdminSessionStatus } from '../lib/meshtasticRemoteAdmin';
 import type { ConfigTargetContext, MeshNode, RemoteAdminStatus } from '../lib/types';
 
-interface ConfigureNodeSelectorProps {
+export interface ConfigureNodeSelectorProps {
   nodes: Map<number, MeshNode>;
   myNodeNum: number;
   configureTargetNodeNum: number | null;

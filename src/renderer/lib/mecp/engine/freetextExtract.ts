@@ -245,7 +245,7 @@ export function extractFreetextConventions(
 }
 
 /** §6.1 decoder preprocessing: remove at most one trailing `\n`, `\r`, or `\r\n`. */
-export function stripTrailingLineEnding(input: string): string {
+function stripTrailingLineEnding(input: string): string {
   if (input.endsWith('\r\n')) return input.slice(0, -2);
   if (input.endsWith('\n') || input.endsWith('\r')) return input.slice(0, -1);
   return input;

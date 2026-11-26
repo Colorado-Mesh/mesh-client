@@ -105,7 +105,7 @@ export function isReticulumSidecarResolveErrorMessage(message: string): boolean 
 }
 
 /** Stable sidecar GATT error codes → `connectionPanel.errors.ble.*`. */
-export const GATT_BLE_ERROR_CODES = [
+const GATT_BLE_ERROR_CODES = [
   'adapter_missing',
   'permission_denied',
   'scan_busy',
@@ -125,7 +125,7 @@ export type GattBleErrorCode = (typeof GATT_BLE_ERROR_CODES)[number];
 
 const GATT_BLE_ERROR_CODE_SET = new Set<string>(GATT_BLE_ERROR_CODES);
 
-export function isGattBleErrorCode(code: string): code is GattBleErrorCode {
+function isGattBleErrorCode(code: string): code is GattBleErrorCode {
   return GATT_BLE_ERROR_CODE_SET.has(code);
 }
 

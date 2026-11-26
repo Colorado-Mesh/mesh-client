@@ -12,7 +12,7 @@ export const MESHCORE_RESP_CODE_ERR = 1;
 export const MESHCORE_ERR_UNSUPPORTED_CMD = 1;
 
 /** Allow queued serial init RPCs to drain before timing out (was 5s inline in runtime). */
-export const MESHCORE_AUTOADD_GET_TIMEOUT_MS = 8_000;
+const MESHCORE_AUTOADD_GET_TIMEOUT_MS = 8_000;
 
 /** Bit 0: overwrite oldest non-favourite when contacts storage is full */
 export const MESHCORE_AUTO_ADD_OVERWRITE_OLDEST = 1;

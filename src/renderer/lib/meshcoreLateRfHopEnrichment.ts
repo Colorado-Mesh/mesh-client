@@ -29,7 +29,7 @@ import { messageRecordToChatMessage } from './storeRecordAdapters';
 import type { ChatMessage, IdentityId } from './types';
 
 /** How long the Chat hop label shows the “refined from RF” accent after a correction. */
-export const MESHCORE_HOP_CORRECTED_UI_TTL_MS = 2000;
+const MESHCORE_HOP_CORRECTED_UI_TTL_MS = 2000;
 
 export interface MeshcoreLateHopCandidate {
   storeId: string;
@@ -82,7 +82,7 @@ export interface MeshcoreLateRfHopEnrichmentResult {
   corrected: boolean;
 }
 
-type HopCorrectedListener = () => void;
+export type HopCorrectedListener = () => void;
 
 const hopCorrectedUntilByStoreId = new Map<string, number>();
 const hopCorrectedListeners = new Set<HopCorrectedListener>();

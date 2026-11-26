@@ -25,7 +25,7 @@ export interface SerialPortSignature {
   serialNumber?: string;
 }
 
-export interface SerialPortFingerprint {
+interface SerialPortFingerprint {
   portId: string | null;
   usbVendorId: number | null;
   usbProductId: number | null;
@@ -82,7 +82,7 @@ export function loadLastSerialPortSignature(): SerialPortSignature | null {
   }
 }
 
-export function saveLastSerialPortSignature(sig: SerialPortSignature): void {
+function saveLastSerialPortSignature(sig: SerialPortSignature): void {
   try {
     setRendererStorageItem(LAST_SERIAL_PORT_SIGNATURE_KEY, JSON.stringify(sig));
   } catch (e: unknown) {
@@ -90,7 +90,7 @@ export function saveLastSerialPortSignature(sig: SerialPortSignature): void {
   }
 }
 
-export function fingerprintGrantedSerialPort(port: SerialPort): SerialPortFingerprint {
+function fingerprintGrantedSerialPort(port: SerialPort): SerialPortFingerprint {
   const info = port.getInfo();
   const portId = (port as SerialPort & { portId?: string }).portId;
   const serialNumber = info.serialNumber?.trim();
@@ -103,7 +103,7 @@ export function fingerprintGrantedSerialPort(port: SerialPort): SerialPortFinger
 }
 
 /** Debug triage when signature match fails or is ambiguous (Dual CP2105, etc.). */
-export function logGrantedSerialPortMatchFailure(
+function logGrantedSerialPortMatchFailure(
   reason: 'no-match' | 'ambiguous',
   ports: SerialPort[],
   lastPortId?: string | null,

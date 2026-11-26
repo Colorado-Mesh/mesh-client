@@ -62,9 +62,9 @@ export interface OfflineMapsJobResult {
   cancelled: boolean;
 }
 
-type ProgressCb = (p: OfflineMapsProgress) => void;
-type DoneCb = (r: OfflineMapsJobResult) => void;
-type ErrorCb = (e: { jobId: string; message: string }) => void;
+export type ProgressCb = (p: OfflineMapsProgress) => void;
+export type DoneCb = (r: OfflineMapsJobResult) => void;
+export type ErrorCb = (e: { jobId: string; message: string }) => void;
 
 interface ActiveJob {
   id: string;

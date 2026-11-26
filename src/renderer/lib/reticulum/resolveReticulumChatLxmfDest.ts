@@ -82,7 +82,7 @@ function peerIdentityHint(hash: string): string | null {
  * True when `hash` is known as an RNS identity (appears as `identity_hash` on activity
  * or peer rows), not merely as a destination aspect hash.
  */
-export function isKnownRnsIdentityHash(
+function isKnownRnsIdentityHash(
   hash: string,
   activityByDestination: ReadonlyMap<
     string,

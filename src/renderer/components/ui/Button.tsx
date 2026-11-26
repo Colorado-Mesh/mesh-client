@@ -10,7 +10,7 @@ export type ButtonSize = 'sm' | 'md';
 const BUTTON_BASE =
   'inline-flex shrink-0 items-center justify-center rounded-control border font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green disabled:cursor-not-allowed disabled:opacity-50';
 
-export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
+const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary: 'border-transparent bg-brand-green text-app-bg hover:bg-brand-green/90',
   secondary: 'border-secondary-dark bg-sidebar-active-bg text-ink-200 hover:bg-secondary-dark',
   danger: 'border-red-400/45 bg-transparent text-red-400 hover:bg-red-400/10',
@@ -18,7 +18,7 @@ export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
     'border-transparent bg-transparent text-ink-300 hover:bg-sidebar-active-bg hover:text-ink-100',
 };
 
-export const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
+const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
   sm: 'h-7.5 gap-1.5 px-3 text-control',
   md: 'h-8 gap-1.5 px-3.5 text-body',
 };

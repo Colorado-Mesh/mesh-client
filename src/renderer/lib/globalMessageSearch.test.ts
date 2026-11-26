@@ -1,17 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  chatMessageFromSearchHit,
   filterGlobalMessageSearchHits,
   findMessageIndexForFocus,
   type GlobalMessageSearchHit,
-  isGlobalMessageSearchShortcut,
   normalizeMeshcoreSearchRow,
   normalizeMeshtasticSearchRow,
   normalizeReticulumSearchRow,
   runGlobalMessageSearch,
   withFocusRowLoaded,
 } from './globalMessageSearch';
+import {
+  chatMessageFromSearchHit,
+  isGlobalMessageSearchShortcut,
+} from './globalMessageSearchChatRow';
 import { reticulumHashToNodeId } from './reticulum/destHash';
 
 describe('normalize*SearchRow', () => {

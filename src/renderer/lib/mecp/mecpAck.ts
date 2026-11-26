@@ -10,10 +10,9 @@ import type { Severity } from './engine';
 import { CODE_REGEX, encode, getByteLength, isBeaconAck, MAX_MESSAGE_BYTES } from './engine';
 import type { EmergencyIncident } from './incidentTypes';
 
-export const MECP_ACK_CODE = 'R01';
-export const MECP_BEACON_CODE = 'B01';
-export const MECP_BEACON_ACK_CODE = 'B02';
-export const MECP_BEACON_CANCEL_CODE = 'B03';
+const MECP_ACK_CODE = 'R01';
+const MECP_BEACON_ACK_CODE = 'B02';
+const MECP_BEACON_CANCEL_CODE = 'B03';
 
 const ACK_MARKER_CODES: ReadonlySet<string> = new Set([
   MECP_ACK_CODE,

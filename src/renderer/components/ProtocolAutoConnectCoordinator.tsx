@@ -2,14 +2,14 @@ import { useProtocolRfAutoConnect } from '@/renderer/hooks/useProtocolRfAutoConn
 import type { RfConnectAutomaticFn } from '@/renderer/lib/rfConnectionTypes';
 import type { DeviceState } from '@/renderer/lib/types';
 
-interface ProtocolAutoConnectTarget {
+export interface ProtocolAutoConnectTarget {
   state: DeviceState;
   connectAutomatic: RfConnectAutomaticFn;
   /** False when the protocol is disabled in App → Protocols. */
   enabled?: boolean;
 }
 
-interface ProtocolAutoConnectCoordinatorProps {
+export interface ProtocolAutoConnectCoordinatorProps {
   meshtastic: ProtocolAutoConnectTarget;
   meshcore: ProtocolAutoConnectTarget;
   meshcom: ProtocolAutoConnectTarget;

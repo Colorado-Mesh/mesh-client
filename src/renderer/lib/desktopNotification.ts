@@ -2,7 +2,7 @@ import { truncatePacketText } from './packetPayload';
 import { stripControlCharacters } from './stripControlCharacters';
 
 /** OS notification field caps (title line / body preview). */
-export const DESKTOP_NOTIFICATION_TITLE_MAX_CHARS = 120;
+const DESKTOP_NOTIFICATION_TITLE_MAX_CHARS = 120;
 export const DESKTOP_NOTIFICATION_BODY_MAX_CHARS = 100;
 
 function withNotificationPermission(show: () => void): void {

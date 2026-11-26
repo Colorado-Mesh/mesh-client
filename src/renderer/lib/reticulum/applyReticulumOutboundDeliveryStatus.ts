@@ -30,7 +30,7 @@ import {
 } from '@/shared/reticulumDeliveryMethod';
 
 /** Cap for sidecar `delivery_attempts` before store/SQLite patch. */
-export const MAX_RETICULUM_DELIVERY_ATTEMPTS = 64;
+const MAX_RETICULUM_DELIVERY_ATTEMPTS = 64;
 
 function notifyTooLargeForPropagation(): void {
   pushAppToast(i18n.t('chatPanel.voiceMemo.tooLargeForPropagation'), 'info');

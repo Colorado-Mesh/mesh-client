@@ -3,15 +3,13 @@
  * (https://github.com/mecp-org/mecp-app, GPLv3; protocol https://github.com/mecp-org/MECP).
  */
 
-import type { CategoryLetter, EncodeResult, LanguageFile, ParsedMessage, Severity } from './engine';
+import type { CategoryLetter, LanguageFile, ParsedMessage, Severity } from './engine';
 import {
   CATEGORIES,
   decode,
   encode,
   getByteLength,
-  isMECP,
   MAX_MESSAGE_BYTES,
-  MECP_PREFIX,
   MECP_PROTOCOL_VERSION,
 } from './engine';
 /**
@@ -27,16 +25,8 @@ export const MECP_REGEX = /^MECP\/[0-3]\//;
 
 export type MecpParsed = ParsedMessage;
 
-export type { CategoryLetter, EncodeResult, LanguageFile, Severity };
-export {
-  CATEGORIES,
-  encode,
-  getByteLength,
-  isMECP,
-  MAX_MESSAGE_BYTES,
-  MECP_PREFIX,
-  MECP_PROTOCOL_VERSION,
-};
+export type { CategoryLetter, LanguageFile, Severity };
+export { CATEGORIES, encode, getByteLength, MAX_MESSAGE_BYTES, MECP_PROTOCOL_VERSION };
 
 const FALLBACK_LANGUAGE: LanguageFile = enLanguage;
 

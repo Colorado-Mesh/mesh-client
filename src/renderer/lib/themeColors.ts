@@ -328,7 +328,7 @@ function ensureBrandGreenContrast(colors: Record<ThemeColorKey, string>): boolea
   return false;
 }
 
-export type StoredThemeColors = Partial<Record<ThemeColorKey, string>>;
+type StoredThemeColors = Partial<Record<ThemeColorKey, string>>;
 
 /**
  * Load persisted overrides and merge with defaults. Does not apply — caller calls applyThemeColors.

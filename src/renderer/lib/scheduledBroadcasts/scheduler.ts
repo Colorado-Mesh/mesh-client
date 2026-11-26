@@ -35,7 +35,10 @@ export const SCHEDULER_SAFETY_INTERVAL_MS = MS_PER_MINUTE;
 /** Retry when a due MeshCore room slot is waiting for App to register sendRoomPost. */
 export const SCHEDULER_ROOM_POST_RETRY_MS = MS_PER_SECOND;
 
-type RuntimePatch = Pick<ScheduledBroadcastRow, 'nextDueAt' | 'lastResult' | 'lastAttemptAt'>;
+export type RuntimePatch = Pick<
+  ScheduledBroadcastRow,
+  'nextDueAt' | 'lastResult' | 'lastAttemptAt'
+>;
 
 export interface SchedulerDeps {
   now: () => number;
@@ -81,7 +84,7 @@ export interface ScheduledBroadcastScheduler {
   isRunning: () => boolean;
 }
 
-export function isScheduledBroadcastsEnabled(): boolean {
+function isScheduledBroadcastsEnabled(): boolean {
   const parsed = parseStoredJson<Record<string, unknown>>(
     getAppSettingsRaw(),
     'isScheduledBroadcastsEnabled',
@@ -89,7 +92,7 @@ export function isScheduledBroadcastsEnabled(): boolean {
   return parsed?.[SCHEDULED_BROADCASTS_ENABLED_SETTING] === true;
 }
 
-export function createDefaultSchedulerDeps(): SchedulerDeps {
+function createDefaultSchedulerDeps(): SchedulerDeps {
   return {
     now: () => Date.now(),
     isEnabled: isScheduledBroadcastsEnabled,
@@ -438,9 +441,4 @@ let singleton: ScheduledBroadcastScheduler | null = null;
 export function getScheduledBroadcastScheduler(): ScheduledBroadcastScheduler {
   singleton ??= createScheduledBroadcastScheduler();
   return singleton;
-}
-
-export function resetScheduledBroadcastSchedulerForTests(): void {
-  singleton?.stop();
-  singleton = null;
 }

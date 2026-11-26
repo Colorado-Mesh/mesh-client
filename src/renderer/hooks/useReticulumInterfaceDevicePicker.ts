@@ -26,7 +26,7 @@ export interface ReticulumDevicePickerSelection {
   deviceName?: string;
 }
 
-export interface ReticulumDevicePickerRequest {
+interface ReticulumDevicePickerRequest {
   mode: ReticulumDevicePickerMode;
   sidecarReady: boolean;
   onSelect: (selection: ReticulumDevicePickerSelection) => void;

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { CHIP_DRAG_SCROLL_ATTRIBUTE } from '@/renderer/hooks/useChipDragReorder';
 
-interface WrappingChannelListProps {
+export interface WrappingChannelListProps {
   activeKey: number | null;
   children: ReactNode;
   kind?: 'channels' | 'dms';

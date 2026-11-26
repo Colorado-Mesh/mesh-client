@@ -1,4 +1,4 @@
-export const MESHCORE_OFFLOAD_ABORT_MESSAGE = 'MeshCore offload cancelled';
+const MESHCORE_OFFLOAD_ABORT_MESSAGE = 'MeshCore offload cancelled';
 
 export type MeshcoreOffloadPhase = 'saving' | 'removing' | 'reconciling';
 

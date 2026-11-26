@@ -1,6 +1,6 @@
 import type { LatLonBounds } from './validation';
 
-export const WEB_MERCATOR_RADIUS_M = 6_378_137;
+const WEB_MERCATOR_RADIUS_M = 6_378_137;
 export const WEB_MERCATOR_WORLD_M = 2 * Math.PI * WEB_MERCATOR_RADIUS_M;
 
 export interface MercatorBounds {
@@ -9,16 +9,6 @@ export interface MercatorBounds {
   maxX: number;
   maxY: number;
 }
-
-export function lonLatToWebMercator(lon: number, lat: number): { x: number; y: number } {
-  const latClamped = Math.min(85.05112878, Math.max(-85.05112878, lat));
-  const latRad = (latClamped * Math.PI) / 180;
-  return {
-    x: (lon * Math.PI * WEB_MERCATOR_RADIUS_M) / 180,
-    y: Math.log(Math.tan(Math.PI / 4 + latRad / 2)) * WEB_MERCATOR_RADIUS_M,
-  };
-}
-
 export function webMercatorTileBounds(z: number, x: number, y: number): MercatorBounds {
   const world = WEB_MERCATOR_WORLD_M;
   const tileSize = world / 2 ** z;

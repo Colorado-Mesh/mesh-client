@@ -27,7 +27,7 @@ import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 const SERIES_COLORS = ['#3b82f6', '#8b5cf6', '#f97316', '#22c55e', '#ef4444', '#eab308'] as const;
 const EMPTY_NODES: ReadonlyMap<number, CayenneNodeTelemetry> = new Map();
 
-interface Props {
+export interface Props {
   /** Protocol exception: Cayenne LPP arrives on Meshtastic CAYENNE_APP only. */
   capabilities?: ProtocolCapabilities;
 }

@@ -9,7 +9,7 @@ import type {
 } from '@/shared/teamRosterTypes';
 import { isTeamRosterUnavailableError } from '@/shared/teamRosterUnavailable';
 
-interface TeamRosterState {
+export interface TeamRosterState {
   hydrated: boolean;
   /** True when the last hydrate attempt failed (members may be stale or empty). */
   hydrateError: boolean;

@@ -78,7 +78,7 @@ describe('meshcore repeater CLI working state', () => {
       'resetMeshcoreWaitingMessagesDrainSchedule();',
       'resetMeshcoreRepeaterRpcInFlightOnDisconnect();',
       'setMeshcoreRepeaterRpcPending(new Map());',
-      'repeaterCommandServiceRef.current?.clear();',
+      'repeaterCommandServiceRef.current?.cancelPending();',
     ]) {
       const cleanupIdx = body.indexOf(cleanup);
       expect(cleanupIdx, cleanup).toBeGreaterThan(generationIdx);

@@ -1,20 +1,6 @@
 import { vi } from 'vitest';
 
 /** Cold-mount MeshCore hydrate uses one batched IPC — prefer this over separate contact/message mocks. */
-export function mockMeshcoreIdentityHydration(opts?: {
-  contacts?: unknown[];
-  nodes?: unknown[];
-  hopHistory?: unknown[];
-  messages?: unknown[];
-}): void {
-  vi.mocked(window.electronAPI.db.getMeshcoreIdentityHydration).mockResolvedValue({
-    contacts: opts?.contacts ?? [],
-    nodes: (opts?.nodes ?? []) as never[],
-    hopHistory: (opts?.hopHistory ?? []) as never[],
-    messages: opts?.messages ?? [],
-  });
-}
-
 /** Reset electronAPI mocks touched by useMeshcoreRuntime tests without vi.clearAllMocks(). */
 export function resetMeshcoreRuntimeElectronMocks(): void {
   vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockClear();

@@ -11,7 +11,7 @@ import {
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 import { SettingsSection } from './ui/SettingsSection';
 
-interface Props {
+export interface Props {
   isConnected: boolean;
   onSendLockdownAuth: (auth: MeshtasticLockdownAuthRequest) => Promise<void>;
 }

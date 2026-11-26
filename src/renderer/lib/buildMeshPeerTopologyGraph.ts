@@ -57,7 +57,7 @@ export interface BuildMeshPeerTopologyGraphOptions {
 export const MESH_PEER_MAX_VISIBLE_NODES_UNFILTERED = TOPOLOGY_GRAPH_DISTANT_NODE_CAP;
 /** Max relay hubs with thick self spokes; excess direct peers render as compact leaf dots. */
 export const MESH_PEER_MAX_RELAY_HUBS = 20;
-export const MESH_PEER_UNASSIGNED_RELAY_ID = -1;
+const MESH_PEER_UNASSIGNED_RELAY_ID = -1;
 
 function effectiveHops(node: MeshNode): number | null {
   const hops = node.hops_away ?? node.hops;

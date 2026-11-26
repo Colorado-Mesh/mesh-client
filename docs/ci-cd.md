@@ -30,7 +30,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 Runs on every push, pull request, and merge-queue `merge_group` for `main` (and `workflow_dispatch`). Independent lanes start concurrently; only Flatpak waits for change detection:
 
-- **Code quality:** format, markdownlint, license allowlist, actionlint, dependency audit, and yamllint
+- **Code quality:** format, markdownlint, license allowlist, actionlint (from the `github-actionlint` devDependency), dependency audit, and yamllint
 - **ESLint:** full repository lint, split over four parallel shards (`ESLint (1/4)` to `ESLint (4/4)`). `scripts/ci-eslint-shard.mjs` deals every Git-visible file to exactly one shard and runs ESLint on that list with two workers, using `eslint.ci.config.mjs` to avoid running Prettier again for extensions already covered by the required Code quality job. All type-aware rules and the zero-warning gate remain enabled on every shard. Local development uses the default ESLint config via `pnpm run lint` (single process, raised heap). CI runs the sharded `eslint.ci.config.mjs` pass; release preflight runs `pnpm run lint --concurrency 2 --config eslint.ci.config.mjs` from `scripts/release.sh`. To change the shard count, edit the `shard` list in `ci.yaml`.
 - **Typecheck:** `pnpm run typecheck`
 - **Application build:** `pnpm run build`
@@ -451,7 +451,7 @@ Privileged workflows are additionally restricted by protected environments: `rel
 
 All PRs (and merge-queue groups) for `main` must pass the **required check names** listed above. Those jobs cover:
 
-- Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
+- Lint, format, markdown, licenses, actionlint (`pnpm exec github-actionlint`, no separate install), yamllint (`pnpm run lint` and related steps in `ci.yaml`)
 - Cheap always-on policy scanners (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap `check:*` set; Semgrep is not in CI — use `core.hooksPath=.githooks` locally)
 - Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
 - Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on `merge_group`, `main`, and manual runs
@@ -465,9 +465,9 @@ The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Acti
 - **Staged-file** Prettier + markdownlint (not a full-tree `pnpm run format` / `lint:md`)
 - `pnpm dedupe` when dependency manifests are staged
 - `pnpm run i18n:auto-translate` when `en/translation.json` is staged (fills new English keys vs `HEAD`) + re-stages locales
-- Staged ESLint (`--cache`) + full `typecheck`; path-gated `typecheck:strict-shared` when shared paths staged; always-on cheap `check:*` scanners; path-gated flatpak / DB / IPC / reticulum catalog / full-feature sidecar checks (sidecar also requires `cargo` on `PATH` when sidecar paths are staged; `check:i18n` when English locale staged, else `check:i18n:branch`)
+- Staged ESLint (`--cache`) + staged oxlint (`correctness`/`suspicious`/`perf` via `.oxlintrc.json`) + full `typecheck`; path-gated `typecheck:strict-shared` when shared paths staged; always-on cheap `check:*` scanners and `fallow audit --type-aware --staged`; path-gated flatpak / DB / IPC / reticulum catalog / full-feature sidecar checks (sidecar also requires `cargo` on `PATH` when sidecar paths are staged; `check:i18n` when English locale staged, else `check:i18n:branch`)
 - Before PR: `pnpm run check:pr` (full lint + typecheck + strict-shared + `test:run` + path-aware sidecar)
-- `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` only when relevant files are staged
+- `pnpm audit` only when dependency manifests staged; `pnpm exec github-actionlint` / `yamllint` only when relevant files are staged
 - `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
 **PR CI** ([`tests.yaml`](../.github/workflows/tests.yaml)) selects merge-base-related Vitest work and fails closed to the full suite when scoping is unsafe. The merge queue and **`pnpm run release`** always run full Vitest; green pre-commit does not replace those gates.

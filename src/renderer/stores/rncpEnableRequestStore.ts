@@ -7,7 +7,7 @@ export interface RncpEnableRequestPrompt {
   receivedAt: number;
 }
 
-interface RncpEnableRequestStoreState {
+export interface RncpEnableRequestStoreState {
   /** Pending inbound enable prompts (newest last). */
   prompts: RncpEnableRequestPrompt[];
   /** Peers that chose "Don't ask again". */

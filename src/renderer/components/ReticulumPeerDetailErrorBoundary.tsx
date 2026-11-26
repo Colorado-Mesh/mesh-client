@@ -7,7 +7,7 @@ import { type ReactNode, Suspense } from 'react';
 import ErrorBoundary from '@/renderer/components/ErrorBoundary';
 import i18n from '@/renderer/lib/i18n';
 
-interface Props {
+export interface Props {
   peerHash: string;
   onClose: () => void;
   children: ReactNode;

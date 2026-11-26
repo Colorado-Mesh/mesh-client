@@ -1,5 +1,5 @@
 /** Consecutive configure→silence→watchdog-dead cycles before the user hint is shown. */
-export const MESHTASTIC_SILENT_CYCLES_BEFORE_HINT = 2;
+const MESHTASTIC_SILENT_CYCLES_BEFORE_HINT = 2;
 
 export interface MeshtasticPostConfigureSilenceTracker {
   /** Device reached `DeviceConfigured`; start a new observation window. */

@@ -167,12 +167,12 @@ export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}
   };
 }
 
-export type AnalysisWorkerPool = ReturnType<typeof createAnalysisWorkerPool>;
+type AnalysisWorkerPool = ReturnType<typeof createAnalysisWorkerPool>;
 
 let defaultPool: AnalysisWorkerPool | null = null;
 let viteWorkerReady: Promise<void> | null = null;
 
-export function ensureViteWorkerPool(): Promise<void> {
+function ensureViteWorkerPool(): Promise<void> {
   if (viteWorkerReady) return viteWorkerReady;
   viteWorkerReady = (async () => {
     if (!defaultCanUseWorkers()) {
@@ -215,14 +215,4 @@ export async function runAnalysisRequest(request: AnalysisJobRequest): Promise<A
 /** Sync path for tests / callers that must not await. Always inline (no worker). */
 export function runAnalysisRequestInline(request: AnalysisJobRequest): AnalysisJobResult {
   return runAnalysisJob(request);
-}
-
-export function setAnalysisWorkerPoolForTests(pool: AnalysisWorkerPool | null): void {
-  defaultPool?.dispose();
-  defaultPool = pool;
-  viteWorkerReady = pool ? Promise.resolve() : null;
-}
-
-export function getAnalysisWorkerPoolForTests(): AnalysisWorkerPool | null {
-  return defaultPool;
 }

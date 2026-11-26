@@ -3,8 +3,8 @@ import type { TFunction } from 'i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { SendRncpRequestEnableResult } from '@/renderer/lib/sendRncpRequestEnable';
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
-type AddToast = (message: string, type?: ToastType, duration?: number) => void;
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+export type AddToast = (message: string, type?: ToastType, duration?: number) => void;
 
 /** Shared toast outcomes for `sendRncpRequestEnable` (Chat DM + Remote Transfer). */
 export function toastRncpRequestEnableResult(

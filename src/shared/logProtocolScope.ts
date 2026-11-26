@@ -3,7 +3,7 @@ import {
   type LogLineLike,
   resolveLogProtocolFromChannel,
 } from './logProtocolChannelResolve';
-import { type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from './meshProtocol';
+import { type MeshProtocol } from './meshProtocol';
 
 export type { LogLineLike } from './logProtocolChannelResolve';
 
@@ -161,17 +161,6 @@ const SCOPE_KEYS_BY_LENGTH: readonly string[] = Object.freeze(
 );
 
 /** Leading tag or tag-prefix from a log message (`[Foo]` / `[Foo:bar]` / `[meshcoreRoom…`). */
-export function extractLeadingLogTag(message: string): string | undefined {
-  const m = /^\[([^\]]+)\]/.exec(message);
-  if (!m?.[1]) return undefined;
-  const inner = m[1];
-  const colon = inner.indexOf(':');
-  if (colon >= 0) {
-    return `[${inner.slice(0, colon + 1)}`;
-  }
-  return `[${inner}]`;
-}
-
 /**
  * Match `LOG_TAG_SCOPE` against the first `[…]` tag in the message only
  * (longest-prefix wins). Body mentions of other tags must not override.
@@ -230,10 +219,6 @@ export function isOwnedByOther(line: LogLineLike, active: MeshProtocol): boolean
 }
 
 /** True when the line is owned by `protocol` (not shared). */
-export function isOwnedBy(line: LogLineLike, protocol: MeshProtocol): boolean {
-  return resolveLogProtocol(line) === protocol;
-}
-
 /** Device-surface lines for the active tab (shared device lines included). */
 export function isDeviceLogLine(line: LogLineLike, protocol?: MeshProtocol): boolean {
   if (resolveLogSurface(line) !== 'device') return false;
@@ -242,9 +227,6 @@ export function isDeviceLogLine(line: LogLineLike, protocol?: MeshProtocol): boo
 }
 
 /** App-surface exclusive tags owned by `protocol`. */
-export function isProtocolExclusiveAppLogLine(line: LogLineLike, protocol: MeshProtocol): boolean {
-  return resolveLogSurface(line) === 'app' && resolveLogProtocol(line) === protocol;
-}
 
 /** App log lines for the active protocol tab (shared app lines included). */
 export function isAppLogLine(line: LogLineLike, protocol?: MeshProtocol): boolean {
@@ -258,8 +240,4 @@ export function isAppLogLine(line: LogLineLike, protocol?: MeshProtocol): boolea
 /** Registry keys for scanners (frozen copy). */
 export function listLogTagScopeKeys(): readonly string[] {
   return SCOPE_KEYS_BY_LENGTH;
-}
-
-export function registeredProtocols(): readonly MeshProtocol[] {
-  return REGISTERED_MESH_PROTOCOLS;
 }

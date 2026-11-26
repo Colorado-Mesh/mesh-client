@@ -4,7 +4,7 @@ import type { TeamMemberLink } from '@/shared/teamRosterTypes';
 
 import type { LinkPresenceSnapshot } from './contactPresence';
 
-export const CONTACT_MESSAGE_HISTORY_LIMIT = 200;
+const CONTACT_MESSAGE_HISTORY_LIMIT = 200;
 
 const LORA_BROADCAST = 0xffffffff;
 

@@ -15,7 +15,7 @@ export interface MapFocusRequest {
   zoom?: number;
 }
 
-interface MapViewportState {
+export interface MapViewportState {
   viewport: MapViewport | null;
   setViewport: (viewport: MapViewport) => void;
   pendingFocus: MapFocusRequest | null;

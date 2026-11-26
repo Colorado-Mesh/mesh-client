@@ -89,7 +89,7 @@ export interface ImportMbtilesRequest {
 export const CUSTOM_MAP_SOURCES_MAX = 16;
 export const CUSTOM_SOURCE_NAME_MAX = 60;
 export const CUSTOM_SOURCE_ATTRIBUTION_MAX = 200;
-export const CUSTOM_XYZ_TEMPLATE_MAX = 2048;
+const CUSTOM_XYZ_TEMPLATE_MAX = 2048;
 export const CUSTOM_MAP_MAX_ZOOM = 22;
 /** Per XYZ source view-cache cap (oldest tiles evicted first); the global cache cap still applies. */
 export const CUSTOM_SOURCE_CACHE_MAX_BYTES = 256 * 1024 * 1024;
@@ -125,7 +125,7 @@ export function sanitizeCustomSourceAttribution(value: unknown): string | null {
   return sanitizeLabel(value, CUSTOM_SOURCE_ATTRIBUTION_MAX);
 }
 
-export function escapeHtmlText(value: string): string {
+function escapeHtmlText(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

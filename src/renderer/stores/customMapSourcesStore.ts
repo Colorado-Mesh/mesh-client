@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { CustomMapSourceInfo } from '@/shared/offlineMaps/customMapSources';
 
-interface CustomMapSourcesState {
+export interface CustomMapSourcesState {
   /** `null` until the first successful load from the main process. */
   sources: CustomMapSourceInfo[] | null;
   /** True after a list attempt failed and `sources` is still null. */

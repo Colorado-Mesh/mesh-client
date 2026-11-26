@@ -25,7 +25,7 @@ interface PendingAction {
 
 // ─── AdminPanel ───────────────────────────────────────────────────────────────
 
-interface Props {
+export interface Props {
   configTarget?: ConfigTargetContext;
   capabilities?: ProtocolCapabilities;
   isConnected: boolean;

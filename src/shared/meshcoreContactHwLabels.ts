@@ -1,9 +1,10 @@
 /** MeshCore {@link CONTACT_TYPE_LABELS} values (types 1–4) stored in shared `nodes.hw_model` by mistake. */
-export const MESHCORE_CONTACT_HW_LABELS = ['Chat', 'Repeater', 'Room', 'Sensor'] as const;
-
-export type MeshcoreContactHwLabel = (typeof MESHCORE_CONTACT_HW_LABELS)[number];
-
-/** MeshCore companion contact_type for room BBS servers (matches CONTACT_TYPE_LABELS[3]). */
+export const MESHCORE_CONTACT_HW_LABELS = [
+  'Chat',
+  'Repeater',
+  'Room',
+  'Sensor',
+] as const; /** MeshCore companion contact_type for room BBS servers (matches CONTACT_TYPE_LABELS[3]). */
 export const MESHCORE_CONTACT_TYPE_ROOM = 3;
 
 /** BBS room posts use channel index -2 in SQLite `meshcore_messages.channel_idx`. */

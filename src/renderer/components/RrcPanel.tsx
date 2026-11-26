@@ -90,6 +90,7 @@ import {
   parseRrcSlashInput,
   resolveRrcMsgTarget,
   RRC_HELP_I18N_KEYS,
+  type RrcSlashResult,
 } from '@/renderer/lib/rrcSlashCommands';
 import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
 import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
@@ -960,266 +961,297 @@ export default function RrcPanel({
 
   const handleSend = useCallback(
     async (text: string) => {
-      try {
-        const parsed = parseRrcSlashInput(text);
-        if (!parsed) return;
-
-        if (parsed.kind === 'local') {
-          if (parsed.command === 'help') {
-            appendSystemLines(RRC_HELP_I18N_KEYS.map((k) => t(k)));
-            return;
-          }
-          if (parsed.command === 'usage') {
-            useRrcSessionStore.getState().setError(t(parsed.messageKey));
-            return;
-          }
-          if (parsed.command === 'nick') {
-            const nickLim = computeRrcByteLimitStatus(parsed.nickname, limits.max_nick_bytes);
-            if (nickLim?.phase === 'overMax') {
-              throw new RrcComposerPreflightError(
-                t('rrc.nickLimit.overMax', { limit: nickLim.limit }),
-              );
-            }
-            setNickname(parsed.nickname);
-            try {
-              localStorage.setItem(NICK_KEY, parsed.nickname);
-            } catch (e: unknown) {
-              console.debug('[renderer/components/RrcPanel] catch:', e);
-            }
-            if (status === 'active' && hubDestHash) {
-              const nickRes = await window.electronAPI.reticulum.rrc.setNickname({
-                nickname: parsed.nickname,
-                hub_dest_hash: hubDestHash,
-              });
-              if (!nickRes.ok) {
-                setRrcSendError(nickRes.error ?? t('rrc.sendFailed'));
-                return;
-              }
-              // Push K_NICK to the hub so /who and member lists pick up the new nick.
-              void sendHubCommand('/who').catch((e: unknown) => {
-                console.debug('[RrcPanel] nick /who ' + errLikeToLogString(e));
-              });
-            }
-            // Update local nicklist entry for self immediately.
-            const selfHash = useRrcSessionStore.getState().localIdentityHash;
-            if (selfHash && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)) {
-              const members = activeRoomInfo?.members ?? [];
-              const next = members.map((m) =>
-                m.identity_hash.toLowerCase() === selfHash
-                  ? { ...m, nickname: parsed.nickname }
-                  : m,
-              );
-              if (!next.some((m) => m.identity_hash.toLowerCase() === selfHash)) {
-                next.push({ identity_hash: selfHash, nickname: parsed.nickname });
-              }
-              useRrcSessionStore.getState().mergeRoomMembers(activeRoom, next, 'replace');
-            }
-            appendSystemLines([t('rrc.slash.nickChanged', { name: parsed.nickname })]);
-            return;
-          }
-          if (parsed.command === 'join') {
-            const roomLim = computeRrcByteLimitStatus(parsed.room, limits.max_room_name_bytes);
-            if (roomLim?.phase === 'overMax') {
-              throw new RrcComposerPreflightError(
-                t('rrc.roomNameLimit.overMax', { limit: roomLim.limit }),
-              );
-            }
-            await joinRoom(parsed.room, parsed.key);
-            return;
-          }
-          if (parsed.command === 'part') {
-            await handlePart(parsed.room);
-            return;
-          }
-          if (parsed.command === 'me') {
-            if (status !== 'active' || !hubDestHash) {
-              useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
-              return;
-            }
-            if (!activeRoom || activeRoom.startsWith('[') || isRrcDmRoom(activeRoom)) {
-              useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
-              return;
-            }
-            const bodyLim = computeRrcByteLimitStatus(
-              parsed.action,
-              resolveRrcMsgBodyLimit(limits.max_msg_body_bytes),
-            );
-            if (bodyLim?.phase === 'overMax') {
-              throw new RrcComposerPreflightError(
-                t('rrc.byteLimit.overMax', { limit: bodyLim.limit }),
-              );
-            }
-            const res = await rrcSendBounded({
-              hub_dest_hash: hubDestHash,
-              room: activeRoom,
-              body: parsed.action,
-              type: 'action',
-            });
-            if (!res.ok) {
-              setRrcSendError(res.error ?? t('rrc.sendFailed'));
-              return;
-            }
-            return;
-          }
-          if (parsed.command === 'msg') {
-            // Every exit that does not send throws, so the user can fix the target or retry.
-            if (status !== 'active' || !hubDestHash) {
-              throw new RrcMsgNotSentError(t('rrc.sendFailed'));
-            }
-            if (!capabilities.direct_notice) {
-              throw new RrcMsgNotSentError(t('rrc.directNoticeUnsupported'));
-            }
-            const members = activeRoomInfo?.members ?? [];
-            const allMembers = [...members, ...[...rooms.values()].flatMap((r) => r.members ?? [])];
-            const resolved = resolveRrcMsgTarget(parsed.target, allMembers);
-            if (resolved?.identity_hash.length !== 32) {
-              throw new RrcMsgNotSentError(t('rrc.slash.msgTargetNotFound'));
-            }
-            const bodyLim = computeRrcByteLimitStatus(
-              parsed.text,
-              resolveRrcMsgBodyLimit(limits.max_msg_body_bytes),
-            );
-            if (bodyLim?.phase === 'overMax') {
-              throw new RrcComposerPreflightError(
-                t('rrc.byteLimit.overMax', { limit: bodyLim.limit }),
-              );
-            }
-            let res: RrcSendResult;
-            try {
-              res = await rrcSendBounded({
-                hub_dest_hash: hubDestHash,
-                body: parsed.text,
-                type: 'notice',
-                dst_hash: resolved.identity_hash,
-              });
-            } catch (e) {
-              console.warn('mcL0615 [RrcPanel] /msg send ' + errLikeToLogString(e));
-              throw new RrcMsgNotSentError(formatRrcErrorMessage(errLikeToLogString(e), t));
-            }
-            if (!res.ok) {
-              const error = res.error ?? t('rrc.sendFailed');
-              // Sidecar already rejected the send: demote Connected before the next click.
-              if (isRrcDeadSessionSendError(error)) void reconcileRrcHubAfterDeadSend(hubDestHash);
-              throw new RrcMsgNotSentError(formatRrcErrorMessage(error, t));
-            }
-            const dmRoom = rrcDmRoomKey(resolved.identity_hash);
-            openDm(
-              {
-                identity_hash: resolved.identity_hash,
-                nickname: resolved.nickname ?? null,
-              },
-              hubDestHash,
-              { focus: true },
-            );
-            addMessage({
-              id: res.id ?? `whisper-out-${Date.now()}`,
-              room: dmRoom,
-              kind: 'msg',
-              body: parsed.text,
-              nickname: nickname || null,
-              sender_hash: localIdentityHash,
-              timestamp: Date.now(),
-              dst_hash: resolved.identity_hash,
-            });
-            return;
-          }
-          if (parsed.command === 'clear') {
-            clearActiveRoomMessages();
-            return;
-          }
-          if (parsed.command === 'quit') {
-            await handleDisconnect();
-            return;
-          }
+      type SlashInput = RrcSlashResult;
+      const runSlashHelp = (): void => {
+        appendSystemLines(RRC_HELP_I18N_KEYS.map((k) => t(k)));
+        return;
+      };
+      const runSlashUsage = (messageKey: string): void => {
+        useRrcSessionStore.getState().setError(t(messageKey));
+        return;
+      };
+      const runSlashNick = async (nickname: string): Promise<void> => {
+        const nickLim = computeRrcByteLimitStatus(nickname, limits.max_nick_bytes);
+        if (nickLim?.phase === 'overMax') {
+          throw new RrcComposerPreflightError(t('rrc.nickLimit.overMax', { limit: nickLim.limit }));
         }
-
-        if (parsed.kind === 'hub') {
-          if (status !== 'active' || !hubDestHash) {
-            useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+        setNickname(nickname);
+        try {
+          localStorage.setItem(NICK_KEY, nickname);
+        } catch (e: unknown) {
+          console.debug('[renderer/components/RrcPanel] catch:', e);
+        }
+        if (status === 'active' && hubDestHash) {
+          const nickRes = await window.electronAPI.reticulum.rrc.setNickname({
+            nickname: nickname,
+            hub_dest_hash: hubDestHash,
+          });
+          if (!nickRes.ok) {
+            setRrcSendError(nickRes.error ?? t('rrc.sendFailed'));
             return;
           }
-          const expanded = expandRrcHubSlashBody(parsed.body, activeRoom);
-          const isWho = /^\s*\/(?:who|names)(?:\s|$)/i.test(expanded);
-          const whoForceRoom = isWho
-            ? resolveRrcWhoTranscriptForceRoom(
-                expanded.replace(/^\s*\/names\b/i, '/who'),
-                activeRoom,
-                rooms.keys(),
-              )
-            : null;
+          // Push K_NICK to the hub so /who and member lists pick up the new nick.
+          void sendHubCommand('/who').catch((e: unknown) => {
+            console.debug('[RrcPanel] nick /who ' + errLikeToLogString(e));
+          });
+        }
+        // Update local nicklist entry for self immediately.
+        const selfHash = useRrcSessionStore.getState().localIdentityHash;
+        if (selfHash && activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)) {
+          const members = activeRoomInfo?.members ?? [];
+          const next = members.map((m) =>
+            m.identity_hash.toLowerCase() === selfHash ? { ...m, nickname: nickname } : m,
+          );
+          if (!next.some((m) => m.identity_hash.toLowerCase() === selfHash)) {
+            next.push({ identity_hash: selfHash, nickname: nickname });
+          }
+          useRrcSessionStore.getState().mergeRoomMembers(activeRoom, next, 'replace');
+        }
+        appendSystemLines([t('rrc.slash.nickChanged', { name: nickname })]);
+        return;
+      };
+      const runSlashJoin = async (room: string, key?: string): Promise<void> => {
+        const roomLim = computeRrcByteLimitStatus(room, limits.max_room_name_bytes);
+        if (roomLim?.phase === 'overMax') {
+          throw new RrcComposerPreflightError(
+            t('rrc.roomNameLimit.overMax', { limit: roomLim.limit }),
+          );
+        }
+        await joinRoom(room, key);
+        return;
+      };
+      const runSlashPart = async (room?: string): Promise<void> => {
+        await handlePart(room);
+        return;
+      };
+      const runSlashMe = async (action: string): Promise<void> => {
+        if (status !== 'active' || !hubDestHash) {
+          useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+          return;
+        }
+        if (!activeRoom || activeRoom.startsWith('[') || isRrcDmRoom(activeRoom)) {
+          useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
+          return;
+        }
+        const bodyLim = computeRrcByteLimitStatus(
+          action,
+          resolveRrcMsgBodyLimit(limits.max_msg_body_bytes),
+        );
+        if (bodyLim?.phase === 'overMax') {
+          throw new RrcComposerPreflightError(t('rrc.byteLimit.overMax', { limit: bodyLim.limit }));
+        }
+        const res = await rrcSendBounded({
+          hub_dest_hash: hubDestHash,
+          room: activeRoom,
+          body: action,
+          type: 'action',
+        });
+        if (!res.ok) {
+          setRrcSendError(res.error ?? t('rrc.sendFailed'));
+          return;
+        }
+        return;
+      };
+      const runSlashMsg = async (target: string, text: string): Promise<void> => {
+        // Every exit that does not send throws, so the user can fix the target or retry.
+        if (status !== 'active' || !hubDestHash) {
+          throw new RrcMsgNotSentError(t('rrc.sendFailed'));
+        }
+        if (!capabilities.direct_notice) {
+          throw new RrcMsgNotSentError(t('rrc.directNoticeUnsupported'));
+        }
+        const members = activeRoomInfo?.members ?? [];
+        const allMembers = [...members, ...[...rooms.values()].flatMap((r) => r.members ?? [])];
+        const resolved = resolveRrcMsgTarget(target, allMembers);
+        if (resolved?.identity_hash.length !== 32) {
+          throw new RrcMsgNotSentError(t('rrc.slash.msgTargetNotFound'));
+        }
+        const bodyLim = computeRrcByteLimitStatus(
+          text,
+          resolveRrcMsgBodyLimit(limits.max_msg_body_bytes),
+        );
+        if (bodyLim?.phase === 'overMax') {
+          throw new RrcComposerPreflightError(t('rrc.byteLimit.overMax', { limit: bodyLim.limit }));
+        }
+        let res: RrcSendResult;
+        try {
+          res = await rrcSendBounded({
+            hub_dest_hash: hubDestHash,
+            body: text,
+            type: 'notice',
+            dst_hash: resolved.identity_hash,
+          });
+        } catch (e) {
+          console.warn('mcL0615 [RrcPanel] /msg send ' + errLikeToLogString(e));
+          throw new RrcMsgNotSentError(formatRrcErrorMessage(errLikeToLogString(e), t));
+        }
+        if (!res.ok) {
+          const error = res.error ?? t('rrc.sendFailed');
+          // Sidecar already rejected the send: demote Connected before the next click.
+          if (isRrcDeadSessionSendError(error)) void reconcileRrcHubAfterDeadSend(hubDestHash);
+          throw new RrcMsgNotSentError(formatRrcErrorMessage(error, t));
+        }
+        const dmRoom = rrcDmRoomKey(resolved.identity_hash);
+        openDm(
+          {
+            identity_hash: resolved.identity_hash,
+            nickname: resolved.nickname ?? null,
+          },
+          hubDestHash,
+          { focus: true },
+        );
+        addMessage({
+          id: res.id ?? `whisper-out-${Date.now()}`,
+          room: dmRoom,
+          kind: 'msg',
+          body: text,
+          nickname: nickname || null,
+          sender_hash: localIdentityHash,
+          timestamp: Date.now(),
+          dst_hash: resolved.identity_hash,
+        });
+        return;
+      };
+      const runSlashClear = (): void => {
+        clearActiveRoomMessages();
+        return;
+      };
+      const runSlashQuit = async (): Promise<void> => {
+        await handleDisconnect();
+        return;
+      };
+      const runLocalSlash = async (
+        parsed: Extract<SlashInput, { kind: 'local' }>,
+      ): Promise<void> => {
+        if (parsed.command === 'help') {
+          runSlashHelp();
+          return;
+        }
+        if (parsed.command === 'usage') {
+          runSlashUsage(parsed.messageKey);
+          return;
+        }
+        if (parsed.command === 'nick') {
+          await runSlashNick(parsed.nickname);
+          return;
+        }
+        if (parsed.command === 'join') {
+          await runSlashJoin(parsed.room, parsed.key);
+          return;
+        }
+        if (parsed.command === 'part') {
+          await runSlashPart(parsed.room);
+          return;
+        }
+        if (parsed.command === 'me') {
+          await runSlashMe(parsed.action);
+          return;
+        }
+        if (parsed.command === 'msg') {
+          await runSlashMsg(parsed.target, parsed.text);
+          return;
+        }
+        if (parsed.command === 'clear') {
+          runSlashClear();
+          return;
+        }
+        if (parsed.command === 'quit') {
+          await runSlashQuit();
+          return;
+        }
+      };
+      const runHubSlash = async (parsed: Extract<SlashInput, { kind: 'hub' }>): Promise<void> => {
+        if (status !== 'active' || !hubDestHash) {
+          useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+          return;
+        }
+        const expanded = expandRrcHubSlashBody(parsed.body, activeRoom);
+        const isWho = /^\s*\/(?:who|names)(?:\s|$)/i.test(expanded);
+        const whoForceRoom = isWho
+          ? resolveRrcWhoTranscriptForceRoom(
+              expanded.replace(/^\s*\/names\b/i, '/who'),
+              activeRoom,
+              rooms.keys(),
+            )
+          : null;
+        if (whoForceRoom) {
+          const store = useRrcSessionStore.getState();
+          store.reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
+          store.markWhoReplyPending(whoForceRoom, hubDestHash);
+        }
+        const commandRoom =
+          (isWho ? whoForceRoom : null) ??
+          (activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
+            ? activeRoom
+            : undefined);
+        let res: RrcSendResult;
+        try {
+          res = await rrcSendBounded({
+            hub_dest_hash: hubDestHash,
+            room: commandRoom,
+            body: expanded,
+            type: 'msg',
+          });
+        } catch (e) {
           if (whoForceRoom) {
             const store = useRrcSessionStore.getState();
-            store.reserveWhoTranscriptForce(whoForceRoom, hubDestHash);
-            store.markWhoReplyPending(whoForceRoom, hubDestHash);
+            store.releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+            store.clearWhoReplyPending(whoForceRoom, hubDestHash);
           }
-          const commandRoom =
-            (isWho ? whoForceRoom : null) ??
-            (activeRoom && !activeRoom.startsWith('[') && !isRrcDmRoom(activeRoom)
-              ? activeRoom
-              : undefined);
-          let res: RrcSendResult;
-          try {
-            res = await rrcSendBounded({
-              hub_dest_hash: hubDestHash,
-              room: commandRoom,
-              body: expanded,
-              type: 'msg',
-            });
-          } catch (e) {
-            if (whoForceRoom) {
-              const store = useRrcSessionStore.getState();
-              store.releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
-              store.clearWhoReplyPending(whoForceRoom, hubDestHash);
-            }
-            throw e;
+          throw e;
+        }
+        if (!res.ok) {
+          if (whoForceRoom) {
+            const store = useRrcSessionStore.getState();
+            store.releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
+            store.clearWhoReplyPending(whoForceRoom, hubDestHash);
           }
-          if (!res.ok) {
-            if (whoForceRoom) {
-              const store = useRrcSessionStore.getState();
-              store.releaseWhoTranscriptForce(whoForceRoom, hubDestHash);
-              store.clearWhoReplyPending(whoForceRoom, hubDestHash);
-            }
-            setRrcSendError(res.error ?? t('rrc.sendFailed'));
-            return;
-          }
-          if (whoForceRoom) scheduleWhoReplyWatchdog(whoForceRoom);
-          appendSystemLines([t('rrc.slash.commandSent', { cmd: expanded })]);
+          setRrcSendError(res.error ?? t('rrc.sendFailed'));
           return;
         }
-
-        const activeDmHash = activeRoom ? parseRrcDmRoomKey(activeRoom) : null;
-        if (activeRoom && activeDmHash) {
-          if (status !== 'active' || !hubDestHash) {
-            useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
-            return;
-          }
-          if (!capabilities.direct_notice) {
-            useRrcSessionStore.getState().setError(t('rrc.directNoticeUnsupported'));
-            return;
-          }
-          const res = await rrcSendBounded({
-            hub_dest_hash: hubDestHash,
-            body: parsed.body,
-            type: 'notice',
-            dst_hash: activeDmHash,
-          });
-          if (!res.ok) {
-            setRrcSendError(res.error ?? t('rrc.sendFailed'));
-            return;
-          }
-          addMessage({
-            // The wire id lets the peer's reactions find this line; the hub sends no echo.
-            id: res.id ?? `whisper-out-${Date.now()}`,
-            room: activeRoom,
-            kind: 'msg',
-            body: parsed.body,
-            nickname: nickname || null,
-            sender_hash: localIdentityHash,
-            timestamp: Date.now(),
-            dst_hash: activeDmHash,
-          });
+        if (whoForceRoom) scheduleWhoReplyWatchdog(whoForceRoom);
+        appendSystemLines([t('rrc.slash.commandSent', { cmd: expanded })]);
+        return;
+      };
+      const sendActiveDm = async (
+        parsed: Extract<SlashInput, { kind: 'chat' }>,
+        activeDmHash: string | null,
+      ): Promise<void> => {
+        if (!activeRoom || !activeDmHash) return;
+        if (status !== 'active' || !hubDestHash) {
+          useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
           return;
         }
+        if (!capabilities.direct_notice) {
+          useRrcSessionStore.getState().setError(t('rrc.directNoticeUnsupported'));
+          return;
+        }
+        const res = await rrcSendBounded({
+          hub_dest_hash: hubDestHash,
+          body: parsed.body,
+          type: 'notice',
+          dst_hash: activeDmHash,
+        });
+        if (!res.ok) {
+          setRrcSendError(res.error ?? t('rrc.sendFailed'));
+          return;
+        }
+        addMessage({
+          // The wire id lets the peer's reactions find this line; the hub sends no echo.
+          id: res.id ?? `whisper-out-${Date.now()}`,
+          room: activeRoom,
+          kind: 'msg',
+          body: parsed.body,
+          nickname: nickname || null,
+          sender_hash: localIdentityHash,
+          timestamp: Date.now(),
+          dst_hash: activeDmHash,
+        });
+        return;
+      };
+      const sendRoomMessage = async (
+        parsed: Extract<SlashInput, { kind: 'chat' }>,
+      ): Promise<void> => {
         if (!activeRoom || activeRoom.startsWith('[')) {
           useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
           return;
@@ -1238,6 +1270,26 @@ export default function RrcPanel({
           setRrcSendError(res.error ?? t('rrc.sendFailed'));
           return;
         }
+      };
+      try {
+        const parsed = parseRrcSlashInput(text);
+        if (!parsed) return;
+
+        if (parsed.kind === 'local') {
+          await runLocalSlash(parsed);
+          return;
+        }
+        if (parsed.kind === 'hub') {
+          await runHubSlash(parsed);
+          return;
+        }
+
+        const activeDmHash = activeRoom ? parseRrcDmRoomKey(activeRoom) : null;
+        if (activeRoom && activeDmHash) {
+          await sendActiveDm(parsed, activeDmHash);
+          return;
+        }
+        await sendRoomMessage(parsed);
       } catch (e) {
         // Keep the draft: ChatComposer only clears after onInterceptSend resolves.
         if (e instanceof RrcComposerPreflightError || e instanceof RrcMsgNotSentError) throw e;

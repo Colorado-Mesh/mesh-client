@@ -16,7 +16,7 @@ export const PROVISION_WIPE_REQUIRED = 'PROVISION_WIPE_REQUIRED';
 /** Writes finished but ROM still reports not provisioned. */
 export const PROVISION_VERIFY_FAILED = 'PROVISION_VERIFY_FAILED';
 
-export async function provisionEeprom(rnode: RNode, params: ProvisionParams): Promise<void> {
+async function provisionEeprom(rnode: RNode, params: ProvisionParams): Promise<void> {
   const product = params.product.id;
   const model = params.model.mapped_id ?? params.model.id;
   const hardwareRevision = params.hardwareRevision ?? 0x01;
@@ -51,7 +51,7 @@ export async function provisionEeprom(rnode: RNode, params: ProvisionParams): Pr
 }
 
 /** Read EEPROM and throw if identity is locked with a bad checksum (needs wipe). */
-export async function assertRomWritableForProvision(rnode: RNode): Promise<boolean> {
+async function assertRomWritableForProvision(rnode: RNode): Promise<boolean> {
   const rom = await rnode.getRomAsObject();
   const details = rom.parse();
   if (details?.is_provisioned) {
@@ -64,7 +64,7 @@ export async function assertRomWritableForProvision(rnode: RNode): Promise<boole
 }
 
 /** Re-read EEPROM and require a valid provisioned identity. */
-export async function assertRomProvisioned(rnode: RNode): Promise<void> {
+async function assertRomProvisioned(rnode: RNode): Promise<void> {
   const rom = await rnode.getRomAsObject();
   const details = rom.parse();
   if (!details?.is_provisioned) {

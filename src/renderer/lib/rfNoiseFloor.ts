@@ -7,9 +7,9 @@ import type { MeshNode } from './types';
  */
 
 /** Same "elevated interference" threshold the MeshCore diagnostics finding uses. */
-export const NOISE_FLOOR_ELEVATED_DBM = -95;
-export const NOISE_FLOOR_MIN_PLAUSIBLE_DBM = -140;
-export const NOISE_FLOOR_MAX_PLAUSIBLE_DBM = -20;
+const NOISE_FLOOR_ELEVATED_DBM = -95;
+const NOISE_FLOOR_MIN_PLAUSIBLE_DBM = -140;
+const NOISE_FLOOR_MAX_PLAUSIBLE_DBM = -20;
 /** Fewer RSSI/SNR pairs than this is too noisy to advertise as an estimate. */
 export const NOISE_FLOOR_MIN_ESTIMATE_SAMPLES = 3;
 

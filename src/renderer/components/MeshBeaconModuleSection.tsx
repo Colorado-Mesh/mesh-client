@@ -52,7 +52,7 @@ const CHANNEL_DEFAULT = -1;
 /** `Channel.Role.DISABLED` */
 const CHANNEL_ROLE_DISABLED = 0;
 
-interface Props {
+export interface Props {
   moduleConfig: unknown;
   channelConfigs: readonly MeshBeaconChannelConfig[];
   disabled: boolean;

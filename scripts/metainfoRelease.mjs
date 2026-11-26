@@ -3,7 +3,7 @@
  * Keep version strings validated — never trust `pnpm version` stdout.
  */
 
-export const RELEASE_SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
+const RELEASE_SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
 
 /**
  * @param {unknown} version

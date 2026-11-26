@@ -130,7 +130,7 @@ export type MessageStoreEvent =
   | { type: 'added'; identityId: IdentityId; record: MessageRecord }
   | { type: 'renamed'; identityId: IdentityId; fromId: string; toId: string };
 
-type MessageStoreEventListener = (event: MessageStoreEvent) => void;
+export type MessageStoreEventListener = (event: MessageStoreEvent) => void;
 
 const messageStoreEventListeners = new Set<MessageStoreEventListener>();
 

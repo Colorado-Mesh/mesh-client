@@ -24,7 +24,7 @@ describe('meshcoreRepeaterRouteModeStorage', () => {
 
   it('reads auto, and the hook renders, when storage cannot be read', () => {
     vi.spyOn(console, 'debug').mockImplementation(() => {});
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
       throw new DOMException('denied', 'SecurityError');
     });
     expect(getMeshcoreRepeaterRouteMode(KEY_A)).toBe('auto');
@@ -36,7 +36,7 @@ describe('meshcoreRepeaterRouteModeStorage', () => {
     setMeshcoreRepeaterRouteMode(KEY_A, 'direct');
     const { result } = renderHook(() => useMeshcoreRepeaterRouteModes());
     vi.spyOn(console, 'debug').mockImplementation(() => {});
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError');
     });
     expect(() => {

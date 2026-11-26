@@ -1,7 +1,1 @@
-export type {
-  EmergencyIncident,
-  IncidentCoordsSource,
-  IncidentEvent,
-  IncidentEventKind,
-  IncidentStatus,
-} from '@/shared/incidentTypes';
+export type { EmergencyIncident, IncidentEvent, IncidentEventKind } from '@/shared/incidentTypes';

@@ -33,11 +33,6 @@ export async function openSerialPortWithTimeout(
   await withTimeout(port.open({ baudRate }), SERIAL_OPEN_TIMEOUT_MS, label);
 }
 
-export function isSerialPortForgetSupported(port?: SerialPort | null): boolean {
-  if (!port) return false;
-  return typeof (port as SerialPort & { forget?: () => Promise<void> }).forget === 'function';
-}
-
 /** Revoke Web Serial permission for a stale port; best-effort when API is absent. */
 export async function forgetGrantedSerialPortBestEffort(port: SerialPort | null): Promise<void> {
   if (!port) return;

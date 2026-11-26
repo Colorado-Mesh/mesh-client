@@ -6,7 +6,7 @@ export { normalizeBleMac };
 /** Fired when Reticulum releases the BLE adapter lease so LoRa stacks can retry. */
 export const BLE_ADAPTER_LEASE_RELEASED_EVENT = 'mesh-client:bleAdapterLeaseReleased';
 
-export function dispatchBleAdapterLeaseReleased(): void {
+function dispatchBleAdapterLeaseReleased(): void {
   window.dispatchEvent(new CustomEvent(BLE_ADAPTER_LEASE_RELEASED_EVENT));
 }
 

@@ -12,7 +12,7 @@ import {
 import { parseStoredJson } from './parseStoredJson';
 import { MESHCORE_ROOM_SYNC_MIN_INTERVAL_MINUTES } from './timeConstants';
 
-export { MESHCORE_ROOM_LAST_POST_SETTING_PREFIX, MESHCORE_ROOM_SYNC_SETTING_PREFIX };
+export { MESHCORE_ROOM_SYNC_SETTING_PREFIX };
 
 /** Coerce MeshCore node id to unsigned 32-bit for stable setting keys. */
 function toUnsignedNodeId(nodeId: number): number {
@@ -31,7 +31,7 @@ export function meshcoreRoomSyncSettingForNode(nodeId: number): string {
   return `${MESHCORE_ROOM_SYNC_SETTING_PREFIX}${String(toUnsignedNodeId(nodeId))}`;
 }
 
-export function meshcoreRoomLastPostSettingForNode(nodeId: number): string {
+function meshcoreRoomLastPostSettingForNode(nodeId: number): string {
   return `${MESHCORE_ROOM_LAST_POST_SETTING_PREFIX}${String(toUnsignedNodeId(nodeId))}`;
 }
 

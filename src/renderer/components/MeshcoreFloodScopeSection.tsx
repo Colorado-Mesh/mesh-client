@@ -11,10 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
-import {
-  applyMeshcoreFloodScope,
-  normalizeMeshcoreFloodScopeHashtag,
-} from '@/renderer/lib/meshcoreFloodScope';
+import { normalizeMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScope';
 import {
   isValidMeshcoreFloodScopeHashtag,
   MESHCORE_FLOOD_SCOPE_PRESETS_MAX,
@@ -36,7 +33,7 @@ export interface MeshcoreFloodScopeHandle {
   apply: () => Promise<void>;
 }
 
-type DiscoveryRunResult = MeshcoreRegionDiscoveryRun & {
+export type DiscoveryRunResult = MeshcoreRegionDiscoveryRun & {
   skipped: readonly { nodeId: number; reason: 'no-pubkey' }[];
 };
 
@@ -49,7 +46,7 @@ const DISCOVER_FAIL_I18N: Record<MeshcoreRegionDiscoveryFailureReason, string> =
   unknown: 'radioPanel.floodScopeDiscoverFail.unknown',
 };
 
-interface Props {
+export interface Props {
   disabled: boolean;
   isConnected: boolean;
   savedHashtag: string;
@@ -664,9 +661,3 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
 );
 
 /** Reapply persisted flood scope after connect (initConn). */
-export async function reapplyMeshcoreFloodScopeFromSettings(
-  conn: Parameters<typeof applyMeshcoreFloodScope>[0],
-  hashtag: string,
-): Promise<void> {
-  await applyMeshcoreFloodScope(conn, hashtag);
-}

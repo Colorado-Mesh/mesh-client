@@ -10,25 +10,25 @@ import { touch } from './touch';
 export type ReticulumNomadEgressVia = 'rf' | 'tcp' | 'network';
 
 /** MeshChat `NomadnetDownloader.download()` path_lookup_timeout default. */
-export const NOMAD_PATH_LOOKUP_SECS = 15;
+const NOMAD_PATH_LOOKUP_SECS = 15;
 
 /** MeshChat TCP link_establishment_timeout default. */
-export const NOMAD_TCP_LINK_ESTABLISH_SECS = 15;
+const NOMAD_TCP_LINK_ESTABLISH_SECS = 15;
 
 /** Grace for RTT-scaled link.request transfer after path + link stages. */
-export const NOMAD_TCP_TRANSFER_GRACE_SECS = 15;
+const NOMAD_TCP_TRANSFER_GRACE_SECS = 15;
 
 /** Python RNS `DEFAULT_PER_HOP_TIMEOUT`. */
-export const NOMAD_RF_PER_HOP_TIMEOUT_SECS = 6;
+const NOMAD_RF_PER_HOP_TIMEOUT_SECS = 6;
 
 /** Python RNS first-hop component in link establishment. */
-export const NOMAD_RF_FIRST_HOP_SECS = 6;
+const NOMAD_RF_FIRST_HOP_SECS = 6;
 
 /** Extra grace for slow RF page transfers. */
-export const NOMAD_RF_TRANSFER_GRACE_SECS = 30;
+const NOMAD_RF_TRANSFER_GRACE_SECS = 30;
 
 /** RNS transport default overall cap. */
-export const NOMAD_RF_MAX_OVERALL_SECS = 180;
+const NOMAD_RF_MAX_OVERALL_SECS = 180;
 
 /**
  * Main-process IPC proxy AbortSignal timeout for Nomad page/file/media GETs.

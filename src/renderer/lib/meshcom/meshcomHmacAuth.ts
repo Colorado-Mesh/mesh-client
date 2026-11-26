@@ -143,10 +143,6 @@ export class MeshcomAuthLineBuffer {
   remainder(): string {
     return this.decoder.decode(this.buf);
   }
-
-  clear(): void {
-    this.buf = new Uint8Array(0);
-  }
 }
 
 /** Concatenate leftover line bytes + unfinished tail into one raw chunk. */

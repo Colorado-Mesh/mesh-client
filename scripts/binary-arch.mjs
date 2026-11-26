@@ -112,7 +112,7 @@ export function readPeMachine(filePath) {
  * @param {ElectronPlatform} platform
  * @returns {Set<'x64' | 'arm64' | 'unknown'>}
  */
-export function archNamesFor(filePath, platform) {
+function archNamesFor(filePath, platform) {
   if (platform === 'linux') {
     return new Set([elfMachineToArch(readElfMachine(filePath))]);
   }

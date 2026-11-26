@@ -231,7 +231,7 @@ export interface CuSample {
   cu: number;
 }
 
-interface LocalStatsBaseline {
+export interface LocalStatsBaseline {
   rxTotal: number;
   rxDupe: number;
   rxBad: number;
@@ -587,7 +587,7 @@ function schedulePersistDiagnosticRows(getRows: () => DiagnosticRow[]): void {
   }, PERSIST_DEBOUNCE_MS);
 }
 
-interface DiagnosticsState {
+export interface DiagnosticsState {
   /** Routing + RF findings as table rows (replaces anomalies map). */
   diagnosticRows: DiagnosticRow[];
   /** When non-null, rows were restored from disk (savedAt from snapshot) — clear on first live update. */

@@ -47,7 +47,7 @@ import { createIpcRateLimiter } from '../ipcRateLimit';
 import { sanitizeLogMessage } from '../sanitize-log-message';
 import { assertIpcSender } from '../validate-ipc-sender';
 
-interface Dependencies {
+export interface Dependencies {
   getSetting: (key: string) => string | undefined;
   setSetting: (key: string, value: string) => void;
   getWebContents: () => WebContents | undefined;
@@ -288,32 +288,36 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     }
     return statusSnapshot();
   };
-  const check = async (): Promise<AiActionResult> => {
-    if (!enabled()) return { ok: false, reason: 'disabled' };
-    const c = config.read();
-    if (!c.engine) return { ok: false, reason: 'notConfigured' };
-    if (c.engine === 'os') {
-      osStatus = await (await getOsHelper()).probe();
-      return { ok: osStatus.available, reason: osStatus.available ? undefined : 'engineNotReady' };
-    }
-    if (c.engine === 'bundled') {
-      const catalog = await loadAiLocalModels();
-      const model = catalog.find((entry) => entry.id === c.localModelId);
-      const mlxOk =
-        model?.runtime !== 'mlx' ||
-        (mlxAvailableOnHost() && (await (await getMlxHelper()).probe()));
-      const ok =
-        !!model && isCatalogPackAvailable(model) && (await packs.verify(model.id)) && mlxOk;
-      return ok ? { ok } : { ok: false, reason: 'engineNotReady' };
-    }
+  const checkOs = async (): Promise<AiActionResult> => {
+    osStatus = await (await getOsHelper()).probe();
+    return { ok: osStatus.available, reason: osStatus.available ? undefined : 'engineNotReady' };
+  };
+  const checkBundled = async (c: ReturnType<typeof config.read>): Promise<AiActionResult> => {
+    const catalog = await loadAiLocalModels();
+    const model = catalog.find((entry) => entry.id === c.localModelId);
+    const mlxOk =
+      model?.runtime !== 'mlx' || (mlxAvailableOnHost() && (await (await getMlxHelper()).probe()));
+    const ok = !!model && isCatalogPackAvailable(model) && (await packs.verify(model.id)) && mlxOk;
+    return ok ? { ok } : { ok: false, reason: 'engineNotReady' };
+  };
+  const checkEndpoint = (c: ReturnType<typeof config.read>): AiActionResult => {
     const policy = validateAiEndpointUrl(c.baseUrl, c.allowRemote);
     if (
       !policy.ok ||
       (c.engine === 'local' && policy.cls !== 'local') ||
       (c.engine === 'remote' && (!c.allowRemote || !c.baseUrl.startsWith('https:')))
-    )
+    ) {
       return { ok: false, reason: 'remoteNotAcknowledged' };
+    }
     return c.wireFormat && c.model ? { ok: true } : { ok: false, reason: 'notConfigured' };
+  };
+  const check = async (): Promise<AiActionResult> => {
+    if (!enabled()) return { ok: false, reason: 'disabled' };
+    const c = config.read();
+    if (!c.engine) return { ok: false, reason: 'notConfigured' };
+    if (c.engine === 'os') return checkOs();
+    if (c.engine === 'bundled') return checkBundled(c);
+    return checkEndpoint(c);
   };
   const id = async (value: unknown) => {
     if (typeof value !== 'string') throw new Error('Invalid AI model');

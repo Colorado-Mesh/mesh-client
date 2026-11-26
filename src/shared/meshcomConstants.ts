@@ -44,7 +44,5 @@ export function isValidMeshcomDbChannelIdx(channelIdx: number): boolean {
 }
 
 /** Reviewed firmware release pin mirrored in `scripts/update.sh`. */
-export const MESHCOM_FIRMWARE_REVIEWED_REF = 'v4.40a.11.14';
-
 /** Public MeshCom MeshMap (fed by gateways → MeshCom servers; not a companion API). */
 export const MESHCOM_MESHMAP_URL = 'https://meshmap.oevsv.at/';

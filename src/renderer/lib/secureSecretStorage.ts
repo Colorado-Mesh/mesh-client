@@ -10,7 +10,6 @@ import {
 
 import { APP_SETTINGS_STORAGE_KEY, LEGACY_APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
 import { errLikeToLogString } from './errLikeToLogString';
-import { migrateLegacyMeshtasticMqttChannelPsks } from './meshtasticMqttSettingsStorage';
 import {
   commitRendererStorageItem,
   flushRendererStorageDeletions,
@@ -798,8 +797,10 @@ export async function initializeSecureSecrets(
   await migrateMqttSettings(LEGACY_MESHCORE_MQTT_KEY, MESHCORE_MQTT_SECRET_KEY);
   if (!routedLegacyMqtt)
     await migrateMqttSettings(LEGACY_MESHTASTIC_MQTT_KEY, MESHTASTIC_MQTT_SECRET_KEY);
-  // Static import: meshtasticMqttSettingsStorage is already in the main graph via ConnectionPanel /
-  // MQTT helpers, so a dynamic import would be ineffective for code-splitting.
+  // Dynamic import breaks the static secureSecretStorage ↔ meshtasticMqttSettingsStorage cycle;
+  // the module is already in the main graph, so this is for initialization safety only.
+  const { migrateLegacyMeshtasticMqttChannelPsks } =
+    await import('./meshtasticMqttSettingsStorage');
   await migrateLegacyMeshtasticMqttChannelPsks();
   await migrateMqttProfiles();
   await migrateCredentialSettings();

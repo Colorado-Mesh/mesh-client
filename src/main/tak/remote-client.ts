@@ -39,8 +39,8 @@ export interface TakRemoteClientOptions {
   credentials: TakRemoteCredentials;
 }
 
-type ConnectFn = (options: tls.ConnectionOptions) => tls.TLSSocket;
-type TcpConnectFn = (options: net.NetConnectOpts) => net.Socket;
+export type ConnectFn = (options: tls.ConnectionOptions) => tls.TLSSocket;
+export type TcpConnectFn = (options: net.NetConnectOpts) => net.Socket;
 
 const UNTRUSTED_SERVER = "The server certificate is not trusted; import the server's CA";
 /** Plain TCP answered a TLS handshake. OpenSSL 3.0 uses the version code; 3.5 the length code. */

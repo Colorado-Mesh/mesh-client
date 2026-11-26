@@ -10,7 +10,7 @@ import {
 
 import type { UpdateState } from '../App';
 
-interface Props {
+export interface Props {
   updateState: UpdateState;
   onCheck: () => void;
   onDownload: () => void;

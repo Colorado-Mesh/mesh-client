@@ -14,7 +14,7 @@ import { getCachedSecureSecret, removeSecureSecret, setSecureSecret } from '../s
 /** Legacy single-slot key (pre per-endpoint). Migrated on first use of an endpoint. */
 export const MESHCOM_NODE_PASSWD_LEGACY_SECRET_KEY = 'meshcom:node-passwd';
 
-export const MESHCOM_NODE_PASSWD_SECRET_PREFIX = 'meshcom:node-passwd:';
+const MESHCOM_NODE_PASSWD_SECRET_PREFIX = 'meshcom:node-passwd:';
 
 export type MeshcomAuthTransport = 'tcp' | 'netconsole';
 

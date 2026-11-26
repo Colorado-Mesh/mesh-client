@@ -27,7 +27,7 @@ import { ReticulumSystemRnsExplainer } from './ReticulumSystemRnsExplainer';
 
 export type ReticulumSetupDestination = 'Nodes' | 'RRC' | 'Radio';
 
-interface Props {
+export interface Props {
   running: boolean;
   apiReady: boolean;
   connecting: boolean;

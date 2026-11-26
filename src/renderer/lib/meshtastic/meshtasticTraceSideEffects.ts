@@ -77,7 +77,7 @@ export function prunePendingTraceState(
  * Correlate a reply back to the node the user asked to trace, then merge it into
  * the per-node results map under every key the UI may look it up by.
  */
-export function applyMeshtasticTracerouteReply(
+function applyMeshtasticTracerouteReply(
   event: TraceRouteEvent['payload'],
   deps: MeshtasticTraceSideEffectsDeps,
 ): void {

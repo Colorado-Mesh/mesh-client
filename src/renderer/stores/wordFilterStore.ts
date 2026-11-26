@@ -9,7 +9,7 @@ const MAX_WORDS = 200;
 const MAX_WORD_LEN = 64;
 const MAX_DISABLED_CONVERSATIONS = 500;
 
-export interface WordFilterState {
+interface WordFilterState {
   enabled: boolean;
   words: readonly string[];
   /**

@@ -191,6 +191,6 @@ export function isRrcModerationLanguage(text: string): boolean {
  * Match rrcd `_norm_room`: trim + lowercase only.
  * Do not invent a `#` prefix — hubs register `lobby` and `#lobby` as different rooms.
  */
-export function normalizeListedRoomName(name: string): string {
+function normalizeListedRoomName(name: string): string {
   return name.trim().toLowerCase();
 }

@@ -8,23 +8,7 @@ import {
   reticulumIconColorClass,
 } from '@/renderer/lib/reticulum/reticulumIconAppearance';
 
-/** Stored / wire names including legacy `circle` (unset). */
-export const RETICULUM_PROFILE_ICON_NAMES = ['circle', 'star', 'heart', 'shield', 'user'] as const;
-
-/** Icons offered in the peer detail picker (excludes unset/`circle`). */
-export const RETICULUM_PROFILE_ICON_PICKER_NAMES = ['star', 'heart', 'shield', 'user'] as const;
-
-export type ReticulumProfileIconName = (typeof RETICULUM_PROFILE_ICON_NAMES)[number];
-
-export type ReticulumProfileIconPickerName = (typeof RETICULUM_PROFILE_ICON_PICKER_NAMES)[number];
-
-export function isReticulumProfileIconName(
-  value: string | null | undefined,
-): value is ReticulumProfileIconName {
-  return (
-    typeof value === 'string' && (RETICULUM_PROFILE_ICON_NAMES as readonly string[]).includes(value)
-  );
-}
+export type { ReticulumProfileIconName } from '@/renderer/lib/reticulum/reticulumProfileIconNames';
 
 const ICON_MAP = {
   star: Star,
@@ -32,8 +16,6 @@ const ICON_MAP = {
   shield: Shield,
   user: Users,
 } as const;
-
-export { hasCustomReticulumProfileIcon };
 
 export interface ReticulumProfileIconUnsetProps {
   className?: string;
@@ -83,7 +65,7 @@ export interface ReticulumProfileIconProps {
   destinationHash?: string | null;
 }
 
-export function ReticulumProfileIcon({
+function ReticulumProfileIcon({
   iconName,
   iconColor,
   className = '',

@@ -24,7 +24,7 @@ export function getSerialPortFromMeshcoreConnection(conn: unknown): SerialPort |
   return null;
 }
 
-type MeshcoreWritableConn = Connection & { writable: WritableStream<Uint8Array> };
+export type MeshcoreWritableConn = Connection & { writable: WritableStream<Uint8Array> };
 
 /**
  * Detect serial unplug and write failures on MeshCore Web Serial connections.

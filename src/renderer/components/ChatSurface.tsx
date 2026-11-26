@@ -4,7 +4,7 @@ import ChatPanel from './ChatPanel';
 
 type ChatPanelProps = ComponentProps<typeof ChatPanel>;
 
-export type ChatSurfaceProps = ChatPanelProps;
+type ChatSurfaceProps = ChatPanelProps;
 
 /**
  * Chat panel shell — message derivation runs once in App (`useProtocolChatMessages`);

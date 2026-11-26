@@ -17,7 +17,7 @@ export type PathSpeed = 'high' | 'constrained' | 'mixed' | 'unknown';
  * and terminal rnsh/rncp events (`rnsh.error` `reason_key`, `rncp.*` `reason`).
  * Unrecognized/future sidecar values should fall back to `'error'` in the renderer.
  */
-export type RemoteReasonKey =
+type RemoteReasonKey =
   | 'path_constrained'
   | 'path_unknown'
   | 'not_announced'
@@ -30,7 +30,7 @@ export type RemoteReasonKey =
   | 'error';
 
 /** Maps sidecar `reason_key`/`reason` values to i18n keys under `reticulumRemote.reasons.*`. */
-export const REMOTE_REASON_I18N_KEYS: Readonly<Record<RemoteReasonKey, string>> = {
+const REMOTE_REASON_I18N_KEYS: Readonly<Record<RemoteReasonKey, string>> = {
   path_constrained: 'reticulumRemote.reasons.pathConstrained',
   path_unknown: 'reticulumRemote.reasons.pathUnknown',
   not_announced: 'reticulumRemote.reasons.notAnnounced',
@@ -135,36 +135,7 @@ export function isRemoteOkFailure(
   res: unknown,
 ): res is RemoteOkResponse & { ok: false; error?: string } {
   return res != null && typeof res === 'object' && 'ok' in res && res.ok === false;
-}
-
-/** `rnsh.stdout` / `rnsh.stderr` WS event payload (base64-encoded chunk). */
-export interface RnshStreamEventPayload {
-  session_id: string;
-  data: string;
-}
-
-/** `rnsh.status` WS event payload. */
-export interface RnshStatusEventPayload {
-  session_id: string;
-  status: RnshSessionStatus;
-  destination_hash?: string;
-}
-
-/** `rnsh.closed` WS event payload. */
-export interface RnshClosedEventPayload {
-  session_id: string;
-  return_code?: number | null;
-  reason_key?: string | null;
-}
-
-/** `rnsh.error` WS event payload. */
-export interface RnshErrorEventPayload {
-  session_id: string;
-  reason_key: string;
-  message: string;
-}
-
-// ─── rncp (file transfer) ────────────────────────────────────────────────────
+} // ─── rncp (file transfer) ────────────────────────────────────────────────────
 
 export type RncpTransferKind = 'send' | 'fetch';
 
@@ -208,17 +179,7 @@ export interface RncpSendResponse {
   ok: boolean;
   transfer_id?: string;
   error?: string;
-}
-
-export interface RncpAcceptResponse {
-  transfer_id: string;
-  file_name: string;
-  bytes: number;
-  path: string;
-  identity_hash?: string | null;
-}
-
-/** Inbound-transfer policy mode (`rncp_transfer::InboundMode`). */
+} /** Inbound-transfer policy mode (`rncp_transfer::InboundMode`). */
 export type RncpInboundMode = 'off' | 'ask' | 'allow_all_listed';
 
 export interface RncpListenerRequest {
@@ -238,49 +199,7 @@ export interface RncpListenerStatus {
   inbound_mode: RncpInboundMode;
   allowed: string[];
   blocked: string[];
-}
-
-/** `rncp.progress` WS event payload. */
-export interface RncpProgressEventPayload {
-  transfer_id: string;
-  progress: number;
-}
-
-/** `rncp.completed` WS event payload (outbound send/fetch or accepted/passed-through inbound). */
-export interface RncpCompletedEventPayload {
-  transfer_id?: string;
-  file_name: string;
-  bytes: number;
-  path?: string;
-  destination_hash?: string;
-  identity_hash?: string | null;
-}
-
-/** `rncp.failed` WS event payload. */
-export interface RncpFailedEventPayload {
-  transfer_id?: string;
-  error?: string;
-  reason?: string;
-  file_name?: string;
-  destination_hash?: string;
-  identity_hash?: string | null;
-}
-
-/** `rncp.cancelled` WS event payload. */
-export interface RncpCancelledEventPayload {
-  transfer_id: string;
-  reason?: string;
-}
-
-/** `rncp.offer` WS event payload (ask-mode staged inbound file awaiting accept/reject). */
-export interface RncpOfferEventPayload {
-  transfer_id: string;
-  file_name: string;
-  bytes: number;
-  identity_hash?: string | null;
-}
-
-// ─── remote (identity / capability) ──────────────────────────────────────────
+} // ─── remote (identity / capability) ──────────────────────────────────────────
 
 /** `GET /api/v1/remote/identity` (`StackHandle::remote_identity`). */
 export interface RemoteIdentityResponse {

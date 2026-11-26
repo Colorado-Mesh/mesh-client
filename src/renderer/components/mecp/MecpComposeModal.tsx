@@ -39,7 +39,7 @@ export function bumpMecpPaxFreetext(prev: string): string {
   return trimmed ? `${trimmed} 1pax` : '1pax';
 }
 
-interface MecpComposeModalProps {
+export interface MecpComposeModalProps {
   open: boolean;
   onClose: () => void;
   onSend: (mecpString: string) => void | Promise<void>;

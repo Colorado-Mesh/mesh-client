@@ -3,22 +3,16 @@
  * Spec: firmware `extudp_functions.cpp`, `extern_msg_json.h`, `docs/ext_udp_telemetry.md`.
  */
 
-import {
-  MESHCOM_EXTUDP_PORT,
-  MESHCOM_MAX_MSG_ID_LEN,
-  MESHCOM_MAX_TEXT_LEN,
-} from '@/shared/meshcomConstants';
+import { MESHCOM_MAX_MSG_ID_LEN, MESHCOM_MAX_TEXT_LEN } from '@/shared/meshcomConstants';
 
 import {
   MESHCOM_CALLSIGN_MAX_LEN,
   MESHCOM_EXTUDP_DST_MAX_LEN,
   normalizeMeshcomCallsign,
 } from './meshcomCallsign';
-import { truncateToWireBytes } from './meshcomWireLimits';
+import { MESHCOM_EXTUDP_MSG_MAX_LEN, truncateToWireBytes } from './meshcomWireLimits';
 
-export { MESHCOM_EXTUDP_PORT, MESHCOM_MAX_MSG_ID_LEN };
 /** Firmware EXTUDP `msg` gate: reject when `strlen(msg) > 150` (UTF-8 bytes). */
-export const MESHCOM_EXTUDP_MSG_MAX_LEN = 150;
 /** Bound firmware / src_type / aprs metadata strings retained from EXTUDP peers. */
 const MESHCOM_EXTUDP_META_MAX_LEN = 64;
 

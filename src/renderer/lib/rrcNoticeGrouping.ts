@@ -14,7 +14,7 @@ import {
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 /** Smallest run that collapses; a lone banner between chat lines stays inline. */
-export const RRC_NOTICE_GROUP_MIN_RUN = 2;
+const RRC_NOTICE_GROUP_MIN_RUN = 2;
 
 export interface RrcNoticeGroup {
   /** Stable across appends: id of the first row in the run. */
@@ -30,7 +30,7 @@ export interface RrcNoticeGroup {
 export type RrcDisplayRow =
   { type: 'message'; msg: RrcChatMessage } | { type: 'group'; group: RrcNoticeGroup };
 
-type HubNoticeMessage = Pick<
+export type HubNoticeMessage = Pick<
   RrcChatMessage,
   'kind' | 'body' | 'nickname' | 'dst_hash' | 'sender_hash'
 >;

@@ -22,7 +22,7 @@ export interface TakReticulumSelfIdentity {
   name: string;
 }
 
-interface UseTakNodeReplicatorArgs {
+export interface UseTakNodeReplicatorArgs {
   /** A TAK sink in main is accepting node updates. */
   active: boolean;
   nodesByProtocol: TakFeedSources['nodesByProtocol'];

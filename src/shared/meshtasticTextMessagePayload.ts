@@ -3,7 +3,7 @@ import { fromBinary } from '@bufbuild/protobuf';
 import { meshtasticStoreAndForwardSchema } from './meshtasticProtobufSchemas';
 
 /** Max share of control bytes (excluding tab/LF/CR) before payload is treated as non-chat. */
-export const MESHTASTIC_CHAT_CONTROL_BYTE_RATIO_MAX = 0.25;
+const MESHTASTIC_CHAT_CONTROL_BYTE_RATIO_MAX = 0.25;
 
 export interface ResolvedMeshtasticTextPayload {
   text: string;

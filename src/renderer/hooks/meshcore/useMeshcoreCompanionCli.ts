@@ -14,7 +14,7 @@ import {
 import { serializeMeshcoreUserMessage } from '../../lib/meshcore/meshcoreMessageI18n';
 
 /** Gap between writing `reboot` and tearing down the transport so the frame flushes. */
-export const MESHCORE_PLANNED_REBOOT_FLUSH_MS = 500;
+const MESHCORE_PLANNED_REBOOT_FLUSH_MS = 500;
 
 export interface MeshcoreCompanionCliActions {
   /** Connected companion speaks CMD_RUN_CLI_COMMAND (protocol v14+). */

@@ -1,6 +1,6 @@
 import type { Types } from '@meshtastic/core';
 
-import type { GattBleSessionId } from './types';
+import type { GattBleSessionId } from '@/shared/electron-api.types';
 
 /**
  * Sidecar GATT Transport for Meshtastic MeshDevice.

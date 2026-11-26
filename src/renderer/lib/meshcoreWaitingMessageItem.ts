@@ -17,7 +17,7 @@ export interface MeshcoreWaitingMessageItem {
   };
 }
 
-export function isMeshcoreWaitingMessageItem(value: unknown): value is MeshcoreWaitingMessageItem {
+function isMeshcoreWaitingMessageItem(value: unknown): value is MeshcoreWaitingMessageItem {
   if (value == null || typeof value !== 'object') return false;
   const rec = value as MeshcoreWaitingMessageItem;
   return rec.contactMessage != null || rec.channelMessage != null;

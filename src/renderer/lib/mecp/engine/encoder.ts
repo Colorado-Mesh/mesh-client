@@ -6,7 +6,7 @@
  * Pure function: structured data in, string out. No I/O, no side effects.
  */
 
-import type { EncodeResult, Severity, ValidationResult } from './types';
+import type { EncodeResult, Severity } from './types';
 import { CODE_REGEX, MAX_MESSAGE_BYTES, MECP_PREFIX, VALID_SEVERITIES } from './types';
 
 /**
@@ -81,38 +81,3 @@ export function encode(severity: Severity, codes: string[], freetext?: string): 
  * @param input - Raw MECP string to validate
  * @returns ValidationResult
  */
-export function validate(input: string): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (!input.startsWith(MECP_PREFIX)) {
-    errors.push('Message does not start with "MECP/"');
-    return { valid: false, errors, warnings };
-  }
-
-  const severityChar = input.charAt(5);
-  const severityNum = parseInt(severityChar, 10);
-  if (!VALID_SEVERITIES.includes(severityNum as Severity)) {
-    errors.push(`Invalid severity: "${severityChar}" (must be 0-3)`);
-  }
-
-  if (input.charAt(6) !== '/') {
-    errors.push('Missing "/" delimiter after severity');
-  }
-
-  const body = input.substring(7);
-  if (!body || body.trim().length === 0) {
-    warnings.push('No codes present after severity');
-  }
-
-  const byteLength = getByteLength(input);
-  if (byteLength > MAX_MESSAGE_BYTES) {
-    warnings.push(`Message is ${byteLength} bytes, exceeds ${MAX_MESSAGE_BYTES} byte limit`);
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
-  };
-}

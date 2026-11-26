@@ -43,7 +43,7 @@ import type { NodeRecord } from './nodeStore';
 /** Batch window for optimistic announce / peers_updated patches. */
 export const RETICULUM_PEER_PATCH_FLUSH_MS = 50;
 
-interface ReticulumDestinationDbRow {
+export interface ReticulumDestinationDbRow {
   destination_hash: string;
   display_name?: string | null;
   last_heard?: number | null;
@@ -62,7 +62,7 @@ export interface ReticulumPeerAppearance {
   icon_color?: string | null;
 }
 
-interface ReticulumPeerStoreState {
+export interface ReticulumPeerStoreState {
   peers: Map<string, ReticulumPeer>;
   /** Explicit saved contacts (Contacts tab). */
   contacts: Map<string, ReticulumContact>;
@@ -938,31 +938,42 @@ export function applyReticulumPeerPatchesNow(peers: ReticulumPeer[]): void {
   flushPendingPeerPatches();
 }
 
+function wireString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function wireFiniteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function normalizeWirePublicKey(value: unknown): string | null {
+  const raw = (wireString(value) ?? '').trim();
+  return raw && /^[0-9a-fA-F]{128}$/.test(raw) ? raw.toLowerCase() : null;
+}
+
 function peerFromWirePatch(row: unknown): ReticulumPeer | null {
   if (!row || typeof row !== 'object') return null;
   const p = row as Record<string, unknown>;
-  const rawHash = typeof p.destination_hash === 'string' ? p.destination_hash : null;
+  const rawHash = wireString(p.destination_hash);
   if (!rawHash) return null;
   const hash = normalizeHash(rawHash);
   if (!hash) return null;
-  const displayNameRaw = typeof p.display_name === 'string' ? p.display_name.trim() : '';
+  const displayNameRaw = (wireString(p.display_name) ?? '').trim();
   const display_name = displayNameRaw
     ? (sanitizeReticulumDisplayName(displayNameRaw) ?? null)
     : null;
-  const hops = typeof p.hops === 'number' && Number.isFinite(p.hops) ? Math.trunc(p.hops) : null;
-  const last_seen =
-    typeof p.last_seen === 'number' && Number.isFinite(p.last_seen) ? p.last_seen : Date.now();
-  const publicKeyRaw = typeof p.public_key === 'string' ? p.public_key.trim() : '';
-  const public_key =
-    publicKeyRaw && /^[0-9a-fA-F]{128}$/.test(publicKeyRaw) ? publicKeyRaw.toLowerCase() : null;
+  const hopsRaw = wireFiniteNumber(p.hops);
+  const hops = hopsRaw == null ? null : Math.trunc(hopsRaw);
+  const last_seen = wireFiniteNumber(p.last_seen) ?? Date.now();
+  const public_key = normalizeWirePublicKey(p.public_key);
   return {
     destination_hash: hash,
     display_name,
     hops,
     last_seen,
-    interface: typeof p.interface === 'string' ? p.interface : null,
-    path_hash: typeof p.path_hash === 'string' ? p.path_hash : null,
-    via_hash: typeof p.via_hash === 'string' ? p.via_hash : null,
+    interface: wireString(p.interface),
+    path_hash: wireString(p.path_hash),
+    via_hash: wireString(p.via_hash),
     ...(public_key ? { public_key } : {}),
   };
 }

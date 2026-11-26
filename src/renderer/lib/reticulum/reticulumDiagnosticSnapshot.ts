@@ -91,7 +91,7 @@ export interface ReticulumPropagationClientSnapshot {
 }
 
 /** Snapshot the renderer propagation store (preferred, sync target, mode, last error). */
-export function getReticulumPropagationClientSnapshot(): ReticulumPropagationClientSnapshot {
+function getReticulumPropagationClientSnapshot(): ReticulumPropagationClientSnapshot {
   const s = useReticulumPropagationStore.getState();
   const mode = readReticulumPropagationMode();
   const autoBlacklist = propagationAutoBlacklistSet(s.autoBlacklist);

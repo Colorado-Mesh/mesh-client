@@ -28,7 +28,7 @@ function isFirstRunStatus(value: unknown): value is FirstRunStatus {
 }
 
 /** Drop corrupted localStorage so persist still finishes hydration with defaults. */
-export function createFirstRunWizardPersistStorage(): StateStorage {
+function createFirstRunWizardPersistStorage(): StateStorage {
   return {
     getItem: (name) => {
       try {

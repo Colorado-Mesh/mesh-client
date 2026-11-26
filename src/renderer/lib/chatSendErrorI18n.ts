@@ -8,15 +8,15 @@ export const CHAT_SEND_ERROR_FALLBACK_KEY = 'chatPanel.sendFailed';
 export const CHAT_SEND_ERROR_NOT_CONNECTED_KEY = 'chatPanel.sendErrors.notConnected';
 export const CHAT_SEND_ERROR_ENCRYPTION_KEY = 'chatPanel.sendErrors.encryptionBlocked';
 export const CHAT_SEND_ERROR_TIMEOUT_KEY = 'chatPanel.sendErrors.timeout';
-export const CHAT_SEND_ERROR_EMPTY_KEY = 'chatPanel.sendErrors.emptyPayload';
+const CHAT_SEND_ERROR_EMPTY_KEY = 'chatPanel.sendErrors.emptyPayload';
 export const CHAT_SEND_ERROR_DEST_KEY_KEY = 'chatPanel.sendErrors.missingDestinationKey';
-export const CHAT_SEND_ERROR_INVALID_REACTION_KEY = 'chatPanel.sendErrors.invalidReaction';
-export const CHAT_SEND_ERROR_REACTION_TARGET_KEY = 'chatPanel.sendErrors.reactionTargetMissing';
+const CHAT_SEND_ERROR_INVALID_REACTION_KEY = 'chatPanel.sendErrors.invalidReaction';
+const CHAT_SEND_ERROR_REACTION_TARGET_KEY = 'chatPanel.sendErrors.reactionTargetMissing';
 export const CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY =
   'chatPanel.sendErrors.mqttOriginReactionUnsupported';
 export const CHAT_SEND_ERROR_BLE_KEY = 'chatPanel.sendErrors.bleUnavailable';
-export const CHAT_SEND_ERROR_ROOM_SESSION_KEY = 'chatPanel.sendErrors.roomSessionExpired';
-export const CHAT_SEND_ERROR_NO_ROOM_CREDENTIAL_KEY = 'chatPanel.sendErrors.noSavedRoomCredential';
+const CHAT_SEND_ERROR_ROOM_SESSION_KEY = 'chatPanel.sendErrors.roomSessionExpired';
+const CHAT_SEND_ERROR_NO_ROOM_CREDENTIAL_KEY = 'chatPanel.sendErrors.noSavedRoomCredential';
 export const CHAT_OUTBOX_REMOVE_FAILED_KEY = 'chatPanel.outboxRemoveFailed';
 
 const CHAT_SEND_I18N_PREFIXES = [
@@ -69,11 +69,11 @@ const ENCRYPTION_BLOCKED_RES = [
   /no RF encryption key/i,
 ];
 
-export function errMessage(err: unknown): string {
+function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : typeof err === 'string' ? err : String(err);
 }
 
-export function isChatSendI18nKey(msg: string): boolean {
+function isChatSendI18nKey(msg: string): boolean {
   return CHAT_SEND_I18N_PREFIXES.some((prefix) => msg.startsWith(prefix));
 }
 

@@ -14,7 +14,7 @@ const FILES = 'abcdefgh';
 /** LRGP `four_in_a_row.1`: 7×6 gravity board, 42 cells row-major (`row * 7 + column`). */
 export const FOUR_IN_A_ROW_COLUMNS = 7;
 export const FOUR_IN_A_ROW_ROWS = 6;
-export const FOUR_IN_A_ROW_CELL_COUNT = FOUR_IN_A_ROW_COLUMNS * FOUR_IN_A_ROW_ROWS;
+const FOUR_IN_A_ROW_CELL_COUNT = FOUR_IN_A_ROW_COLUMNS * FOUR_IN_A_ROW_ROWS;
 export const FOUR_IN_A_ROW_EMPTY_BOARD = EMPTY_CELL.repeat(FOUR_IN_A_ROW_CELL_COUNT);
 
 export function snapshotSessionForOptimistic(session: GameSession): GameSession {

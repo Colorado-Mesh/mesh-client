@@ -5,8 +5,8 @@
 
 export const KISS_FEND = 0xc0;
 export const KISS_FESC = 0xdb;
-export const KISS_TFEND = 0xdc;
-export const KISS_TFESC = 0xdd;
+const KISS_TFEND = 0xdc;
+const KISS_TFESC = 0xdd;
 
 /**
  * Max encoded bytes buffered between FENDs. Delimiter-free TCP streams must not
@@ -15,8 +15,6 @@ export const KISS_TFESC = 0xdd;
 export const KISS_SLIP_DEFRAME_MAX_BYTES = 128 * 1024;
 
 /** @deprecated Prefer {@link KISS_SLIP_DEFRAME_MAX_BYTES}. */
-export const KISS_SLIP_MAX_ENCODED_FRAME_BYTES = KISS_SLIP_DEFRAME_MAX_BYTES;
-
 /** Escape payload bytes and wrap with FEND delimiters (includes type byte in payload). */
 export function kissSlipEncode(payload: Uint8Array | number[]): Uint8Array {
   const out: number[] = [KISS_FEND];

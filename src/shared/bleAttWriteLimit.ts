@@ -2,7 +2,7 @@
 export const ATT_MTU_DEFAULT = 23;
 
 /** Practical upper bound for ATT_MTU after exchange (spec allows up to 517 for ATT). */
-export const ATT_MTU_MAX = 517;
+const ATT_MTU_MAX = 517;
 
 /** Aligns with MeshDevice.sendRaw and main-process IPC cap for noble BLE writes. */
 export const BLE_TO_RADIO_PAYLOAD_CAP = 512;

@@ -1,6 +1,6 @@
 import { humanizeEnumName, MODEM_PRESET_OPTIONS, REGION_OPTIONS } from './protobufEnumOptions';
 
-type Translate = (key: string, options?: Record<string, unknown>) => string;
+export type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 /** Display label for a `Config.LoRaConfig.RegionCode` wire value. */
 export function meshtasticRegionLabel(value: number, t: Translate): string {

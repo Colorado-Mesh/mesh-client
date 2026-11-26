@@ -14,9 +14,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(__dirname, '..');
 
 /** Default attempts for transient GitHub/CDN fetch failures during electron/install.js. */
-export const ELECTRON_INSTALL_MAX_ATTEMPTS = 3;
+const ELECTRON_INSTALL_MAX_ATTEMPTS = 3;
 /** Base backoff between install retries (ms); doubles each attempt. */
-export const ELECTRON_INSTALL_RETRY_BASE_MS = 1500;
+const ELECTRON_INSTALL_RETRY_BASE_MS = 1500;
 
 /** @param {string} platform @param {(p: string) => boolean} fileExists @param {string} [root] */
 export function resolveLocalElectronBin(

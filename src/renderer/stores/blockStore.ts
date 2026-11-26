@@ -20,7 +20,7 @@ export interface ProtocolBlocklist {
   loaded: boolean;
 }
 
-interface BlockStoreState {
+export interface BlockStoreState {
   /**
    * Reticulum blocks LXMF hashes; Meshtastic blocks decimal node ids; MeshCore blocks contact
    * pubkey hex (DMs) or node ids. Each protocol hydrates its own bucket on identity resolve.
@@ -126,7 +126,7 @@ export const useBlockStore = create<BlockStoreState>((set, get) => ({
 }));
 
 /** Identity whose blocklist is loaded for `protocol`, or `null`. */
-export function useBlocklistIdentityId(protocol: MeshProtocol): string | null {
+function useBlocklistIdentityId(protocol: MeshProtocol): string | null {
   return useBlockStore((s) => s.byProtocol[protocol]?.identityId ?? null);
 }
 

@@ -143,7 +143,7 @@ const CATEGORY_STYLES: Record<string, string> = {
 
 const TRACE_TIMEOUT_MS = 30_000;
 
-interface Props {
+export interface Props {
   nodes: Map<number, MeshNode>;
   myNodeNum: number;
   onTraceRoute: (nodeNum: number) => Promise<boolean | undefined>;
@@ -177,6 +177,462 @@ function AlertTriangleIcon({ className }: { className?: string }) {
 function InfoCircleIcon({ className }: { className?: string }) {
   const trigger = useIconTrigger();
   return <Info aria-hidden className={className} trigger={trigger} size={16} />;
+}
+
+interface DiagnosticsTableContext {
+  nodes: Map<number, MeshNode>;
+  showNodeHexId: boolean;
+  showMqttControls: boolean;
+  mqttIgnoredNodes: ReturnType<typeof useDiagnosticsStore.getState>['mqttIgnoredNodes'];
+  packetStats: ReturnType<typeof useDiagnosticsStore.getState>['packetStats'];
+  tracePendingNodes: Set<number>;
+  traceFailed: Set<number>;
+  traceRouteResults: Map<number, { route: number[]; from: number; timestamp: number }>;
+  traceStartTimes: React.RefObject<Map<number, number>>;
+  handleTraceRoute: (nodeId: number) => Promise<void>;
+  isConnected: boolean;
+  myNodeNum: number;
+  getFullNodeLabel: (nodeId: number) => string;
+  formatRowTime: (ts: number) => string;
+  setNodeMqttIgnored: (nodeId: number, ignored: boolean) => void;
+  onNodeClick?: (node: MeshNode) => void;
+  homeNode: MeshNode | null;
+  t: ReturnType<typeof useTranslation>['t'];
+}
+
+type DiagnosticRfRow = Extract<DiagnosticRow, { kind: 'rf' }>;
+type DiagnosticRoutingRow = Exclude<DiagnosticRow, { kind: 'rf' }>;
+
+function resolveRfRowLabels({
+  rf,
+  nodes,
+  showNodeHexId,
+  t,
+}: {
+  rf: DiagnosticRfRow;
+  nodes: Map<number, MeshNode>;
+  showNodeHexId: boolean;
+  t: DiagnosticsTableContext['t'];
+}): { node: MeshNode | undefined; hexId: string | null; displayName: string } {
+  const foreignLoraRow = isForeignLoraRfRow(rf);
+  const linkNodeId = foreignLoraRow && rf.foreignSenderId != null ? rf.foreignSenderId : rf.nodeId;
+  const node = nodes.get(linkNodeId);
+  const hexId =
+    foreignLoraRow && rf.foreignSenderId != null
+      ? formatMeshtasticNodeId(rf.foreignSenderId)
+      : foreignLoraRow
+        ? '\u2014'
+        : showNodeHexId
+          ? formatMeshtasticNodeId(rf.nodeId)
+          : null;
+  const displayName = foreignLoraRow
+    ? node?.long_name ||
+      node?.short_name ||
+      (rf.foreignSenderId != null
+        ? (hexId ?? '\u2014')
+        : t('diagnosticsPanel.meshcoreUnknownForeignNode'))
+    : node?.long_name || node?.short_name || hexId || t('diagnosticsPanel.meshcoreUnknownNode');
+  return { node, hexId: hexId ?? null, displayName };
+}
+
+function RfDiagnosticTableRow({ rf, ctx }: { rf: DiagnosticRfRow; ctx: DiagnosticsTableContext }) {
+  const { nodes, showNodeHexId, t, formatRowTime, onNodeClick } = ctx;
+  const { node, hexId, displayName } = resolveRfRowLabels({ rf, nodes, showNodeHexId, t });
+  const isInfo = rf.severity === 'info';
+  const colorClass = isInfo ? 'text-indigo-400' : 'text-orange-400';
+  const remedy = getRecommendedActionForRfCondition(rf.condition);
+  return (
+    <tr
+      key={rf.id}
+      onClick={() => node && onNodeClick?.(node)}
+      className={`hover:bg-secondary-dark/50 transition-colors ${
+        onNodeClick && node ? 'cursor-pointer' : ''
+      }`}
+    >
+      <td className="px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          {isInfo ? (
+            <InfoCircleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
+          ) : (
+            <AlertTriangleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
+          )}
+          <div>
+            <div className="text-ink-200 font-medium">{displayName}</div>
+            {hexId ? <div className="text-muted font-mono text-xs">{hexId}</div> : null}
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-2.5">
+        <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
+          {translateRfConditionLabel(t, rf.condition)}
+          {rf.isLastHop && (
+            <span className="text-2xs ml-1 rounded border border-indigo-500/30 bg-indigo-500/20 px-1 py-0 text-indigo-300">
+              {t('diagnosticsPanel.lastHopBadge')}
+            </span>
+          )}
+        </div>
+        <div className="text-ink-400 max-w-xs text-xs">{translateRfCauseText(t, rf)}</div>
+      </td>
+      <td className="text-ink-300 px-4 py-2.5 text-right text-xs">—</td>
+      <td className="text-muted px-4 py-2.5 text-right text-xs">{formatRowTime(rf.detectedAt)}</td>
+      <td className="px-4 py-2.5">
+        {remedy ? (
+          <span
+            title={translateRemedyDescription(t, remedy)}
+            className={`text-2xs inline-block rounded px-2 py-0.5 font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
+          >
+            {translateRemedyTitle(t, remedy)}
+          </span>
+        ) : (
+          <span className="text-muted text-xs">—</span>
+        )}
+      </td>
+      <td className="text-muted px-4 py-2.5 text-right text-xs">
+        {t('diagnosticsPanel.rfTraceNotAvailable')}
+      </td>
+    </tr>
+  );
+}
+
+function RoutingRemedyCell({
+  node,
+  homeNode,
+  packetStats,
+  nodeId,
+  t,
+}: {
+  node: MeshNode | undefined;
+  homeNode: MeshNode | null;
+  packetStats: DiagnosticsTableContext['packetStats'];
+  nodeId: number;
+  t: DiagnosticsTableContext['t'];
+}) {
+  return (
+    <td className="px-4 py-2.5">
+      {(() => {
+        if (!node) return <span className="text-muted text-xs">—</span>;
+        const remedy = getRecommendedAction(node, homeNode, packetStats.get(nodeId));
+        if (!remedy) return <span className="text-muted text-xs">—</span>;
+        return (
+          <span
+            title={translateRemedyDescription(t, remedy)}
+            className={`text-2xs inline-block rounded px-2 py-0.5 font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
+          >
+            {translateRemedyTitle(t, remedy)}
+          </span>
+        );
+      })()}
+    </td>
+  );
+}
+
+function RoutingTraceCell({
+  isPending,
+  traceHops,
+  isFailed,
+  nodeId,
+  handleTraceRoute,
+  isConnected,
+  tracePendingNodes,
+  showMqttControls,
+  mqttIgnoredNodes,
+  setNodeMqttIgnored,
+  t,
+}: {
+  isPending: boolean;
+  traceHops: string[] | null;
+  isFailed: boolean;
+  nodeId: number;
+  handleTraceRoute: (nodeId: number) => void;
+  isConnected: boolean;
+  tracePendingNodes: Set<number>;
+  showMqttControls: boolean;
+  mqttIgnoredNodes: DiagnosticsTableContext['mqttIgnoredNodes'];
+  setNodeMqttIgnored: (nodeId: number, ignored: boolean) => void;
+  t: DiagnosticsTableContext['t'];
+}) {
+  return (
+    <td
+      className="px-4 py-2.5 text-right"
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+    >
+      <div className="flex flex-col items-end gap-1.5">
+        {isPending ? (
+          <span className="flex items-center justify-end gap-1.5 text-xs text-indigo-400">
+            <SpinnerIcon className="h-3.5 w-3.5 text-indigo-400" />
+            {t('diagnosticsPanel.tracing')}
+          </span>
+        ) : traceHops ? (
+          <div className="text-right">
+            <div className="text-muted text-2xs mb-0.5">{t('diagnosticsPanel.routeColumn')}</div>
+            <div className="text-ink-300 flex flex-wrap justify-end gap-0.5 font-mono text-xs">
+              {traceHops.map((hop, i) => (
+                <span key={i} className="flex items-center gap-0.5">
+                  {i > 0 && <span className="text-ink-600">›</span>}
+                  <span className={i === 0 || i === traceHops.length - 1 ? 'text-brand-green' : ''}>
+                    {hop}
+                  </span>
+                </span>
+              ))}
+            </div>
+            <div className="mt-1 flex items-center justify-end gap-1">
+              <CopyButton
+                size="sm"
+                label={t('common.copyRoute')}
+                text={() => formatTraceRouteHops(traceHops)}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  handleTraceRoute(nodeId);
+                }}
+                disabled={!isConnected}
+                className="bg-secondary-dark text-2xs text-ink-300 hover:bg-ink-600 rounded px-2 py-0.5 disabled:opacity-40"
+              >
+                {t('diagnosticsPanel.reTrace')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              handleTraceRoute(nodeId);
+            }}
+            disabled={!isConnected || tracePendingNodes.has(nodeId)}
+            title={isFailed ? t('diagnosticsPanel.traceRouteTimeoutHint') : undefined}
+            className={`rounded px-2.5 py-1 text-xs whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+              isFailed
+                ? 'border border-red-800/50 bg-red-900/40 text-red-300 hover:bg-red-900/60'
+                : 'bg-secondary-dark text-ink-300 hover:bg-ink-600'
+            }`}
+          >
+            {isFailed ? t('diagnosticsPanel.retryTrace') : t('diagnosticsPanel.traceRoute')}
+          </button>
+        )}
+        {showMqttControls &&
+          (mqttIgnoredNodes.has(nodeId) ? (
+            <button
+              type="button"
+              onClick={() => {
+                setNodeMqttIgnored(nodeId, false);
+              }}
+              className="text-2xs inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/20 px-2 py-0.5 whitespace-nowrap text-orange-300 transition-colors hover:bg-orange-500/30"
+              title={t('diagnosticsPanel.stopIgnoringMqtt')}
+            >
+              {t('diagnosticsPanel.mqttIgnoredToggle')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setNodeMqttIgnored(nodeId, true);
+              }}
+              className="bg-secondary-dark text-ink-300 text-2xs hover:bg-ink-600 hover:text-ink-200 rounded px-2 py-0.5 whitespace-nowrap transition-colors"
+              title={t('diagnosticsPanel.excludeMqttData')}
+            >
+              {t('diagnosticsPanel.ignoreMqttButton')}
+            </button>
+          ))}
+      </div>
+    </td>
+  );
+}
+
+function DiagnosticsSeverityHeader({
+  severity,
+  countSev,
+  t,
+}: {
+  severity: string;
+  countSev: (severity: string) => number;
+  t: DiagnosticsTableContext['t'];
+}) {
+  const label =
+    severity === 'error'
+      ? t('diagnosticsPanel.severityErrors', { count: countSev('error') })
+      : severity === 'warning'
+        ? t('diagnosticsPanel.severityWarnings', { count: countSev('warning') })
+        : t('diagnosticsPanel.severityNotes', { count: countSev('info') });
+  const rowClass =
+    severity === 'error'
+      ? 'bg-red-950/40 text-red-400'
+      : severity === 'warning'
+        ? 'bg-orange-950/20 text-orange-400'
+        : 'bg-indigo-950/20 text-indigo-400';
+  return (
+    <tr className={rowClass}>
+      <td colSpan={6} className="px-4 py-2 text-xs font-semibold">
+        {label}
+      </td>
+    </tr>
+  );
+}
+
+function resolveRoutingRowLabels({
+  nodeId,
+  node,
+  showNodeHexId,
+  t,
+}: {
+  nodeId: number;
+  node: MeshNode | undefined;
+  showNodeHexId: boolean;
+  t: DiagnosticsTableContext['t'];
+}): { hexId: string | null; displayName: string } {
+  const hexId = showNodeHexId ? formatMeshtasticNodeId(nodeId) : null;
+  const displayName =
+    node?.long_name || node?.short_name || hexId || t('diagnosticsPanel.meshcoreUnknownNode');
+  return { hexId, displayName };
+}
+
+function resolveTraceHops({
+  traceResult,
+  startTime,
+  myNodeNum,
+  getFullNodeLabel,
+  t,
+}: {
+  traceResult: DiagnosticsTableContext['traceRouteResults'] extends Map<number, infer V>
+    ? V | undefined
+    : never;
+  startTime: number | undefined;
+  myNodeNum: number;
+  getFullNodeLabel: (nodeId: number) => string;
+  t: DiagnosticsTableContext['t'];
+}): string[] | null {
+  if (!traceResult || startTime === undefined || traceResult.timestamp < startTime) return null;
+  return [
+    getFullNodeLabel(myNodeNum) || t('diagnosticsPanel.selfNodeFallback'),
+    ...traceResult.route.map((id) => getFullNodeLabel(id)),
+    getFullNodeLabel(traceResult.from),
+  ];
+}
+
+function RoutingDiagnosticTableRow({
+  row,
+  ctx,
+}: {
+  row: DiagnosticRoutingRow;
+  ctx: DiagnosticsTableContext;
+}) {
+  const {
+    nodes,
+    showNodeHexId,
+    showMqttControls,
+    mqttIgnoredNodes,
+    packetStats,
+    tracePendingNodes,
+    traceFailed,
+    traceRouteResults,
+    traceStartTimes,
+    handleTraceRoute,
+    isConnected,
+    myNodeNum,
+    getFullNodeLabel,
+    formatRowTime,
+    setNodeMqttIgnored,
+    onNodeClick,
+    homeNode,
+    t,
+  } = ctx;
+  const routingRow = row;
+  const anomaly = routingRowToNodeAnomaly(routingRow);
+  const node = nodes.get(anomaly.nodeId);
+  const isError = anomaly.severity === 'error';
+  const isInfo = anomaly.severity === 'info';
+  const colorClass = isError ? 'text-red-400' : isInfo ? 'text-indigo-400' : 'text-orange-400';
+  const { hexId, displayName } = resolveRoutingRowLabels({
+    nodeId: anomaly.nodeId,
+    node,
+    showNodeHexId,
+    t,
+  });
+  const isPending = tracePendingNodes.has(anomaly.nodeId);
+  const isFailed = traceFailed.has(anomaly.nodeId);
+  const traceHops = resolveTraceHops({
+    traceResult: traceRouteResults.get(anomaly.nodeId),
+    startTime: traceStartTimes.current.get(anomaly.nodeId),
+    myNodeNum,
+    getFullNodeLabel,
+    t,
+  });
+  return (
+    <tr
+      key={row.id}
+      onClick={() => {
+        if (node && onNodeClick) onNodeClick(node);
+      }}
+      className={`hover:bg-secondary-dark/50 transition-colors ${
+        onNodeClick && node ? 'cursor-pointer' : ''
+      }`}
+    >
+      <td className="px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          {isInfo ? (
+            <InfoCircleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
+          ) : (
+            <AlertTriangleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
+          )}
+          <div>
+            <div className="text-ink-200 font-medium">{displayName}</div>
+            {hexId ? <div className="text-muted font-mono text-xs">{hexId}</div> : null}
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-2.5">
+        <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
+          {translateRoutingAnomalyType(t, anomaly.type)}
+        </div>
+        <div className="text-ink-400 max-w-xs text-xs">
+          {translateRoutingRowDescription(t, routingRow)}
+        </div>
+        {showMqttControls &&
+          anomaly.type === 'hop_goblin' &&
+          node?.heard_via_mqtt === true &&
+          !node?.heard_via_mqtt_only && (
+            <div className="mt-1 text-xs text-orange-400/70">
+              {t('diagnosticsPanel.hybridNodeMqttWarning')}
+            </div>
+          )}
+      </td>
+      <td className="text-ink-300 px-4 py-2.5 text-right text-xs">{anomaly.hopsAway ?? '—'}</td>
+      <td className="text-muted px-4 py-2.5 text-right text-xs">
+        {isPending ? (
+          <span className="inline-flex items-center justify-end gap-1 text-indigo-400">
+            <span aria-hidden className="inline-block animate-pulse">
+              ●
+            </span>
+            <span>{t('diagnosticsPanel.tracing')}</span>
+          </span>
+        ) : (
+          formatRowTime(anomaly.detectedAt)
+        )}
+      </td>
+      <RoutingRemedyCell
+        node={node}
+        homeNode={homeNode}
+        packetStats={packetStats}
+        nodeId={anomaly.nodeId}
+        t={t}
+      />
+      <RoutingTraceCell
+        isPending={isPending}
+        traceHops={traceHops}
+        isFailed={isFailed}
+        nodeId={anomaly.nodeId}
+        handleTraceRoute={handleTraceRoute}
+        isConnected={isConnected}
+        tracePendingNodes={tracePendingNodes}
+        showMqttControls={showMqttControls}
+        mqttIgnoredNodes={mqttIgnoredNodes}
+        setNodeMqttIgnored={setNodeMqttIgnored}
+        t={t}
+      />
+    </tr>
+  );
 }
 
 export default function DiagnosticsPanel({
@@ -568,292 +1024,47 @@ export default function DiagnosticsPanel({
   };
 
   const renderTableBody = (list: DiagnosticRow[]) => {
-    const severityOf = (r: DiagnosticRow) => r.severity;
-    const countSev = (sev: string) => list.filter((r) => severityOf(r) === sev).length;
+    const countSev = (sev: string) => list.filter((r) => r.severity === sev).length;
     let lastSeverity: string | null = null;
+    const ctx: DiagnosticsTableContext = {
+      nodes,
+      showNodeHexId,
+      showMqttControls,
+      mqttIgnoredNodes,
+      packetStats,
+      tracePendingNodes,
+      traceFailed,
+      traceRouteResults,
+      traceStartTimes,
+      handleTraceRoute,
+      isConnected,
+      myNodeNum,
+      getFullNodeLabel,
+      formatRowTime,
+      setNodeMqttIgnored,
+      onNodeClick,
+      homeNode,
+      t,
+    };
     return list.flatMap((row) => {
-      const sev = severityOf(row);
       const rows: React.ReactNode[] = [];
-      if (sev !== lastSeverity) {
-        lastSeverity = sev;
-        const label =
-          sev === 'error'
-            ? t('diagnosticsPanel.severityErrors', { count: countSev('error') })
-            : sev === 'warning'
-              ? t('diagnosticsPanel.severityWarnings', { count: countSev('warning') })
-              : t('diagnosticsPanel.severityNotes', { count: countSev('info') });
-        const rowClass =
-          sev === 'error'
-            ? 'bg-red-950/40 text-red-400'
-            : sev === 'warning'
-              ? 'bg-orange-950/20 text-orange-400'
-              : 'bg-indigo-950/20 text-indigo-400';
+      if (row.severity !== lastSeverity) {
+        lastSeverity = row.severity;
         rows.push(
-          <tr key={`hdr-${sev}-${row.nodeId}-${row.id}`} className={rowClass}>
-            <td colSpan={6} className="px-4 py-2 text-xs font-semibold">
-              {label}
-            </td>
-          </tr>,
+          <DiagnosticsSeverityHeader
+            key={`hdr-${row.severity}-${row.nodeId}-${row.id}`}
+            severity={row.severity}
+            countSev={countSev}
+            t={t}
+          />,
         );
       }
-      if (row.kind === 'rf') {
-        const rf = row;
-        const foreignLoraRow = isForeignLoraRfRow(rf);
-        const linkNodeId =
-          foreignLoraRow && rf.foreignSenderId != null ? rf.foreignSenderId : rf.nodeId;
-        const node = nodes.get(linkNodeId);
-        const isInfo = rf.severity === 'info';
-        const colorClass = isInfo ? 'text-indigo-400' : 'text-orange-400';
-        const hexId =
-          foreignLoraRow && rf.foreignSenderId != null
-            ? formatMeshtasticNodeId(rf.foreignSenderId)
-            : foreignLoraRow
-              ? '—'
-              : showNodeHexId
-                ? formatMeshtasticNodeId(rf.nodeId)
-                : null;
-        const displayName = foreignLoraRow
-          ? node?.long_name ||
-            node?.short_name ||
-            (rf.foreignSenderId != null ? hexId : t('diagnosticsPanel.meshcoreUnknownForeignNode'))
-          : node?.long_name ||
-            node?.short_name ||
-            hexId ||
-            t('diagnosticsPanel.meshcoreUnknownNode');
-        const remedy = getRecommendedActionForRfCondition(rf.condition);
-        rows.push(
-          <tr
-            key={rf.id}
-            onClick={() => node && onNodeClick?.(node)}
-            className={`hover:bg-secondary-dark/50 transition-colors ${
-              onNodeClick && node ? 'cursor-pointer' : ''
-            }`}
-          >
-            <td className="px-4 py-2.5">
-              <div className="flex items-center gap-2">
-                {isInfo ? (
-                  <InfoCircleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
-                ) : (
-                  <AlertTriangleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
-                )}
-                <div>
-                  <div className="text-ink-200 font-medium">{displayName}</div>
-                  {hexId ? <div className="text-muted font-mono text-xs">{hexId}</div> : null}
-                </div>
-              </div>
-            </td>
-            <td className="px-4 py-2.5">
-              <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
-                {translateRfConditionLabel(t, rf.condition)}
-                {rf.isLastHop && (
-                  <span className="text-2xs ml-1 rounded border border-indigo-500/30 bg-indigo-500/20 px-1 py-0 text-indigo-300">
-                    {t('diagnosticsPanel.lastHopBadge')}
-                  </span>
-                )}
-              </div>
-              <div className="text-ink-400 max-w-xs text-xs">{translateRfCauseText(t, rf)}</div>
-            </td>
-            <td className="text-ink-300 px-4 py-2.5 text-right text-xs">—</td>
-            <td className="text-muted px-4 py-2.5 text-right text-xs">
-              {formatRowTime(rf.detectedAt)}
-            </td>
-            <td className="px-4 py-2.5">
-              {remedy ? (
-                <span
-                  title={translateRemedyDescription(t, remedy)}
-                  className={`text-2xs inline-block rounded px-2 py-0.5 font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
-                >
-                  {translateRemedyTitle(t, remedy)}
-                </span>
-              ) : (
-                <span className="text-muted text-xs">—</span>
-              )}
-            </td>
-            <td className="text-muted px-4 py-2.5 text-right text-xs">
-              {t('diagnosticsPanel.rfTraceNotAvailable')}
-            </td>
-          </tr>,
-        );
-        return rows;
-      }
-      const routingRow = row;
-      const anomaly = routingRowToNodeAnomaly(routingRow);
-      const node = nodes.get(anomaly.nodeId);
-      const isError = anomaly.severity === 'error';
-      const isInfo = anomaly.severity === 'info';
-      const colorClass = isError ? 'text-red-400' : isInfo ? 'text-indigo-400' : 'text-orange-400';
-      const hexId = showNodeHexId ? formatMeshtasticNodeId(anomaly.nodeId) : null;
-      const displayName =
-        node?.long_name || node?.short_name || hexId || t('diagnosticsPanel.meshcoreUnknownNode');
-      const isPending = tracePendingNodes.has(anomaly.nodeId);
-      const isFailed = traceFailed.has(anomaly.nodeId);
-      const traceResult = traceRouteResults.get(anomaly.nodeId);
-      const startTime = traceStartTimes.current.get(anomaly.nodeId);
-      const hasResult =
-        traceResult && startTime !== undefined && traceResult.timestamp >= startTime;
-      const traceHops = hasResult
-        ? [
-            getFullNodeLabel(myNodeNum) || t('diagnosticsPanel.selfNodeFallback'),
-            ...traceResult.route.map((id) => getFullNodeLabel(id)),
-            getFullNodeLabel(traceResult.from),
-          ]
-        : null;
       rows.push(
-        <tr
-          key={row.id}
-          onClick={() => {
-            if (node && onNodeClick) onNodeClick(node);
-          }}
-          className={`hover:bg-secondary-dark/50 transition-colors ${
-            onNodeClick && node ? 'cursor-pointer' : ''
-          }`}
-        >
-          <td className="px-4 py-2.5">
-            <div className="flex items-center gap-2">
-              {isInfo ? (
-                <InfoCircleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
-              ) : (
-                <AlertTriangleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
-              )}
-              <div>
-                <div className="text-ink-200 font-medium">{displayName}</div>
-                {hexId ? <div className="text-muted font-mono text-xs">{hexId}</div> : null}
-              </div>
-            </div>
-          </td>
-          <td className="px-4 py-2.5">
-            <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
-              {translateRoutingAnomalyType(t, anomaly.type)}
-            </div>
-            <div className="text-ink-400 max-w-xs text-xs">
-              {translateRoutingRowDescription(t, routingRow)}
-            </div>
-            {showMqttControls &&
-              anomaly.type === 'hop_goblin' &&
-              node?.heard_via_mqtt === true &&
-              !node?.heard_via_mqtt_only && (
-                <div className="mt-1 text-xs text-orange-400/70">
-                  {t('diagnosticsPanel.hybridNodeMqttWarning')}
-                </div>
-              )}
-          </td>
-          <td className="text-ink-300 px-4 py-2.5 text-right text-xs">{anomaly.hopsAway ?? '—'}</td>
-          <td className="text-muted px-4 py-2.5 text-right text-xs">
-            {isPending ? (
-              <span className="inline-flex items-center justify-end gap-1 text-indigo-400">
-                <span aria-hidden className="inline-block animate-pulse">
-                  ●
-                </span>
-                <span>{t('diagnosticsPanel.tracing')}</span>
-              </span>
-            ) : (
-              formatRowTime(anomaly.detectedAt)
-            )}
-          </td>
-          <td className="px-4 py-2.5">
-            {(() => {
-              if (!node) return <span className="text-muted text-xs">—</span>;
-              const remedy = getRecommendedAction(node, homeNode, packetStats.get(anomaly.nodeId));
-              if (!remedy) return <span className="text-muted text-xs">—</span>;
-              return (
-                <span
-                  title={translateRemedyDescription(t, remedy)}
-                  className={`text-2xs inline-block rounded px-2 py-0.5 font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
-                >
-                  {translateRemedyTitle(t, remedy)}
-                </span>
-              );
-            })()}
-          </td>
-          <td
-            className="px-4 py-2.5 text-right"
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <div className="flex flex-col items-end gap-1.5">
-              {isPending ? (
-                <span className="flex items-center justify-end gap-1.5 text-xs text-indigo-400">
-                  <SpinnerIcon className="h-3.5 w-3.5 text-indigo-400" />
-                  {t('diagnosticsPanel.tracing')}
-                </span>
-              ) : traceHops ? (
-                <div className="text-right">
-                  <div className="text-muted text-2xs mb-0.5">
-                    {t('diagnosticsPanel.routeColumn')}
-                  </div>
-                  <div className="text-ink-300 flex flex-wrap justify-end gap-0.5 font-mono text-xs">
-                    {traceHops.map((hop, i) => (
-                      <span key={i} className="flex items-center gap-0.5">
-                        {i > 0 && <span className="text-ink-600">›</span>}
-                        <span
-                          className={
-                            i === 0 || i === traceHops.length - 1 ? 'text-brand-green' : ''
-                          }
-                        >
-                          {hop}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-1 flex items-center justify-end gap-1">
-                    <CopyButton
-                      size="sm"
-                      label={t('common.copyRoute')}
-                      text={() => formatTraceRouteHops(traceHops)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleTraceRoute(anomaly.nodeId)}
-                      disabled={!isConnected}
-                      className="bg-secondary-dark text-2xs text-ink-300 hover:bg-ink-600 rounded px-2 py-0.5 disabled:opacity-40"
-                    >
-                      {t('diagnosticsPanel.reTrace')}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleTraceRoute(anomaly.nodeId)}
-                  disabled={!isConnected || tracePendingNodes.has(anomaly.nodeId)}
-                  title={isFailed ? t('diagnosticsPanel.traceRouteTimeoutHint') : undefined}
-                  className={`rounded px-2.5 py-1 text-xs whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                    isFailed
-                      ? 'border border-red-800/50 bg-red-900/40 text-red-300 hover:bg-red-900/60'
-                      : 'bg-secondary-dark text-ink-300 hover:bg-ink-600'
-                  }`}
-                >
-                  {isFailed ? t('diagnosticsPanel.retryTrace') : t('diagnosticsPanel.traceRoute')}
-                </button>
-              )}
-              {showMqttControls &&
-                (mqttIgnoredNodes.has(anomaly.nodeId) ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNodeMqttIgnored(anomaly.nodeId, false);
-                    }}
-                    className="text-2xs inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/20 px-2 py-0.5 whitespace-nowrap text-orange-300 transition-colors hover:bg-orange-500/30"
-                    title={t('diagnosticsPanel.stopIgnoringMqtt')}
-                  >
-                    {t('diagnosticsPanel.mqttIgnoredToggle')}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNodeMqttIgnored(anomaly.nodeId, true);
-                    }}
-                    className="bg-secondary-dark text-ink-300 text-2xs hover:bg-ink-600 hover:text-ink-200 rounded px-2 py-0.5 whitespace-nowrap transition-colors"
-                    title={t('diagnosticsPanel.excludeMqttData')}
-                  >
-                    {t('diagnosticsPanel.ignoreMqttButton')}
-                  </button>
-                ))}
-            </div>
-          </td>
-        </tr>,
+        row.kind === 'rf' ? (
+          <RfDiagnosticTableRow key={row.id} rf={row} ctx={ctx} />
+        ) : (
+          <RoutingDiagnosticTableRow key={row.id} row={row} ctx={ctx} />
+        ),
       );
       return rows;
     });

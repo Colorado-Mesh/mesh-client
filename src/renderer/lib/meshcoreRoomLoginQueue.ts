@@ -12,7 +12,7 @@ const pendingNodeIds = new Set<number>();
 const jobGenerationByNode = new Map<number, number>();
 let lastMeshLoginTxAt = 0;
 
-type QueueListener = () => void;
+export type QueueListener = () => void;
 const queueListeners = new Set<QueueListener>();
 
 function notifyQueueChanged(): void {

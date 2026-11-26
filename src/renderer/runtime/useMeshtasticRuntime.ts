@@ -322,11 +322,7 @@ import type {
   RemoteConfigChannelsTailStatus,
   TelemetryPoint,
 } from '../lib/types';
-import {
-  mirrorMqttStatusForProtocol,
-  setConnection,
-  useConnectionStore,
-} from '../stores/connectionStore';
+import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
@@ -338,6 +334,7 @@ import {
   upsertMessage,
   useMessageStore,
 } from '../stores/messageStore';
+import { mirrorMqttStatusForProtocol } from '../stores/mqttConnectionMirror';
 import {
   patchNodeFavorited,
   removeNode,
@@ -456,6 +453,229 @@ function meshtasticMqttPublishOpts(
   mqttOnly: boolean,
 ): ResolveMeshtasticMqttPublishOptions | undefined {
   return mqttOnly ? { preferManualOverRadio: true } : undefined;
+}
+
+type MeshtasticMqttNodeUpdate = Partial<MeshNode> & {
+  node_id: number;
+  from_mqtt?: boolean;
+  protocol?: 'meshtastic' | 'meshcore';
+  positionWarning?: string | null;
+  neighbors?: MeshNeighbor[];
+  portnum?: number;
+};
+
+function applyMeshtasticMqttPositionFields(
+  node: MeshNode,
+  existing: MeshNode,
+  update: MeshtasticMqttNodeUpdate,
+): void {
+  if (update.latitude != null || update.longitude != null) {
+    const result = validateCoords(update.latitude ?? 0, update.longitude ?? 0);
+    if (!result.valid) {
+      node.latitude = existing.latitude;
+      node.longitude = existing.longitude;
+      node.lastPositionWarning = result.warning;
+    } else {
+      node.lastPositionWarning = undefined;
+    }
+  }
+  // Apply positionWarning emitted by mqtt-manager (bad coords, no position change)
+  if (update.positionWarning) {
+    node.lastPositionWarning = update.positionWarning;
+  } else if (update.positionWarning === null) {
+    node.lastPositionWarning = undefined;
+  }
+}
+
+/** Merge an MQTT node patch into the existing node without clobbering RF-only data. */
+function buildMeshtasticMqttNode(args: {
+  existing: MeshNode;
+  update: MeshtasticMqttNodeUpdate;
+  heardViaRF: boolean;
+  isActiveVirtualIdentity: boolean;
+}): MeshNode {
+  const { existing, update, heardViaRF, isActiveVirtualIdentity } = args;
+  const node: MeshNode = {
+    ...existing,
+    ...update,
+    heard_via_mqtt_only: isActiveVirtualIdentity ? true : !heardViaRF,
+    via_mqtt: true,
+    heard_via_mqtt: true,
+    source: isActiveVirtualIdentity ? 'mqtt' : heardViaRF ? 'rf' : 'mqtt',
+    last_heard: update.last_heard ?? Date.now(),
+    long_name: preferNonEmptyTrimmedString(update.long_name, existing.long_name, {
+      nodeId: update.node_id,
+    }),
+    // Explicitly handle role to ensure it's properly updated from MQTT
+    role: update.role ?? existing.role,
+    // MeshCore routing info: derive hops from path if needed
+    hops: update.hops ?? (update.path ? update.path.length : existing.hops),
+    path: update.path ?? existing.path,
+  };
+  // Keep hops_away consistent for the UI
+  node.hops_away = node.hops ?? update.hops_away ?? existing.hops_away;
+
+  // Don't overwrite RF signal data with MQTT-sourced node data
+  if (!heardViaRF) {
+    node.snr = existing.snr;
+    node.rssi = existing.rssi;
+  }
+  applyMeshtasticMqttPositionFields(node, existing, update);
+  node.short_name = meshtasticShortNameAfterClearingDefault(
+    node.long_name ?? '',
+    node.short_name ?? '',
+    node.node_id,
+  );
+  return node;
+}
+
+/** Self node id that should receive an app-resolved position (0 when none). */
+function resolvePositionSelfNodeId(args: {
+  hasDevice: boolean;
+  myNodeNum: number;
+  mqttConnected: boolean;
+  virtualNodeId: number;
+}): number {
+  if (args.hasDevice && args.myNodeNum > 0) return args.myNodeNum;
+  if (args.mqttConnected) return args.virtualNodeId;
+  return 0;
+}
+
+/** Push an app-resolved position to the radio only for static/browser fixes and allowed roles. */
+function shouldSendResolvedPositionToDevice(args: {
+  position: OurPosition;
+  allowTransmit: boolean;
+  meshtasticRole: ReturnType<typeof readAppliedMeshtasticRole>;
+  deviceGpsMode: number | undefined;
+  hasDevice: boolean;
+}): boolean {
+  if (!args.hasDevice || !args.allowTransmit) return false;
+  if (!canTransmitLocation({ protocol: 'meshtastic', meshtasticRole: args.meshtasticRole })) {
+    return false;
+  }
+  return (
+    args.position.source === 'static' ||
+    (args.position.source === 'browser' && args.deviceGpsMode === 2)
+  );
+}
+
+/** Sends a NODEINFO request to a Store & Forward router whose key is still unknown. */
+function requestStoreForwardRouterNodeInfo(args: {
+  device: MeshDevice;
+  myNode: number;
+  serverNodeId: number;
+  selfNode: MeshNode | undefined;
+  now: number;
+  lastNodeInfoRequestAt: Map<number, number>;
+}): void {
+  const selfLong = args.selfNode?.long_name?.trim() ?? '';
+  const selfShort = args.selfNode?.short_name?.trim() ?? '';
+  const lastNi = args.lastNodeInfoRequestAt.get(args.serverNodeId) ?? 0;
+  if (!selfLong || !selfShort || args.now - lastNi < 120_000) return;
+  args.lastNodeInfoRequestAt.set(args.serverNodeId, args.now);
+  const selfPublicKey = resolveMeshtasticDestPublicKeyBytes({
+    publicKeyHex: args.selfNode?.public_key_hex,
+  });
+  const ownerUser = createMeshtasticMessage(meshtasticMeshProtobuf.UserSchema, {
+    id: formatMeshtasticNodeId(args.myNode),
+    longName: selfLong,
+    shortName: selfShort,
+    ...(selfPublicKey ? { publicKey: selfPublicKey } : {}),
+  });
+  const ownerUserBytes = toBinary(
+    meshtasticMeshProtobuf.UserSchema,
+    ownerUser as Parameters<typeof toBinary>[1],
+  );
+  void args.device
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+    .sendPacket(ownerUserBytes, Portnums.PortNum.NODEINFO_APP, args.serverNodeId)
+    .then(() => {
+      console.debug(
+        `[useMeshtasticRuntime] NODEINFO request sent for S&F router 0x${args.serverNodeId.toString(16)}`,
+      );
+    })
+    .catch((e: unknown) => {
+      console.debug('[useMeshtasticRuntime] NODEINFO request failed ' + errLikeToLogString(e));
+    });
+}
+
+/** Pushes a SharedContact so firmware can PKI-encrypt the history request. */
+async function pushStoreForwardSharedContact(args: {
+  device: MeshDevice;
+  myNode: number;
+  serverNodeId: number;
+  serverNode: MeshNode;
+  destPublicKey: Uint8Array;
+}): Promise<boolean> {
+  if (
+    !canBuildMeshtasticSharedContact({
+      publicKeyHex: args.serverNode.public_key_hex,
+      longName: args.serverNode.long_name,
+      shortName: args.serverNode.short_name,
+    })
+  ) {
+    return false;
+  }
+  const contactPacketId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
+  registerMeshtasticNonChatWirePacketId(contactPacketId);
+  try {
+    const contactBytes = buildLocalAddContactToRadioBytes({
+      myNodeNum: args.myNode,
+      packetId: contactPacketId,
+      nodeNum: args.serverNodeId,
+      longName: args.serverNode.long_name,
+      shortName: args.serverNode.short_name,
+      publicKey: args.destPublicKey,
+    });
+    await writeToRadioWithoutQueue(args.device, contactBytes);
+    console.debug(
+      `[useMeshtasticRuntime] Store & Forward SharedContact pushed for 0x${args.serverNodeId.toString(16)}`,
+    );
+    return true;
+  } catch (e: unknown) {
+    console.debug(
+      '[useMeshtasticRuntime] Store & Forward SharedContact push failed ' + errLikeToLogString(e),
+    );
+    return false;
+  }
+}
+
+/** Auto-fetch gates for Store & Forward history; null means "may request". */
+function resolveStoreForwardAutoFetchSkip(args: {
+  historyTuning: ReturnType<typeof resolveStoreForwardHistoryTuning>;
+  now: number;
+  alreadyRequested: boolean;
+  lastFetchMs: number | null;
+  lastDisconnectMs: number | null;
+}): RequestStoreForwardHistoryResult | null {
+  const settings = parseStoredJson<Record<string, unknown>>(
+    getAppSettingsRaw(),
+    'useMeshtasticRuntime storeForwardAutoFetchHistory',
+  );
+  const sfAuto = settings?.storeForwardAutoFetchHistory;
+  const autoFetchEnabled = sfAuto !== false && sfAuto !== 'false';
+  const allowed = shouldAutoRequestStoreForwardHistoryOnHeartbeat({
+    heartbeatSecondary: 0,
+    connectedIsStoreForwardServer: false,
+    alreadyRequestedServer: args.alreadyRequested,
+    deviceConfigured: true,
+    autoFetchEnabled,
+    now: args.now,
+    lastFetchMs: args.lastFetchMs,
+    lastDisconnectMs: args.lastDisconnectMs,
+    cooldownMs: args.historyTuning.cooldownMs,
+    offlineMinMs: args.historyTuning.offlineMinMs,
+  });
+  if (allowed) return null;
+  if (!autoFetchEnabled) return { ok: false, code: 'no_server' };
+  const { lastFetchMs, lastDisconnectMs } = args;
+  if (lastFetchMs != null && args.now - lastFetchMs < args.historyTuning.cooldownMs) {
+    return { ok: false, code: 'cooldown' };
+  }
+  if (lastDisconnectMs != null && args.now - lastDisconnectMs < args.historyTuning.offlineMinMs) {
+    return { ok: false, code: 'offline_gate' };
+  }
+  return { ok: false, code: 'no_server' };
 }
 
 export function useMeshtasticRuntime() {
@@ -1556,60 +1776,14 @@ export function useMeshtasticRuntime() {
       let mqttNodeToPersist: MeshNode | undefined;
       updateNodes((prev) => {
         const existing = prev.get(nodeUpdate.node_id) ?? emptyNode(nodeUpdate.node_id);
-        const heardViaRF = rfHeardNodeIds.current.has(nodeUpdate.node_id);
-        const isActiveVirtualIdentity =
-          !deviceRef.current && nodeUpdate.node_id === virtualNodeIdRef.current;
         const updated = new Map(prev);
-        const node: MeshNode = {
-          ...existing,
-          ...nodeUpdate,
-          heard_via_mqtt_only: isActiveVirtualIdentity ? true : !heardViaRF,
-          via_mqtt: true,
-          heard_via_mqtt: true,
-          source: isActiveVirtualIdentity ? 'mqtt' : heardViaRF ? 'rf' : 'mqtt',
-          last_heard: nodeUpdate.last_heard ?? Date.now(),
-          long_name: preferNonEmptyTrimmedString(nodeUpdate.long_name, existing.long_name, {
-            nodeId: nodeUpdate.node_id,
-          }),
-          // Explicitly handle role to ensure it's properly updated from MQTT
-          role: nodeUpdate.role ?? existing.role,
-          // MeshCore routing info: derive hops from path if needed
-          hops: nodeUpdate.hops ?? (nodeUpdate.path ? nodeUpdate.path.length : existing.hops),
-          path: nodeUpdate.path ?? existing.path,
-        };
-        // Ensure hops_away is updated for UI consistency
-        node.hops_away = node.hops ?? nodeUpdate.hops_away ?? existing.hops_away;
-
-        // Don't overwrite RF signal data with MQTT-sourced node data
-        if (!heardViaRF) {
-          // MQTT-only: suppress device-local RF metrics; hops_away from binary MQTT is valid
-          node.snr = existing.snr;
-          node.rssi = existing.rssi;
-        }
-        // Validate position if the update includes coords
-        if (nodeUpdate.latitude != null || nodeUpdate.longitude != null) {
-          const lat = nodeUpdate.latitude ?? 0;
-          const lon = nodeUpdate.longitude ?? 0;
-          const r = validateCoords(lat, lon);
-          if (!r.valid) {
-            node.latitude = existing.latitude;
-            node.longitude = existing.longitude;
-            node.lastPositionWarning = r.warning;
-          } else {
-            node.lastPositionWarning = undefined;
-          }
-        }
-        // Apply positionWarning emitted by mqtt-manager (bad coords, no position change)
-        if (nodeUpdate.positionWarning) {
-          node.lastPositionWarning = nodeUpdate.positionWarning;
-        } else if (nodeUpdate.positionWarning === null) {
-          node.lastPositionWarning = undefined;
-        }
-        node.short_name = meshtasticShortNameAfterClearingDefault(
-          node.long_name ?? '',
-          node.short_name ?? '',
-          node.node_id,
-        );
+        const node = buildMeshtasticMqttNode({
+          existing,
+          update: nodeUpdate,
+          heardViaRF: rfHeardNodeIds.current.has(nodeUpdate.node_id),
+          isActiveVirtualIdentity:
+            !deviceRef.current && nodeUpdate.node_id === virtualNodeIdRef.current,
+        });
         updated.set(nodeUpdate.node_id, node);
         mqttNodeToPersist = node;
         return updated;
@@ -1668,8 +1842,7 @@ export function useMeshtasticRuntime() {
         });
       }
 
-      // Packet ID dedup (catches our own uplink echoes)
-      if (packetId !== 0 && isDuplicate(msg.sender_id, packetId)) {
+      const applyDuplicateMqttPacketUpgrade = (): void => {
         if (getStoredMeshProtocol() === 'meshtastic') {
           useDiagnosticsStore.getState().recordDuplicate(msg.sender_id);
         }
@@ -1703,6 +1876,10 @@ export function useMeshtasticRuntime() {
             );
           });
         }
+      };
+      // Packet ID dedup (catches our own uplink echoes)
+      if (packetId !== 0 && isDuplicate(msg.sender_id, packetId)) {
+        applyDuplicateMqttPacketUpgrade();
         return;
       }
 
@@ -1721,8 +1898,7 @@ export function useMeshtasticRuntime() {
       const dedupSource = getIdentityChatMessages(storeId);
       const mqttWithPreviews = enrichMeshtasticReplyPreviews(mqttMsg, dedupSource, getNodeName);
 
-      const crossDup = findMeshtasticCrossTransportDuplicate(dedupSource, mqttWithPreviews);
-      if (crossDup) {
+      const applyCrossTransportMqttUpgrade = (crossDup: ChatMessage): void => {
         setMessages((prev) => {
           const { messages: next, matched } = mapMeshtasticCrossTransportUpgrade(
             prev,
@@ -1757,13 +1933,14 @@ export function useMeshtasticRuntime() {
             );
           });
         }
+      };
+      const crossDup = findMeshtasticCrossTransportDuplicate(dedupSource, mqttWithPreviews);
+      if (crossDup) {
+        applyCrossTransportMqttUpgrade(crossDup);
         return;
       }
 
-      const sfDup = mqttWithPreviews.viaStoreForward
-        ? findMeshtasticStoreForwardDuplicate(dedupSource, mqttWithPreviews)
-        : undefined;
-      if (sfDup) {
+      const applyStoreForwardMqttUpgrade = (): void => {
         setMessages((prev) =>
           prev.map((m) =>
             meshtasticStoreForwardContentMatch(m, mqttWithPreviews)
@@ -1783,6 +1960,12 @@ export function useMeshtasticRuntime() {
             }
           }
         }
+      };
+      const sfDup = mqttWithPreviews.viaStoreForward
+        ? findMeshtasticStoreForwardDuplicate(dedupSource, mqttWithPreviews)
+        : undefined;
+      if (sfDup) {
+        applyStoreForwardMqttUpgrade();
         return;
       }
 
@@ -1981,42 +2164,14 @@ export function useMeshtasticRuntime() {
       const historyTuning = resolveStoreForwardHistoryTuning(getStoreForwardHistoryProfile());
 
       if (!manual) {
-        const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
-        const settings = parseStoredJson<Record<string, unknown>>(
-          getAppSettingsRaw(),
-          'useMeshtasticRuntime storeForwardAutoFetchHistory',
-        );
-        const sfAuto = settings?.storeForwardAutoFetchHistory;
-        const autoFetchEnabled = sfAuto !== false && sfAuto !== 'false';
-        if (
-          !shouldAutoRequestStoreForwardHistoryOnHeartbeat({
-            heartbeatSecondary: 0,
-            connectedIsStoreForwardServer: false,
-            alreadyRequestedServer: alreadyRequested,
-            deviceConfigured: true,
-            autoFetchEnabled,
-            now,
-            lastFetchMs: getLastSfHistoryFetchMs(serverNodeId),
-            lastDisconnectMs: lastRfDisconnectAtRef.current,
-            cooldownMs: historyTuning.cooldownMs,
-            offlineMinMs: historyTuning.offlineMinMs,
-          })
-        ) {
-          if (!autoFetchEnabled) {
-            return { ok: false, code: 'no_server' };
-          }
-          const lastFetchMs = getLastSfHistoryFetchMs(serverNodeId);
-          if (lastFetchMs != null && now - lastFetchMs < historyTuning.cooldownMs) {
-            return { ok: false, code: 'cooldown' };
-          }
-          if (
-            lastRfDisconnectAtRef.current != null &&
-            now - lastRfDisconnectAtRef.current < historyTuning.offlineMinMs
-          ) {
-            return { ok: false, code: 'offline_gate' };
-          }
-          return { ok: false, code: 'no_server' };
-        }
+        const skip = resolveStoreForwardAutoFetchSkip({
+          historyTuning,
+          now,
+          alreadyRequested: sfHistoryRequestedServersRef.current.has(serverNodeId),
+          lastFetchMs: getLastSfHistoryFetchMs(serverNodeId),
+          lastDisconnectMs: lastRfDisconnectAtRef.current,
+        });
+        if (skip) return skip;
       }
 
       const serverNode = getIdentityNode(meshtasticIdentityIdRef.current, serverNodeId);
@@ -2026,39 +2181,14 @@ export function useMeshtasticRuntime() {
       if (!destPublicKey) {
         // Router key is missing. Ask for NODEINFO and stop. Do not reserve this
         // session or record a fetch cooldown — history was not requested.
-        const selfNode = getIdentityNode(meshtasticIdentityIdRef.current, myNode);
-        const selfLong = selfNode?.long_name?.trim() ?? '';
-        const selfShort = selfNode?.short_name?.trim() ?? '';
-        const lastNi = lastNodeInfoRequestAtRef.current.get(serverNodeId) ?? 0;
-        if (selfLong && selfShort && now - lastNi >= 120_000) {
-          lastNodeInfoRequestAtRef.current.set(serverNodeId, now);
-          const selfPublicKey = resolveMeshtasticDestPublicKeyBytes({
-            publicKeyHex: selfNode?.public_key_hex,
-          });
-          const ownerUser = createMeshtasticMessage(meshtasticMeshProtobuf.UserSchema, {
-            id: formatMeshtasticNodeId(myNode),
-            longName: selfLong,
-            shortName: selfShort,
-            ...(selfPublicKey ? { publicKey: selfPublicKey } : {}),
-          });
-          const ownerUserBytes = toBinary(
-            meshtasticMeshProtobuf.UserSchema,
-            ownerUser as Parameters<typeof toBinary>[1],
-          );
-          void activeDevice
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
-            .sendPacket(ownerUserBytes, Portnums.PortNum.NODEINFO_APP, serverNodeId)
-            .then(() => {
-              console.debug(
-                `[useMeshtasticRuntime] NODEINFO request sent for S&F router 0x${serverNodeId.toString(16)}`,
-              );
-            })
-            .catch((e: unknown) => {
-              console.debug(
-                '[useMeshtasticRuntime] NODEINFO request failed ' + errLikeToLogString(e),
-              );
-            });
-        }
+        requestStoreForwardRouterNodeInfo({
+          device: activeDevice,
+          myNode,
+          serverNodeId,
+          selfNode: getIdentityNode(meshtasticIdentityIdRef.current, myNode),
+          now,
+          lastNodeInfoRequestAt: lastNodeInfoRequestAtRef.current,
+        });
         return { ok: false, code: 'missing_router_key' };
       }
 
@@ -2070,39 +2200,17 @@ export function useMeshtasticRuntime() {
         }
       }
 
-      const canJitContact = canBuildMeshtasticSharedContact({
-        publicKeyHex: serverNode?.public_key_hex,
-        longName: serverNode?.long_name,
-        shortName: serverNode?.short_name,
-      });
-
       // Attach publicKey on CLIENT_HISTORY only after a successful SharedContact push.
       // If that push fails, omit the wire key so firmware can auto-PKI from NodeDB.
-      let radioHasMatchingDestKey = false;
-      if (canJitContact && serverNode) {
-        const contactPacketId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
-        registerMeshtasticNonChatWirePacketId(contactPacketId);
-        try {
-          const contactBytes = buildLocalAddContactToRadioBytes({
-            myNodeNum: myNode,
-            packetId: contactPacketId,
-            nodeNum: serverNodeId,
-            longName: serverNode.long_name,
-            shortName: serverNode.short_name,
-            publicKey: destPublicKey,
-          });
-          await writeToRadioWithoutQueue(activeDevice, contactBytes);
-          radioHasMatchingDestKey = true;
-          console.debug(
-            `[useMeshtasticRuntime] Store & Forward SharedContact pushed for 0x${serverNodeId.toString(16)}`,
-          );
-        } catch (e: unknown) {
-          console.debug(
-            '[useMeshtasticRuntime] Store & Forward SharedContact push failed ' +
-              errLikeToLogString(e),
-          );
-        }
-      }
+      const radioHasMatchingDestKey =
+        serverNode != null &&
+        (await pushStoreForwardSharedContact({
+          device: activeDevice,
+          myNode,
+          serverNodeId,
+          serverNode,
+          destPublicKey,
+        }));
 
       const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
       const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
@@ -3361,92 +3469,91 @@ export function useMeshtasticRuntime() {
       const identityId = meshtasticIdentityIdRef.current;
       const tempIdStr = String(tempId);
 
-      if (transport === 'device') {
-        if (status === 'acked') {
-          const resolvedPid =
-            finalPacketId !== undefined
-              ? (meshtasticWireUint32AllowZero(finalPacketId) ?? tempId)
-              : tempId;
-          if (finalPacketId !== undefined && myNodeNumRef.current > 0) {
-            isDuplicate(myNodeNumRef.current, resolvedPid);
-          }
-          if (resolvedPid !== tempId) {
-            ackMeshPacketIdByTempIdRef.current.set(tempId, resolvedPid);
-          }
-          const resolvedIdStr = String(resolvedPid);
-          const storeKeyBeforeAck = resolveMeshtasticOutboundStoreKey(tempId, tempIdStr);
-          setMessages((prev) =>
-            prev.map((m) =>
-              meshtasticOutboundSendMatchesTempId(m, tempId)
-                ? {
-                    ...m,
-                    status: 'acked' as const,
-                    ...(resolvedPid !== tempId ? { packetId: resolvedPid } : {}),
-                  }
-                : m,
-            ),
-          );
-          if (identityId) {
-            if (resolvedPid !== tempId) {
-              renameMessageId(identityId, storeKeyBeforeAck, resolvedIdStr);
-            }
-            trackMeshtasticOutboundTempId(tempId, resolvedIdStr);
-            updateMessageStatus(identityId, resolvedIdStr, 'acked');
-            applyMeshtasticBroadcastTransportStatus({
-              identityId,
-              transport: 'device',
-              status: 'acked',
-              messageIdBefore: storeKeyBeforeAck,
-              messageIdAfter: resolvedIdStr,
-            });
-          }
-          const ackSenderId = outboundSendByTempIdRef.current.get(tempId)?.sender_id;
-          outboundSendByTempIdRef.current.delete(tempId);
-          void (
-            resolvedPid !== tempId
-              ? window.electronAPI.db.updateMessagePacketId(tempId, resolvedPid, ackSenderId)
-              : Promise.resolve()
-          )
-            .then(() => window.electronAPI.db.updateMessageStatus(resolvedPid, 'acked'))
-            .catch((err: unknown) => {
-              console.error(
-                'mcL1351 [useMeshtasticRuntime] device ack DB update failed:',
-                err instanceof Error ? err.message : String(err),
-              );
-            });
-        } else {
-          // failed
-          setMessages((prev) =>
-            prev.map((m) =>
-              meshtasticOutboundSendMatchesTempId(m, tempId)
-                ? { ...m, status: 'failed' as const, error }
-                : m,
-            ),
-          );
-          if (identityId) {
-            const storeKey = resolveMeshtasticOutboundStoreKey(tempId, tempIdStr);
-            updateMessageStatus(identityId, storeKey, 'failed', error);
-            clearMeshtasticOutboundTempId(tempId);
-            applyMeshtasticBroadcastTransportStatus({
-              identityId,
-              transport: 'device',
-              status: 'failed',
-              messageIdBefore: storeKey,
-              messageIdAfter: storeKey,
-            });
-          }
-          outboundSendByTempIdRef.current.delete(tempId);
-          void window.electronAPI.db
-            .updateMessageStatus(tempId, 'failed', error)
-            .catch((e: unknown) => {
-              console.warn(
-                'mcL1352 [useMeshtasticRuntime] updateMessageStatus failed ' +
-                  errLikeToLogString(e),
-              );
-            });
+      const applyDeviceTransportAck = (): void => {
+        const resolvedPid =
+          finalPacketId !== undefined
+            ? (meshtasticWireUint32AllowZero(finalPacketId) ?? tempId)
+            : tempId;
+        if (finalPacketId !== undefined && myNodeNumRef.current > 0) {
+          isDuplicate(myNodeNumRef.current, resolvedPid);
         }
-      } else {
-        // mqtt — read current device status from state so the DB update is consistent
+        if (resolvedPid !== tempId) {
+          ackMeshPacketIdByTempIdRef.current.set(tempId, resolvedPid);
+        }
+        const resolvedIdStr = String(resolvedPid);
+        const storeKeyBeforeAck = resolveMeshtasticOutboundStoreKey(tempId, tempIdStr);
+        setMessages((prev) =>
+          prev.map((m) =>
+            meshtasticOutboundSendMatchesTempId(m, tempId)
+              ? {
+                  ...m,
+                  status: 'acked' as const,
+                  ...(resolvedPid !== tempId ? { packetId: resolvedPid } : {}),
+                }
+              : m,
+          ),
+        );
+        if (identityId) {
+          if (resolvedPid !== tempId) {
+            renameMessageId(identityId, storeKeyBeforeAck, resolvedIdStr);
+          }
+          trackMeshtasticOutboundTempId(tempId, resolvedIdStr);
+          updateMessageStatus(identityId, resolvedIdStr, 'acked');
+          applyMeshtasticBroadcastTransportStatus({
+            identityId,
+            transport: 'device',
+            status: 'acked',
+            messageIdBefore: storeKeyBeforeAck,
+            messageIdAfter: resolvedIdStr,
+          });
+        }
+        const ackSenderId = outboundSendByTempIdRef.current.get(tempId)?.sender_id;
+        outboundSendByTempIdRef.current.delete(tempId);
+        void (
+          resolvedPid !== tempId
+            ? window.electronAPI.db.updateMessagePacketId(tempId, resolvedPid, ackSenderId)
+            : Promise.resolve()
+        )
+          .then(() => window.electronAPI.db.updateMessageStatus(resolvedPid, 'acked'))
+          .catch((err: unknown) => {
+            console.error(
+              'mcL1351 [useMeshtasticRuntime] device ack DB update failed:',
+              err instanceof Error ? err.message : String(err),
+            );
+          });
+      };
+
+      const applyDeviceTransportFailure = (): void => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            meshtasticOutboundSendMatchesTempId(m, tempId)
+              ? { ...m, status: 'failed' as const, error }
+              : m,
+          ),
+        );
+        if (identityId) {
+          const storeKey = resolveMeshtasticOutboundStoreKey(tempId, tempIdStr);
+          updateMessageStatus(identityId, storeKey, 'failed', error);
+          clearMeshtasticOutboundTempId(tempId);
+          applyMeshtasticBroadcastTransportStatus({
+            identityId,
+            transport: 'device',
+            status: 'failed',
+            messageIdBefore: storeKey,
+            messageIdAfter: storeKey,
+          });
+        }
+        outboundSendByTempIdRef.current.delete(tempId);
+        void window.electronAPI.db
+          .updateMessageStatus(tempId, 'failed', error)
+          .catch((e: unknown) => {
+            console.warn(
+              'mcL1352 [useMeshtasticRuntime] updateMessageStatus failed ' + errLikeToLogString(e),
+            );
+          });
+      };
+
+      const applyMqttTransportStatus = (): void => {
         const rowPacketId = ackMeshPacketIdByTempIdRef.current.get(tempId) ?? tempId;
         const rowPacketIdStr = String(rowPacketId);
         const storeMessageId = resolveMeshtasticOutboundStoreKey(tempId, rowPacketIdStr);
@@ -3471,7 +3578,17 @@ export function useMeshtasticRuntime() {
             clearMeshtasticOutboundTempId(tempId);
           }
         }
+      };
+
+      if (transport === 'device') {
+        if (status === 'acked') {
+          applyDeviceTransportAck();
+        } else {
+          applyDeviceTransportFailure();
+        }
+        return;
       }
+      applyMqttTransportStatus();
     },
     [isDuplicate, meshtasticOutboundSendMatchesTempId],
   );
@@ -4050,10 +4167,15 @@ export function useMeshtasticRuntime() {
       const applyLora =
         options?.applyLora ?? (parsed.mode === 'replace' && parsed.loraConfig != null);
 
-      const skipped: ApplyChannelSetResult['skipped'] = [];
-      let appliedCount = 0;
+      const snapshotChannelSlots = () =>
+        channelConfigsRef.current.map((c) => ({
+          index: c.index,
+          role: c.role,
+          name: c.name,
+        }));
 
-      if (parsed.mode === 'replace') {
+      const applyReplaceMode = async (): Promise<number> => {
+        let applied = 0;
         for (let i = 0; i < parsed.settings.length; i++) {
           const settings = parsed.settings[i];
           if (!settings) continue;
@@ -4062,39 +4184,41 @@ export function useMeshtasticRuntime() {
             role: i === 0 ? MESHTASTIC_CHANNEL_ROLE.PRIMARY : MESHTASTIC_CHANNEL_ROLE.SECONDARY,
             settings,
           });
-          appliedCount++;
+          applied++;
         }
         for (let i = parsed.settings.length; i < 8; i++) {
           await clearChannel(i);
         }
-      } else {
-        const slotSnapshot = () =>
-          channelConfigsRef.current.map((c) => ({
-            index: c.index,
-            role: c.role,
-            name: c.name,
-          }));
+        return applied;
+      };
+
+      const applyMergeMode = async (): Promise<{
+        applied: number;
+        skipped: ApplyChannelSetResult['skipped'];
+      }> => {
+        const skippedEntries: ApplyChannelSetResult['skipped'] = [];
         const toApply: typeof parsed.settings = [];
         for (const settings of parsed.settings) {
           if (!settings.name) {
-            skipped.push({ name: '', reason: 'empty_name' });
+            skippedEntries.push({ name: '', reason: 'empty_name' });
             continue;
           }
-          if (channelNameExists(slotSnapshot(), settings.name)) {
-            skipped.push({ name: settings.name, reason: 'duplicate_name' });
+          if (channelNameExists(snapshotChannelSlots(), settings.name)) {
+            skippedEntries.push({ name: settings.name, reason: 'duplicate_name' });
             continue;
           }
           toApply.push(settings);
         }
-        const freeSlots = countFreeChannelSlots(slotSnapshot());
+        const freeSlots = countFreeChannelSlots(snapshotChannelSlots());
         if (toApply.length > freeSlots) {
           throw new Error(
             `Need ${toApply.length} free channel slots but only ${freeSlots} available`,
           );
         }
         const reserved = new Set<number>();
+        let applied = 0;
         for (const settings of toApply) {
-          const freeIndex = findNextFreeChannelSlot(slotSnapshot(), reserved);
+          const freeIndex = findNextFreeChannelSlot(snapshotChannelSlots(), reserved);
           if (freeIndex === null) {
             throw new Error('No free channel slots');
           }
@@ -4104,9 +4228,15 @@ export function useMeshtasticRuntime() {
             role: MESHTASTIC_CHANNEL_ROLE.SECONDARY,
             settings,
           });
-          appliedCount++;
+          applied++;
         }
-      }
+        return { applied, skipped: skippedEntries };
+      };
+
+      const { applied: appliedCount, skipped } =
+        parsed.mode === 'replace'
+          ? { applied: await applyReplaceMode(), skipped: [] as ApplyChannelSetResult['skipped'] }
+          : await applyMergeMode();
 
       if (applyLora && parsed.loraConfig) {
         await setConfig(
@@ -4590,6 +4720,32 @@ export function useMeshtasticRuntime() {
       }
       const generation = ++refreshOurPositionGenerationRef.current;
       setGpsLoading(true);
+      const applyResolvedPositionToSelfNode = (
+        pos: OurPosition,
+        selfNodeId: number,
+        isVirtualNode: boolean,
+      ): void => {
+        let selfNodeToPersist: MeshNode | undefined;
+        updateNodes((prev) => {
+          const updated = new Map(prev);
+          const existing = updated.get(selfNodeId) ?? emptyNode(selfNodeId);
+          const node: MeshNode = {
+            ...existing,
+            node_id: selfNodeId,
+            latitude: pos.lat,
+            longitude: pos.lon,
+            last_heard: Date.now(),
+            lastPositionWarning: undefined,
+            ...(isVirtualNode
+              ? { long_name: MQTT_ONLY_VIRTUAL_LONG_NAME, role: ROLE_CLIENT, hops_away: 0 }
+              : {}),
+          };
+          updated.set(selfNodeId, node);
+          if (!isVirtualNode) selfNodeToPersist = node;
+          return updated;
+        });
+        if (selfNodeToPersist) persistMeshtasticNode(selfNodeToPersist);
+      };
       try {
         const storedStatic = readStoredStaticGps();
         const staticLat = storedStatic?.lat;
@@ -4615,49 +4771,31 @@ export function useMeshtasticRuntime() {
         // IP/browser fixes are city-level: never write them into the self node or SQLite.
         if (pos && !isLowAccuracyPosition(pos.source)) {
           const hasDevice = !!deviceRef.current;
-          const selfNodeId =
-            hasDevice && myNodeNumRef.current > 0
-              ? myNodeNumRef.current
-              : mqttStatusRef.current === 'connected'
-                ? virtualNodeIdRef.current
-                : 0;
+          const selfNodeId = resolvePositionSelfNodeId({
+            hasDevice,
+            myNodeNum: myNodeNumRef.current,
+            mqttConnected: mqttStatusRef.current === 'connected',
+            virtualNodeId: virtualNodeIdRef.current,
+          });
           if (selfNodeId > 0) {
-            const isVirtualNode = !hasDevice && selfNodeId === virtualNodeIdRef.current;
-            let selfNodeToPersist: MeshNode | undefined;
-            updateNodes((prev) => {
-              const updated = new Map(prev);
-              const existing = updated.get(selfNodeId) ?? emptyNode(selfNodeId);
-              const node: MeshNode = {
-                ...existing,
-                node_id: selfNodeId,
-                latitude: pos.lat,
-                longitude: pos.lon,
-                last_heard: Date.now(),
-                lastPositionWarning: undefined,
-                ...(isVirtualNode
-                  ? { long_name: MQTT_ONLY_VIRTUAL_LONG_NAME, role: ROLE_CLIENT, hops_away: 0 }
-                  : {}),
-              };
-              updated.set(selfNodeId, node);
-              if (!isVirtualNode) selfNodeToPersist = node;
-              return updated;
-            });
-            if (selfNodeToPersist) persistMeshtasticNode(selfNodeToPersist);
+            applyResolvedPositionToSelfNode(
+              pos,
+              selfNodeId,
+              !hasDevice && selfNodeId === virtualNodeIdRef.current,
+            );
           }
 
-          const meshtasticRole = readAppliedMeshtasticRole(
-            meshtasticIdentityIdRef.current,
-            myNodeNumRef.current,
-          );
-          const wouldSendWithoutMute =
-            deviceRef.current &&
-            (pos.source === 'static' ||
-              (pos.source === 'browser' && deviceGpsModeRef.current === 2));
           // Radio-driven local re-resolve (onSelfRadioPosition) must not push setPosition.
-          const shouldSendToDevice =
-            opts?.allowTransmit !== false &&
-            canTransmitLocation({ protocol: 'meshtastic', meshtasticRole }) &&
-            wouldSendWithoutMute;
+          const shouldSendToDevice = shouldSendResolvedPositionToDevice({
+            position: pos,
+            allowTransmit: opts?.allowTransmit !== false,
+            meshtasticRole: readAppliedMeshtasticRole(
+              meshtasticIdentityIdRef.current,
+              myNodeNumRef.current,
+            ),
+            deviceGpsMode: deviceGpsModeRef.current,
+            hasDevice: !!deviceRef.current,
+          });
 
           if (shouldSendToDevice && deviceRef.current) {
             deviceRef.current

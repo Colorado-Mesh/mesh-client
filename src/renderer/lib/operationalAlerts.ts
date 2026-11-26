@@ -7,7 +7,7 @@ export interface SilenceAlertOptions {
   alreadyFiredForCycle: boolean;
 }
 
-export const SILENCE_ESCALATION_MULTIPLIER = 2;
+const SILENCE_ESCALATION_MULTIPLIER = 2;
 
 function silenceExceeds(opts: SilenceAlertOptions, multiplier: number): boolean {
   if (opts.alreadyFiredForCycle) return false;

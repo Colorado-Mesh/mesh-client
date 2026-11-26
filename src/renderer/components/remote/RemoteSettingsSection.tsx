@@ -18,7 +18,7 @@ import { chipClass } from '../ui/formClasses';
 import { SettingsSection } from '../ui/SettingsSection';
 
 /** Sidecar outbound + inbound hard cap (see `MAX_RNCP_FILE_BYTES` in rncp_transfer.rs). */
-export const RNCP_MAX_FILE_SIZE_LABEL = '25 MiB';
+const RNCP_MAX_FILE_SIZE_LABEL = '25 MiB';
 
 export interface RemoteSettingsSectionProps {
   sidecarRunning: boolean;
