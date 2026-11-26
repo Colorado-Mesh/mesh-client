@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -1078,20 +1079,301 @@ describe('RadioPanel MeshCore LoRa form synchronization', () => {
 
     const frequency = screen.getByLabelText('Frequency (MHz)');
     await waitFor(() => {
-      expect(frequency).toHaveValue(869.618);
+      expect(frequency).toHaveValue('869.618');
     });
 
     fireEvent.change(frequency, { target: { value: '910.525' } });
-    expect(frequency).toHaveValue(910.525);
+    expect(frequency).toHaveValue('910.525');
 
     // New object identity, identical device values (e.g. an unrelated parent re-render).
     rerender(renderPanel({ ...deviceParams }));
-    expect(frequency).toHaveValue(910.525);
+    expect(frequency).toHaveValue('910.525');
 
     // A genuine device change still hydrates the form.
     rerender(renderPanel({ ...deviceParams, freq: 906_875_000 }));
     await waitFor(() => {
-      expect(frequency).toHaveValue(906.875);
+      expect(frequency).toHaveValue('906.875');
+    });
+
+    // ...including over a partial value that is still being typed.
+    fireEvent.change(frequency, { target: { value: '9' } });
+    expect(frequency).toHaveValue('9');
+    rerender(renderPanel({ ...deviceParams, freq: 915_000_000 }));
+    await waitFor(() => {
+      expect(frequency).toHaveValue('915.000');
+    });
+  });
+
+  /** Opens LoRa on radio A; show(keyByte, identityId) swaps the radio (null = link dropped). */
+  async function openMeshcoreRadio(
+    onApplyLoraParams: ComponentProps<typeof RadioPanel>['onApplyLoraParams'],
+  ) {
+    const user = userEvent.setup();
+    const deviceParams = { freq: 869_618_000, bw: 62_500, sf: 8, cr: 5, txPower: 10 };
+    const renderPanel = (keyByte: number | null, identityId: string) => (
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected={keyByte != null}
+          capabilities={MESHCORE_CAPABILITIES}
+          onApplyLoraParams={onApplyLoraParams}
+          identityId={identityId}
+          loraConfig={keyByte == null ? undefined : { ...deviceParams }}
+          meshcoreSelfInfo={
+            keyByte == null
+              ? null
+              : { ...meshcoreSelfInfo(0, 0), publicKey: new Uint8Array(32).fill(keyByte) }
+          }
+        />
+      </ToastProvider>
+    );
+    const { rerender } = render(renderPanel(0xa1, 'meshcore-radio-a'));
+    const loraDetails = [...document.querySelectorAll('details')].find((details) =>
+      details.textContent?.includes('LoRa / Radio'),
+    );
+    await user.click(loraDetails!.querySelector('summary')!);
+    const frequency = screen.getByLabelText<HTMLInputElement>('Frequency (MHz)');
+    await waitFor(() => {
+      expect(frequency).toHaveValue('869.618');
+    });
+    const show = (keyByte: number | null, identityId: string) => {
+      rerender(renderPanel(keyByte, identityId));
+    };
+    return { user, frequency, show };
+  }
+
+  it('drops an invalid frequency draft when another radio reports the same LoRa values', async () => {
+    const onApplyLoraParams = vi.fn().mockResolvedValue(undefined);
+    const { user, frequency, show } = await openMeshcoreRadio(onApplyLoraParams);
+
+    await user.tripleClick(frequency);
+    await user.keyboard('9');
+    await user.tab();
+    expect(screen.getByText(rangeMessage)).toBeVisible();
+
+    // Same LoRa values, different radio: the field shows that radio's frequency again.
+    show(0xb2, 'meshcore-radio-b');
+    await waitFor(() => {
+      expect(frequency).toHaveValue('869.618');
+    });
+    expect(screen.queryByText(rangeMessage)).toBeNull();
+    expect(frequency).not.toHaveAttribute('aria-invalid', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Apply LoRa / Radio' }));
+    await waitFor(() => {
+      expect(onApplyLoraParams).toHaveBeenCalledWith(
+        expect.objectContaining({ freq: 869_618_000 }),
+      );
+    });
+  });
+
+  it('keeps a frequency draft through a link drop and reconnect to the same radio', async () => {
+    const { user, frequency, show } = await openMeshcoreRadio(vi.fn().mockResolvedValue(undefined));
+
+    await user.tripleClick(frequency);
+    await user.keyboard('910.525');
+
+    // The link drops (no self info, identity falls back to the offline bucket), then returns.
+    show(null, 'meshcore-offline');
+    show(0xa1, 'meshcore-offline');
+    show(0xa1, 'meshcore-radio-a');
+    expect(frequency).toHaveValue('910.525');
+  });
+
+  async function openMeshcoreLora(onApplyLoraParams = vi.fn().mockResolvedValue(undefined)) {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHCORE_CAPABILITIES}
+          onApplyLoraParams={onApplyLoraParams}
+          loraConfig={{ freq: 869_618_000, bw: 62_500, sf: 8, cr: 5, txPower: 10 }}
+        />
+      </ToastProvider>,
+    );
+    const loraDetails = [...document.querySelectorAll('details')].find((details) =>
+      details.textContent?.includes('LoRa / Radio'),
+    );
+    await user.click(loraDetails!.querySelector('summary')!);
+    const frequency = screen.getByLabelText<HTMLInputElement>('Frequency (MHz)');
+    await waitFor(() => {
+      expect(frequency).toHaveValue('869.618');
+    });
+    return { user, frequency, onApplyLoraParams };
+  }
+
+  const rangeMessage = 'Enter a frequency between 150 and 2500 MHz.';
+
+  it('shows each typed character of a frequency instead of reformatting it', async () => {
+    const { user, frequency } = await openMeshcoreLora();
+
+    await user.tripleClick(frequency);
+    await user.keyboard('9');
+    expect(frequency.value).toBe('9');
+    await user.keyboard('1');
+    expect(frequency.value).toBe('91');
+    await user.keyboard('0.525');
+    expect(frequency.value).toBe('910.525');
+
+    await user.keyboard(
+      '{Backspace}{Backspace}{Backspace}{Backspace}{Backspace}{Backspace}{Backspace}',
+    );
+    expect(frequency.value).toBe('');
+  });
+
+  it('formats a valid frequency on blur and keeps an invalid one visible with a message', async () => {
+    const { user, frequency } = await openMeshcoreLora();
+
+    await user.tripleClick(frequency);
+    await user.keyboard('910.5');
+    expect(screen.queryByText(rangeMessage)).toBeNull();
+    await user.tab();
+    expect(frequency.value).toBe('910.500');
+    expect(frequency).not.toHaveAttribute('aria-invalid', 'true');
+
+    await user.tripleClick(frequency);
+    await user.keyboard('9');
+    // No message while the value may still be on its way to a valid one.
+    expect(screen.queryByText(rangeMessage)).toBeNull();
+    await user.tab();
+    expect(frequency.value).toBe('9');
+    expect(frequency).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(rangeMessage)).toBeVisible();
+
+    await user.tripleClick(frequency);
+    await user.keyboard('{Backspace}');
+    await user.tab();
+    expect(frequency.value).toBe('');
+    expect(frequency).toHaveAttribute('aria-invalid', 'true');
+
+    // Typing a valid value clears the message straight away.
+    await user.click(frequency);
+    await user.keyboard('915');
+    expect(screen.queryByText(rangeMessage)).toBeNull();
+    expect(frequency).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('applies the typed frequency and refuses one outside 150-2500 MHz', async () => {
+    const { user, frequency, onApplyLoraParams } = await openMeshcoreLora();
+    const apply = screen.getByRole('button', { name: 'Apply LoRa / Radio' });
+
+    await user.tripleClick(frequency);
+    await user.keyboard('9');
+    await user.click(apply);
+    expect(onApplyLoraParams).not.toHaveBeenCalled();
+    expect(screen.getByText(rangeMessage)).toBeVisible();
+    expect(frequency).toHaveAttribute('aria-invalid', 'true');
+    expect(frequency).toHaveFocus();
+
+    await user.tripleClick(frequency);
+    await user.keyboard('2500.001');
+    await user.click(apply);
+    expect(onApplyLoraParams).not.toHaveBeenCalled();
+
+    for (const notPlainDecimal of ['9e2', '0x384', '-915', '915.5.1', '915 MHz']) {
+      await user.tripleClick(frequency);
+      await user.keyboard(notPlainDecimal);
+      await user.click(apply);
+      expect(onApplyLoraParams).not.toHaveBeenCalled();
+      expect(frequency).toHaveValue(notPlainDecimal);
+    }
+
+    await user.tripleClick(frequency);
+    await user.keyboard('910.525');
+    await user.click(apply);
+    await waitFor(() => {
+      expect(onApplyLoraParams).toHaveBeenCalledWith(
+        expect.objectContaining({ freq: 910_525_000 }),
+      );
+    });
+    expect(frequency).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('shows the range message in place of the hint so Apply does not move', async () => {
+    const { user, frequency } = await openMeshcoreLora();
+    const hint = 'Operating frequency. Check local regulations.';
+    expect(screen.getByText(hint)).toBeVisible();
+
+    await user.tripleClick(frequency);
+    await user.keyboard('9');
+    await user.tab();
+    expect(screen.getByText(rangeMessage)).toBeVisible();
+    expect(screen.queryByText(hint)).toBeNull();
+
+    await user.tripleClick(frequency);
+    await user.keyboard('915');
+    expect(screen.getByText(hint)).toBeVisible();
+    expect(screen.queryByText(rangeMessage)).toBeNull();
+  });
+
+  it('a refused Apply removes the earlier success status', async () => {
+    const { user, frequency, onApplyLoraParams } = await openMeshcoreLora();
+    const apply = screen.getByRole('button', { name: 'Apply LoRa / Radio' });
+    const success = 'LoRa settings applied successfully!';
+
+    await user.click(apply);
+    expect(await screen.findByText(success)).toBeVisible();
+
+    await user.tripleClick(frequency);
+    await user.keyboard('9');
+    await user.click(apply);
+    expect(onApplyLoraParams).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(success)).toBeNull();
+    expect(screen.getByText(rangeMessage)).toBeVisible();
+  });
+
+  it('accepts the firmware range edges, 2.4 GHz and a decimal comma', async () => {
+    const { user, frequency, onApplyLoraParams } = await openMeshcoreLora();
+    const apply = screen.getByRole('button', { name: 'Apply LoRa / Radio' });
+
+    for (const [typed, hz] of [
+      ['150', 150_000_000],
+      ['2500', 2_500_000_000],
+      ['2425.5', 2_425_500_000],
+      ['910,525', 910_525_000],
+    ] as const) {
+      await user.tripleClick(frequency);
+      await user.keyboard(typed);
+      await user.click(apply);
+      await waitFor(() => {
+        expect(onApplyLoraParams).toHaveBeenLastCalledWith(expect.objectContaining({ freq: hz }));
+      });
+    }
+  });
+
+  it('rounds to whole kHz so the shown frequency is the one the radio gets', async () => {
+    const { user, frequency, onApplyLoraParams } = await openMeshcoreLora();
+    const apply = screen.getByRole('button', { name: 'Apply LoRa / Radio' });
+
+    // Half-kHz remainder: the radio takes kHz, so the field must show the same rounded kHz.
+    await user.tripleClick(frequency);
+    await user.keyboard('910.5255');
+    await user.click(apply);
+    await waitFor(() => {
+      expect(onApplyLoraParams).toHaveBeenLastCalledWith(
+        expect.objectContaining({ freq: 910_526_000 }),
+      );
+    });
+    expect(frequency).toHaveValue('910.526');
+
+    await user.tripleClick(frequency);
+    await user.keyboard('433.0004');
+    await user.tab();
+    expect(frequency).toHaveValue('433.000');
+  });
+
+  it('TX Power apply sends the last valid frequency while the field holds an invalid one', async () => {
+    const { user, frequency, onApplyLoraParams } = await openMeshcoreLora();
+
+    await user.tripleClick(frequency);
+    await user.keyboard('9');
+    await user.click(screen.getByRole('button', { name: 'Apply TX Power' }));
+    await waitFor(() => {
+      expect(onApplyLoraParams).toHaveBeenCalledWith(
+        expect.objectContaining({ freq: 869_618_000 }),
+      );
     });
   });
 

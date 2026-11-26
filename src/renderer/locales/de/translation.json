@@ -5339,7 +5339,8 @@
       "timeout": "Zeitüberschreitung",
       "unreachable": "nicht erreichbar",
       "unknown": "unbekannter Fehler"
-    }
+    },
+    "frequencyRangeError": "Geben Sie eine Frequenz zwischen {{min}} und {{max}} MHz ein."
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
