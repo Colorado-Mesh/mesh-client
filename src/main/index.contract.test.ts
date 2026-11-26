@@ -1131,7 +1131,8 @@ describe('Long-session maintenance (source contract)', () => {
     expect(INDEX_SOURCE).toContain('async function quitMainProcess');
     expect(INDEX_SOURCE).toContain('quitMainProcess({ relaunch: true })');
     expect(INDEX_SOURCE).toContain('quitMainProcess({ relaunch: false })');
-    expect(INDEX_SOURCE).toMatch(/if \(opts\.relaunch\) \{\s*app\.relaunch\(\);/);
+    expect(INDEX_SOURCE).toMatch(/if \(opts\.relaunch\) relaunchMainApp\(\);/);
+    expect(INDEX_SOURCE).toMatch(/function relaunchMainApp\(\)[\s\S]*?app\.relaunch\(\)/);
     expect(INDEX_SOURCE).toContain('app.exit(0)');
   });
 });

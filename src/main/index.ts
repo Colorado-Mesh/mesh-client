@@ -548,6 +548,18 @@ let lastTrayUnreadCount = 0;
  * Graceful main-process exit used by app:quit / app:relaunch.
  * Mirrors historical app:quit cleanup; optional relaunch schedules a new instance before exit.
  */
+/** Relaunch after quit, tolerating platforms where relaunch throws. */
+function relaunchMainApp(): void {
+  try {
+    app.relaunch();
+  } catch (e: unknown) {
+    console.debug(
+      '[main/index] catch:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+  }
+}
+
 async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void> {
   if (quitMainInFlight) return;
   quitMainInFlight = true;
@@ -577,25 +589,14 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
 
     tray?.destroy();
     tray = null;
-    if (opts.relaunch) {
-      app.relaunch();
-    }
+    if (opts.relaunch) relaunchMainApp();
     app.exit(0);
   } catch (err) {
     console.error(
       'mcL0041 [main] quitMainProcess failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
-    if (opts.relaunch) {
-      try {
-        app.relaunch();
-      } catch (e: unknown) {
-        console.debug(
-          '[main/index] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
-    }
+    if (opts.relaunch) relaunchMainApp();
     app.quit();
   }
 }
@@ -1959,6 +1960,34 @@ function setupAppMenu() {
  * macOS: native checker; still ensure the session flag is on. Re-run after load in case
  * dictionary lists populate asynchronously.
  */
+function pickSpellcheckerLanguages(available: string[], locale: string): string[] {
+  // Normalize codes for matching (both sides to hyphens) but pass original codes through.
+  const normAvailable = available.map((c) => c.replace(/_/g, '-'));
+  const loc = locale.replace(/_/g, '-');
+  const picked: string[] = [];
+
+  const exactIdx = normAvailable.indexOf(loc);
+  if (exactIdx !== -1) picked.push(available[exactIdx]);
+  const region = loc.split(/[-_]/)[0];
+  if (region) {
+    for (let i = 0; i < available.length; i++) {
+      const normCode = normAvailable[i];
+      if (
+        (normCode === region || normCode.startsWith(`${region}-`)) &&
+        !picked.includes(available[i])
+      ) {
+        picked.push(available[i]);
+      }
+    }
+  }
+  if (picked.length === 0) {
+    const enIdx = normAvailable.indexOf('en-US');
+    if (enIdx !== -1) picked.push(available[enIdx]);
+  }
+  if (picked.length === 0) picked.push(available[0]);
+  return picked.slice(0, 3);
+}
+
 function configureRendererSpellcheck(sess: Session): void {
   try {
     sess.setSpellCheckerEnabled(true);
@@ -1968,39 +1997,7 @@ function configureRendererSpellcheck(sess: Session): void {
       console.warn('mcL0058 [main] spellcheck: no dictionaries listed yet (retry after load)');
       return;
     }
-    // Normalize codes for matching (both sides to hyphens) but pass original
-    // codes to setSpellCheckerLanguages.
-    const normAvailable = available.map((c) => c.replace(/_/g, '-'));
-    const loc = app.getLocale().replace(/_/g, '-');
-    const picked: string[] = [];
-
-    const exactIdx = normAvailable.indexOf(loc);
-    if (exactIdx !== -1) {
-      picked.push(available[exactIdx]);
-    }
-    const region = loc.split(/[-_]/)[0];
-    if (region) {
-      for (let i = 0; i < available.length; i++) {
-        const normCode = normAvailable[i];
-        if (
-          (normCode === region || normCode.startsWith(`${region}-`)) &&
-          !picked.includes(available[i])
-        ) {
-          picked.push(available[i]);
-        }
-      }
-    }
-    if (picked.length === 0) {
-      const enIdx = normAvailable.indexOf('en-US');
-      if (enIdx !== -1) {
-        picked.push(available[enIdx]);
-      }
-    }
-    if (picked.length === 0) {
-      picked.push(available[0]);
-    }
-
-    sess.setSpellCheckerLanguages(picked.slice(0, 3));
+    sess.setSpellCheckerLanguages(pickSpellcheckerLanguages(available, app.getLocale()));
   } catch (e) {
     console.warn(
       'mcL0059 [main] configureRendererSpellcheck',
@@ -4334,28 +4331,7 @@ ipcMain.handle('db:saveNodes', (event, nodes) => {
       if (nodes.length > 0) throw new Error('db:saveNodes: database unavailable');
       return { saved: 0, dropped: 0 };
     }
-    const params = [];
-    let dropped = 0;
-    for (const node of nodes) {
-      try {
-        validateSaveNode(node);
-        if (node.path != null) {
-          const pathJson = JSON.stringify(node.path);
-          if (pathJson.length > DB_SAVE_NODE_PATH_MAX_BYTES) {
-            dropped++;
-            continue;
-          }
-        }
-        params.push(toNodeUpsertParams(node));
-      } catch (e: unknown) {
-        console.debug(
-          '[main/index] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        dropped++;
-      }
-    }
+    const { params, dropped } = buildNodeUpsertParams(nodes);
     const result = saveNodesBatch(params);
     return { saved: result.saved, dropped: result.dropped + dropped };
   } catch (err) {
@@ -5317,36 +5293,93 @@ ipcMain.handle('mecp:exportReceivedLog', async (event) => {
   }
 });
 
-ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
-  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+interface GpsHistoryRow {
+  node_id: number;
+  latitude: number;
+  longitude: number;
+  recorded_at: number;
+  source: string;
+}
+
+function parseGpsExportOptions(opts: unknown): { nodeId: number | undefined; sinceMs: number } {
   const o = opts && typeof opts === 'object' ? (opts as Record<string, unknown>) : {};
   const nodeId = typeof o.nodeId === 'number' && Number.isFinite(o.nodeId) ? o.nodeId : undefined;
   const sinceMs =
     typeof o.sinceMs === 'number' && Number.isFinite(o.sinceMs) && o.sinceMs >= 0 ? o.sinceMs : 0;
+  return { nodeId, sinceMs };
+}
+
+function queryGpsHistoryRows(
+  db: NonNullable<ReturnType<typeof getDbForIpc>>,
+  nodeId: number | undefined,
+  sinceMs: number,
+): GpsHistoryRow[] {
+  if (nodeId !== undefined) {
+    return db
+      .prepareOnce(
+        'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? AND node_id = ? ORDER BY recorded_at ASC LIMIT ?',
+      )
+      .all(sinceMs, nodeId, GPX_EXPORT_MAX_POINTS) as GpsHistoryRow[];
+  }
+  return db
+    .prepareOnce(
+      'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? ORDER BY node_id, recorded_at ASC LIMIT ?',
+    )
+    .all(sinceMs, GPX_EXPORT_MAX_POINTS) as GpsHistoryRow[];
+}
+
+function parseAttachmentSaveOptions(opts: unknown): {
+  fileName: string;
+  dataBase64: string;
+  promptSave: boolean;
+} {
+  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
+  const o = opts as Record<string, unknown>;
+  return {
+    fileName: typeof o.fileName === 'string' ? path.basename(o.fileName) : 'attachment',
+    dataBase64: typeof o.dataBase64 === 'string' ? o.dataBase64 : '',
+    promptSave: o.promptSave !== false,
+  };
+}
+
+interface NodeUpsertBatch {
+  params: ReturnType<typeof toNodeUpsertParams>[];
+  dropped: number;
+}
+
+function buildNodeUpsertParams(nodes: unknown[]): NodeUpsertBatch {
+  const params: ReturnType<typeof toNodeUpsertParams>[] = [];
+  let dropped = 0;
+  for (const node of nodes) {
+    try {
+      validateSaveNode(node);
+      if (node.path != null) {
+        const pathJson = JSON.stringify(node.path);
+        if (pathJson.length > DB_SAVE_NODE_PATH_MAX_BYTES) {
+          dropped++;
+          continue;
+        }
+      }
+      params.push(toNodeUpsertParams(node));
+    } catch (e: unknown) {
+      console.debug(
+        '[main/index] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      dropped++;
+    }
+  }
+  return { params, dropped };
+}
+
+ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  const { nodeId, sinceMs } = parseGpsExportOptions(opts);
   try {
     const db = getDbForIpc('gps:exportGpx');
     if (!db) return { success: false, reason: 'no_db' as const };
     if (!mainWindow) return { success: false, reason: 'no_window' as const };
-    let rows: {
-      node_id: number;
-      latitude: number;
-      longitude: number;
-      recorded_at: number;
-      source: string;
-    }[];
-    if (nodeId !== undefined) {
-      rows = db
-        .prepareOnce(
-          'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? AND node_id = ? ORDER BY recorded_at ASC LIMIT ?',
-        )
-        .all(sinceMs, nodeId, GPX_EXPORT_MAX_POINTS) as typeof rows;
-    } else {
-      rows = db
-        .prepareOnce(
-          'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? ORDER BY node_id, recorded_at ASC LIMIT ?',
-        )
-        .all(sinceMs, GPX_EXPORT_MAX_POINTS) as typeof rows;
-    }
+    const rows = queryGpsHistoryRows(db, nodeId, sinceMs);
     if (rows.length === 0) return { success: false, reason: 'empty' as const };
     const result = await dialog.showSaveDialog(mainWindow, {
       title: 'Export GPX',
@@ -5369,11 +5402,7 @@ ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
 
 ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
-  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
-  const o = opts as Record<string, unknown>;
-  const fileName = typeof o.fileName === 'string' ? path.basename(o.fileName) : 'attachment';
-  const dataBase64 = typeof o.dataBase64 === 'string' ? o.dataBase64 : '';
-  const promptSave = o.promptSave !== false;
+  const { fileName, dataBase64, promptSave } = parseAttachmentSaveOptions(opts);
   if (!dataBase64 || dataBase64.length > 16 * 1024 * 1024) {
     throw new Error('dataBase64 invalid or too large');
   }
