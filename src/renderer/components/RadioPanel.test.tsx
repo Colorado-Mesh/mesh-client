@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -1101,6 +1102,82 @@ describe('RadioPanel MeshCore LoRa form synchronization', () => {
     await waitFor(() => {
       expect(frequency).toHaveValue('915.000');
     });
+  });
+
+  /** Opens LoRa on radio A; show(keyByte, identityId) swaps the radio (null = link dropped). */
+  async function openMeshcoreRadio(
+    onApplyLoraParams: ComponentProps<typeof RadioPanel>['onApplyLoraParams'],
+  ) {
+    const user = userEvent.setup();
+    const deviceParams = { freq: 869_618_000, bw: 62_500, sf: 8, cr: 5, txPower: 10 };
+    const renderPanel = (keyByte: number | null, identityId: string) => (
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected={keyByte != null}
+          capabilities={MESHCORE_CAPABILITIES}
+          onApplyLoraParams={onApplyLoraParams}
+          identityId={identityId}
+          loraConfig={keyByte == null ? undefined : { ...deviceParams }}
+          meshcoreSelfInfo={
+            keyByte == null
+              ? null
+              : { ...meshcoreSelfInfo(0, 0), publicKey: new Uint8Array(32).fill(keyByte) }
+          }
+        />
+      </ToastProvider>
+    );
+    const { rerender } = render(renderPanel(0xa1, 'meshcore-radio-a'));
+    const loraDetails = [...document.querySelectorAll('details')].find((details) =>
+      details.textContent?.includes('LoRa / Radio'),
+    );
+    await user.click(loraDetails!.querySelector('summary')!);
+    const frequency = screen.getByLabelText<HTMLInputElement>('Frequency (MHz)');
+    await waitFor(() => {
+      expect(frequency).toHaveValue('869.618');
+    });
+    const show = (keyByte: number | null, identityId: string) => {
+      rerender(renderPanel(keyByte, identityId));
+    };
+    return { user, frequency, show };
+  }
+
+  it('drops an invalid frequency draft when another radio reports the same LoRa values', async () => {
+    const onApplyLoraParams = vi.fn().mockResolvedValue(undefined);
+    const { user, frequency, show } = await openMeshcoreRadio(onApplyLoraParams);
+
+    await user.tripleClick(frequency);
+    await user.keyboard('9');
+    await user.tab();
+    expect(screen.getByText(rangeMessage)).toBeVisible();
+
+    // Same LoRa values, different radio: the field shows that radio's frequency again.
+    show(0xb2, 'meshcore-radio-b');
+    await waitFor(() => {
+      expect(frequency).toHaveValue('869.618');
+    });
+    expect(screen.queryByText(rangeMessage)).toBeNull();
+    expect(frequency).not.toHaveAttribute('aria-invalid', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Apply LoRa / Radio' }));
+    await waitFor(() => {
+      expect(onApplyLoraParams).toHaveBeenCalledWith(
+        expect.objectContaining({ freq: 869_618_000 }),
+      );
+    });
+  });
+
+  it('keeps a frequency draft through a link drop and reconnect to the same radio', async () => {
+    const { user, frequency, show } = await openMeshcoreRadio(vi.fn().mockResolvedValue(undefined));
+
+    await user.tripleClick(frequency);
+    await user.keyboard('910.525');
+
+    // The link drops (no self info, identity falls back to the offline bucket), then returns.
+    show(null, 'meshcore-offline');
+    show(0xa1, 'meshcore-offline');
+    show(0xa1, 'meshcore-radio-a');
+    expect(frequency).toHaveValue('910.525');
   });
 
   async function openMeshcoreLora(onApplyLoraParams = vi.fn().mockResolvedValue(undefined)) {

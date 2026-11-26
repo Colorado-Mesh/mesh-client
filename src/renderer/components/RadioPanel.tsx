@@ -1092,12 +1092,20 @@ export default function RadioPanel({
     setShowRadioFreqError(false);
   }, []);
 
+  // The connected radio's public key (App supplies loraConfig only alongside this self info).
+  const meshcoreRadioKey = meshcoreSelfInfo?.publicKey
+    ? bytesToHex(meshcoreSelfInfo.publicKey)
+    : null;
+
   // Sync LoRa state from loraConfig prop (MeshCore device info)
   useEffect(() => {
     if (!loraConfig) return;
     // Only apply when the device-reported values actually changed, so a repeated sync does not
-    // overwrite edits the user is still typing.
+    // overwrite edits the user is still typing. The radio's key is part of it: another radio's
+    // values replace any draft even when they match the previous radio's. (Not identityId: that
+    // can move to the offline bucket and back for the same radio when the link drops.)
     const signature = JSON.stringify([
+      meshcoreRadioKey,
       loraConfig.freq,
       loraConfig.bw,
       loraConfig.sf,
@@ -1116,7 +1124,7 @@ export default function RadioPanel({
     if (loraConfig.txPower != null) {
       setTxPower(Math.min(loraConfig.txPower, meshcoreTxPowerMax));
     }
-  }, [loraConfig, meshcoreTxPowerMax, setRadioFreqFromDevice]);
+  }, [loraConfig, meshcoreRadioKey, meshcoreTxPowerMax, setRadioFreqFromDevice]);
 
   useEffect(() => {
     if (!meshcoreSelfInfo) return;
