@@ -7,7 +7,7 @@ import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { recordRendererTiming } from './rendererTimings';
 
-export const MIN_LONG_TASK_MS = 200;
+const MIN_LONG_TASK_MS = 200;
 const LONG_TASK_LOG_MS = 1000;
 const LONG_TASK_LOG_COOLDOWN_MS = 30 * MS_PER_SECOND;
 

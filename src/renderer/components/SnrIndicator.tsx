@@ -7,7 +7,7 @@ function snrLevel(snr: number): { level: number; color: string; textClass: strin
   return { level: 1, color: '#f87171', textClass: 'text-red-400' };
 }
 
-interface Props {
+export interface Props {
   snr: number;
   className?: string;
 }

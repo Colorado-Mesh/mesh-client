@@ -14,7 +14,7 @@ import { INPUT_BOX_CLASS } from './ui/formClasses';
 const DEFAULT_INTERVAL_SEC = 5;
 const MAX_RESULTS = 50;
 
-export interface PingResultRow {
+interface PingResultRow {
   seq: number;
   at: number;
   result: ReticulumPingProbeResult;

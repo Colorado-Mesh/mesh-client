@@ -16,31 +16,6 @@ export const RAINVIEWER_ATTRIBUTION =
 export const IEM_NEXRAD_ATTRIBUTION =
   'NEXRAD composite © <a href="https://mesonet.agron.iastate.edu/">Iowa Environmental Mesonet</a>, NOAA/NWS';
 
-export interface RadarProviderInfo {
-  id: RadarProviderId;
-  labelKey: string;
-  attribution: string;
-  maxNativeZoom: number;
-  supportsCoverage: boolean;
-}
-
-export const RADAR_PROVIDERS: readonly RadarProviderInfo[] = [
-  {
-    id: 'rainviewer',
-    labelKey: 'internetWeather.providerRainViewer',
-    attribution: RAINVIEWER_ATTRIBUTION,
-    maxNativeZoom: RAINVIEWER_MAX_NATIVE_ZOOM,
-    supportsCoverage: true,
-  },
-  {
-    id: 'iem-nexrad',
-    labelKey: 'internetWeather.providerNexrad',
-    attribution: IEM_NEXRAD_ATTRIBUTION,
-    maxNativeZoom: IEM_NEXRAD_MAX_NATIVE_ZOOM,
-    supportsCoverage: false,
-  },
-];
-
 function boundsIntersect(a: LatLonBounds, b: LatLonBounds): boolean {
   if (a.north < b.south || a.south > b.north) return false;
   const aWraps = a.east < a.west;

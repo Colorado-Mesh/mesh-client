@@ -12,7 +12,7 @@ function loadCoordinateFormat(): CoordinateFormat {
   return o?.coordinateFormat === 'mgrs' ? 'mgrs' : 'decimal';
 }
 
-interface CoordFormatState {
+export interface CoordFormatState {
   coordinateFormat: CoordinateFormat;
   setCoordinateFormat(format: CoordinateFormat): void;
 }

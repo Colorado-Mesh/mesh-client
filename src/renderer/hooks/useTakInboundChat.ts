@@ -41,7 +41,7 @@ import { useTakSinkStore } from '../stores/takSinkStore';
 
 /** First wait before re-sending a refused channel list; it doubles up to the maximum. */
 export const TAK_SEND_ROOMS_RETRY_MS = 5_000;
-export const TAK_SEND_ROOMS_RETRY_MAX_MS = 60_000;
+const TAK_SEND_ROOMS_RETRY_MAX_MS = 60_000;
 
 /**
  * Keep main told a setting while `sinkActive` (a sink is up, or whatever else says it must be

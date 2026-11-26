@@ -4,7 +4,7 @@
  */
 
 /** Remove control chars; keep tab for rare multi-word args. */
-export function stripMeshcomWireControls(text: string, opts?: { allowTab?: boolean }): string {
+function stripMeshcomWireControls(text: string, opts?: { allowTab?: boolean }): string {
   const allowTab = opts?.allowTab === true;
   let out = '';
   for (const ch of text) {
@@ -25,6 +25,3 @@ export function sanitizeMeshcomWireLine(line: string): string {
 }
 
 /** True when the raw user text contains characters stripped by {@link stripMeshcomWireControls}. */
-export function meshcomWireHadControlChars(text: string): boolean {
-  return stripMeshcomWireControls(text) !== text.replace(/\u007f/g, '');
-}

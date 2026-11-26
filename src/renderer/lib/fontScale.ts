@@ -30,7 +30,7 @@ export function persistFontScale(scale: number): void {
 }
 
 /** Notifies px-based layout consumers (virtualizer row estimates) to re-measure. */
-export const FONT_SCALE_CHANGED_EVENT = 'mesh-client:fontScaleChanged';
+const FONT_SCALE_CHANGED_EVENT = 'mesh-client:fontScaleChanged';
 
 /** Percentage rather than px so any OS/Chromium base font size is preserved. */
 export function applyFontScale(scale: number): void {

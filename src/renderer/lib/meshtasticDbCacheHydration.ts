@@ -51,8 +51,8 @@ function parseNodePath(path: unknown): number[] | undefined {
   }
 }
 
-type SavedNodeRow = Awaited<ReturnType<typeof window.electronAPI.db.getNodes>>[number];
-interface MeshcoreContactHopRow {
+export type SavedNodeRow = Awaited<ReturnType<typeof window.electronAPI.db.getNodes>>[number];
+export interface MeshcoreContactHopRow {
   node_id: number;
   hops_away: number | null;
 }

@@ -6,9 +6,9 @@ import type { MeshProtocol } from './types';
 
 export type { LogEntry };
 
-export type LogSeverity = 'error' | 'warning' | 'info';
+type LogSeverity = 'error' | 'warning' | 'info';
 
-export interface PatternCategory {
+interface PatternCategory {
   id: string;
   patterns: RegExp[];
   severity: LogSeverity;
@@ -22,7 +22,7 @@ export interface PatternCategory {
   recommendationGroup?: string;
 }
 
-type CategorySeverity = 'error' | 'warning' | 'info';
+export type CategorySeverity = 'error' | 'warning' | 'info';
 
 export interface CategoryFinding {
   id: string;

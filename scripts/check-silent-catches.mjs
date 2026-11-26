@@ -11,7 +11,7 @@
  * on the catch line itself or anywhere inside the catch body.
  *
  * Prefer `logCaughtDebug` / `logCaughtWarn` / `reportCaughtSeriousError` from
- * caughtErrorPolicy (main or renderer) over suppressions. Semgrep does not own
+ * main's caughtErrorPolicy over suppressions. Semgrep does not own
  * catch hygiene — do not add empty-catch rules to .semgrep.yml.
  * Raw `console.debug(..., e)` in main will fail `check:log-injection`; use
  * `logCaughtDebug`.

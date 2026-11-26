@@ -21,38 +21,47 @@ function resolveNameSource(hub: RrcHubInfo): RrcHubNameSource {
   return 'announce';
 }
 
-export function mergeRrcHub(prev: RrcHubInfo | undefined, next: RrcHubInfo): RrcHubInfo {
-  const recommended = Boolean(prev?.recommended) || Boolean(next.recommended);
+function pickFirst<T>(...values: readonly (T | null | undefined)[]): T | null {
+  for (const value of values) {
+    if (value != null) return value;
+  }
+  return null;
+}
 
+function mergeDisplayName(
+  prev: RrcHubInfo | undefined,
+  next: RrcHubInfo,
+): { display_name: string | null; name_source: RrcHubNameSource | undefined } {
   const prevSource = prev ? resolveNameSource(prev) : undefined;
   const nextSource = resolveNameSource(next);
-  let display_name = prev?.display_name ?? null;
-  let name_source = prevSource;
-
-  if (next.display_name) {
-    const nextPri = NAME_PRIORITY[nextSource];
-    const prevPri = prevSource ? NAME_PRIORITY[prevSource] : 0;
-    if (!display_name || nextPri >= prevPri) {
-      display_name = next.display_name;
-      name_source = nextSource;
-    }
+  if (!next.display_name)
+    return { display_name: prev?.display_name ?? null, name_source: prevSource };
+  const nextPri = NAME_PRIORITY[nextSource];
+  const prevPri = prevSource ? NAME_PRIORITY[prevSource] : 0;
+  if (prev?.display_name && nextPri < prevPri) {
+    return { display_name: prev.display_name, name_source: prevSource };
   }
+  return { display_name: next.display_name, name_source: nextSource };
+}
 
+function mergeRrcHub(prev: RrcHubInfo | undefined, next: RrcHubInfo): RrcHubInfo {
+  const recommended = Boolean(prev?.recommended) || Boolean(next.recommended);
+  const { display_name, name_source } = mergeDisplayName(prev, next);
   return {
     destination_hash: next.destination_hash.toLowerCase(),
-    identity_hash: next.identity_hash ?? prev?.identity_hash ?? null,
+    identity_hash: pickFirst(next.identity_hash, prev?.identity_hash),
     display_name,
     name_source,
-    last_seen: next.last_seen ?? prev?.last_seen ?? null,
-    favorited: next.favorited ?? prev?.favorited ?? false,
-    hops: next.hops ?? prev?.hops ?? null,
-    status: next.status ?? prev?.status ?? null,
-    source: next.source ?? prev?.source ?? 'discovered',
+    last_seen: pickFirst(next.last_seen, prev?.last_seen),
+    favorited: pickFirst(next.favorited, prev?.favorited) ?? false,
+    hops: pickFirst(next.hops, prev?.hops),
+    status: pickFirst(next.status, prev?.status),
+    source: pickFirst(next.source, prev?.source) ?? 'discovered',
     recommended,
   };
 }
 
-interface RrcHubStoreState {
+export interface RrcHubStoreState {
   hubs: Map<string, RrcHubInfo>;
   lastRefreshAt: number | null;
   refreshFromSidecar: () => Promise<void>;

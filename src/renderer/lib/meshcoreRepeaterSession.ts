@@ -40,7 +40,7 @@ export function meshcoreRepeaterHasResolvablePassword(nodeId: number): boolean {
   return !!ephemeral?.trim();
 }
 
-export function meshcoreRepeaterLoginErrorIsAuthFailure(error: unknown): boolean {
+function meshcoreRepeaterLoginErrorIsAuthFailure(error: unknown): boolean {
   return meshcoreLoginErrorIsAuthFailure(error);
 }
 

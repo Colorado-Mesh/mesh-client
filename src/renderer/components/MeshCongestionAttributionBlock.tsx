@@ -31,7 +31,7 @@ function renderCongestionLine(line: CongestionLine, t: TFunction) {
   }
 }
 
-interface Props {
+export interface Props {
   lines: CongestionLine[];
   originators: RfDuplicateOriginator[];
   nodes?: Map<number, MeshNode>;

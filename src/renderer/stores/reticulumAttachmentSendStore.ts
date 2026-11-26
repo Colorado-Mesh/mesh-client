@@ -18,7 +18,7 @@ export interface ReticulumAttachmentTransfer {
   cancelling: boolean;
 }
 
-interface ReticulumAttachmentSendStoreState {
+export interface ReticulumAttachmentSendStoreState {
   transfers: ReticulumAttachmentTransfer[];
   begin: (transfer: ReticulumAttachmentTransfer) => void;
   patch: (id: string, patch: Partial<Omit<ReticulumAttachmentTransfer, 'id'>>) => void;

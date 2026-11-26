@@ -69,7 +69,7 @@ export interface TakRelayIdentityPrefs {
  * Version 1's GeoChat room contacts, which no longer exist: their names, so main can tell ATAK
  * devices to drop them, until they would have gone stale there anyway.
  */
-export interface TakRetiredRooms {
+interface TakRetiredRooms {
   rooms: string[];
   untilMs: number;
 }
@@ -96,7 +96,7 @@ const CONTROL_CHARS_RE = /\p{Cc}/u;
  * A usable ATAK contact name: trimmed, one line, 1 to {@link TAK_GEOCHAT_ROOM_MAX_LEN} UTF-16
  * units (what main accepts); null otherwise.
  */
-export function cleanAtakName(raw: unknown): string | null {
+function cleanAtakName(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   const name = raw.trim();
   if (!name || name.length > TAK_GEOCHAT_ROOM_MAX_LEN || CONTROL_CHARS_RE.test(name)) return null;
@@ -243,10 +243,6 @@ function sanitizeStore(raw: unknown): {
 }
 
 /** Validate stored preferences, reading every earlier shape. */
-export function sanitizePrefs(raw: unknown): Record<IdentityId, TakRelayIdentityPrefs> {
-  return sanitizeStore(raw).byIdentity;
-}
-
 /** Valid retired rooms from storage, or none once they have expired. */
 function sanitizeRetired(raw: unknown, nowMs: number): TakRetiredRooms | null {
   if (!raw || typeof raw !== 'object') return null;

@@ -18,7 +18,7 @@ export type ReticulumConfigAuditIssue = Omit<ReticulumConfigValidateIssue, 'seve
   severity: ReticulumConfigAuditSeverity;
 };
 
-export interface ReticulumConfigAuditResponse {
+interface ReticulumConfigAuditResponse {
   issues?: ReticulumConfigAuditIssue[];
   ok?: boolean;
   error?: string;
@@ -49,7 +49,7 @@ export async function repairReticulumConfig(
   })) as ReticulumConfigRepairResponse;
 }
 
-export function auditI18nKey(kind: string): string {
+function auditI18nKey(kind: string): string {
   return `diagnosticsPanel.reticulum.audit.${kind}`;
 }
 
@@ -73,7 +73,7 @@ export function translateReticulumAuditIssue(
 }
 
 /** Expected runtime state — not actionable; Connection tab shows a Runtime badge instead. */
-export const RETICULUM_AUDIT_KINDS_EXCLUDED_FROM_DIAGNOSTICS = new Set(['runtime_only_interface']);
+const RETICULUM_AUDIT_KINDS_EXCLUDED_FROM_DIAGNOSTICS = new Set(['runtime_only_interface']);
 
 export function auditIssuesToDiagnosticRows(
   issues: ReticulumConfigAuditIssue[],

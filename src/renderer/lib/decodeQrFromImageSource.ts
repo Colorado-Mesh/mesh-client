@@ -4,7 +4,7 @@ import jsQR from 'jsqr';
 export const QR_DECODE_MAX_BYTES = 12 * 1024 * 1024;
 
 /** Cap decoded bitmap dimensions before getImageData. */
-export const QR_DECODE_MAX_DIMENSION = 2048;
+const QR_DECODE_MAX_DIMENSION = 2048;
 
 /**
  * Decode a QR payload from ImageData (canvas / video frame).

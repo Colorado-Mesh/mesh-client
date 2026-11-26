@@ -22,7 +22,7 @@ const ROUTING_PORT_LABEL_KEY: Record<number, string> = {
   1002: 'diagnosticsPanel.routingPort.roomAdvert',
 };
 
-export function routingPortLabelKey(portnum: number): string {
+function routingPortLabelKey(portnum: number): string {
   return ROUTING_PORT_LABEL_KEY[portnum] ?? 'diagnosticsPanel.routingPort.generic';
 }
 

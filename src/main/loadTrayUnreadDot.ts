@@ -5,7 +5,7 @@ import type { paintTrayUnreadDot as PaintTrayUnreadDot } from './trayUnreadDot';
 
 const requireFromHere = createRequire(__filename);
 
-type PaintFn = typeof PaintTrayUnreadDot;
+export type PaintFn = typeof PaintTrayUnreadDot;
 
 let cached: PaintFn | undefined;
 

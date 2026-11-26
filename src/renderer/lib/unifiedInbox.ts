@@ -7,7 +7,7 @@ import type { GlobalMessageSearchHit } from './globalMessageSearch';
 import type { ChatMessage } from './types';
 
 /** Newest-first cap so a very long history never renders thousands of rows. */
-export const UNIFIED_INBOX_LIMIT = 200;
+const UNIFIED_INBOX_LIMIT = 200;
 
 /** Max dismissed keys kept in localStorage (oldest dropped first). */
 export const UNIFIED_INBOX_DISMISSED_LIMIT = 2000;
@@ -110,31 +110,37 @@ export interface InboxJumpTargetOwnIds {
  * Inbox rows are normally inbound (sender = peer); own-id checks keep outbound-shaped
  * rows pointing at the counterparty when present.
  */
+function reticulumInboxJumpTarget(
+  item: UnifiedInboxItem,
+  own?: InboxJumpTargetOwnIds,
+): GlobalMessageSearchHit {
+  const { message: m, protocol } = item;
+  const senderHash = m.reticulum_sender_hash?.toLowerCase() ?? null;
+  const toHash = m.reticulum_destination_hash?.toLowerCase() ?? null;
+  const fromIsOwn = senderHash != null && own?.ownReticulumHashes?.has(senderHash) === true;
+  return {
+    protocol,
+    dbId: m.id ?? null,
+    timestamp: m.timestamp,
+    ...(m.receivedAt != null ? { receivedAt: m.receivedAt } : {}),
+    senderId: m.sender_id,
+    senderName: m.sender_name,
+    payload: m.payload,
+    channel: null,
+    dmPeer: null,
+    reticulumPeerHash: (fromIsOwn ? toHash : senderHash) ?? toHash,
+    reticulumSenderHash: senderHash,
+    reticulumMessageHash: m.reticulum_message_hash?.toLowerCase() ?? null,
+    packetId: m.packetId ?? null,
+  };
+}
+
 export function inboxItemToJumpTarget(
   item: UnifiedInboxItem,
   own?: InboxJumpTargetOwnIds,
 ): GlobalMessageSearchHit {
   const { message: m, protocol } = item;
-  if (protocol === 'reticulum') {
-    const senderHash = m.reticulum_sender_hash?.toLowerCase() ?? null;
-    const toHash = m.reticulum_destination_hash?.toLowerCase() ?? null;
-    const fromIsOwn = senderHash != null && own?.ownReticulumHashes?.has(senderHash) === true;
-    return {
-      protocol,
-      dbId: m.id ?? null,
-      timestamp: m.timestamp,
-      ...(m.receivedAt != null ? { receivedAt: m.receivedAt } : {}),
-      senderId: m.sender_id,
-      senderName: m.sender_name,
-      payload: m.payload,
-      channel: null,
-      dmPeer: null,
-      reticulumPeerHash: (fromIsOwn ? toHash : senderHash) ?? toHash,
-      reticulumSenderHash: senderHash,
-      reticulumMessageHash: m.reticulum_message_hash?.toLowerCase() ?? null,
-      packetId: m.packetId ?? null,
-    };
-  }
+  if (protocol === 'reticulum') return reticulumInboxJumpTarget(item, own);
   const fromIsOwn = own?.ownNodeIds?.has(m.sender_id >>> 0) === true;
   const dmPeer = !item.isDirectMessage ? null : fromIsOwn ? (m.to ?? null) : m.sender_id;
   return {

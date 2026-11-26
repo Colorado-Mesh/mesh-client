@@ -35,7 +35,7 @@ async function loadBundledEmojiJson(): Promise<string> {
 }
 
 /** Response for the sentinel URL: GET gets the data, HEAD only the ETag (the picker's update check). */
-export async function bundledEmojiDataResponse(method: string): Promise<Response> {
+async function bundledEmojiDataResponse(method: string): Promise<Response> {
   const headers = { 'Content-Type': 'application/json', ETag: BUNDLED_EMOJI_DATA_ETAG };
   if (method === 'HEAD') return new Response(null, { status: 200, headers });
   return new Response(await loadBundledEmojiJson(), { status: 200, headers });

@@ -220,5 +220,3 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
     </div>
   );
 }
-
-export default IdentityVaultPanel;

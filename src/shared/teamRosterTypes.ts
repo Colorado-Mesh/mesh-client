@@ -8,7 +8,7 @@ export const TEAM_UNIT_ID_MAX = 65535;
 export const TEAM_CALLSIGN_MAX = 64;
 export const TEAM_ROLE_MAX = 32;
 export const TEAM_LONG_NAME_MAX = 128;
-export const TEAM_DURABLE_KEY_MAX = 128;
+const TEAM_DURABLE_KEY_MAX = 128;
 
 export interface TeamMemberLink {
   protocol: MeshProtocol;

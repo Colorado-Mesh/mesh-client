@@ -7,7 +7,7 @@ import { sendGamesChallenge } from '@/renderer/lib/reticulum/reticulumGamesSessi
 import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
 import { GAMES_CHALLENGE_APPS, type GamesAppId } from '@/shared/games-types';
 
-interface ReticulumGameChallengeButtonProps {
+export interface ReticulumGameChallengeButtonProps {
   lxmfPeerHash: string;
   disabled?: boolean;
   className?: string;

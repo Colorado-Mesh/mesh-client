@@ -57,7 +57,7 @@ import {
 } from './ui/formClasses';
 import { StatusDot } from './ui/StatusDot';
 
-interface Props {
+export interface Props {
   node: MeshNode;
   isConnected: boolean;
   onSend: InfraConfigSend;

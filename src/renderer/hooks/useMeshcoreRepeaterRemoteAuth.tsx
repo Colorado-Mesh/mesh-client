@@ -15,7 +15,7 @@ import { INPUT_BOX_CLASS } from '../components/ui/formClasses';
 /** Firmware/admin passwords are short; cap input to avoid accidental paste floods. */
 const MESHCORE_INFRA_ADMIN_PASSWORD_MAX_LENGTH = 128;
 
-export interface RepeaterAuthResult {
+interface RepeaterAuthResult {
   ok: boolean;
   saved?: boolean;
 }

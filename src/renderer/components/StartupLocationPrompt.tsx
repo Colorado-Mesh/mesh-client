@@ -3,7 +3,7 @@ import { useLocationTrust } from '../lib/ourPositionReference';
 import { useLocationPromptStore } from '../stores/locationPromptStore';
 import SetLocationCard from './SetLocationCard';
 
-interface StartupLocationPromptProps {
+export interface StartupLocationPromptProps {
   ourPosition: OurPosition | null | undefined;
   /** Active protocol runs LoRa distance diagnostics (capability-gated by the caller). */
   enabled: boolean;

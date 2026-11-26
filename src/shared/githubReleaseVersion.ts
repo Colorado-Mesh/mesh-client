@@ -1,5 +1,5 @@
 /** Release display names are X.Y.Z (no leading v) on GitHub Releases. */
-export const SAFE_RELEASE_NAME_RE = /^(\d+)\.(\d+)\.(\d+)$/;
+const SAFE_RELEASE_NAME_RE = /^(\d+)\.(\d+)\.(\d+)$/;
 
 export interface GithubReleaseRow {
   tag_name?: unknown;
@@ -49,11 +49,11 @@ export function compareReleaseTags(a: string, b: string): number {
   return 0;
 }
 
-export function isUntaggedPlaceholderTag(tag: unknown): boolean {
+function isUntaggedPlaceholderTag(tag: unknown): boolean {
   return typeof tag === 'string' && /^untagged-/i.test(tag);
 }
 
-export function releaseGitTagFromRow(
+function releaseGitTagFromRow(
   release: GithubReleaseRow | null | undefined,
   opts: { includeDrafts?: boolean; includePrereleases?: boolean } = {},
 ): string | null {
@@ -102,7 +102,7 @@ export function publishedReleaseGitTag(
   return releaseGitTagFromRow(release, { includeDrafts: false, includePrereleases: false });
 }
 
-export function versionFromTrustedTag(tag: string): string {
+function versionFromTrustedTag(tag: string): string {
   return trustedReleaseTag(tag).slice(1);
 }
 

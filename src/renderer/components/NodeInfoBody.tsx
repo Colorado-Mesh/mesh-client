@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/purity */
 import type { TFunction } from 'i18next';
 import { CircleX, Info, TriangleAlert } from 'lucide-react-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLatestTrackedPosition } from '@/renderer/hooks/useLatestTrackedPosition';
@@ -62,7 +62,7 @@ import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import SnrIndicator from './SnrIndicator';
 import { CopyButton } from './ui/CopyButton';
 
-export const CATEGORY_STYLES: Record<string, string> = {
+const CATEGORY_STYLES: Record<string, string> = {
   Configuration: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
   Physical: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
   Hardware: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
@@ -71,7 +71,7 @@ export const CATEGORY_STYLES: Record<string, string> = {
 
 const EMPTY_HOP_HISTORY: HopHistoryPoint[] = [];
 
-export function formatTime(ts: number, t: TFunction): string {
+function formatTime(ts: number, t: TFunction): string {
   return formatRelativeOrIsoDateTime(ts, t, normalizeLastHeardMs);
 }
 
@@ -82,7 +82,7 @@ export function formatSecondsAgo(seconds: number, t: TFunction): string {
   return t('common.daysAgo', { count: Math.floor(seconds / 86400) });
 }
 
-export function InfoRow({
+function InfoRow({
   label,
   value,
   className,
@@ -201,6 +201,950 @@ const SEVERITY_ICON: Record<RFDiagnosis['severity'], typeof Info> = {
   info: Info,
 };
 
+function hasEnvironmentFields(node: MeshNode): boolean {
+  return (
+    node.env_temperature !== undefined ||
+    node.env_mcu_temperature !== undefined ||
+    node.env_humidity !== undefined ||
+    node.env_pressure !== undefined ||
+    node.env_iaq !== undefined ||
+    node.env_gas_resistance !== undefined ||
+    node.env_lux !== undefined ||
+    node.env_wind_speed !== undefined ||
+    node.env_pm10 !== undefined ||
+    node.env_pm25 !== undefined ||
+    node.env_co2 !== undefined ||
+    node.env_voc_idx !== undefined ||
+    node.env_nox_idx !== undefined
+  );
+}
+
+function NodeEnvironmentClimateSection({
+  node,
+  useFahrenheit,
+}: {
+  node: MeshNode;
+  useFahrenheit?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {node.env_temperature !== undefined && (
+        <InfoRow
+          label={t('nodeInfoBody.temperature')}
+          value={
+            useFahrenheit
+              ? `${((node.env_temperature * 9) / 5 + 32).toFixed(1)}°F`
+              : `${node.env_temperature.toFixed(1)}°C`
+          }
+        />
+      )}
+      {node.env_mcu_temperature !== undefined && (
+        <InfoRow
+          label={t('nodeInfoBody.mcuTemperature')}
+          value={
+            useFahrenheit
+              ? `${((node.env_mcu_temperature * 9) / 5 + 32).toFixed(1)}°F`
+              : `${node.env_mcu_temperature.toFixed(1)}°C`
+          }
+        />
+      )}
+      {node.env_humidity !== undefined && (
+        <InfoRow label={t('nodeInfoBody.humidity')} value={`${node.env_humidity.toFixed(1)}%`} />
+      )}
+      {node.env_pressure !== undefined && (
+        <InfoRow label={t('nodeInfoBody.pressure')} value={`${node.env_pressure.toFixed(1)} hPa`} />
+      )}
+    </>
+  );
+}
+
+function NodeEnvironmentAirSection({ node }: { node: MeshNode }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {node.env_iaq !== undefined && (
+        <InfoRow
+          label={t('nodeInfoBody.airQuality')}
+          value={`${node.env_iaq} – ${iaqLabel(node.env_iaq, t)}`}
+        />
+      )}
+      {node.env_gas_resistance !== undefined && (
+        <InfoRow label={t('nodeInfoBody.gasResistance')} value={`${node.env_gas_resistance}`} />
+      )}
+      {node.env_lux !== undefined && (
+        <InfoRow label={t('nodeInfoBody.light')} value={`${node.env_lux.toFixed(0)} lux`} />
+      )}
+      {node.env_wind_speed !== undefined && (
+        <InfoRow
+          label={t('nodeInfoBody.wind')}
+          value={
+            node.env_wind_direction !== undefined
+              ? `${node.env_wind_speed.toFixed(1)} m/s @ ${node.env_wind_direction}°`
+              : `${node.env_wind_speed.toFixed(1)} m/s`
+          }
+        />
+      )}
+      {node.env_pm25 !== undefined && (
+        <InfoRow label={t('nodeInfoBody.pm25')} value={`${node.env_pm25} µg/m³`} />
+      )}
+      {node.env_pm10 !== undefined && (
+        <InfoRow label={t('nodeInfoBody.pm10')} value={`${node.env_pm10} µg/m³`} />
+      )}
+      {node.env_co2 !== undefined && (
+        <InfoRow label={t('nodeInfoBody.co2')} value={`${node.env_co2} ppm`} />
+      )}
+      {node.env_voc_idx !== undefined && (
+        <InfoRow label={t('nodeInfoBody.voc')} value={`${node.env_voc_idx}`} />
+      )}
+      {node.env_nox_idx !== undefined && (
+        <InfoRow label={t('nodeInfoBody.nox')} value={`${node.env_nox_idx}`} />
+      )}
+    </>
+  );
+}
+
+function NodeEnvironmentSection({
+  node,
+  useFahrenheit,
+  protocol,
+}: {
+  node: MeshNode;
+  useFahrenheit?: boolean;
+  protocol: MeshProtocol;
+}) {
+  const { t } = useTranslation();
+  if (!hasEnvironmentFields(node)) return null;
+  return (
+    <div className="border-ink-700 mt-3 border-t pt-3">
+      <div className="text-ink-400 mb-1 text-xs font-semibold uppercase">
+        {t('nodeInfoBody.environment')}
+      </div>
+      <NodeEnvironmentClimateSection node={node} useFahrenheit={useFahrenheit} />
+      <NodeEnvironmentAirSection node={node} />
+      <EnvironmentSparklines protocol={protocol} nodeId={node.node_id} />
+    </div>
+  );
+}
+
+function MeshcomIdentityRows({
+  node,
+  meshcomHardware,
+  meshcomFirmware,
+}: {
+  node: MeshNode;
+  meshcomHardware: string | null;
+  meshcomFirmware: string | null;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {node.long_name && <InfoRow label={t('nodeInfoBody.callsign')} value={node.long_name} />}
+      {meshcomHardware != null && (
+        <InfoRow label={t('nodeInfoBody.hardware')} value={meshcomHardware} />
+      )}
+      {meshcomFirmware != null && (
+        <InfoRow label={t('nodeInfoBody.firmware')} value={meshcomFirmware} />
+      )}
+    </>
+  );
+}
+
+function StandardIdentityRows({
+  node,
+  protocol,
+  isOurNode,
+  meshcoreManufacturerModel,
+  awaitingNodeInfo,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  isOurNode: boolean;
+  meshcoreManufacturerModel?: string;
+  awaitingNodeInfo: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {node.long_name && <InfoRow label={t('nodeInfoBody.longName')} value={node.long_name} />}
+      {protocol !== 'meshcore' && node.short_name && (
+        <InfoRow label={t('nodeInfoBody.shortName')} value={node.short_name} />
+      )}
+
+      {protocol === 'meshcore' ? (
+        <>
+          <InfoRow label={t('nodeInfoBody.type')} value={node.hw_model || '---'} />
+          <InfoRow
+            label={t('nodeInfoBody.hardware')}
+            value={
+              isOurNode
+                ? (meshcoreManufacturerModel ?? '—')
+                : t('nodeInfoBody.notAvailableRemotely')
+            }
+          />
+        </>
+      ) : (
+        <>
+          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+            <span className="text-muted text-sm">{t('nodeInfoBody.role')}</span>
+            <div className="flex items-center gap-2">
+              <RoleDisplay role={node.role} />
+              {awaitingNodeInfo && (
+                <span className="text-2xs text-muted" title={t('nodeInfoBody.pendingTitle')}>
+                  {t('nodeInfoBody.pending')}
+                </span>
+              )}
+            </div>
+          </div>
+          <InfoRow
+            label={t('nodeInfoBody.hardware')}
+            value={meshtasticHwModelDisplay(node.hw_model) ?? '—'}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+function NodeIdentitySection({
+  node,
+  protocol,
+  isOurNode,
+  meshcoreManufacturerModel,
+  awaitingNodeInfo,
+  meshcomHardware,
+  meshcomFirmware,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  isOurNode: boolean;
+  meshcoreManufacturerModel?: string;
+  awaitingNodeInfo: boolean;
+  meshcomHardware: string | null;
+  meshcomFirmware: string | null;
+}) {
+  if (protocol === 'meshcom') {
+    return (
+      <MeshcomIdentityRows
+        node={node}
+        meshcomHardware={meshcomHardware}
+        meshcomFirmware={meshcomFirmware}
+      />
+    );
+  }
+  return (
+    <StandardIdentityRows
+      node={node}
+      protocol={protocol}
+      isOurNode={isOurNode}
+      meshcoreManufacturerModel={meshcoreManufacturerModel}
+      awaitingNodeInfo={awaitingNodeInfo}
+    />
+  );
+}
+
+function NodeSnrRows({
+  node,
+  protocol,
+  showSnr,
+  showLastHopSnr,
+  snrColor,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  showSnr: boolean;
+  showLastHopSnr: boolean;
+  snrColor: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {showSnr && (
+        <InfoRow
+          label={t('nodeInfoBody.snr')}
+          value={node.snr != null && node.snr !== 0 ? `${node.snr.toFixed(1)} dB` : '—'}
+          className={snrColor}
+        />
+      )}
+      {showLastHopSnr && !showSnr && (
+        <InfoRow
+          label={t('nodeInfoBody.lastHopSnr')}
+          value={`${node.snr?.toFixed(1) ?? '—'} dB`}
+          className={snrColor}
+        />
+      )}
+      {protocol === 'meshcom' && node.rssi != null && node.rssi !== 0 && (
+        <InfoRow label={t('nodeInfoBody.rssi')} value={`${node.rssi} dBm`} />
+      )}
+    </>
+  );
+}
+
+function BatteryLevelBar({ percent }: { percent: number }) {
+  return (
+    <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
+      <div
+        className={`h-full rounded-full transition-all ${
+          percent > 50 ? 'bg-brand-green' : percent > 20 ? 'bg-orange-500' : 'bg-red-500'
+        }`}
+        style={{ width: `${Math.min(percent, 100)}%` }}
+      />
+    </div>
+  );
+}
+
+function VoltageBatteryRow({ node, batteryColor }: { node: MeshNode; batteryColor: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+      <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
+      <div className="flex items-center gap-2">
+        {node.battery > 0 && <BatteryLevelBar percent={node.battery} />}
+        <span className={`text-sm font-medium ${batteryColor}`}>
+          {node.voltage?.toFixed(2)} V{node.battery > 0 ? ` (${node.battery}%)` : ''}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PercentBatteryRow({ node, batteryColor }: { node: MeshNode; batteryColor: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+      <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
+      <div className="flex items-center gap-2">
+        {node.battery > 0 && <BatteryLevelBar percent={node.battery} />}
+        <span className={`text-sm font-medium ${batteryColor}`}>
+          {node.battery > 0 ? `${node.battery}%` : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function NodeBatterySection({
+  node,
+  protocol,
+  batteryColor,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  batteryColor: string;
+}) {
+  const { t } = useTranslation();
+  if (protocol === 'meshcore' || protocol === 'meshcom') {
+    if (node.voltage != null && node.voltage > 0) {
+      return <VoltageBatteryRow node={node} batteryColor={batteryColor} />;
+    }
+    if (node.battery > 0) {
+      return <PercentBatteryRow node={node} batteryColor={batteryColor} />;
+    }
+    return <InfoRow label={t('nodeInfoBody.battery')} value="—" className="text-muted" />;
+  }
+  return <PercentBatteryRow node={node} batteryColor={batteryColor} />;
+}
+
+function NodeTimingSection({
+  node,
+  protocol,
+  isOurNode,
+  mqttConnected,
+  radioConnected,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  isOurNode: boolean;
+  mqttConnected: boolean;
+  radioConnected: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <InfoRow label={t('nodeInfoBody.lastHeard')} value={formatTime(node.last_heard, t)} />
+
+      {/* Hop count */}
+      <InfoRow
+        label={t('nodeInfoBody.hops')}
+        value={isOurNode ? 0 : (node.hops_away ?? '—')}
+        className={(isOurNode ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-ink-300'}
+      />
+
+      {/* Channel Utilization — Meshtastic only */}
+      {protocol === 'meshtastic' &&
+        (node.channel_utilization != null || node.air_util_tx != null) && (
+          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+            <span className="text-muted text-sm">{t('nodeInfoBody.channelUtil')}</span>
+            <div className="text-ink-200 flex items-center gap-2 font-mono text-sm">
+              {node.channel_utilization != null && (
+                <span>
+                  RX:{' '}
+                  <span
+                    className={node.channel_utilization > 50 ? 'text-orange-400' : 'text-ink-200'}
+                  >
+                    {node.channel_utilization.toFixed(1)}%
+                  </span>
+                </span>
+              )}
+              {node.channel_utilization != null && node.air_util_tx != null && (
+                <span className="text-ink-600">|</span>
+              )}
+              {node.air_util_tx != null && (
+                <span>
+                  TX:{' '}
+                  <span className={node.air_util_tx > 50 ? 'text-orange-400' : 'text-ink-200'}>
+                    {node.air_util_tx.toFixed(1)}%
+                  </span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+      {/* Source (RF / MQTT) — Meshtastic only; MeshCore/MeshCom are RF (or EXTUDP) */}
+      {protocol === 'meshtastic' && (
+        <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+          <span className="text-muted text-sm">{t('nodeInfoBody.source')}</span>
+          <NodeSourceBadge
+            node={node}
+            protocol={protocol}
+            isSelf={isOurNode}
+            mqttConnected={mqttConnected}
+            radioConnected={radioConnected}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+function NodeLocationSection({
+  node,
+  protocol,
+  latestTrackedPosition,
+  coordinateFormat,
+  onShowOnMap,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  latestTrackedPosition: { lat: number; lon: number } | null;
+  coordinateFormat: Parameters<typeof formatCoordPair>[2];
+  onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {(() => {
+        const mapPosition = resolveNodeMapPosition(node, latestTrackedPosition);
+        if (!mapPosition) return null;
+        const hasNodeDbPosition =
+          node.latitude != null &&
+          node.longitude != null &&
+          (node.latitude !== 0 || node.longitude !== 0);
+        const label = hasNodeDbPosition
+          ? t('nodeInfoBody.position')
+          : t('nodeInfoBody.lastTrackedPosition');
+        return (
+          <div className="border-ink-700/50 flex items-center justify-between gap-2 border-b py-2 last:border-b-0">
+            <span className="text-muted shrink-0 text-sm">{label}</span>
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+              <span className="text-ink-300 font-mono text-xs">
+                {formatCoordPair(mapPosition.lat, mapPosition.lon, coordinateFormat)}
+              </span>
+              {onShowOnMap && (
+                <button
+                  type="button"
+                  aria-label={t('nodeDetailModal.showOnMap')}
+                  className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-600 shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors"
+                  onClick={() => {
+                    onShowOnMap(node.node_id, mapPosition.lat, mapPosition.lon);
+                  }}
+                >
+                  {t('nodeDetailModal.showOnMap')}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+      {protocol === 'meshcom' &&
+        node.altitude != null &&
+        Number.isFinite(node.altitude) &&
+        node.altitude !== 0 && (
+          <InfoRow label={t('nodeInfoBody.altitude')} value={`${node.altitude} m`} />
+        )}
+
+      {/* GPS warning */}
+      {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (
+        <div className="mt-1 flex items-start gap-1.5 rounded border border-orange-500/30 bg-orange-500/10 px-2 py-1.5 text-xs text-orange-400">
+          <TriangleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0" />
+          <span>
+            {t('nodeInfoBody.gpsWarningPrefix')}
+            {node.lastPositionWarning}
+          </span>
+        </div>
+      )}
+    </>
+  );
+}
+
+interface MeshcoreTraceEntry {
+  id: number;
+  timestamp: number;
+  pathLen: number | null;
+  pathSnrs: number[];
+  lastSnr: number | null;
+  tag: number | null;
+}
+
+type DiagnosticsState = ReturnType<typeof useDiagnosticsStore.getState>;
+type MeshcoreHopHistoryEntry =
+  DiagnosticsState['meshcoreHopHistory'] extends Map<number, infer V> ? V : never;
+type NodeRedundancyEntry =
+  DiagnosticsState['nodeRedundancy'] extends Map<number, infer V> ? V : never;
+
+function NodeMeshcorePathHistorySection({
+  protocol,
+  meshcoreHopHistory,
+  meshcoreTraceHistory,
+  meshcoreTraceFirst,
+  meshcoreTracePathSnrsSafe,
+  showMeshcoreTraceHistoryBlock,
+  use24HourTime,
+}: {
+  protocol: MeshProtocol;
+  meshcoreHopHistory: MeshcoreHopHistoryEntry | undefined;
+  meshcoreTraceHistory: MeshcoreTraceEntry[] | undefined;
+  meshcoreTraceFirst: MeshcoreTraceEntry | undefined;
+  meshcoreTracePathSnrsSafe: readonly number[];
+  showMeshcoreTraceHistoryBlock: boolean;
+  use24HourTime: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {/* MeshCore trace history from database */}
+      {protocol === 'meshcore' && (meshcoreHopHistory || meshcoreTraceHistory) && (
+        <div className="border-ink-700/50 mt-2 border-t pt-2">
+          <div className="text-2xs text-muted mb-1">{t('nodeInfoBody.meshcorePathHistory')}</div>
+          {meshcoreHopHistory && (
+            <div className="mb-1 text-xs">
+              <span className="text-ink-400">{t('nodeInfoBody.hopsLabel')}</span>
+              <span className="text-ink-200 font-mono">{meshcoreHopHistory.hops ?? '?'}</span>
+              {meshcoreHopHistory.snr != null && (
+                <span className="text-muted ml-2">
+                  SNR {meshcoreHopHistory.snr > 0 ? '+' : ''}
+                  {meshcoreHopHistory.snr.toFixed(1)} dB
+                </span>
+              )}
+              {meshcoreHopHistory.rssi != null && (
+                <span className="text-muted ml-2">{meshcoreHopHistory.rssi} dBm</span>
+              )}
+              <span className="text-2xs text-ink-600 ml-2">
+                {formatDisplayTime(meshcoreHopHistory.timestamp, { use24Hour: use24HourTime })}
+              </span>
+            </div>
+          )}
+          {meshcoreTraceHistory &&
+            meshcoreTraceHistory.length > 0 &&
+            showMeshcoreTraceHistoryBlock &&
+            meshcoreTraceFirst != null && (
+              <div className="bg-deep-black/50 text-2xs rounded p-1.5">
+                <div className="text-ink-400 mb-0.5">
+                  {meshcoreTraceFirst.pathLen != null && (
+                    <>
+                      {t('nodeInfoBody.hopsLabel')}{' '}
+                      <span className="text-ink-200 font-mono">
+                        {meshcoreTracePathLenToHops(meshcoreTraceFirst.pathLen)}
+                      </span>{' '}
+                    </>
+                  )}
+                  <span className="text-ink-600">
+                    {formatDisplayTime(meshcoreTraceFirst.timestamp, {
+                      use24Hour: use24HourTime,
+                    })}
+                    {meshcoreTraceHistory.length > 1 && (
+                      <span className="text-muted ml-1">
+                        {t('nodeInfoBody.olderCount', { count: meshcoreTraceHistory.length - 1 })}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                {meshcoreTracePathSnrsSafe.map((snr, i) => (
+                  <div key={i} className="flex items-center gap-2 pl-1.5">
+                    <span className="text-muted w-8">{t('nodeInfoBody.hopN', { n: i + 1 })}</span>
+                    <SnrIndicator snr={snr} className="text-2xs" />
+                  </div>
+                ))}
+                {meshcoreTraceFirst.lastSnr != null && (
+                  <div className="border-ink-700/30 mt-0.5 flex items-center gap-2 border-t pt-0.5 pl-1.5">
+                    <span className="text-muted w-8">{t('nodeInfoBody.dest')}</span>
+                    <SnrIndicator snr={meshcoreTraceFirst.lastSnr} className="text-2xs" />
+                  </div>
+                )}
+              </div>
+            )}
+        </div>
+      )}
+    </>
+  );
+}
+
+function NodeEchoReliabilityCard({
+  reliabilityProxy,
+}: {
+  reliabilityProxy:
+    | {
+        kind: 'meshcore' | 'meshtastic';
+        pct: number;
+        total?: number;
+        duplicates?: number;
+        attempts?: number;
+      }
+    | null
+    | undefined;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {reliabilityProxy ? (
+        <div
+          className="border-ink-700/50 mt-2 border-t pt-2"
+          title={
+            reliabilityProxy.kind === 'meshcore'
+              ? t('nodeInfoBody.pathReliabilityTooltip')
+              : t('nodeInfoBody.echoReliabilityTooltip')
+          }
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-2xs text-muted">
+              {reliabilityProxy.kind === 'meshcore'
+                ? t('nodeInfoBody.pathReliability')
+                : t('nodeInfoBody.echoReliability')}
+            </span>
+            <span
+              className={`text-xs font-medium ${
+                reliabilityProxy.pct >= 67
+                  ? 'text-lime-400'
+                  : reliabilityProxy.pct >= 33
+                    ? 'text-orange-400'
+                    : 'text-muted'
+              }`}
+            >
+              {reliabilityProxy.pct}%
+            </span>
+          </div>
+          <p className="text-2xs text-muted mt-0.5">
+            {reliabilityProxy.kind === 'meshcore'
+              ? t('nodeInfoBody.pathReliabilityDetail', {
+                  attempts: reliabilityProxy.attempts,
+                })
+              : t('nodeInfoBody.echoReliabilityDetail', {
+                  duplicates: reliabilityProxy.duplicates,
+                  total: reliabilityProxy.total,
+                })}
+          </p>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function NodeConnectionHealthSection({
+  nodeRedundancy,
+  showSnr,
+  pathHistoryOpen,
+  setPathHistoryOpen,
+}: {
+  nodeRedundancy: NodeRedundancyEntry | undefined;
+  showSnr: boolean;
+  pathHistoryOpen: boolean;
+  setPathHistoryOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {/* Connection Health (packet redundancy) — only shown once echoes have been observed */}
+      {nodeRedundancy && nodeRedundancy.maxPaths > 1 && (
+        <div
+          className="border-ink-700/50 mt-2 border-t pt-2"
+          title={t('nodeInfoBody.connectionHealthTooltip')}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-2xs text-muted">{t('nodeInfoBody.connectionHealth')}</span>
+            <span
+              className={`text-xs font-medium ${
+                nodeRedundancy.score >= 67
+                  ? 'text-lime-400'
+                  : nodeRedundancy.score >= 33
+                    ? 'text-orange-400'
+                    : 'text-muted'
+              }`}
+            >
+              {nodeRedundancy.score}%
+              {nodeRedundancy.maxPaths >= 3 && (
+                <span className="text-2xs ml-1 text-lime-400/80">
+                  {t('nodeInfoBody.highlyRedundant')}
+                </span>
+              )}
+            </span>
+          </div>
+
+          {/* Path History toggle — only shown when there are echoes to display */}
+          {(() => {
+            const totalEchoes = nodeRedundancy.recentPackets.reduce(
+              (s, r) => s + r.paths.length - 1,
+              0,
+            );
+            const echoPackets = nodeRedundancy.recentPackets.filter((r) => r.paths.length > 1);
+            if (totalEchoes === 0) return null;
+            return (
+              <div className="mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPathHistoryOpen((o) => !o);
+                  }}
+                  className="text-2xs text-muted hover:text-ink-300 flex items-center gap-1 transition-colors"
+                >
+                  <span>{pathHistoryOpen ? '▾' : '▸'}</span>
+                  {t('nodeInfoBody.pathHistory')} (
+                  {t('nodeInfoBody.echoes', { count: totalEchoes })})
+                </button>
+
+                {pathHistoryOpen && (
+                  <div className="mt-1.5 flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
+                    {echoPackets.map((rec) => (
+                      <div key={rec.packetId} className="bg-deep-black/50 text-2xs rounded p-1.5">
+                        <div className="text-ink-400 mb-0.5 font-mono">
+                          #{rec.packetId.toString(16).toUpperCase()} —{' '}
+                          {t('nodeInfoBody.paths', { count: rec.paths.length })}
+                        </div>
+                        {rec.paths.map((p, i) => (
+                          <div key={i} className="text-muted pl-1.5 leading-tight">
+                            {i === 0
+                              ? t('nodeInfoBody.original')
+                              : t('nodeInfoBody.echoN', { n: i })}
+                            :{' '}
+                            <span
+                              className={
+                                p.transport === 'rf' ? 'text-brand-green/80' : 'text-indigo-400/80'
+                              }
+                            >
+                              {p.transport.toUpperCase()}
+                            </span>
+                            {showSnr && p.snr != null && (
+                              <span className="ml-1">
+                                SNR {p.snr > 0 ? '+' : ''}
+                                {p.snr.toFixed(1)} dB
+                              </span>
+                            )}
+                            {p.rssi != null && <span className="ml-1">{p.rssi} dBm</span>}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+    </>
+  );
+}
+
+function NodeEchoPathSection({
+  protocol,
+  reliabilityProxy,
+  nodeRedundancy,
+  showSnr,
+  use24HourTime,
+  meshcoreHopHistory,
+  meshcoreTraceHistory,
+  meshcoreTraceFirst,
+  meshcoreTracePathSnrsSafe,
+  showMeshcoreTraceHistoryBlock,
+  pathHistoryOpen,
+  setPathHistoryOpen,
+}: {
+  protocol: MeshProtocol;
+  reliabilityProxy:
+    | {
+        kind: 'meshcore' | 'meshtastic';
+        pct: number;
+        total?: number;
+        duplicates?: number;
+        attempts?: number;
+      }
+    | null
+    | undefined;
+  nodeRedundancy: NodeRedundancyEntry | undefined;
+  showSnr: boolean;
+  use24HourTime: boolean;
+  meshcoreHopHistory: MeshcoreHopHistoryEntry | undefined;
+  meshcoreTraceHistory: MeshcoreTraceEntry[] | undefined;
+  meshcoreTraceFirst: MeshcoreTraceEntry | undefined;
+  meshcoreTracePathSnrsSafe: readonly number[];
+  showMeshcoreTraceHistoryBlock: boolean;
+  pathHistoryOpen: boolean;
+  setPathHistoryOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+  return (
+    <>
+      <NodeEchoReliabilityCard reliabilityProxy={reliabilityProxy} />
+      <NodeConnectionHealthSection
+        nodeRedundancy={nodeRedundancy}
+        showSnr={showSnr}
+        pathHistoryOpen={pathHistoryOpen}
+        setPathHistoryOpen={setPathHistoryOpen}
+      />
+      <NodeMeshcorePathHistorySection
+        protocol={protocol}
+        meshcoreHopHistory={meshcoreHopHistory}
+        meshcoreTraceHistory={meshcoreTraceHistory}
+        meshcoreTraceFirst={meshcoreTraceFirst}
+        meshcoreTracePathSnrsSafe={meshcoreTracePathSnrsSafe}
+        showMeshcoreTraceHistoryBlock={showMeshcoreTraceHistoryBlock}
+        use24HourTime={use24HourTime}
+      />
+    </>
+  );
+}
+
+function NodeHopStabilitySparkline({ recentHistory }: { recentHistory: HopHistoryPoint[] }) {
+  const { t } = useTranslation();
+  return (() => {
+    const minH = Math.min(...recentHistory.map((p) => p.h));
+    const maxH = Math.max(...recentHistory.map((p) => p.h));
+    const range = maxH - minH || 1;
+    const minT = recentHistory[0].t;
+    const maxT = recentHistory[recentHistory.length - 1].t;
+    const timeRange = maxT - minT || 1;
+    const points = recentHistory
+      .map((p) => {
+        const x = ((p.t - minT) / timeRange) * 200;
+        const y = 40 - ((p.h - minH) / range) * 36 - 2;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+    return (
+      <div className="mt-2">
+        <div className="text-2xs text-muted mb-0.5">{t('nodeInfoBody.hopCount24h')}</div>
+        <svg viewBox="0 0 200 40" className="text-brand-green/60 h-8 w-full">
+          <polyline
+            points={points}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
+    );
+  })();
+}
+
+function NodeRoutingRemedyBadge({
+  node,
+  homeNode,
+  nodePacketStats,
+}: {
+  node: MeshNode;
+  homeNode?: MeshNode | null;
+  nodePacketStats: NonNullable<Parameters<typeof meshtasticEchoLossProxy>[0]> | null;
+}) {
+  const remedy = getRecommendedAction(node, homeNode ?? null, nodePacketStats ?? undefined);
+  if (!remedy) return null;
+  return (
+    <div
+      className={`mb-2 flex items-start gap-2 rounded-lg border p-2 text-xs ${CATEGORY_STYLES[remedy.category]}`}
+    >
+      <span className="shrink-0 font-semibold">{remedy.category}</span>
+      <span>{remedy.title}</span>
+    </div>
+  );
+}
+
+function NodeAnomalyOffenseRow({
+  anomaly,
+  offenseSummary,
+}: {
+  anomaly: NodeAnomaly | null;
+  offenseSummary: string | null;
+}) {
+  const { t } = useTranslation();
+  const iconTrigger = useIconTrigger();
+  return (
+    <>
+      {anomaly ? (
+        <div
+          className={`flex items-start gap-1.5 text-xs ${
+            anomaly.severity === 'error'
+              ? 'text-red-400'
+              : anomaly.severity === 'info'
+                ? 'text-indigo-400'
+                : 'text-orange-400'
+          }`}
+        >
+          {anomaly.severity === 'info' ? (
+            <Info
+              aria-hidden
+              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+              trigger={iconTrigger}
+              size={14}
+            />
+          ) : (
+            <TriangleAlert
+              aria-hidden
+              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+              trigger={iconTrigger}
+              size={14}
+            />
+          )}
+          <div>
+            <div className="mb-0.5 font-medium">{offenseSummary}</div>
+            <div className="text-ink-400">{anomaly.description}</div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-brand-green text-xs">{t('nodeInfoBody.noRoutingIssues')}</div>
+      )}
+    </>
+  );
+}
+
+function NodeStabilityRow({
+  stabilityColor,
+  stabilityLabel,
+  recentHour,
+  hopChanges,
+}: {
+  stabilityColor: string;
+  stabilityLabel: string;
+  recentHour: HopHistoryPoint[];
+  hopChanges: number;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className="border-ink-700/50 mt-2 flex items-center justify-between border-t pt-2">
+        <span className="text-2xs text-muted">{t('nodeInfoBody.routeStability')}</span>
+        <span className={`text-xs font-medium ${stabilityColor}`}>
+          {stabilityLabel}
+          {recentHour.length >= 2 && hopChanges > 0 && (
+            <span className="text-muted ml-1 font-normal">
+              ({t('nodeInfoBody.changes', { count: hopChanges })})
+            </span>
+          )}
+        </span>
+      </div>
+    </>
+  );
+}
+
 export default function NodeInfoBody({
   node,
   homeNode,
@@ -217,7 +1161,6 @@ export default function NodeInfoBody({
   radioConnected = false,
 }: NodeInfoBodyProps) {
   const { t } = useTranslation();
-  const iconTrigger = useIconTrigger();
   const capabilities = useRadioProvider(protocol);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
@@ -267,12 +1210,12 @@ export default function NodeInfoBody({
   const meshcoreHopHistory = useDiagnosticsStore((s) => s.meshcoreHopHistory.get(node.node_id));
   const meshcoreTraceHistory = useDiagnosticsStore((s) => s.meshcoreTraceHistory.get(node.node_id));
   const loadMeshcorePathHistory = useDiagnosticsStore((s) => s.loadMeshcorePathHistory);
-  const [pathHistoryOpen, setPathHistoryOpen] = useState(false);
   const latestTrackedPositionFromStore = useLatestTrackedPosition(node.node_id);
   const latestTrackedPositionFromProps = latestPositionHistoryPoint(
     positionHistory?.get(node.node_id),
   );
   const latestTrackedPosition = latestTrackedPositionFromProps ?? latestTrackedPositionFromStore;
+  const [pathHistoryOpen, setPathHistoryOpen] = useState(false);
 
   const meshcoreTraceFirst = meshcoreTraceHistory?.[0];
   const meshcoreTracePathSnrsSafe =
@@ -368,552 +1311,181 @@ export default function NodeInfoBody({
 
   return (
     <>
-      {/* Names / identity */}
-      {protocol === 'meshcom' ? (
-        <>
-          {node.long_name && <InfoRow label={t('nodeInfoBody.callsign')} value={node.long_name} />}
-          {meshcomHardware != null && (
-            <InfoRow label={t('nodeInfoBody.hardware')} value={meshcomHardware} />
-          )}
-          {meshcomFirmware != null && (
-            <InfoRow label={t('nodeInfoBody.firmware')} value={meshcomFirmware} />
-          )}
-        </>
-      ) : (
-        <>
-          {node.long_name && <InfoRow label={t('nodeInfoBody.longName')} value={node.long_name} />}
-          {protocol !== 'meshcore' && node.short_name && (
-            <InfoRow label={t('nodeInfoBody.shortName')} value={node.short_name} />
-          )}
-
-          {protocol === 'meshcore' ? (
-            <>
-              <InfoRow label={t('nodeInfoBody.type')} value={node.hw_model || '---'} />
-              <InfoRow
-                label={t('nodeInfoBody.hardware')}
-                value={
-                  isOurNode
-                    ? (meshcoreManufacturerModel ?? '—')
-                    : t('nodeInfoBody.notAvailableRemotely')
-                }
-              />
-            </>
-          ) : (
-            <>
-              <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-                <span className="text-muted text-sm">{t('nodeInfoBody.role')}</span>
-                <div className="flex items-center gap-2">
-                  <RoleDisplay role={node.role} />
-                  {awaitingNodeInfo && (
-                    <span className="text-2xs text-muted" title={t('nodeInfoBody.pendingTitle')}>
-                      {t('nodeInfoBody.pending')}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <InfoRow
-                label={t('nodeInfoBody.hardware')}
-                value={meshtasticHwModelDisplay(node.hw_model) ?? '—'}
-              />
-            </>
-          )}
-        </>
-      )}
-
-      {/* SNR: direct 0-hop RF or our node; otherwise Last-Hop SNR when multi-hop RF context */}
-      {showSnr && (
-        <InfoRow
-          label={t('nodeInfoBody.snr')}
-          value={node.snr != null && node.snr !== 0 ? `${node.snr.toFixed(1)} dB` : '—'}
-          className={snrColor}
-        />
-      )}
-      {showLastHopSnr && !showSnr && (
-        <InfoRow
-          label={t('nodeInfoBody.lastHopSnr')}
-          value={`${node.snr?.toFixed(1) ?? '—'} dB`}
-          className={snrColor}
-        />
-      )}
-      {protocol === 'meshcom' && node.rssi != null && node.rssi !== 0 && (
-        <InfoRow label={t('nodeInfoBody.rssi')} value={`${node.rssi} dBm`} />
-      )}
-
-      {/* Battery — Meshtastic % ; MeshCore/MeshCom: voltage when known + % bar */}
-      {protocol === 'meshcore' || protocol === 'meshcom' ? (
-        node.voltage != null && node.voltage > 0 ? (
-          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-            <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
-            <div className="flex items-center gap-2">
-              {node.battery > 0 && (
-                <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      node.battery > 50
-                        ? 'bg-brand-green'
-                        : node.battery > 20
-                          ? 'bg-orange-500'
-                          : 'bg-red-500'
-                    }`}
-                    style={{ width: `${Math.min(node.battery, 100)}%` }}
-                  />
-                </div>
-              )}
-              <span className={`text-sm font-medium ${batteryColor}`}>
-                {node.voltage.toFixed(2)} V{node.battery > 0 ? ` (${node.battery}%)` : ''}
-              </span>
-            </div>
-          </div>
-        ) : node.battery > 0 ? (
-          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-            <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
-            <div className="flex items-center gap-2">
-              <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    node.battery > 50
-                      ? 'bg-brand-green'
-                      : node.battery > 20
-                        ? 'bg-orange-500'
-                        : 'bg-red-500'
-                  }`}
-                  style={{ width: `${Math.min(node.battery, 100)}%` }}
-                />
-              </div>
-              <span className={`text-sm font-medium ${batteryColor}`}>{node.battery}%</span>
-            </div>
-          </div>
-        ) : (
-          <InfoRow label={t('nodeInfoBody.battery')} value="—" className="text-muted" />
-        )
-      ) : (
-        <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-          <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
-          <div className="flex items-center gap-2">
-            {node.battery > 0 && (
-              <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    node.battery > 50
-                      ? 'bg-brand-green'
-                      : node.battery > 20
-                        ? 'bg-orange-500'
-                        : 'bg-red-500'
-                  }`}
-                  style={{ width: `${Math.min(node.battery, 100)}%` }}
-                />
-              </div>
-            )}
-            <span className={`text-sm font-medium ${batteryColor}`}>
-              {node.battery > 0 ? `${node.battery}%` : '—'}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Timing */}
-      <InfoRow label={t('nodeInfoBody.lastHeard')} value={formatTime(node.last_heard, t)} />
-
-      {/* Hop count */}
-      <InfoRow
-        label={t('nodeInfoBody.hops')}
-        value={isOurNode ? 0 : (node.hops_away ?? '—')}
-        className={(isOurNode ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-ink-300'}
+      <NodeIdentitySection
+        node={node}
+        protocol={protocol}
+        isOurNode={isOurNode}
+        meshcoreManufacturerModel={meshcoreManufacturerModel}
+        awaitingNodeInfo={awaitingNodeInfo}
+        meshcomHardware={meshcomHardware}
+        meshcomFirmware={meshcomFirmware}
       />
 
-      {/* Channel Utilization — Meshtastic only */}
-      {protocol === 'meshtastic' &&
-        (node.channel_utilization != null || node.air_util_tx != null) && (
-          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-            <span className="text-muted text-sm">{t('nodeInfoBody.channelUtil')}</span>
-            <div className="text-ink-200 flex items-center gap-2 font-mono text-sm">
-              {node.channel_utilization != null && (
-                <span>
-                  RX:{' '}
-                  <span
-                    className={node.channel_utilization > 50 ? 'text-orange-400' : 'text-ink-200'}
-                  >
-                    {node.channel_utilization.toFixed(1)}%
-                  </span>
-                </span>
-              )}
-              {node.channel_utilization != null && node.air_util_tx != null && (
-                <span className="text-ink-600">|</span>
-              )}
-              {node.air_util_tx != null && (
-                <span>
-                  TX:{' '}
-                  <span className={node.air_util_tx > 50 ? 'text-orange-400' : 'text-ink-200'}>
-                    {node.air_util_tx.toFixed(1)}%
-                  </span>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+      <NodeSnrRows
+        node={node}
+        protocol={protocol}
+        showSnr={showSnr}
+        showLastHopSnr={showLastHopSnr}
+        snrColor={snrColor}
+      />
 
-      {/* Source (RF / MQTT) — Meshtastic only; MeshCore/MeshCom are RF (or EXTUDP) */}
-      {protocol === 'meshtastic' && (
-        <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-          <span className="text-muted text-sm">{t('nodeInfoBody.source')}</span>
-          <NodeSourceBadge
-            node={node}
-            protocol={protocol}
-            isSelf={isOurNode}
-            mqttConnected={mqttConnected}
-            radioConnected={radioConnected}
-          />
-        </div>
-      )}
+      <NodeBatterySection node={node} protocol={protocol} batteryColor={batteryColor} />
 
-      {/* Location */}
-      {(() => {
-        const mapPosition = resolveNodeMapPosition(node, latestTrackedPosition);
-        if (!mapPosition) return null;
-        const hasNodeDbPosition =
-          node.latitude != null &&
-          node.longitude != null &&
-          (node.latitude !== 0 || node.longitude !== 0);
-        const label = hasNodeDbPosition
-          ? t('nodeInfoBody.position')
-          : t('nodeInfoBody.lastTrackedPosition');
-        return (
-          <div className="border-ink-700/50 flex items-center justify-between gap-2 border-b py-2 last:border-b-0">
-            <span className="text-muted shrink-0 text-sm">{label}</span>
-            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-              <span className="text-ink-300 font-mono text-xs">
-                {formatCoordPair(mapPosition.lat, mapPosition.lon, coordinateFormat)}
-              </span>
-              {onShowOnMap && (
-                <button
-                  type="button"
-                  aria-label={t('nodeDetailModal.showOnMap')}
-                  className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-600 shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors"
-                  onClick={() => {
-                    onShowOnMap(node.node_id, mapPosition.lat, mapPosition.lon);
-                  }}
-                >
-                  {t('nodeDetailModal.showOnMap')}
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-      {protocol === 'meshcom' &&
-        node.altitude != null &&
-        Number.isFinite(node.altitude) &&
-        node.altitude !== 0 && (
-          <InfoRow label={t('nodeInfoBody.altitude')} value={`${node.altitude} m`} />
-        )}
+      <NodeTimingSection
+        node={node}
+        protocol={protocol}
+        isOurNode={isOurNode}
+        mqttConnected={mqttConnected}
+        radioConnected={radioConnected}
+      />
 
-      {/* GPS warning */}
-      {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (
-        <div className="mt-1 flex items-start gap-1.5 rounded border border-orange-500/30 bg-orange-500/10 px-2 py-1.5 text-xs text-orange-400">
-          <TriangleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0" />
-          <span>
-            {t('nodeInfoBody.gpsWarningPrefix')}
-            {node.lastPositionWarning}
-          </span>
-        </div>
-      )}
+      <NodeLocationSection
+        node={node}
+        protocol={protocol}
+        latestTrackedPosition={latestTrackedPosition}
+        coordinateFormat={coordinateFormat}
+        onShowOnMap={onShowOnMap}
+      />
 
-      {/* Routing Health */}
       <div className="bg-primary-dark mt-3 rounded-lg py-3">
         <div className="text-ink-400 mb-1.5 text-sm font-medium">
           {t('nodeInfoBody.routingHealth')}
         </div>
 
-        {/* Remedy badge */}
-        {(() => {
-          const remedy = getRecommendedAction(node, homeNode ?? null, nodePacketStats);
-          if (!remedy) return null;
-          return (
-            <div
-              className={`mb-2 flex items-start gap-2 rounded-lg border p-2 text-xs ${CATEGORY_STYLES[remedy.category]}`}
-            >
-              <span className="shrink-0 font-semibold">{remedy.category}</span>
-              <span>{remedy.title}</span>
-            </div>
-          );
-        })()}
+        <NodeRoutingRemedyBadge
+          node={node}
+          homeNode={homeNode}
+          nodePacketStats={nodePacketStats ?? null}
+        />
+        <NodeAnomalyOffenseRow anomaly={anomaly} offenseSummary={offenseSummary} />
+        <NodeStabilityRow
+          stabilityColor={stabilityColor}
+          stabilityLabel={stabilityLabel}
+          recentHour={recentHour}
+          hopChanges={hopChanges}
+        />
 
-        {/* Offense */}
-        {anomaly ? (
-          <div
-            className={`flex items-start gap-1.5 text-xs ${
-              anomaly.severity === 'error'
-                ? 'text-red-400'
-                : anomaly.severity === 'info'
-                  ? 'text-indigo-400'
-                  : 'text-orange-400'
-            }`}
-          >
-            {anomaly.severity === 'info' ? (
-              <Info
-                aria-hidden
-                className="mt-0.5 h-3.5 w-3.5 shrink-0"
-                trigger={iconTrigger}
-                size={14}
-              />
-            ) : (
-              <TriangleAlert
-                aria-hidden
-                className="mt-0.5 h-3.5 w-3.5 shrink-0"
-                trigger={iconTrigger}
-                size={14}
-              />
-            )}
-            <div>
-              <div className="mb-0.5 font-medium">{offenseSummary}</div>
-              <div className="text-ink-400">{anomaly.description}</div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-brand-green text-xs">{t('nodeInfoBody.noRoutingIssues')}</div>
-        )}
-
-        {/* Stability metric */}
-        <div className="border-ink-700/50 mt-2 flex items-center justify-between border-t pt-2">
-          <span className="text-2xs text-muted">{t('nodeInfoBody.routeStability')}</span>
-          <span className={`text-xs font-medium ${stabilityColor}`}>
-            {stabilityLabel}
-            {recentHour.length >= 2 && hopChanges > 0 && (
-              <span className="text-muted ml-1 font-normal">
-                ({t('nodeInfoBody.changes', { count: hopChanges })})
-              </span>
-            )}
-          </span>
-        </div>
-
-        {hasSparkline &&
-          (() => {
-            const minH = Math.min(...recentHistory.map((p) => p.h));
-            const maxH = Math.max(...recentHistory.map((p) => p.h));
-            const range = maxH - minH || 1;
-            const minT = recentHistory[0].t;
-            const maxT = recentHistory[recentHistory.length - 1].t;
-            const timeRange = maxT - minT || 1;
-            const points = recentHistory
-              .map((p) => {
-                const x = ((p.t - minT) / timeRange) * 200;
-                const y = 40 - ((p.h - minH) / range) * 36 - 2;
-                return `${x.toFixed(1)},${y.toFixed(1)}`;
-              })
-              .join(' ');
-            return (
-              <div className="mt-2">
-                <div className="text-2xs text-muted mb-0.5">{t('nodeInfoBody.hopCount24h')}</div>
-                <svg viewBox="0 0 200 40" className="text-brand-green/60 h-8 w-full">
-                  <polyline
-                    points={points}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-            );
-          })()}
-
-        {reliabilityProxy ? (
-          <div
-            className="border-ink-700/50 mt-2 border-t pt-2"
-            title={
-              reliabilityProxy.kind === 'meshcore'
-                ? t('nodeInfoBody.pathReliabilityTooltip')
-                : t('nodeInfoBody.echoReliabilityTooltip')
-            }
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-2xs text-muted">
-                {reliabilityProxy.kind === 'meshcore'
-                  ? t('nodeInfoBody.pathReliability')
-                  : t('nodeInfoBody.echoReliability')}
-              </span>
-              <span
-                className={`text-xs font-medium ${
-                  reliabilityProxy.pct >= 67
-                    ? 'text-lime-400'
-                    : reliabilityProxy.pct >= 33
-                      ? 'text-orange-400'
-                      : 'text-muted'
-                }`}
-              >
-                {reliabilityProxy.pct}%
-              </span>
-            </div>
-            <p className="text-2xs text-muted mt-0.5">
-              {reliabilityProxy.kind === 'meshcore'
-                ? t('nodeInfoBody.pathReliabilityDetail', {
-                    attempts: reliabilityProxy.attempts,
-                  })
-                : t('nodeInfoBody.echoReliabilityDetail', {
-                    duplicates: reliabilityProxy.duplicates,
-                    total: reliabilityProxy.total,
-                  })}
-            </p>
-          </div>
-        ) : null}
-
-        {/* Connection Health (packet redundancy) — only shown once echoes have been observed */}
-        {nodeRedundancy && nodeRedundancy.maxPaths > 1 && (
-          <div
-            className="border-ink-700/50 mt-2 border-t pt-2"
-            title={t('nodeInfoBody.connectionHealthTooltip')}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-2xs text-muted">{t('nodeInfoBody.connectionHealth')}</span>
-              <span
-                className={`text-xs font-medium ${
-                  nodeRedundancy.score >= 67
-                    ? 'text-lime-400'
-                    : nodeRedundancy.score >= 33
-                      ? 'text-orange-400'
-                      : 'text-muted'
-                }`}
-              >
-                {nodeRedundancy.score}%
-                {nodeRedundancy.maxPaths >= 3 && (
-                  <span className="text-2xs ml-1 text-lime-400/80">
-                    {t('nodeInfoBody.highlyRedundant')}
-                  </span>
-                )}
-              </span>
-            </div>
-
-            {/* Path History toggle — only shown when there are echoes to display */}
-            {(() => {
-              const totalEchoes = nodeRedundancy.recentPackets.reduce(
-                (s, r) => s + r.paths.length - 1,
-                0,
-              );
-              const echoPackets = nodeRedundancy.recentPackets.filter((r) => r.paths.length > 1);
-              if (totalEchoes === 0) return null;
-              return (
-                <div className="mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPathHistoryOpen((o) => !o);
-                    }}
-                    className="text-2xs text-muted hover:text-ink-300 flex items-center gap-1 transition-colors"
-                  >
-                    <span>{pathHistoryOpen ? '▾' : '▸'}</span>
-                    {t('nodeInfoBody.pathHistory')} (
-                    {t('nodeInfoBody.echoes', { count: totalEchoes })})
-                  </button>
-
-                  {pathHistoryOpen && (
-                    <div className="mt-1.5 flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
-                      {echoPackets.map((rec) => (
-                        <div key={rec.packetId} className="bg-deep-black/50 text-2xs rounded p-1.5">
-                          <div className="text-ink-400 mb-0.5 font-mono">
-                            #{rec.packetId.toString(16).toUpperCase()} —{' '}
-                            {t('nodeInfoBody.paths', { count: rec.paths.length })}
-                          </div>
-                          {rec.paths.map((p, i) => (
-                            <div key={i} className="text-muted pl-1.5 leading-tight">
-                              {i === 0
-                                ? t('nodeInfoBody.original')
-                                : t('nodeInfoBody.echoN', { n: i })}
-                              :{' '}
-                              <span
-                                className={
-                                  p.transport === 'rf'
-                                    ? 'text-brand-green/80'
-                                    : 'text-indigo-400/80'
-                                }
-                              >
-                                {p.transport.toUpperCase()}
-                              </span>
-                              {showSnr && p.snr != null && (
-                                <span className="ml-1">
-                                  SNR {p.snr > 0 ? '+' : ''}
-                                  {p.snr.toFixed(1)} dB
-                                </span>
-                              )}
-                              {p.rssi != null && <span className="ml-1">{p.rssi} dBm</span>}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        )}
-
-        {/* MeshCore trace history from database */}
-        {protocol === 'meshcore' && (meshcoreHopHistory || meshcoreTraceHistory) && (
-          <div className="border-ink-700/50 mt-2 border-t pt-2">
-            <div className="text-2xs text-muted mb-1">{t('nodeInfoBody.meshcorePathHistory')}</div>
-            {meshcoreHopHistory && (
-              <div className="mb-1 text-xs">
-                <span className="text-ink-400">{t('nodeInfoBody.hopsLabel')}</span>
-                <span className="text-ink-200 font-mono">{meshcoreHopHistory.hops ?? '?'}</span>
-                {meshcoreHopHistory.snr != null && (
-                  <span className="text-muted ml-2">
-                    SNR {meshcoreHopHistory.snr > 0 ? '+' : ''}
-                    {meshcoreHopHistory.snr.toFixed(1)} dB
-                  </span>
-                )}
-                {meshcoreHopHistory.rssi != null && (
-                  <span className="text-muted ml-2">{meshcoreHopHistory.rssi} dBm</span>
-                )}
-                <span className="text-2xs text-ink-600 ml-2">
-                  {formatDisplayTime(meshcoreHopHistory.timestamp, { use24Hour: use24HourTime })}
-                </span>
-              </div>
-            )}
-            {meshcoreTraceHistory &&
-              meshcoreTraceHistory.length > 0 &&
-              showMeshcoreTraceHistoryBlock &&
-              meshcoreTraceFirst != null && (
-                <div className="bg-deep-black/50 text-2xs rounded p-1.5">
-                  <div className="text-ink-400 mb-0.5">
-                    {meshcoreTraceFirst.pathLen != null && (
-                      <>
-                        {t('nodeInfoBody.hopsLabel')}{' '}
-                        <span className="text-ink-200 font-mono">
-                          {meshcoreTracePathLenToHops(meshcoreTraceFirst.pathLen)}
-                        </span>{' '}
-                      </>
-                    )}
-                    <span className="text-ink-600">
-                      {formatDisplayTime(meshcoreTraceFirst.timestamp, {
-                        use24Hour: use24HourTime,
-                      })}
-                      {meshcoreTraceHistory.length > 1 && (
-                        <span className="text-muted ml-1">
-                          {t('nodeInfoBody.olderCount', { count: meshcoreTraceHistory.length - 1 })}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  {meshcoreTracePathSnrsSafe.map((snr, i) => (
-                    <div key={i} className="flex items-center gap-2 pl-1.5">
-                      <span className="text-muted w-8">{t('nodeInfoBody.hopN', { n: i + 1 })}</span>
-                      <SnrIndicator snr={snr} className="text-2xs" />
-                    </div>
-                  ))}
-                  {meshcoreTraceFirst.lastSnr != null && (
-                    <div className="border-ink-700/30 mt-0.5 flex items-center gap-2 border-t pt-0.5 pl-1.5">
-                      <span className="text-muted w-8">{t('nodeInfoBody.dest')}</span>
-                      <SnrIndicator snr={meshcoreTraceFirst.lastSnr} className="text-2xs" />
-                    </div>
-                  )}
-                </div>
-              )}
-          </div>
-        )}
+        {hasSparkline && <NodeHopStabilitySparkline recentHistory={recentHistory} />}
+        <NodeEchoPathSection
+          protocol={protocol}
+          reliabilityProxy={reliabilityProxy}
+          nodeRedundancy={nodeRedundancy}
+          showSnr={showSnr}
+          use24HourTime={use24HourTime}
+          meshcoreHopHistory={meshcoreHopHistory}
+          meshcoreTraceHistory={meshcoreTraceHistory}
+          meshcoreTraceFirst={meshcoreTraceFirst}
+          meshcoreTracePathSnrsSafe={meshcoreTracePathSnrsSafe}
+          showMeshcoreTraceHistoryBlock={showMeshcoreTraceHistoryBlock}
+          pathHistoryOpen={pathHistoryOpen}
+          setPathHistoryOpen={setPathHistoryOpen}
+        />
       </div>
 
-      {/* Trace route result */}
+      <NodeTraceRouteSection
+        traceRouteHops={traceRouteHops}
+        onShowTraceRouteOnMap={onShowTraceRouteOnMap}
+      />
+
+      <NodeEnvironmentSection node={node} useFahrenheit={useFahrenheit} protocol={protocol} />
+
+      {/* RF Diagnostics */}
+      <RFDiagnosticsSection
+        node={node}
+        isOurNode={node.node_id === homeNode?.node_id}
+        nodes={nodes}
+        protocol={protocol}
+      />
+    </>
+  );
+}
+
+type DiagnosticsStoreState = ReturnType<typeof useDiagnosticsStore.getState>;
+
+function computeRfDiagnosisResults(args: {
+  node: MeshNode;
+  isOurNode: boolean;
+  capabilities: ReturnType<typeof useRadioProvider>;
+  getCuStats24h: DiagnosticsStoreState['getCuStats24h'];
+  getForeignLoraDetectionsList: DiagnosticsStoreState['getForeignLoraDetectionsList'];
+}): {
+  findingsToShow: RFDiagnosis[] | null;
+  totalChecks: number | null;
+  noTelemetry: boolean;
+  hasForeignLora: boolean;
+} {
+  let findings: RFDiagnosis[] | null;
+  let totalChecks: number | null = null;
+  let noTelemetry = false;
+
+  if (args.isOurNode) {
+    const cuStats24h = args.getCuStats24h(args.node.node_id);
+    findings = diagnoseConnectedNode(args.node, {
+      cuStats24h: cuStats24h ?? undefined,
+      capabilities: args.capabilities,
+    });
+    totalChecks = 9;
+    // If no LocalStats and no channel_utilization, we have no data at all
+    if (!hasLocalStatsData(args.node) && args.node.channel_utilization == null) {
+      noTelemetry = true;
+    }
+  } else {
+    const cuStatsOther = args.getCuStats24h(args.node.node_id);
+    findings = diagnoseOtherNode(args.node, {
+      cuStats24h: cuStatsOther ?? undefined,
+      capabilities: args.capabilities,
+    });
+    if (findings === null) noTelemetry = true;
+  }
+
+  // A specific foreign LoRa detection replaces the generic collision/corruption row.
+  const hasForeignLora = args.getForeignLoraDetectionsList(args.node.node_id).length > 0;
+  const findingsToShow =
+    findings != null && hasForeignLora
+      ? findings.filter((f) => f.condition !== 'LoRa Collision or Corruption')
+      : findings;
+  return { findingsToShow, totalChecks, noTelemetry, hasForeignLora };
+}
+
+function computeMeshCongestionDetails(args: {
+  isOurNode: boolean;
+  findings: RFDiagnosis[] | null;
+  packetCache: DiagnosticsStoreState['packetCache'];
+  anomaliesMap: ReturnType<typeof diagnosticRowsToRoutingMap>;
+}): {
+  meshCongestionFinding: RFDiagnosis | undefined;
+  meshCongestionLines: ReturnType<typeof meshCongestionDetailLines>;
+  rfOriginators: ReturnType<typeof summarizeRfDuplicateOriginators>;
+} {
+  const meshCongestionFinding =
+    args.isOurNode && args.findings
+      ? args.findings.find((f) => f.condition === 'Mesh Congestion')
+      : undefined;
+  const attrForOurNode =
+    args.isOurNode && meshCongestionFinding
+      ? summarizeMeshCongestionAttribution(args.packetCache, args.anomaliesMap)
+      : null;
+  const meshCongestionLines =
+    attrForOurNode && meshCongestionFinding
+      ? meshCongestionDetailLines(attrForOurNode, { alwaysIncludeRoutingAnomalies: true })
+      : [];
+  const rfOriginators =
+    meshCongestionFinding && args.packetCache.size > 0
+      ? summarizeRfDuplicateOriginators(args.packetCache)
+      : [];
+  return { meshCongestionFinding, meshCongestionLines, rfOriginators };
+}
+
+function NodeTraceRouteSection({
+  traceRouteHops,
+  onShowTraceRouteOnMap,
+}: {
+  traceRouteHops?: string[];
+  onShowTraceRouteOnMap?: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
       {onShowTraceRouteOnMap && traceRouteHops && traceRouteHops.length > 0 && (
         <button
           type="button"
@@ -956,106 +1528,27 @@ export default function NodeInfoBody({
           </div>
         </div>
       )}
-
-      {/* Environment */}
-      {(node.env_temperature !== undefined ||
-        node.env_mcu_temperature !== undefined ||
-        node.env_humidity !== undefined ||
-        node.env_pressure !== undefined ||
-        node.env_iaq !== undefined ||
-        node.env_gas_resistance !== undefined ||
-        node.env_lux !== undefined ||
-        node.env_wind_speed !== undefined ||
-        node.env_pm10 !== undefined ||
-        node.env_pm25 !== undefined ||
-        node.env_co2 !== undefined ||
-        node.env_voc_idx !== undefined ||
-        node.env_nox_idx !== undefined) && (
-        <div className="border-ink-700 mt-3 border-t pt-3">
-          <div className="text-ink-400 mb-1 text-xs font-semibold uppercase">
-            {t('nodeInfoBody.environment')}
-          </div>
-          {node.env_temperature !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.temperature')}
-              value={
-                useFahrenheit
-                  ? `${((node.env_temperature * 9) / 5 + 32).toFixed(1)}°F`
-                  : `${node.env_temperature.toFixed(1)}°C`
-              }
-            />
-          )}
-          {node.env_mcu_temperature !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.mcuTemperature')}
-              value={
-                useFahrenheit
-                  ? `${((node.env_mcu_temperature * 9) / 5 + 32).toFixed(1)}°F`
-                  : `${node.env_mcu_temperature.toFixed(1)}°C`
-              }
-            />
-          )}
-          {node.env_humidity !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.humidity')}
-              value={`${node.env_humidity.toFixed(1)}%`}
-            />
-          )}
-          {node.env_pressure !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.pressure')}
-              value={`${node.env_pressure.toFixed(1)} hPa`}
-            />
-          )}
-          {node.env_iaq !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.airQuality')}
-              value={`${node.env_iaq} – ${iaqLabel(node.env_iaq, t)}`}
-            />
-          )}
-          {node.env_gas_resistance !== undefined && (
-            <InfoRow label={t('nodeInfoBody.gasResistance')} value={`${node.env_gas_resistance}`} />
-          )}
-          {node.env_lux !== undefined && (
-            <InfoRow label={t('nodeInfoBody.light')} value={`${node.env_lux.toFixed(0)} lux`} />
-          )}
-          {node.env_wind_speed !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.wind')}
-              value={
-                node.env_wind_direction !== undefined
-                  ? `${node.env_wind_speed.toFixed(1)} m/s @ ${node.env_wind_direction}°`
-                  : `${node.env_wind_speed.toFixed(1)} m/s`
-              }
-            />
-          )}
-          {node.env_pm25 !== undefined && (
-            <InfoRow label={t('nodeInfoBody.pm25')} value={`${node.env_pm25} µg/m³`} />
-          )}
-          {node.env_pm10 !== undefined && (
-            <InfoRow label={t('nodeInfoBody.pm10')} value={`${node.env_pm10} µg/m³`} />
-          )}
-          {node.env_co2 !== undefined && (
-            <InfoRow label={t('nodeInfoBody.co2')} value={`${node.env_co2} ppm`} />
-          )}
-          {node.env_voc_idx !== undefined && (
-            <InfoRow label={t('nodeInfoBody.voc')} value={`${node.env_voc_idx}`} />
-          )}
-          {node.env_nox_idx !== undefined && (
-            <InfoRow label={t('nodeInfoBody.nox')} value={`${node.env_nox_idx}`} />
-          )}
-          <EnvironmentSparklines protocol={protocol} nodeId={node.node_id} />
-        </div>
-      )}
-
-      {/* RF Diagnostics */}
-      <RFDiagnosticsSection
-        node={node}
-        isOurNode={node.node_id === homeNode?.node_id}
-        nodes={nodes}
-        protocol={protocol}
-      />
     </>
+  );
+}
+
+function RfFlaggedBadge({
+  flagged,
+  totalChecks,
+  noTelemetry,
+}: {
+  flagged: number;
+  totalChecks: number | null;
+  noTelemetry: boolean;
+}) {
+  const { t } = useTranslation();
+  if (noTelemetry || totalChecks === null) return null;
+  const tone =
+    flagged === 0 ? 'bg-green-900/40 text-green-400' : 'bg-orange-900/40 text-orange-400';
+  return (
+    <span className={`text-2xs rounded px-1.5 py-0.5 font-medium ${tone}`}>
+      {t('nodeInfoBody.flagged', { flagged, total: totalChecks })}
+    </span>
   );
 }
 
@@ -1088,54 +1581,20 @@ function RFDiagnosticsSection({
     return null;
   }
 
-  let findings: RFDiagnosis[] | null;
-  let totalChecks: number | null = null;
-  let noTelemetry = false;
-
-  if (isOurNode) {
-    const cuStats24h = getCuStats24h(node.node_id);
-    findings = diagnoseConnectedNode(node, {
-      cuStats24h: cuStats24h ?? undefined,
-      capabilities,
-    });
-    totalChecks = 9;
-    // If no LocalStats and no channel_utilization, we have no data at all
-    if (!hasLocalStatsData(node) && node.channel_utilization == null) {
-      noTelemetry = true;
-    }
-  } else {
-    const cuStatsOther = getCuStats24h(node.node_id);
-    findings = diagnoseOtherNode(node, {
-      cuStats24h: cuStatsOther ?? undefined,
-      capabilities,
-    });
-    if (findings === null) noTelemetry = true;
-  }
-
-  // When we have a specific foreign LoRa detection (MeshCore/Meshtastic), don't show the generic "LoRa Collision or Corruption" in the RF list
-  const hasForeignLora = getForeignLoraDetectionsList(node.node_id).length > 0;
-  const findingsToShow =
-    findings != null && hasForeignLora
-      ? findings.filter((f) => f.condition !== 'LoRa Collision or Corruption')
-      : findings;
-
+  const { findingsToShow, totalChecks, noTelemetry, hasForeignLora } = computeRfDiagnosisResults({
+    node,
+    isOurNode,
+    capabilities,
+    getCuStats24h,
+    getForeignLoraDetectionsList,
+  });
   const flagged = findingsToShow?.length ?? 0;
-  const meshCongestionFinding =
-    isOurNode && findings?.find((f) => f.condition === 'Mesh Congestion');
-  const attrForOurNode =
-    isOurNode && meshCongestionFinding
-      ? summarizeMeshCongestionAttribution(packetCache, anomaliesMap)
-      : null;
-  const meshCongestionLines =
-    attrForOurNode && meshCongestionFinding
-      ? meshCongestionDetailLines(attrForOurNode, {
-          alwaysIncludeRoutingAnomalies: true,
-        })
-      : [];
-  const rfOriginators =
-    meshCongestionFinding && packetCache.size > 0
-      ? summarizeRfDuplicateOriginators(packetCache)
-      : [];
+  const { meshCongestionLines, rfOriginators } = computeMeshCongestionDetails({
+    isOurNode,
+    findings: findingsToShow,
+    packetCache,
+    anomaliesMap,
+  });
 
   return (
     <>
@@ -1151,17 +1610,7 @@ function RFDiagnosticsSection({
       <div className="bg-primary-dark mt-3 rounded-lg py-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-ink-400 text-sm font-medium">{t('nodeInfoBody.rfDiagnostics')}</div>
-          {!noTelemetry && totalChecks !== null && (
-            <span
-              className={`text-2xs rounded px-1.5 py-0.5 font-medium ${
-                flagged === 0
-                  ? 'bg-green-900/40 text-green-400'
-                  : 'bg-orange-900/40 text-orange-400'
-              }`}
-            >
-              {t('nodeInfoBody.flagged', { flagged, total: totalChecks })}
-            </span>
-          )}
+          <RfFlaggedBadge flagged={flagged} totalChecks={totalChecks} noTelemetry={noTelemetry} />
         </div>
 
         {noTelemetry ? (

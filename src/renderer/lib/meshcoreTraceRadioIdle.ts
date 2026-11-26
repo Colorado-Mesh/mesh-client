@@ -78,5 +78,3 @@ export async function awaitMeshcoreRepeaterPingSettleForNode(
   }
   return { waitedMs: Date.now() - start, proceededBusy: false };
 }
-
-export { meshcoreTraceResponsesInFlightCount };

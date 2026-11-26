@@ -33,7 +33,7 @@ export function encodePcmWavMono16(samples: Float32Array, sampleRate: number): A
   return buffer;
 }
 
-export function audioBufferToMonoWavBytes(buffer: AudioBuffer): ArrayBuffer {
+function audioBufferToMonoWavBytes(buffer: AudioBuffer): ArrayBuffer {
   const length = buffer.length;
   const channels = Math.max(1, buffer.numberOfChannels);
   const mixed = new Float32Array(length);

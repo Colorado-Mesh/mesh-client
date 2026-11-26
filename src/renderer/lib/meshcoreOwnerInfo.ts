@@ -1,8 +1,6 @@
 import { isInfraConfigUnsupportedReply } from './meshcoreInfraConfig';
 import { MESHCORE_OWNER_INFO_MAX_BYTES } from './meshcoreOwnerInfoConstants';
 
-export { MESHCORE_OWNER_INFO_MAX_BYTES } from './meshcoreOwnerInfoConstants';
-
 /** Contact types whose firmware runs CommonCLI, so `get owner.info` exists. */
 const SUPPORTED_HW_MODELS = new Set(['Repeater', 'Room', 'Sensor']);
 

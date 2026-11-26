@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 /** Shared Tailwind for large chat inline raster embeds (link previews, attachments, GIFs). */
-export const CHAT_INLINE_IMAGE_CLASS =
+const CHAT_INLINE_IMAGE_CLASS =
   'max-h-64 max-w-full rounded-md border border-cyan-500/20 object-contain';
 
 export interface ChatInlineImageProps {

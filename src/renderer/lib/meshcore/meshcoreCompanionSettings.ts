@@ -1,9 +1,4 @@
-import {
-  type MeshcoreCompanionCliConnection,
-  type MeshcoreCompanionCliResult,
-  runMeshcoreCompanionCli,
-  stripCliValueMarker,
-} from './meshcoreCompanionCli';
+import { type MeshcoreCompanionCliResult, stripCliValueMarker } from './meshcoreCompanionCli';
 
 export type MeshcoreCompanionSettingGroup = 'device' | 'radio' | 'wifi' | 'notify' | 'retry';
 
@@ -365,12 +360,6 @@ export interface MeshcoreCompanionSettingsSnapshot {
 }
 
 export type MeshcoreCompanionCliRunner = (command: string) => Promise<MeshcoreCompanionCliResult>;
-
-export function companionCliRunnerFor(
-  conn: MeshcoreCompanionCliConnection,
-): MeshcoreCompanionCliRunner {
-  return (command) => runMeshcoreCompanionCli(conn, command);
-}
 
 /** Read every readable non-secret setting; WiFi keys are skipped when the probe is unsupported. */
 export async function readAllMeshcoreCompanionSettings(

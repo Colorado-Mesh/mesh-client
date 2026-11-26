@@ -199,7 +199,7 @@ function resolveStoreMessageId(target: ChatMessage, wirePacketId: number): strin
 }
 
 /** Apply parsed SDK routing error to outbound chat rows (async post-send failures). */
-export function applyMeshtasticOutboundRoutingError(
+function applyMeshtasticOutboundRoutingError(
   parsed: MeshtasticSdkRoutingErrorLog,
   ctx: ApplyMeshtasticOutboundRoutingErrorContext,
 ): boolean {

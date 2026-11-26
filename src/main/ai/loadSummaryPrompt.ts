@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 
 import type { buildAiSummaryPrompt } from '../../shared/aiSummaryPrompt';
 
-type BuildAiSummaryPrompt = typeof buildAiSummaryPrompt;
+export type BuildAiSummaryPrompt = typeof buildAiSummaryPrompt;
 
 /**
  * Production main ships `ai-summary-prompt.js` next to `index.js` so Catch up

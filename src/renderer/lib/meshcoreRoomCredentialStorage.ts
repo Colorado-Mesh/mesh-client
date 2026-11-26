@@ -57,15 +57,10 @@ const roomCredentialStorage: MeshcorePerNodeCredentialStorage<MeshcoreRoomStored
       });
     },
   });
-export function meshcoreRoomCredentialSettingForNode(nodeId: number): string {
-  return roomCredentialStorage.settingKeyForNode(nodeId);
-}
-
-export const readMeshcoreRoomCredentialMap = roomCredentialStorage.readMap;
 export const getMeshcoreRoomCredential = roomCredentialStorage.get;
 export const listMeshcoreRoomCredentialNodeIds = roomCredentialStorage.listNodeIds;
 
-type RoomCredentialChangeListener = () => void;
+export type RoomCredentialChangeListener = () => void;
 const roomCredentialChangeListeners = new Set<RoomCredentialChangeListener>();
 
 function notifyMeshcoreRoomCredentialChanged(): void {

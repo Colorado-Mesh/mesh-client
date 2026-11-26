@@ -873,7 +873,7 @@ export function attachMeshcoreConnSideEffects(
       if (staleConn) {
         resetMeshcoreTracePathMultiplexOnDisconnect(staleConn);
       }
-      repeaterCommandServiceRef.current?.clear();
+      repeaterCommandServiceRef.current?.cancelPending();
       if (staleConn && !usedDriverConnect) {
         void staleConn.close().catch((e: unknown) => {
           console.debug('[meshcoreConnSideEffects] stale conn close ' + errLikeToLogString(e));

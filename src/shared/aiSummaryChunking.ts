@@ -1,4 +1,4 @@
-import type { AiEngine, AiSummaryMessage, AiSummaryPassMode } from './ai-types';
+import type { AiEngine, AiSummaryMessage } from './ai-types';
 import { AI_MAX_MESSAGES, aiSummaryPromptBudget } from './ai-types';
 import { buildAiSummaryPrompt } from './aiSummaryPrompt';
 
@@ -94,5 +94,3 @@ export function packAiDigestChunks(
 export function needsMultiPass(messages: AiSummaryMessage[], engine: AiEngine): boolean {
   return packAiSummaryChunks(messages, engine).length > 1;
 }
-
-export type { AiSummaryPassMode };

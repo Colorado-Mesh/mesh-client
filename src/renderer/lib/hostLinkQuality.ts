@@ -9,8 +9,6 @@ import type { ConnectionType, MeshProtocol } from './types';
 export const HOST_LINK_QUALITY_POLL_MS = 4 * MS_PER_SECOND;
 
 /** Max wait for a single HTTP/TCP RTT probe. */
-export const HOST_LINK_RTT_PROBE_TIMEOUT_MS = 3 * MS_PER_SECOND;
-
 export type SignalBarLevel = 0 | 1 | 2 | 3 | 4;
 
 /** Connection panel host-link meter modes (not LoRa Telemetry). */

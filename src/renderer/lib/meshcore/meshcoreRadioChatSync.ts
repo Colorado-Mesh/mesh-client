@@ -48,7 +48,7 @@ export async function readRadioChats(
   return { contacts, channels };
 }
 
-interface ChannelReadConnection {
+export interface ChannelReadConnection {
   on(event: string | number, cb: (...args: unknown[]) => void): void;
   off(event: string | number, cb: (...args: unknown[]) => void): void;
   sendToRadioFrame(data: Uint8Array): Promise<void>;

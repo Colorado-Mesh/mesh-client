@@ -83,7 +83,7 @@ export function nextRepeaterSort(
   return { key: clickedKey, dir: defaultRepeaterSortDir(clickedKey) };
 }
 
-export function effectiveRepeaterLastAdvert(
+function effectiveRepeaterLastAdvert(
   dbAdvert: number | null | undefined,
   nodeLastHeard: number | undefined,
 ): number | null {
@@ -91,7 +91,7 @@ export function effectiveRepeaterLastAdvert(
   return merged > 0 ? merged : null;
 }
 
-export function isRepeaterSignalRecent(lastAdvert: number | null | undefined): boolean {
+function isRepeaterSignalRecent(lastAdvert: number | null | undefined): boolean {
   if (lastAdvert == null) return false;
   const advertMs = normalizeLastHeardMs(lastAdvert);
   if (!advertMs) return false;
@@ -159,9 +159,7 @@ export function resolveRepeaterReliability(paths: PathRecord[] | undefined): num
   return (successes / total) * 100;
 }
 
-export function resolveRepeaterUptimeSecs(
-  status: MeshCoreRepeaterStatus | undefined,
-): number | null {
+function resolveRepeaterUptimeSecs(status: MeshCoreRepeaterStatus | undefined): number | null {
   const secs = status?.totalUpTimeSecs;
   if (secs == null || !Number.isFinite(secs) || secs <= 0) return null;
   return secs;
@@ -176,7 +174,7 @@ export function resolveRepeaterAirPct(status: MeshCoreRepeaterStatus | undefined
   return (air / up) * 100;
 }
 
-export function resolveRepeaterHops(
+function resolveRepeaterHops(
   node: MeshNode,
   tracePathLen?: number,
   currentRouteHopCount?: number,
@@ -190,14 +188,14 @@ export function resolveRepeaterHops(
   return finiteOrNull(node.hops_away);
 }
 
-export function resolveRepeaterLastHeardMs(node: MeshNode): number | null {
+function resolveRepeaterLastHeardMs(node: MeshNode): number | null {
   const heard = node.last_heard;
   if (!Number.isFinite(heard) || heard <= 0) return null;
   const ms = effectiveLastHeardMs(heard);
   return ms > 0 ? ms : null;
 }
 
-export function resolveRepeaterStatusRank(
+function resolveRepeaterStatusRank(
   node: MeshNode,
   staleThresholdMs?: number,
   offlineThresholdMs?: number,

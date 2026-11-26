@@ -5,7 +5,7 @@
  * handler…` — returning a value keeps stack-restart races at debug noise while
  * preload rethrows so renderer try/catch stays unchanged.
  */
-export const RETICULUM_PROXY_IPC_ERROR_TAG = '__reticulumProxyError' as const;
+const RETICULUM_PROXY_IPC_ERROR_TAG = '__reticulumProxyError' as const;
 
 export interface ReticulumProxyIpcErrorEnvelope {
   readonly [RETICULUM_PROXY_IPC_ERROR_TAG]: true;

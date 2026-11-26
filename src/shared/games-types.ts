@@ -63,62 +63,14 @@ export const GAMES_CMD = {
   DRAW_OFFER: 'draw_offer',
   DRAW_ACCEPT: 'draw_accept',
   DRAW_DECLINE: 'draw_decline',
-} as const;
-
-export type GamesCommand = (typeof GAMES_CMD)[keyof typeof GAMES_CMD];
-
-export type GamesSessionStatus = 'pending' | 'active' | 'completed' | 'expired' | 'declined';
-
-/** Sidecar overlay delivery state (Ratspeak-aligned LXMF outbound bridge). */
-export type GamesDeliveryState =
-  'idle' | 'pending' | 'sending' | 'propagating' | 'propagated' | 'delivered' | 'failed';
-
-/** Chess FIDE draw-claim reason codes (`lrgp-rs` ChessApp `KEY_REASON`). */
+} as const; /** Chess FIDE draw-claim reason codes (`lrgp-rs` ChessApp `KEY_REASON`). */
 export const GAMES_DRAW_CLAIM = {
   THREEFOLD: '3fr',
   FIFTY_MOVE: '50m',
-} as const;
-
-export type GamesDrawClaimReason = (typeof GAMES_DRAW_CLAIM)[keyof typeof GAMES_DRAW_CLAIM];
-
-/** True when `delivery_state` means an outbound move is still in flight. */
+} as const; /** True when `delivery_state` means an outbound move is still in flight. */
 export function isGamesDeliveryInFlight(state: string | undefined | null): boolean {
   return state === 'pending' || state === 'sending' || state === 'propagating';
-}
-
-/** `lrgp-rs` TicTacToeApp session metadata (see `session_to_json` in tictactoe.rs). */
-export interface GamesTttMetadata {
-  board: string;
-  turn: string;
-  first_turn: string;
-  my_marker: string;
-  move_count: number;
-  winner: string;
-  terminal: string;
-  draw_offered: boolean;
-  /** Hash of who offered the pending draw (local `identity_id` or peer). */
-  draw_offered_by?: string;
-}
-
-/** `lrgp-rs` ChessApp session metadata (see `default_metadata` in chess.rs). */
-export interface GamesChessMetadata {
-  fen: string;
-  moves: string[];
-  my_color: string;
-  first_turn: string;
-  turn: string;
-  move_count: number;
-  winner: string;
-  terminal: string;
-  draw_offered: boolean;
-  /** Hash of who offered the pending draw (local `identity_id` or peer). */
-  draw_offered_by?: string;
-  draw_offer_reason?: string;
-  in_check: boolean;
-  legal_moves: string[];
-}
-
-/** LRGP session record (`Session` struct in lrgp-rs `session.rs`), as JSON. */
+} /** LRGP session record (`Session` struct in lrgp-rs `session.rs`), as JSON. */
 export interface GameSession {
   session_id: string;
   identity_id: string;
@@ -169,7 +121,7 @@ export interface GamesActionResultEventPayload {
 }
 
 /** Prefix for all dedicated games IPC (blocked on generic proxy). */
-export const GAMES_API_PREFIX = '/api/v1/games/';
+const GAMES_API_PREFIX = '/api/v1/games/';
 
 export function isGamesApiPath(apiPath: string): boolean {
   const q = apiPath.indexOf('?');

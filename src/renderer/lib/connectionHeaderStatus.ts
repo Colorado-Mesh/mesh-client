@@ -12,18 +12,18 @@ export function reconnectBannerMaxAttempts(connectionType: string | null | undef
 export const CONNECTION_HEADER_PULSE_RED_TEXT = 'text-red-400';
 export const CONNECTION_HEADER_PULSE_RED_ICON = 'animate-pulse motion-status text-red-400';
 export const CONNECTION_HEADER_PULSE_RED_DOT = 'bg-red-500 animate-pulse motion-status';
-export const CONNECTION_HEADER_IDLE_TEXT = 'text-ink-400';
-export const CONNECTION_HEADER_IDLE_DOT = 'bg-ink-500';
-export const CONNECTION_HEADER_WARN_TEXT = 'text-orange-400';
-export const CONNECTION_HEADER_WARN_ICON = 'animate-pulse motion-status text-orange-400';
+const CONNECTION_HEADER_IDLE_TEXT = 'text-ink-400';
+const CONNECTION_HEADER_IDLE_DOT = 'bg-ink-500';
+const CONNECTION_HEADER_WARN_TEXT = 'text-orange-400';
+const CONNECTION_HEADER_WARN_ICON = 'animate-pulse motion-status text-orange-400';
 export const CONNECTION_HEADER_WARN_DOT = 'bg-orange-500 animate-pulse motion-status';
-export const CONNECTION_HEADER_OK_TEXT = 'text-green-400';
-export const CONNECTION_HEADER_OK_DOT = 'bg-green-500';
+const CONNECTION_HEADER_OK_TEXT = 'text-green-400';
+const CONNECTION_HEADER_OK_DOT = 'bg-green-500';
 /** Small pulsing dot for in-progress room login (matches header connecting style, green). */
 export const ROOM_LOGIN_PROGRESS_DOT =
   'inline-block h-2 w-2 shrink-0 rounded-full bg-green-500 animate-pulse motion-status';
-export const CONNECTION_HEADER_CONNECTED_DOT = 'bg-indigo-500';
-export const CONNECTION_HEADER_MUTED_TEXT = 'text-muted';
+const CONNECTION_HEADER_CONNECTED_DOT = 'bg-indigo-500';
+const CONNECTION_HEADER_MUTED_TEXT = 'text-muted';
 
 export function isMqttErrorDisconnect(status: MQTTStatus, connectionLoss: boolean): boolean {
   return status === 'error' || connectionLoss;
@@ -68,7 +68,7 @@ export function deviceHeaderVariant(
 }
 
 /** Remote TAK relay is failing: retrying after an error, or stopped for good with one. */
-export function isTakRemoteError(remote: Pick<TAKRemoteStatus, 'state' | 'error'>): boolean {
+function isTakRemoteError(remote: Pick<TAKRemoteStatus, 'state' | 'error'>): boolean {
   return remote.state !== 'connected' && Boolean(remote.error);
 }
 

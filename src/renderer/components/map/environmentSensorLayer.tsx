@@ -72,7 +72,7 @@ export function sensorMarkersFor(
   return out;
 }
 
-interface Props {
+export interface Props {
   nodes: readonly MeshNode[];
   protocol: MeshProtocol;
   metric: MapSensorMetric;

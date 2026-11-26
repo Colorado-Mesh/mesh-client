@@ -7,16 +7,7 @@ export const LXMF_AUDIO_MODE_OPUS_OGG = 16;
 export const RETICULUM_MESSAGE_TOO_LARGE_FOR_PROPAGATION = 'message_too_large_for_propagation';
 
 /** Soft Ogg size cap (~4 min QualityMedium) under 256 KiB field + PN limits. */
-export const VOICE_MEMO_MAX_OGG_BYTES = 240 * 1024;
-
-/** Wire audio block from an inbound or outbound LXMF message. */
-export interface LxmfAudioBlock {
-  mode: number;
-  data_base64: string;
-  size_bytes?: number;
-}
-
-/**
+export const VOICE_MEMO_MAX_OGG_BYTES = 240 * 1024; /**
  * Cap for one voice memo Ogg blob base64 payload.
  * ~240 KiB raw → ~320 KiB b64; round up with headroom.
  */
@@ -29,7 +20,7 @@ export const VOICE_MEMO_STOP_API_PATH = '/api/v1/voice/memo/stop';
 export const VOICE_MEMO_CANCEL_API_PATH = '/api/v1/voice/memo/cancel';
 
 /** Cap for a single samples_b64 frame. */
-export const VOICE_MEMO_SAMPLES_B64_MAX = 32_768;
+const VOICE_MEMO_SAMPLES_B64_MAX = 32_768;
 
 export interface VoiceMemoStartResponse {
   ok: boolean;

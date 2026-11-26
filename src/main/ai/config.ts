@@ -13,7 +13,7 @@ export interface StoredAiConfig {
   allowRemote: boolean;
   localModelId: string | null;
 }
-interface ConfigDependencies {
+export interface ConfigDependencies {
   read: () => string | undefined;
   write: (value: string) => void;
   safeStorage: {

@@ -87,6 +87,33 @@ function meshcomCallForOutboundNode(identityId: IdentityId, nodeId: number | und
   return longName || '';
 }
 
+function resolveMeshcomFromCall(
+  identityId: IdentityId,
+  live: MessageRecord,
+  myNodeNum: number,
+  record: MessageRecord,
+): string | null {
+  const storedCall =
+    live.senderName?.trim() && live.senderName.trim() !== 'Unknown' ? live.senderName.trim() : '';
+  const fromNode =
+    (live.from > 0 ? live.from : 0) ||
+    (getConnection(identityId)?.myNodeNum ?? 0) ||
+    (myNodeNum > 0 ? myNodeNum : 0) ||
+    (record.from > 0 ? record.from : 0);
+  return (
+    storedCall ||
+    meshcomCallForOutboundNode(identityId, fromNode) ||
+    meshcomCallForOutboundNode(identityId, live.from) ||
+    null
+  );
+}
+
+function resolveMeshcomDestCall(identityId: IdentityId, live: MessageRecord): string | null {
+  if (live.channelIndex > 0) return meshcomOutboundDest({ channelIndex: live.channelIndex });
+  if (live.to === 0xffffffff) return '*';
+  return meshcomCallForOutboundNode(identityId, live.to) || null;
+}
+
 function persistMeshcomOutboundRow(
   identityId: IdentityId,
   record: MessageRecord,
@@ -99,24 +126,8 @@ function persistMeshcomOutboundRow(
   const live =
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity/message may be absent.
     useMessageStore.getState().messages[identityId]?.[resolvedMsgId] ?? record;
-  const storedCall =
-    live.senderName?.trim() && live.senderName.trim() !== 'Unknown' ? live.senderName.trim() : '';
-  const fromNode =
-    (live.from > 0 ? live.from : 0) ||
-    (getConnection(identityId)?.myNodeNum ?? 0) ||
-    (myNodeNum > 0 ? myNodeNum : 0) ||
-    (record.from > 0 ? record.from : 0);
-  const fromCall =
-    storedCall ||
-    meshcomCallForOutboundNode(identityId, fromNode) ||
-    meshcomCallForOutboundNode(identityId, live.from) ||
-    null;
-  const toCallOrGroup =
-    live.channelIndex > 0
-      ? meshcomOutboundDest({ channelIndex: live.channelIndex })
-      : live.to !== 0xffffffff
-        ? meshcomCallForOutboundNode(identityId, live.to) || null
-        : '*';
+  const fromCall = resolveMeshcomFromCall(identityId, live, myNodeNum, record);
+  const toCallOrGroup = resolveMeshcomDestCall(identityId, live);
   void window.electronAPI.db
     .saveMeshcomMessage({
       // Stable offline slot — session ids can be ephemeral across rematch/restart.

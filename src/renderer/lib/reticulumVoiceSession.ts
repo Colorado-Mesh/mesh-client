@@ -120,7 +120,7 @@ async function resumeAudioContext(ctx: AudioContext): Promise<void> {
  * Create/resume primed media contexts while still in a user-gesture stack
  * (Call / Answer click) so Chromium does not leave them suspended.
  */
-export function warmReticulumVoiceAudioContexts(): void {
+function warmReticulumVoiceAudioContexts(): void {
   try {
     if (!primedCaptureCtx || primedCaptureCtx.state === 'closed') {
       primedCaptureCtx = new AudioContext({ sampleRate: LXST_QUALITY_HIGH_SAMPLE_RATE_HZ });

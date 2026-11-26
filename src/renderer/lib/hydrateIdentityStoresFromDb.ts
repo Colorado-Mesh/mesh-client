@@ -52,12 +52,6 @@ import {
 } from './storeRecordAdapters';
 import type { IdentityId, MeshNode, MeshProtocol } from './types';
 
-export {
-  MESHCORE_DB_MESSAGE_LOAD_LIMIT,
-  MESHCORE_DB_PER_CHANNEL_MESSAGE_LOAD_LIMIT,
-  MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
-};
-
 /** Merge hydration SQLite row lists (dedupe by row id; oldest-first). */
 export function mergeMeshcoreDbMessageRowsForHydration(
   ...rowLists: MeshcoreMessageDbRow[][]
@@ -226,7 +220,7 @@ export function mergeMeshcoreSavedHopRowsForHydration(
 }
 
 /** Build hop rows for MeshCore node map from nodes-table + hop-history snapshot parts. */
-export function meshcoreSavedHopRowsFromHydrationParts(
+function meshcoreSavedHopRowsFromHydrationParts(
   nodesTableRows: Awaited<ReturnType<typeof window.electronAPI.db.getNodes>>,
   hopHistoryRows: readonly { node_id: number; hops: number | null }[],
 ): MeshcoreSavedNodeHopRow[] {
@@ -236,14 +230,6 @@ export function meshcoreSavedHopRowsFromHydrationParts(
     hops: row.hops ?? null,
   }));
   return mergeMeshcoreSavedHopRowsForHydration(hopRows, hopHistoryRows);
-}
-
-export async function loadMeshcoreSavedHopRowsForHydration(): Promise<MeshcoreSavedNodeHopRow[]> {
-  const [nodesTableRows, hopHistoryRows] = await Promise.all([
-    window.electronAPI.db.getNodes(),
-    window.electronAPI.db.getAllMeshcoreHopHistory(),
-  ]);
-  return meshcoreSavedHopRowsFromHydrationParts(nodesTableRows, hopHistoryRows);
 }
 
 /** Fetch MeshCore contacts, hops, and fair message window in one IPC round-trip. */

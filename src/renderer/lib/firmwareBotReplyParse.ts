@@ -141,91 +141,112 @@ function parseTraceHops(path: string): FirmwareBotTraceHop[] | null {
 }
 
 /** Parse a structured firmware-bot reply; null for anything else (including test/path/sig). */
-export function parseFirmwareBotReply(text: string): ParsedFirmwareBotReply | null {
-  if (!text || text.length > MAX_REPLY_LEN) return null;
-  const trimmed = text.trim();
-  if (trimmed.includes('\n')) return null;
-  const line = stripFirmwareBotRequestToken(trimmed).body;
+function parseAirReply(line: string): ParsedFirmwareBotReply | null {
+  const m = AIR.exec(line);
+  if (!m) return null;
+  return {
+    kind: 'air',
+    txSeconds: int(m[1]),
+    rxSeconds: int(m[2]),
+    rxFlood: int(m[3]),
+    rxDirect: int(m[4]),
+    txFlood: int(m[5]),
+    txDirect: int(m[6]),
+  };
+}
 
-  let m = AIR.exec(line);
-  if (m) {
-    return {
-      kind: 'air',
-      txSeconds: int(m[1]),
-      rxSeconds: int(m[2]),
-      rxFlood: int(m[3]),
-      rxDirect: int(m[4]),
-      txFlood: int(m[5]),
-      txDirect: int(m[6]),
-    };
-  }
-  m = NEIGHBORS.exec(line);
-  if (m) {
-    const neighbors = parseNeighbors(m[1]);
-    return neighbors ? { kind: 'neighbors', neighbors } : null;
-  }
-  m = TRACE_RESULT.exec(line);
-  if (m) {
-    const hops = parseTraceHops(m[4]);
-    if (hops?.length === int(m[2])) {
-      return {
-        kind: 'trace',
-        state: 'result',
-        tag: m[1].toLowerCase(),
-        tailSnr: float(m[3]),
-        hops,
-      };
-    }
-    return null;
-  }
-  m = TRACE_ZERO_HOP.exec(line);
-  if (m) {
+function parseNeighborsReply(line: string): ParsedFirmwareBotReply | null {
+  const m = NEIGHBORS.exec(line);
+  if (!m) return null;
+  const neighbors = parseNeighbors(m[1]);
+  return neighbors ? { kind: 'neighbors', neighbors } : null;
+}
+
+function parseTraceResultReply(line: string): ParsedFirmwareBotReply | null {
+  const m = TRACE_RESULT.exec(line);
+  if (!m) return null;
+  const hops = parseTraceHops(m[4]);
+  if (hops?.length !== int(m[2])) return null;
+  return {
+    kind: 'trace',
+    state: 'result',
+    tag: m[1].toLowerCase(),
+    tailSnr: float(m[3]),
+    hops,
+  };
+}
+
+function parseLoraReply(line: string): ParsedFirmwareBotReply | null {
+  const m = LORA.exec(line);
+  if (!m) return null;
+  return {
+    kind: 'lora',
+    freqMhz: float(m[1]),
+    sf: int(m[2]),
+    bwKhz: float(m[3]),
+    cr: int(m[4]),
+    txPowerDbm: int(m[5]),
+  };
+}
+
+function parseHelpReply(line: string): ParsedFirmwareBotReply | null {
+  const m = HELP.exec(line);
+  if (!m) return null;
+  const commands = m[2].split(' ');
+  if (!commands.every((cmd) => HELP_COMMAND.test(cmd))) return null;
+  return { kind: 'help', diag: m[1] === 'Diag', commands };
+}
+
+function parseStatusReply(line: string): ParsedFirmwareBotReply | null {
+  const m = STATUS.exec(line);
+  if (!m) return null;
+  return {
+    kind: 'status',
+    name: m[1],
+    uptime: m[2],
+    ...(m[3] ? { batteryMv: int(m[3]), batteryPercent: int(m[4]) } : {}),
+    storageUsedKb: int(m[5]),
+    storageTotalKb: int(m[6]),
+    seen: int(m[7]),
+    sent: int(m[8]),
+    fail: int(m[9]),
+  };
+}
+
+function parseSimpleReply(line: string): ParsedFirmwareBotReply | null {
+  let m = TRACE_ZERO_HOP.exec(line);
+  if (m)
     return { kind: 'trace', state: 'directZeroHop', tag: m[1].toLowerCase(), tailSnr: float(m[2]) };
-  }
   m = TRACE_DIRECT_LINK.exec(line);
   if (m) return { kind: 'trace', state: 'directLink', snr: float(m[1]) };
   m = TRACE_TIMEOUT.exec(line);
   if (m) return { kind: 'trace', state: 'timeout', hops: int(m[1]) };
   m = TRACE_SENT.exec(line);
   if (m) return { kind: 'trace', state: 'sent', hops: int(m[1]) };
-  m = LORA.exec(line);
-  if (m) {
-    return {
-      kind: 'lora',
-      freqMhz: float(m[1]),
-      sf: int(m[2]),
-      bwKhz: float(m[3]),
-      cr: int(m[4]),
-      txPowerDbm: int(m[5]),
-    };
-  }
   m = VERSION.exec(line);
   if (m) return { kind: 'version', version: m[1], built: m[2] };
   m = CHANNELS.exec(line);
   if (m) {
     return { kind: 'channels', bot: m[1], testing: m[2], emergency: m[3], publicChannel: m[4] };
   }
-  m = HELP.exec(line);
-  if (m) {
-    const commands = m[2].split(' ');
-    if (!commands.every((cmd) => HELP_COMMAND.test(cmd))) return null;
-    return { kind: 'help', diag: m[1] === 'Diag', commands };
-  }
-  m = STATUS.exec(line);
-  if (m) {
-    return {
-      kind: 'status',
-      name: m[1],
-      uptime: m[2],
-      ...(m[3] ? { batteryMv: int(m[3]), batteryPercent: int(m[4]) } : {}),
-      storageUsedKb: int(m[5]),
-      storageTotalKb: int(m[6]),
-      seen: int(m[7]),
-      sent: int(m[8]),
-      fail: int(m[9]),
-    };
-  }
   return null;
+}
+
+/** Parse a structured firmware-bot reply; null for anything else (including test/path/sig). */
+export function parseFirmwareBotReply(text: string): ParsedFirmwareBotReply | null {
+  if (!text || text.length > MAX_REPLY_LEN) return null;
+  const trimmed = text.trim();
+  if (trimmed.includes('\n')) return null;
+  const line = stripFirmwareBotRequestToken(trimmed).body;
+  return (
+    parseAirReply(line) ??
+    parseNeighborsReply(line) ??
+    parseTraceResultReply(line) ??
+    parseSimpleReply(line) ??
+    parseLoraReply(line) ??
+    parseHelpReply(line) ??
+    parseStatusReply(line)
+  );
 }
 
 /** True for text shaped like a Colorado-Mesh firmware-bot reply (structured or signal report). */

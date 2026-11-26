@@ -12,9 +12,6 @@ export type MicronWrapAction = 'bold' | 'italic' | 'underline';
 
 /** Whole-line formats. */
 export type MicronLineAction = 'h1' | 'h2' | 'h3' | 'alignLeft' | 'alignCenter' | 'alignRight';
-
-export type MicronToolbarAction = MicronWrapAction | MicronLineAction | 'divider' | 'link';
-
 export interface MicronEditState {
   content: string;
   /** Caret start (or selection anchor). */
@@ -48,7 +45,7 @@ const ALIGN_PREFIXES = {
 } as const;
 
 /** Placeholder used when a wrap/link action runs with no selection. */
-export const MICRON_LINK_LABEL_FALLBACK = 'link';
+const MICRON_LINK_LABEL_FALLBACK = 'link';
 
 function clampRange(state: MicronEditState): { start: number; end: number } {
   const max = state.content.length;

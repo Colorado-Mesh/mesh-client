@@ -114,9 +114,7 @@ export function summarizeMeshCongestionAttribution(
 /**
  * Single-line answer when we have any multi-path data but not enough for full confidence.
  */
-export function meshCongestionPartialAnswer(
-  attr: MeshCongestionAttribution,
-): CongestionLine | null {
+function meshCongestionPartialAnswer(attr: MeshCongestionAttribution): CongestionLine | null {
   if (attr.sufficientEvidence || attr.multiPathCount === 0) return null;
   const pct = Math.round(attr.mqttInvolvedRatio * 100);
   return {

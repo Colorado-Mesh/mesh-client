@@ -139,7 +139,7 @@ export function buildChatMessageRouteView(
   }
 }
 
-type Translate = (key: string, options?: Record<string, unknown>) => string;
+export type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 export interface ChatMessageRouteTooltipInput {
   hops: number;

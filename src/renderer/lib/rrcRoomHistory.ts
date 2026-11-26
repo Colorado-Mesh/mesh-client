@@ -21,7 +21,6 @@ export function resetRrcRoomHistoryForTests(): void {
 }
 
 /** Re-export for hub teardown callers that already import this module. */
-export { clearHydratedRrcRoomKeysForHub } from '@/renderer/lib/rrcRoomHistoryHydration';
 
 /**
  * Load SQLite history for a hub+room and merge into the session store (dedup by id).

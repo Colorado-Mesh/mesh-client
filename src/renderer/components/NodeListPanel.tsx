@@ -55,7 +55,7 @@ import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { EXPORT_FORMAT_VERSION, nodesToCsv, TOPOLOGY_EXPORT_FORMAT } from '../lib/exportFormats';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
-import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
+import { homeCoordsForDistanceFilter, type OurPositionReference } from '../lib/locationTrust';
 import { meshcomCallForNodeId } from '../lib/meshcom/meshcomCallRegistry';
 import type { MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
 import {
@@ -114,7 +114,7 @@ import { SegmentedControl } from './ui/SegmentedControl';
 import { SortIndicator } from './ui/SortIndicator';
 import { StatusDot } from './ui/StatusDot';
 
-interface ImportContactsResult {
+export interface ImportContactsResult {
   imported: number;
   skipped: number;
   errors: string[];
@@ -223,6 +223,178 @@ function SortIcon({
 }
 
 type NodeStatusFilter = 'all' | 'online' | 'stale' | 'offline';
+
+type NodeRedundancyMap = ReturnType<typeof useDiagnosticsStore.getState>['nodeRedundancy'];
+
+interface NodeListCompareContext {
+  listTab: NodeListTab;
+  historyActivity: ReadonlyMap<number, ChatDmPeerIndexEntry>;
+  myNodeNum: number;
+  sortField: SortField;
+  sortAsc: boolean;
+  nodeRedundancy: NodeRedundancyMap;
+}
+
+const NODE_SORT_ACCESSORS: Record<
+  SortField,
+  (node: MeshNode, ctx: NodeListCompareContext) => number | string
+> = {
+  node_id: (n) => n.node_id,
+  long_name: (n) => n.long_name || '',
+  short_name: (n) => n.short_name || '',
+  rssi: (n) => n.rssi ?? -999,
+  snr: (n) => n.snr ?? -999,
+  battery: (n) => n.battery || 0,
+  last_heard: (n) => n.last_heard || 0,
+  latitude: (n) => n.latitude || 0,
+  longitude: (n) => n.longitude || 0,
+  role: (n) => n.role ?? 999,
+  hw_model: (n) => n.hw_model || '',
+  hops_away: (n) => n.hops_away ?? 999,
+  via_mqtt: (n) => (n.heard_via_mqtt_only ? 2 : n.via_mqtt ? 1 : 0),
+  voltage: (n) => n.voltage ?? 0,
+  channel_utilization: (n) => n.channel_utilization ?? 0,
+  air_util_tx: (n) => n.air_util_tx ?? 0,
+  altitude: (n) => n.altitude ?? 0,
+  redundancy: (n, ctx) => ctx.nodeRedundancy.get(n.node_id)?.maxPaths ?? 1,
+};
+
+function compareNodeField(a: MeshNode, b: MeshNode, ctx: NodeListCompareContext): number {
+  const aVal = NODE_SORT_ACCESSORS[ctx.sortField](a, ctx);
+  const bVal = NODE_SORT_ACCESSORS[ctx.sortField](b, ctx);
+  if (typeof aVal === 'number' && typeof bVal === 'number') return aVal - bVal;
+  return String(aVal).localeCompare(String(bVal));
+}
+
+/** History tab sorts by last activity; self and favorites pin above the selected field. */
+function compareNodeListRows(a: MeshNode, b: MeshNode, ctx: NodeListCompareContext): number {
+  if (ctx.listTab === 'history') {
+    const aTs = ctx.historyActivity.get(a.node_id)?.lastMessageAt ?? a.last_heard ?? 0;
+    const bTs = ctx.historyActivity.get(b.node_id)?.lastMessageAt ?? b.last_heard ?? 0;
+    if (aTs !== bTs) return ctx.sortAsc ? aTs - bTs : bTs - aTs;
+  }
+  if (a.node_id === ctx.myNodeNum) return -1;
+  if (b.node_id === ctx.myNodeNum) return 1;
+  const aFav = a.favorited ? 1 : 0;
+  const bFav = b.favorited ? 1 : 0;
+  if (aFav !== bFav) return bFav - aFav;
+  const cmp = compareNodeField(a, b, ctx);
+  return ctx.sortAsc ? cmp : -cmp;
+}
+
+function buildNodeListBase({
+  nodes,
+  dmPeerIndex,
+  mode,
+  listTab,
+}: {
+  nodes: Map<number, MeshNode>;
+  dmPeerIndex: ReadonlyMap<number, ChatDmPeerIndexEntry>;
+  mode: MeshProtocol;
+  listTab: NodeListTab;
+}): { list: MeshNode[]; historyActivity: Map<number, ChatDmPeerIndexEntry> } {
+  const historyActivity = new Map<number, ChatDmPeerIndexEntry>();
+  if (listTab !== 'history') return { list: Array.from(nodes.values()), historyActivity };
+  const list: MeshNode[] = [];
+  for (const [peerId, entry] of dmPeerIndex) {
+    historyActivity.set(peerId, entry);
+    const existing = nodes.get(peerId);
+    list.push(
+      existing
+        ? { ...existing, last_heard: Math.max(existing.last_heard ?? 0, entry.lastMessageAt) }
+        : stubDmHistoryNode(peerId, entry.lastMessageAt, mode),
+    );
+  }
+  return { list, historyActivity };
+}
+
+function filterNodeListBySearch(
+  list: MeshNode[],
+  searchQuery: string,
+  mode: MeshProtocol,
+): MeshNode[] {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return list;
+  return list.filter(
+    (n) =>
+      n.long_name.toLowerCase().includes(q) ||
+      n.short_name.toLowerCase().includes(q) ||
+      n.hw_model?.toLowerCase().includes(q) ||
+      (mode === 'meshtastic'
+        ? meshtasticNodeIdMatchesHexQuery(n.node_id, q)
+        : n.node_id.toString(16).includes(q.replace(/^!/, ''))),
+  );
+}
+
+function filterNodeListByGroup({
+  list,
+  listTab,
+  selectedGroupId,
+  groupMemberIds,
+  mode,
+  myNodeNum,
+}: {
+  list: MeshNode[];
+  listTab: NodeListTab;
+  selectedGroupId: number | null | undefined;
+  groupMemberIds: ReadonlySet<number> | undefined;
+  mode: MeshProtocol;
+  myNodeNum: number;
+}): MeshNode[] {
+  if (listTab !== 'all' || selectedGroupId == null) return list;
+  if (mode === 'meshcore') {
+    if (selectedGroupId < 0) {
+      const typeFilter = BUILTIN_TYPE_FILTERS.find((f) => f.group_id === selectedGroupId);
+      return typeFilter ? list.filter((n) => n.hw_model === typeFilter.hw_model) : list;
+    }
+    return groupMemberIds ? list.filter((n) => groupMemberIds.has(n.node_id)) : list;
+  }
+  if (mode !== 'meshtastic') return list;
+  if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS) {
+    return list.filter((n) => meshtasticContactGroupMatchesBuiltinGps(n, myNodeNum));
+  }
+  if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT) {
+    return list.filter((n) => meshtasticContactGroupMatchesBuiltinRfMqtt(n, myNodeNum));
+  }
+  if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_ROUTER) {
+    return list.filter((n) => meshtasticContactGroupMatchesBuiltinRouter(n, myNodeNum));
+  }
+  return selectedGroupId > 0 && groupMemberIds
+    ? list.filter((n) => groupMemberIds.has(n.node_id))
+    : list;
+}
+
+function filterNodeListByLocation({
+  list,
+  listTab,
+  locationFilter,
+  nodes,
+  myNodeNum,
+  ourPositionReference,
+}: {
+  list: MeshNode[];
+  listTab: NodeListTab;
+  locationFilter: LocationFilter;
+  nodes: Map<number, MeshNode>;
+  myNodeNum: number;
+  ourPositionReference: OurPositionReference | null | undefined;
+}): MeshNode[] {
+  if (listTab !== 'all' || !locationFilter.enabled) return list;
+  const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
+  const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference);
+  if (!homeCoords) return list;
+  const maxKm =
+    locationFilter.unit === 'miles'
+      ? locationFilter.maxDistance * 1.60934
+      : locationFilter.maxDistance;
+  return list.filter((n) => {
+    if (n.node_id === myNodeNum) return true;
+    // Nodes without GPS can't be distance-filtered — keep them visible
+    if (n.latitude == null || n.longitude == null) return true;
+    const d = haversineDistanceKm(homeCoords.lat, homeCoords.lon, n.latitude, n.longitude);
+    return d <= maxKm;
+  });
+}
 
 export interface NodeListPanelProps {
   nodes: Map<number, MeshNode>;
@@ -528,169 +700,37 @@ function NodeListPanel({
   };
 
   const baseNodeList = useMemo(() => {
-    let list: MeshNode[];
-    const historyActivity = new Map<number, ChatDmPeerIndexEntry>();
-
-    if (listTab === 'history') {
-      list = [];
-      for (const [peerId, entry] of dmPeerIndex) {
-        historyActivity.set(peerId, entry);
-        const existing = nodes.get(peerId);
-        if (existing) {
-          list.push({
-            ...existing,
-            last_heard: Math.max(existing.last_heard ?? 0, entry.lastMessageAt),
-          });
-        } else {
-          list.push(stubDmHistoryNode(peerId, entry.lastMessageAt, mode));
-        }
-      }
-    } else {
-      list = Array.from(nodes.values());
-    }
-
-    // Filter by search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (n) =>
-          n.long_name.toLowerCase().includes(q) ||
-          n.short_name.toLowerCase().includes(q) ||
-          n.hw_model?.toLowerCase().includes(q) ||
-          (mode === 'meshtastic'
-            ? meshtasticNodeIdMatchesHexQuery(n.node_id, q)
-            : n.node_id.toString(16).includes(q.replace(/^!/, ''))),
-      );
-    }
-
-    // Filter by group membership or built-in filters (MeshCore: contact type; Meshtastic: GPS / RF+MQTT)
-    if (listTab === 'all' && selectedGroupId != null) {
-      if (mode === 'meshcore') {
-        if (selectedGroupId < 0) {
-          const typeFilter = BUILTIN_TYPE_FILTERS.find((f) => f.group_id === selectedGroupId);
-          if (typeFilter) list = list.filter((n) => n.hw_model === typeFilter.hw_model);
-        } else if (groupMemberIds) {
-          list = list.filter((n) => groupMemberIds.has(n.node_id));
-        }
-      } else if (mode === 'meshtastic') {
-        if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS) {
-          list = list.filter((n) => meshtasticContactGroupMatchesBuiltinGps(n, myNodeNum));
-        } else if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT) {
-          list = list.filter((n) => meshtasticContactGroupMatchesBuiltinRfMqtt(n, myNodeNum));
-        } else if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_ROUTER) {
-          list = list.filter((n) => meshtasticContactGroupMatchesBuiltinRouter(n, myNodeNum));
-        } else if (selectedGroupId > 0 && groupMemberIds) {
-          list = list.filter((n) => groupMemberIds.has(n.node_id));
-        }
-      }
-    }
-
-    // Filter MQTT-only nodes
-    if (listTab === 'all' && locationFilter.hideMqttOnly) {
-      list = list.filter((n) => !n.heard_via_mqtt_only);
-    }
-
-    // Filter by distance
-    if (listTab === 'all' && locationFilter.enabled) {
-      const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
-      const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference);
-      if (homeCoords) {
-        const maxKm =
-          locationFilter.unit === 'miles'
-            ? locationFilter.maxDistance * 1.60934
-            : locationFilter.maxDistance;
-        list = list.filter((n) => {
-          if (n.node_id === myNodeNum) return true;
-          // Nodes without GPS can't be distance-filtered — keep them visible
-          if (n.latitude == null || n.longitude == null) return true;
-          const d = haversineDistanceKm(homeCoords.lat, homeCoords.lon, n.latitude, n.longitude);
-          return d <= maxKm;
-        });
-      }
-    }
-
-    // Sort
-    list.sort((a, b) => {
-      if (listTab === 'history') {
-        const aTs = historyActivity.get(a.node_id)?.lastMessageAt ?? a.last_heard ?? 0;
-        const bTs = historyActivity.get(b.node_id)?.lastMessageAt ?? b.last_heard ?? 0;
-        if (aTs !== bTs) return sortAsc ? aTs - bTs : bTs - aTs;
-      }
-      // Self-node always first
-      if (a.node_id === myNodeNum) return -1;
-      if (b.node_id === myNodeNum) return 1;
-      // Favorites pinned above non-favorites
-      const aFav = a.favorited ? 1 : 0;
-      const bFav = b.favorited ? 1 : 0;
-      if (aFav !== bFav) return bFav - aFav;
-      // Regular field sort
-      let cmp = 0;
-      switch (sortField) {
-        case 'node_id':
-          cmp = a.node_id - b.node_id;
-          break;
-        case 'long_name':
-          cmp = (a.long_name || '').localeCompare(b.long_name || '');
-          break;
-        case 'short_name':
-          cmp = (a.short_name || '').localeCompare(b.short_name || '');
-          break;
-        case 'rssi':
-          cmp = (a.rssi ?? -999) - (b.rssi ?? -999);
-          break;
-        case 'snr':
-          cmp = (a.snr ?? -999) - (b.snr ?? -999);
-          break;
-        case 'battery':
-          cmp = (a.battery || 0) - (b.battery || 0);
-          break;
-        case 'last_heard':
-          cmp = (a.last_heard || 0) - (b.last_heard || 0);
-          break;
-        case 'latitude':
-          cmp = (a.latitude || 0) - (b.latitude || 0);
-          break;
-        case 'longitude':
-          cmp = (a.longitude || 0) - (b.longitude || 0);
-          break;
-        case 'role':
-          cmp = (a.role ?? 999) - (b.role ?? 999);
-          break;
-        case 'hw_model':
-          cmp = (a.hw_model || '').localeCompare(b.hw_model || '');
-          break;
-        case 'hops_away':
-          cmp = (a.hops_away ?? 999) - (b.hops_away ?? 999);
-          break;
-        case 'via_mqtt': {
-          const aVal = a.heard_via_mqtt_only ? 2 : a.via_mqtt ? 1 : 0;
-          const bVal = b.heard_via_mqtt_only ? 2 : b.via_mqtt ? 1 : 0;
-          cmp = aVal - bVal;
-          break;
-        }
-        case 'voltage':
-          cmp = (a.voltage ?? 0) - (b.voltage ?? 0);
-          break;
-        case 'channel_utilization':
-          cmp = (a.channel_utilization ?? 0) - (b.channel_utilization ?? 0);
-          break;
-        case 'air_util_tx':
-          cmp = (a.air_util_tx ?? 0) - (b.air_util_tx ?? 0);
-          break;
-        case 'altitude':
-          cmp = (a.altitude ?? 0) - (b.altitude ?? 0);
-          break;
-        case 'redundancy': {
-          const aRed = nodeRedundancy.get(a.node_id)?.maxPaths ?? 1;
-          const bRed = nodeRedundancy.get(b.node_id)?.maxPaths ?? 1;
-          cmp = aRed - bRed;
-          break;
-        }
-      }
-      return sortAsc ? cmp : -cmp;
+    const { list, historyActivity } = buildNodeListBase({ nodes, dmPeerIndex, mode, listTab });
+    let filtered = filterNodeListBySearch(list, searchQuery, mode);
+    filtered = filterNodeListByGroup({
+      list: filtered,
+      listTab,
+      selectedGroupId,
+      groupMemberIds,
+      mode,
+      myNodeNum,
     });
-
-    return list;
+    if (listTab === 'all' && locationFilter.hideMqttOnly) {
+      filtered = filtered.filter((n) => !n.heard_via_mqtt_only);
+    }
+    filtered = filterNodeListByLocation({
+      list: filtered,
+      listTab,
+      locationFilter,
+      nodes,
+      myNodeNum,
+      ourPositionReference,
+    });
+    const sortCtx: NodeListCompareContext = {
+      listTab,
+      historyActivity,
+      myNodeNum,
+      sortField,
+      sortAsc,
+      nodeRedundancy,
+    };
+    filtered.sort((a, b) => compareNodeListRows(a, b, sortCtx));
+    return filtered;
   }, [
     dmPeerIndex,
     listTab,

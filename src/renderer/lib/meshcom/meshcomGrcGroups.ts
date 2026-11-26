@@ -22,16 +22,6 @@ export interface MeshcomGrcGroup {
   reachKey?: string;
 }
 
-export interface MeshcomGrcRangeMeta {
-  /** Inclusive start of the documented range. */
-  from: number;
-  /** Inclusive end of the documented range. */
-  to: number;
-  prefix: string;
-  noteKey: string;
-  reachKey?: string;
-}
-
 /** Named single-id groups from the ICSSW GRC table (ranges listed separately). */
 export const MESHCOM_GRC_GROUPS: readonly MeshcomGrcGroup[] = [
   { id: 2, prefix: 'EU', noteKey: 'eu', reachKey: 'europeWide' },
@@ -109,17 +99,6 @@ export const MESHCOM_GRC_GROUPS: readonly MeshcomGrcGroup[] = [
 ];
 
 /** Documented ranges (not expanded into individual chat pills). */
-export const MESHCOM_GRC_RANGES: readonly MeshcomGrcRangeMeta[] = [
-  { from: 2321, to: 2329, prefix: 'OE1-OE9', noteKey: 'oeStates' },
-  {
-    from: 26200,
-    to: 26299,
-    prefix: 'DL00-DL99',
-    noteKey: 'dlRegional',
-    reachKey: 'germanLanguage',
-  },
-];
-
 const BY_ID = new Map(MESHCOM_GRC_GROUPS.map((g) => [g.id, g]));
 
 export function getMeshcomGrcGroup(id: number): MeshcomGrcGroup | undefined {

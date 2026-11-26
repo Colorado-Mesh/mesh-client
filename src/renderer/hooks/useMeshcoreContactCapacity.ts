@@ -35,7 +35,7 @@ export interface MeshcoreContactCapacitySummary {
   isCritical: boolean;
 }
 
-export interface OffloadMeshcoreContactsResult {
+interface OffloadMeshcoreContactsResult {
   offloadedFromRadioCount: number | null;
   offloadedCount: number;
   reconciledCount: number | null;
@@ -75,7 +75,7 @@ export function summarizeMeshcoreContactCapacity(
   return { count, max, level: 'normal', isWarning: false, isCritical: false };
 }
 
-interface UseMeshcoreContactCapacityOptions {
+export interface UseMeshcoreContactCapacityOptions {
   enabled?: boolean;
 }
 

@@ -21,7 +21,7 @@ import {
 } from '../lib/logAnalyzerI18n';
 import type { MeshProtocol } from '../lib/types';
 
-interface LogAnalyzeModalProps {
+export interface LogAnalyzeModalProps {
   isOpen: boolean;
   onClose: () => void;
   entries: LogEntry[];

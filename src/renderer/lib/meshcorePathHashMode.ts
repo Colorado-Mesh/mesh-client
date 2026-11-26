@@ -5,7 +5,7 @@ import { DEFAULT_APP_SETTINGS_SHARED } from './defaultAppSettings';
 import { parseStoredJson } from './parseStoredJson';
 
 /** meshcore-dev/MeshCore companion_radio CMD_SET_PATH_HASH_MODE */
-export const MC_CMD_SET_PATH_HASH_MODE = 61;
+const MC_CMD_SET_PATH_HASH_MODE = 61;
 
 /** meshcore.js ResponseCodes */
 const MC_RESP_OK = 0;

@@ -6,7 +6,10 @@ import {
 import { isReticulumInterfaceOnlineStatus } from './reticulumLocalInterfaceHealth';
 import type { ReticulumInterfaceRow } from './useReticulumInterfaceSnapshot';
 
-type SetupApi = Pick<typeof window.electronAPI.reticulum, 'proxyGet' | 'proxyPost' | 'proxyPut'>;
+export type SetupApi = Pick<
+  typeof window.electronAPI.reticulum,
+  'proxyGet' | 'proxyPost' | 'proxyPut'
+>;
 
 export interface ReticulumSetupSnapshot {
   rnsReady: boolean;

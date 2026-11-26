@@ -8,17 +8,13 @@ export interface MeshcoreDmAckPendingParams {
   destNodeId?: number;
 }
 
-type MeshcoreDmAckPendingImpl = (params: MeshcoreDmAckPendingParams) => void;
+export type MeshcoreDmAckPendingImpl = (params: MeshcoreDmAckPendingParams) => void;
 
 let impl: MeshcoreDmAckPendingImpl | null = null;
 
 /** Registered by {@link useMeshcoreRuntime} while mounted (owns pendingAcksRef + event 130). */
 export function setMeshcoreDmAckPendingImpl(fn: MeshcoreDmAckPendingImpl | null): void {
   impl = fn;
-}
-
-export function isMeshcoreDmAckPendingRegistered(): boolean {
-  return impl != null;
 }
 
 /** Returns false when the MeshCore runtime has not registered ACK tracking yet. */

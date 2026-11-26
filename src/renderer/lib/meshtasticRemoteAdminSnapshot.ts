@@ -344,7 +344,7 @@ function channelConfigsFromResults(
     .filter((ch) => ch.role !== 0 || ch.name.length > 0 || ch.psk.length > 0);
 }
 
-export async function fetchMeshtasticRemoteConfigTarget(
+async function fetchMeshtasticRemoteConfigTarget(
   client: MeshtasticRemoteAdminClient,
   destNodeNum: number,
 ): Promise<MeshtasticRemoteConfigSnapshot> {

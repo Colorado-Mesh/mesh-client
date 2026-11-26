@@ -95,7 +95,7 @@ function AtakNameField({ id, saved, automatic, onSave, ariaLabel, label }: NameF
   );
 }
 
-interface Props {
+export interface Props {
   /** The radio whose channels can feed TAK; channel slots are device-specific. */
   identityId: IdentityId | null;
   /** Offer the `!MT1` tracker-fix checkbox (protocol capability `hasTakTrackerChannels`). */
@@ -274,7 +274,7 @@ export default function TakChannelRelaySection({
   );
 }
 
-interface DirectMessagesProps {
+export interface DirectMessagesProps {
   identityId: IdentityId | null;
   /** Settings search anchor for the switch. */
   anchorId: string;
@@ -311,7 +311,7 @@ export function TakDirectMessagesToggle({ identityId, anchorId }: DirectMessages
   );
 }
 
-interface DirectMessagesSectionProps {
+export interface DirectMessagesSectionProps {
   identityId: IdentityId | null;
   title: string;
   description: string;

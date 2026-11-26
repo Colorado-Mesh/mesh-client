@@ -74,7 +74,7 @@ function transportTypeToConnectionType(type: TransportType): ConnectionType | nu
  * `connectionStore` is updated from runtime MQTT IPC handlers via
  * `mirrorMqttStatusForProtocol` until MQTT moves fully into drivers (see AGENTS.md).
  */
-export class ConnectionDriver {
+class ConnectionDriver {
   private slots = new Map<string, TransportSlot>();
   /** transport-key → identityId; persists identity across reconnects of the same physical device. */
   private transportKeyMap = new Map<string, IdentityId>();

@@ -4,13 +4,13 @@ import {
   APP_SETTINGS_STORAGE_KEY,
   isWeatherOnlinePlaceLookupEnabled,
 } from '../lib/appSettingsStorage';
-import { loadWeatherMarkedSenders } from '../lib/chatPanelProtocolStorage';
 import {
   computeChannelUnreadCounts,
   pickAudibleNotification,
   resolveChatNotificationType,
 } from '../lib/chatUnreadCounts';
 import type { ChatMessage } from '../lib/types';
+import { loadWeatherMarkedSenders } from '../lib/weatherMarkedSendersStorage';
 import { isHiddenWeatherPost, useWeatherFilterStore } from './weatherFilterStore';
 import { useWeatherForecastStore, type WeatherForecastEntry } from './weatherForecastStore';
 

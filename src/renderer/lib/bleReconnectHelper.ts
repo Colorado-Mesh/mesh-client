@@ -10,7 +10,7 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { isBleScanBusyErrorMessage } from './reticulum/reticulumBleAdapterLease';
 import type { MeshProtocol } from './types';
 
-export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 60_000;
+const BLE_RECONNECT_SCAN_TIMEOUT_MS = 60_000;
 
 /** Poll interval while waiting for Reticulum/external BLE scan to release the adapter. */
 export const BLE_SCAN_BUSY_RETRY_INTERVAL_MS = 250;
@@ -24,8 +24,6 @@ export const BLE_SCAN_BUSY_RETRY_INTERVAL_MS = 250;
 export const BLE_SCAN_BUSY_MAX_WAIT_MS = 60_000;
 
 /** GATT wait-for-peripheral + scan fallback; ConnectionPanel must not use a shorter UI timeout. */
-export const BLE_GATT_AUTO_CONNECT_MAX_MS = 30_000 + BLE_RECONNECT_SCAN_TIMEOUT_MS + 15_000;
-
 function isGattStartScanBusyResult(
   result: GattBleStartScanResult,
 ): result is Extract<GattBleStartScanResult, { ok: false; code: 'scan_busy' }> {
@@ -167,7 +165,7 @@ function shouldScanAfterConnectFailure(message: string): boolean {
 }
 
 /** Short discovery pass before reconnect so CoreBluetooth scan RSSI seeds the host meter. */
-export const BLE_RECONNECT_DISCOVERY_TIMEOUT_SECS = 4;
+const BLE_RECONNECT_DISCOVERY_TIMEOUT_SECS = 4;
 
 /**
  * Discover then connect. CoreBluetooth only exposes host RSSI in advertisements — connecting

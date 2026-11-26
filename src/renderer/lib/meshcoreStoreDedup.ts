@@ -94,7 +94,7 @@ export function ingestMeshcoreChannelMessage(
 }
 
 /** Prefer freshly parsed/repaired reply metadata over stale store rows (RF/MQTT dedup). */
-export function meshcorePreferIncomingReplyFields(
+function meshcorePreferIncomingReplyFields(
   existing: ChatMessage,
   incoming: ChatMessage,
 ): Pick<ChatMessage, 'replyId' | 'replyPreviewText' | 'replyPreviewSender'> | null {
@@ -609,7 +609,7 @@ function meshcoreReplyRepairMatchKey(msg: ChatMessage): string {
   return [msg.sender_id, msg.channel, msg.timestamp, msg.payload, msg.to ?? '', roomKey].join('|');
 }
 
-export function meshcoreReplyFieldsDiffer(a: ChatMessage, b: ChatMessage): boolean {
+function meshcoreReplyFieldsDiffer(a: ChatMessage, b: ChatMessage): boolean {
   return (
     (a.replyId ?? undefined) !== (b.replyId ?? undefined) ||
     (a.replyPreviewText ?? undefined) !== (b.replyPreviewText ?? undefined) ||

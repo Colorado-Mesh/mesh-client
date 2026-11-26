@@ -24,7 +24,7 @@ export function savedLocationDisplayName(
   return location.name.trim() || t('locationPrompt.defaultName');
 }
 
-interface LocationFormProps {
+export interface LocationFormProps {
   /** Prefill for the coordinates field (for example an approximate IP fix). */
   approximatePosition?: OurPosition | null;
   onSaved: (location: SavedLocation) => void;
@@ -155,7 +155,7 @@ export function SavedLocationForm({ approximatePosition, onSaved, onCancel }: Lo
   );
 }
 
-interface SetLocationCardProps {
+export interface SetLocationCardProps {
   ourPosition: OurPosition | null | undefined;
   trust: LocationTrust;
   /** Where the card renders: the startup strip can be dismissed; Diagnostics explains paused checks. */

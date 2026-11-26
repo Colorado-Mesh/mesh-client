@@ -17,8 +17,8 @@ export interface PickerSortAccessors<T> {
   getRssi?: (item: T) => number | null | undefined;
 }
 
-export const DEFAULT_BLE_PICKER_SORT: PickerSortPreference = { key: 'rssi', dir: 'desc' };
-export const DEFAULT_SERIAL_PICKER_SORT: PickerSortPreference = { key: 'name', dir: 'asc' };
+const DEFAULT_BLE_PICKER_SORT: PickerSortPreference = { key: 'rssi', dir: 'desc' };
+const DEFAULT_SERIAL_PICKER_SORT: PickerSortPreference = { key: 'name', dir: 'asc' };
 
 /** Default direction when switching to a key (RSSI = strongest first). */
 export function defaultPickerSortDir(key: PickerSortKey): PickerSortDir {

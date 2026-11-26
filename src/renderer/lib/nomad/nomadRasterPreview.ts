@@ -1,7 +1,7 @@
 /** Common Nomad `/file/...` raster extensions for inline preview. */
 const NOMAD_RASTER_EXT = /\.(png|jpe?g|gif|webp|bmp|avif)$/i;
 
-export function isNomadRasterFileName(fileName: string): boolean {
+function isNomadRasterFileName(fileName: string): boolean {
   return NOMAD_RASTER_EXT.test(fileName.trim());
 }
 

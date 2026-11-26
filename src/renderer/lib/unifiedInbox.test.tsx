@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { chatMessageFromSearchHit } from './globalMessageSearch';
+import { chatMessageFromSearchHit } from './globalMessageSearchChatRow';
 import type { ChatMessage } from './types';
 import {
   buildUnifiedInboxItems,

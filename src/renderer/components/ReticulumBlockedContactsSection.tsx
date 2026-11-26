@@ -5,7 +5,7 @@ import { useBlockedEntries, useBlockStore } from '@/renderer/stores/blockStore';
 
 import { useToast } from './Toast';
 
-interface ReticulumBlockedContactsSectionProps {
+export interface ReticulumBlockedContactsSectionProps {
   /** Reticulum identity whose blocklist is shown; the section hides when absent. */
   identityId: string | null;
 }

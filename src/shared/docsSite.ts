@@ -26,7 +26,6 @@ export function troubleshootingDocsUrl(protocol: MeshProtocol): string {
 
 export const DIAGNOSTICS_DOCS_URL = docsSitePageUrl('diagnostics');
 export const CHAT_DOCS_URL = docsSitePageUrl('chat');
-export const SCHEDULED_BROADCASTS_DOCS_URL = docsSitePageUrl('scheduled-broadcasts');
 export const MAPS_DOCS_URL = docsSitePageUrl('maps');
 export const TAK_DOCS_URL = docsSitePageUrl('tak');
 export const FIRMWARE_DOCS_URL = docsSitePageUrl('firmware');
@@ -34,7 +33,6 @@ export const MESHTASTIC_DOCS_URL = docsSitePageUrl('meshtastic');
 export const MESHCORE_DOCS_URL = docsSitePageUrl('meshcore');
 /** MeshCore Rooms (BBS) section of the MeshCore user guide. */
 export const MESHCORE_ROOMS_DOCS_URL = docsSitePageUrl('meshcore', 'rooms-bbs');
-export const MESHCOM_DOCS_URL = docsSitePageUrl('meshcom');
 export const SETTINGS_DOCS_URL = docsSitePageUrl('settings');
 /** Catch up / AI conversation summaries (User Guide). */
 export const AI_CATCH_UP_DOCS_URL = docsSitePageUrl('ai-catch-up');

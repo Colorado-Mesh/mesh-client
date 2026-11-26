@@ -28,6 +28,31 @@ interface CatchUpFlight {
 /** Per-identity single-flight + trailing coalesce (never share across identityIds). */
 const catchUpByIdentity = new Map<string, CatchUpFlight>();
 
+function finiteCursor(value: number | undefined | null): number | undefined {
+  return value != null && Number.isFinite(value) ? value : undefined;
+}
+
+/** Pick the advancing cursor: later timestamp wins; ties prefer `next` sequence. */
+function mergeCatchUpCursor(
+  base: CatchUpRecentInboundLxmfOpts,
+  next: CatchUpRecentInboundLxmfOpts,
+): { sinceTs?: number; sinceSeq?: number } {
+  const baseTs = finiteCursor(base.sinceTs);
+  const nextTs = finiteCursor(next.sinceTs);
+  if (baseTs == null || nextTs == null) {
+    return nextTs != null
+      ? { sinceTs: next.sinceTs, sinceSeq: next.sinceSeq }
+      : { sinceTs: base.sinceTs, sinceSeq: base.sinceSeq };
+  }
+  if (nextTs > baseTs) return { sinceTs: next.sinceTs, sinceSeq: next.sinceSeq };
+  if (nextTs < baseTs) return { sinceTs: base.sinceTs, sinceSeq: base.sinceSeq };
+  const baseSeq = base.sinceSeq ?? -1;
+  const nextSeq = next.sinceSeq ?? -1;
+  return nextSeq >= baseSeq
+    ? { sinceTs: next.sinceTs, sinceSeq: next.sinceSeq }
+    : { sinceTs: base.sinceTs, sinceSeq: base.sinceSeq };
+}
+
 /** Prefer latest cursor; merge reason labels; last ingest wins (same identity). */
 function mergeCatchUpOpts(
   base: CatchUpRecentInboundLxmfOpts,
@@ -37,50 +62,12 @@ function mergeCatchUpOpts(
     (r): r is string => typeof r === 'string' && r.length > 0,
   );
   const uniqueReasons = [...new Set(reasons)];
-  const sinceTs =
-    next.sinceTs != null && Number.isFinite(next.sinceTs)
-      ? next.sinceTs
-      : base.sinceTs != null && Number.isFinite(base.sinceTs)
-        ? base.sinceTs
-        : undefined;
-  const sinceSeq =
-    next.sinceSeq != null && Number.isFinite(next.sinceSeq)
-      ? next.sinceSeq
-      : base.sinceSeq != null && Number.isFinite(base.sinceSeq)
-        ? base.sinceSeq
-        : undefined;
-  // When both cursors present, prefer the later (ts, seq) pair from `next` if it advances.
-  let chosenSinceTs = sinceTs;
-  let chosenSinceSeq = sinceSeq;
-  if (
-    base.sinceTs != null &&
-    Number.isFinite(base.sinceTs) &&
-    next.sinceTs != null &&
-    Number.isFinite(next.sinceTs)
-  ) {
-    if (next.sinceTs > base.sinceTs) {
-      chosenSinceTs = next.sinceTs;
-      chosenSinceSeq = next.sinceSeq;
-    } else if (next.sinceTs < base.sinceTs) {
-      chosenSinceTs = base.sinceTs;
-      chosenSinceSeq = base.sinceSeq;
-    } else {
-      const baseSeq = base.sinceSeq ?? -1;
-      const nextSeq = next.sinceSeq ?? -1;
-      if (nextSeq >= baseSeq) {
-        chosenSinceTs = next.sinceTs;
-        chosenSinceSeq = next.sinceSeq;
-      } else {
-        chosenSinceTs = base.sinceTs;
-        chosenSinceSeq = base.sinceSeq;
-      }
-    }
-  }
+  const { sinceTs, sinceSeq } = mergeCatchUpCursor(base, next);
   return {
     identityId: base.identityId,
     ingest: next.ingest,
-    ...(chosenSinceTs != null ? { sinceTs: chosenSinceTs } : {}),
-    ...(chosenSinceSeq != null ? { sinceSeq: chosenSinceSeq } : {}),
+    ...(sinceTs != null ? { sinceTs } : {}),
+    ...(sinceSeq != null ? { sinceSeq } : {}),
     ...(uniqueReasons.length > 0 ? { reason: uniqueReasons.join('+') } : {}),
   };
 }

@@ -4,14 +4,6 @@
  */
 
 /** `overlay-<12 hex>`; safe as a directory / file stem. */
-export type MapVectorOverlayId = `overlay-${string}`;
-
-const OVERLAY_ID_RE = /^overlay-[a-f0-9]{12}$/;
-
-export function isMapVectorOverlayId(value: unknown): value is MapVectorOverlayId {
-  return typeof value === 'string' && OVERLAY_ID_RE.test(value);
-}
-
 export type MapOverlayPosition = [number, number] | [number, number, number];
 
 export type MapOverlayGeometry =
@@ -33,19 +25,6 @@ export interface MapOverlayFeatureCollection {
   type: 'FeatureCollection';
   features: MapOverlayFeature[];
 }
-
-export type OverlayFeatureCollection = MapOverlayFeatureCollection;
-
-export interface MapVectorOverlayLayer {
-  id: MapVectorOverlayId;
-  name: string;
-  visible: boolean;
-  opacity: number;
-  geojson: MapOverlayFeatureCollection;
-  sourceName: string;
-  addedAt: number;
-}
-
 export type MapOverlayFormat = 'geojson' | 'kml' | 'kmz';
 
 export type MapOverlayErrorCode =
@@ -72,7 +51,7 @@ export type MapOverlayImportResult =
 
 export const MAP_OVERLAY_MAX_BYTES = 50 * 1024 * 1024;
 export const MAP_OVERLAY_MAX_LAYERS = 16;
-export const MAP_OVERLAY_NAME_MAX = 80;
+const MAP_OVERLAY_NAME_MAX = 80;
 export const MAP_OVERLAY_KMZ_MAX_ENTRIES = 256;
 export const MAP_OVERLAY_KMZ_MAX_UNCOMPRESSED_BYTES = MAP_OVERLAY_MAX_BYTES;
 

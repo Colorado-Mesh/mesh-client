@@ -40,7 +40,7 @@ function normalizeCorrelateFingerprint(hex: string | null | undefined): string |
 }
 
 /** Stable key for session-scoped consumption of a correlated TXT_MSG raw row. */
-export function meshcoreTxtMsgHopCorrelateKey(entry: ChatCorrelateRxLike): string {
+function meshcoreTxtMsgHopCorrelateKey(entry: ChatCorrelateRxLike): string {
   const fp = normalizeCorrelateFingerprint(entry.messageFingerprintHex) ?? '';
   return `${entry.ts}|${entry.fromNodeId ?? 'n'}|${fp}|${entry.hopCount ?? ''}`;
 }

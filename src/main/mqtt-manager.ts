@@ -87,6 +87,26 @@ interface MqttDeviceMetrics {
 
 // Default PSK for meshtastic: firmware Channels.h `defaultpsk` (shorthand alias 0x01 expands to
 // this — see expandMeshtasticPskAlias). NOT a zero-padded literal of the alias byte itself.
+/** Portnums whose decrypted payload must decode with a known protobuf schema. */
+const CANDIDATE_PORTNUM_SCHEMAS: Partial<Record<number, Parameters<typeof fromBinary>[0]>> = {
+  [PortNum.TELEMETRY_APP]: TelemetrySchema as Parameters<typeof fromBinary>[0],
+  [PortNum.PAXCOUNTER_APP]: PaxcountSchema as Parameters<typeof fromBinary>[0],
+  [PortNum.TRACEROUTE_APP]: RouteDiscoverySchema,
+  [PortNum.MAP_REPORT_APP]: MapReportSchema as Parameters<typeof fromBinary>[0],
+  [PortNum.ROUTING_APP]: RoutingSchema,
+};
+
+/** Portnums whose empty payload is still a valid (default) protobuf message. */
+const CANDIDATE_EMPTY_OK_SCHEMAS: Partial<Record<number, Parameters<typeof fromBinary>[0]>> = {
+  [PortNum.NODEINFO_APP]: UserSchema,
+  [PortNum.POSITION_APP]: PositionSchema,
+};
+
+/** Payload-only checks for portnums without a strict protobuf schema. */
+const CANDIDATE_PORTNUM_PREDICATES: Partial<Record<number, (payload: Uint8Array) => boolean>> = {
+  [PortNum.DETECTION_SENSOR_APP]: (payload) => isLikelyReadableChatText(payload),
+};
+
 const DEFAULT_PSK = Buffer.from(MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES);
 
 /**
@@ -227,6 +247,81 @@ export function enforceBadEnvelopeSignatureCap(
  * Do not strip trailing 0x00 here — a valid ServiceEnvelope can end with a literal 0x00
  * on the wire; trailing padding is removed only after a decode failure (see onMessage).
  */
+interface ParsedJsonTextFields {
+  text: string;
+  emoji: number | undefined;
+  replyId: number | undefined;
+}
+
+function parseJsonTextFields(json: Record<string, unknown>): ParsedJsonTextFields {
+  const jsonPayload = json.payload as Record<string, unknown> | undefined;
+  const payloadText = jsonPayload?.text ?? json.text ?? '';
+  const text = typeof payloadText === 'string' ? payloadText : '';
+  const emojiRaw = jsonPayload?.emoji ?? json.emoji;
+  const emoji = typeof emojiRaw === 'number' && emojiRaw !== 0 ? emojiRaw : undefined;
+  const replyIdRaw = jsonPayload?.replyId ?? json.replyId;
+  const replyId = typeof replyIdRaw === 'number' && replyIdRaw !== 0 ? replyIdRaw : undefined;
+  return { text, emoji, replyId };
+}
+
+interface JsonNodeInfoFields {
+  longName: string;
+  shortName: string;
+  hwModel: number;
+  role: number | undefined;
+}
+
+function resolveJsonNodeInfoFields(json: Record<string, unknown>): JsonNodeInfoFields {
+  const user = json.user as Record<string, unknown> | undefined;
+  const payload = json.payload as Record<string, unknown> | undefined;
+  // Fall back to the root JSON object when node info fields are at the top level
+  // (no "user" or "payload" wrapper) — some firmware versions omit the wrapper.
+  const userData = user ?? payload ?? json;
+  const longName = (userData.longName ?? userData.long_name ?? userData.longname ?? '') as string;
+  const shortName = (userData.shortName ??
+    userData.short_name ??
+    userData.shortname ??
+    '') as string;
+  const hwModelNum = userData.hwModel ?? userData.hw_model ?? userData.hardware ?? 0;
+  return {
+    longName,
+    shortName,
+    hwModel: typeof hwModelNum === 'number' ? hwModelNum : 0,
+    role: userData.role as number | undefined,
+  };
+}
+
+interface JsonPositionCoords {
+  lat: number | undefined;
+  lon: number | undefined;
+  altitude: number | undefined;
+}
+
+function resolveJsonPositionCoords(json: Record<string, unknown>): JsonPositionCoords {
+  const data = (json.payload as Record<string, unknown> | undefined) ?? json;
+  const latitudeI = (data.latitudeI ?? data.latitude_i) as number | undefined;
+  const longitudeI = (data.longitudeI ?? data.longitude_i) as number | undefined;
+  const altitude = data.altitude as number | undefined;
+  const latRaw = (data.latitude ?? data.lat) as number | undefined;
+  const lonRaw = (data.longitude ?? data.lon) as number | undefined;
+  if (latitudeI !== undefined && longitudeI !== undefined) {
+    return { lat: latitudeI / 1e7, lon: longitudeI / 1e7, altitude };
+  }
+  if (latRaw !== undefined && lonRaw !== undefined) {
+    return { lat: latRaw, lon: lonRaw, altitude };
+  }
+  return { lat: undefined, lon: undefined, altitude };
+}
+
+function looksLikeBareJsonNodeInfo(json: Record<string, unknown>): boolean {
+  return (
+    json.longName !== undefined ||
+    json.long_name !== undefined ||
+    json.shortName !== undefined ||
+    json.short_name !== undefined
+  );
+}
+
 function trimLeadingNullRun(bytes: Uint8Array): Uint8Array {
   let start = 0;
   while (start < bytes.length && bytes[start] === 0) start++;
@@ -271,7 +366,7 @@ export interface CachedNode {
   altitude?: number | null;
 }
 
-interface MqttPublishOptions {
+export interface MqttPublishOptions {
   text: string;
   from: number;
   channel: number;
@@ -439,49 +534,13 @@ export class MQTTManager extends EventEmitter {
       this.radioChannelSessionId = sessionId;
     }
 
-    const radioTopicIndices = new Map<string, number>();
-    const radioPskByName = new Map<string, Buffer>();
-    for (const entry of entries) {
-      const name = entry.name.trim();
-      const psk = parsePsk(entry.pskBase64);
-      if (!name || !psk) continue;
-      if (entry.index !== undefined && Number.isInteger(entry.index)) {
-        const idx = entry.index >>> 0;
-        if (idx <= 7) {
-          radioTopicIndices.set(name, idx);
-        }
-      }
-      if (this.manualChannelKeyNames.has(name)) continue;
-      const existing = this.channelKeysByName.get(name);
-      if (
-        existing &&
-        isMeshtasticDefaultPublicPsk(psk) &&
-        !isMeshtasticDefaultPublicPsk(existing)
-      ) {
-        continue;
-      }
-      radioPskByName.set(name, psk);
-    }
+    const { radioTopicIndices, radioPskByName } = this.buildRadioChannelMaps(entries);
 
     const priorRadio = new Map(this.radioTopicIndexByName);
     const priorIndexes = new Set(priorRadio.values());
     const newIndexes = new Set(radioTopicIndices.values());
 
-    for (const [name, idx] of radioTopicIndices) {
-      // Slot takeover: another name must not keep this local RF slot for attribution.
-      for (const [otherName, otherIdx] of [...this.channelNameToIndex.entries()]) {
-        if (otherIdx === idx && otherName !== name) {
-          this.evictRadioChannelName(otherName);
-        }
-      }
-      for (const [otherName, otherIdx] of [...this.radioTopicIndexByName.entries()]) {
-        if (otherIdx === idx && otherName !== name) {
-          this.evictRadioChannelName(otherName);
-        }
-      }
-      this.radioTopicIndexByName.set(name, idx);
-      this.channelNameToIndex.set(name, idx);
-    }
+    this.applyRadioChannelSlots(radioTopicIndices);
 
     for (const [name, psk] of radioPskByName) {
       this.channelKeysByName.set(name, psk);
@@ -490,14 +549,7 @@ export class MQTTManager extends EventEmitter {
 
     // Evict radio names absent from this push only when every prior radio slot is covered
     // (full replace). Partial streams (OnTrail only) keep LongFast@1 / private PSKs.
-    const coversPrior = priorIndexes.size > 0 && [...priorIndexes].every((i) => newIndexes.has(i));
-    if (coversPrior) {
-      for (const oldName of priorRadio.keys()) {
-        if (!radioTopicIndices.has(oldName)) {
-          this.evictRadioChannelName(oldName);
-        }
-      }
-    }
+    this.evictChannelsAbsentFromPush(priorRadio, priorIndexes, newIndexes, radioTopicIndices);
 
     this.applyManualChannelPskLines(this.manualChannelPskLines);
     // Manual lines may reset LongFast→0 (bare LongFast= or LongFast@0=). Re-apply the
@@ -512,6 +564,61 @@ export class MQTTManager extends EventEmitter {
     console.debug(
       `[Meshtastic MQTT] channelNameToIndex updated (${this.channelNameToIndex.size}): ${mapSummary || '(empty)'}`,
     ); // log-filter-ok Meshtastic MQTT logs → App log panel
+  }
+
+  private buildRadioChannelMaps(entries: MqttChannelKeyEntry[]): {
+    radioTopicIndices: Map<string, number>;
+    radioPskByName: Map<string, Buffer>;
+  } {
+    const radioTopicIndices = new Map<string, number>();
+    const radioPskByName = new Map<string, Buffer>();
+    for (const entry of entries) {
+      const name = entry.name.trim();
+      const psk = parsePsk(entry.pskBase64);
+      if (!name || !psk) continue;
+      if (entry.index !== undefined && Number.isInteger(entry.index)) {
+        const idx = entry.index >>> 0;
+        if (idx <= 7) radioTopicIndices.set(name, idx);
+      }
+      if (this.manualChannelKeyNames.has(name)) continue;
+      const existing = this.channelKeysByName.get(name);
+      if (
+        existing &&
+        isMeshtasticDefaultPublicPsk(psk) &&
+        !isMeshtasticDefaultPublicPsk(existing)
+      ) {
+        continue;
+      }
+      radioPskByName.set(name, psk);
+    }
+    return { radioTopicIndices, radioPskByName };
+  }
+
+  private applyRadioChannelSlots(radioTopicIndices: Map<string, number>): void {
+    for (const [name, idx] of radioTopicIndices) {
+      // Slot takeover: another name must not keep this local RF slot for attribution.
+      for (const [otherName, otherIdx] of [...this.channelNameToIndex.entries()]) {
+        if (otherIdx === idx && otherName !== name) this.evictRadioChannelName(otherName);
+      }
+      for (const [otherName, otherIdx] of [...this.radioTopicIndexByName.entries()]) {
+        if (otherIdx === idx && otherName !== name) this.evictRadioChannelName(otherName);
+      }
+      this.radioTopicIndexByName.set(name, idx);
+      this.channelNameToIndex.set(name, idx);
+    }
+  }
+
+  private evictChannelsAbsentFromPush(
+    priorRadio: Map<string, number>,
+    priorIndexes: Set<number>,
+    newIndexes: Set<number>,
+    radioTopicIndices: Map<string, number>,
+  ): void {
+    const coversPrior = priorIndexes.size > 0 && [...priorIndexes].every((i) => newIndexes.has(i));
+    if (!coversPrior) return;
+    for (const oldName of priorRadio.keys()) {
+      if (!radioTopicIndices.has(oldName)) this.evictRadioChannelName(oldName);
+    }
   }
 
   /** Idempotent: Connection panel manual lines win over prior radio entries for the same name. */
@@ -1019,6 +1126,102 @@ export class MQTTManager extends EventEmitter {
    * Firmware-style JSON on `/2/json/...` for MQTT monitors (cleartext — gated by publishJsonMirror).
    * Failure point: malformed decoded protobuf — skip mirror only; encrypted uplink already sent.
    */
+  private buildTextJsonMirrorPayload(
+    body: Record<string, unknown>,
+    portnum: (typeof PortNum)[keyof typeof PortNum],
+    rawData: { payload?: Uint8Array; emoji?: number; replyId?: number },
+  ): void {
+    body.type = portnum === PortNum.ALERT_APP ? 'alert' : 'text';
+    const textBytes = rawData.payload ?? new Uint8Array();
+    const textStr = new TextDecoder().decode(textBytes);
+    body.payload = this.parseDecodedJsonMirrorText(textStr);
+    if (rawData.emoji != null && rawData.emoji !== 0) body.emoji = rawData.emoji;
+    if (rawData.replyId != null && rawData.replyId !== 0) body.replyId = rawData.replyId;
+  }
+
+  private buildNodeInfoJsonMirrorPayload(body: Record<string, unknown>, payload: Uint8Array): void {
+    body.type = 'nodeinfo';
+    const user = fromBinary(UserSchema, payload);
+    body.payload = {
+      id: user.id ?? '',
+      longname: user.longName ?? '',
+      shortname: user.shortName ?? '',
+      hardware: user.hwModel ?? 0,
+      role: user.role ?? 0,
+    };
+  }
+
+  private buildPositionJsonMirrorPayload(body: Record<string, unknown>, payload: Uint8Array): void {
+    body.type = 'position';
+    const pos = fromBinary(PositionSchema, payload);
+    const p: Record<string, unknown> = {
+      latitude_i: pos.latitudeI ?? 0,
+      longitude_i: pos.longitudeI ?? 0,
+    };
+    if (pos.altitude != null) p.altitude = pos.altitude;
+    if (pos.time != null) p.time = pos.time;
+    body.payload = p;
+  }
+
+  private buildWaypointJsonMirrorPayload(body: Record<string, unknown>, payload: Uint8Array): void {
+    body.type = 'waypoint';
+    const wp = fromBinary(WaypointSchema, payload);
+    body.payload = {
+      id: wp.id ?? 0,
+      name: wp.name ?? '',
+      description: wp.description ?? '',
+      expire: wp.expire ?? 0,
+      locked_to: wp.lockedTo ?? 0,
+      latitude_i: wp.latitudeI ?? 0,
+      longitude_i: wp.longitudeI ?? 0,
+    };
+  }
+
+  private buildDecodedJsonMirrorPayload(
+    body: Record<string, unknown>,
+    portnum: (typeof PortNum)[keyof typeof PortNum],
+    rawData: {
+      portnum?: (typeof PortNum)[keyof typeof PortNum];
+      payload?: Uint8Array;
+      emoji?: number;
+      replyId?: number;
+    },
+  ): boolean {
+    if (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) {
+      this.buildTextJsonMirrorPayload(body, portnum, rawData);
+      return true;
+    }
+    const payload = rawData.payload;
+    if (!payload?.length) return false;
+    if (portnum === PortNum.NODEINFO_APP) {
+      this.buildNodeInfoJsonMirrorPayload(body, payload);
+      return true;
+    }
+    if (portnum === PortNum.POSITION_APP) {
+      this.buildPositionJsonMirrorPayload(body, payload);
+      return true;
+    }
+    if (portnum === PortNum.WAYPOINT_APP) {
+      this.buildWaypointJsonMirrorPayload(body, payload);
+      return true;
+    }
+    return false;
+  }
+
+  private parseDecodedJsonMirrorText(textStr: string): unknown {
+    try {
+      const parsed: unknown = JSON.parse(textStr);
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) return parsed;
+      return { text: textStr };
+    } catch (e: unknown) {
+      console.debug(
+        '[main/mqtt-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      return { text: textStr };
+    }
+  }
+
   private publishDecodedJsonMirror(
     fromId: number,
     toId: number,
@@ -1060,69 +1263,7 @@ export class MQTTManager extends EventEmitter {
     };
 
     try {
-      if (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) {
-        body.type = portnum === PortNum.ALERT_APP ? 'alert' : 'text';
-        const textBytes = rawData.payload ?? new Uint8Array();
-        const textStr = new TextDecoder().decode(textBytes);
-        let payloadVal: unknown;
-        try {
-          const parsed: unknown = JSON.parse(textStr);
-          if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-            payloadVal = parsed;
-          } else {
-            payloadVal = { text: textStr };
-          }
-        } catch (e: unknown) {
-          console.debug(
-            '[main/mqtt-manager] catch:',
-            sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-          );
-
-          payloadVal = { text: textStr };
-        }
-        body.payload = payloadVal;
-        if (rawData.emoji != null && rawData.emoji !== 0) {
-          body.emoji = rawData.emoji;
-        }
-        if (rawData.replyId != null && rawData.replyId !== 0) {
-          body.replyId = rawData.replyId;
-        }
-      } else if (portnum === PortNum.NODEINFO_APP && rawData.payload?.length) {
-        body.type = 'nodeinfo';
-        const user = fromBinary(UserSchema, rawData.payload);
-        body.payload = {
-          id: user.id ?? '',
-          longname: user.longName ?? '',
-          shortname: user.shortName ?? '',
-          hardware: user.hwModel ?? 0,
-          role: user.role ?? 0,
-        };
-      } else if (portnum === PortNum.POSITION_APP && rawData.payload?.length) {
-        body.type = 'position';
-        const pos = fromBinary(PositionSchema, rawData.payload);
-        const p: Record<string, unknown> = {
-          latitude_i: pos.latitudeI ?? 0,
-          longitude_i: pos.longitudeI ?? 0,
-        };
-        if (pos.altitude != null) p.altitude = pos.altitude;
-        if (pos.time != null) p.time = pos.time;
-        body.payload = p;
-      } else if (portnum === PortNum.WAYPOINT_APP && rawData.payload?.length) {
-        body.type = 'waypoint';
-        const wp = fromBinary(WaypointSchema, rawData.payload);
-        body.payload = {
-          id: wp.id ?? 0,
-          name: wp.name ?? '',
-          description: wp.description ?? '',
-          expire: wp.expire ?? 0,
-          locked_to: wp.lockedTo ?? 0,
-          latitude_i: wp.latitudeI ?? 0,
-          longitude_i: wp.longitudeI ?? 0,
-        };
-      } else {
-        return;
-      }
-
+      if (!this.buildDecodedJsonMirrorPayload(body, portnum, rawData)) return;
       this.client.publish(topicJson, JSON.stringify(body), { qos: 0 });
     } catch (e) {
       console.warn(
@@ -1569,33 +1710,49 @@ export class MQTTManager extends EventEmitter {
   private decodeServiceEnvelopeWithTrailingNullRetry(bytes: Uint8Array, topic: string): void {
     try {
       this.decodeAndHandleServiceEnvelope(bytes, topic);
+      return;
     } catch (err) {
-      let decodeErr: unknown = err;
-      let msg = err instanceof Error ? err.message : String(err);
-      if (isIllegalTagFieldZero(msg) && bytes.length > 0 && bytes[bytes.length - 1] === 0) {
-        let currentBytes = bytes;
-        while (currentBytes.length > 0 && currentBytes[currentBytes.length - 1] === 0) {
-          currentBytes = currentBytes.subarray(0, currentBytes.length - 1);
-          try {
-            this.decodeAndHandleServiceEnvelope(currentBytes, topic);
-            return;
-          } catch (retryErr) {
-            console.debug('[main/mqtt-manager] catch:', retryErr);
-
-            decodeErr = retryErr;
-            msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-            if (!isIllegalTagFieldZero(msg)) break;
-          }
-        }
+      // catch-no-log-ok delegated to reportBadServiceEnvelope and the retry loop debug log.
+      const msg = err instanceof Error ? err.message : String(err);
+      const hasTrailingNull = bytes.length > 0 && bytes[bytes.length - 1] === 0;
+      if (!isIllegalTagFieldZero(msg) || !hasTrailingNull) {
+        this.reportBadServiceEnvelope(topic, bytes, err);
+        return;
       }
-
-      const finalMsg = decodeErr instanceof Error ? decodeErr.message : String(decodeErr);
-      this.rememberBadEnvelope(topic, bytes);
-      this.logSampledDebug(
-        this.serviceEnvelopeDecodeFailureLogKey(topic, bytes),
-        `[Meshtastic MQTT] ServiceEnvelope decode failed: ${sanitizeLogMessage(finalMsg)} | Topic: ${sanitizeLogMessage(topic)}`,
-      );
+      const retry = this.retryEnvelopeWithoutTrailingNulls(bytes, topic);
+      if (retry.ok) return;
+      this.reportBadServiceEnvelope(topic, bytes, retry.error ?? err);
     }
+  }
+
+  private retryEnvelopeWithoutTrailingNulls(
+    bytes: Uint8Array,
+    topic: string,
+  ): { ok: boolean; error: unknown } {
+    let currentBytes = bytes;
+    let decodeErr: unknown = null;
+    while (currentBytes.length > 0 && currentBytes[currentBytes.length - 1] === 0) {
+      currentBytes = currentBytes.subarray(0, currentBytes.length - 1);
+      try {
+        this.decodeAndHandleServiceEnvelope(currentBytes, topic);
+        return { ok: true, error: null };
+      } catch (retryErr) {
+        console.debug('[main/mqtt-manager] catch:', retryErr);
+        decodeErr = retryErr;
+        const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+        if (!isIllegalTagFieldZero(retryMsg)) break;
+      }
+    }
+    return { ok: false, error: decodeErr };
+  }
+
+  private reportBadServiceEnvelope(topic: string, bytes: Uint8Array, err: unknown): void {
+    const finalMsg = err instanceof Error ? err.message : String(err);
+    this.rememberBadEnvelope(topic, bytes);
+    this.logSampledDebug(
+      this.serviceEnvelopeDecodeFailureLogKey(topic, bytes),
+      `[Meshtastic MQTT] ServiceEnvelope decode failed: ${sanitizeLogMessage(finalMsg)} | Topic: ${sanitizeLogMessage(topic)}`,
+    );
   }
 
   private decodeAndHandleServiceEnvelope(bytes: Uint8Array, topic: string): void {
@@ -1641,12 +1798,7 @@ export class MQTTManager extends EventEmitter {
     const json = parsed as Record<string, unknown>;
 
     // Bare nodeinfo-like objects (some gateways): handle before Meshtastic-shape guard.
-    if (
-      json.longName !== undefined ||
-      json.long_name !== undefined ||
-      json.shortName !== undefined ||
-      json.short_name !== undefined
-    ) {
+    if (looksLikeBareJsonNodeInfo(json)) {
       this.handleJsonNodeInfo(json, topic);
       return;
     }
@@ -1657,37 +1809,30 @@ export class MQTTManager extends EventEmitter {
 
     const portnumRaw = json.portnum;
     const hasMeshtasticShape = typeLower.length > 0 || typeof portnumRaw === 'number';
-    if (!hasMeshtasticShape) {
-      return;
-    }
+    if (!hasMeshtasticShape) return;
 
-    if (typeLower === 'nodeinfo' || typeLower === 'user') {
-      this.handleJsonNodeInfo(json, topic);
-      return;
-    }
-
-    if (typeLower === 'position') {
-      this.handleJsonPosition(json, topic);
-      return;
-    }
-
-    if (typeLower === 'telemetry') {
-      this.handleJsonTelemetry(json, topic);
-      return;
-    }
-
-    if (typeLower === 'neighborinfo') {
-      this.handleJsonNeighborInfo(json, topic);
-      return;
-    }
-
-    if (typeLower === 'text' || typeLower === 'alert') {
-      this.handleJsonText(json, topic);
-      return;
-    }
-
-    if (typeLower === 'traceroute') {
-      return;
+    switch (typeLower) {
+      case 'nodeinfo':
+      case 'user':
+        this.handleJsonNodeInfo(json, topic);
+        return;
+      case 'position':
+        this.handleJsonPosition(json, topic);
+        return;
+      case 'telemetry':
+        this.handleJsonTelemetry(json, topic);
+        return;
+      case 'neighborinfo':
+        this.handleJsonNeighborInfo(json, topic);
+        return;
+      case 'text':
+      case 'alert':
+        this.handleJsonText(json, topic);
+        return;
+      case 'traceroute':
+        return;
+      default:
+        break;
     }
     if (portnumRaw === PortNum.NODEINFO_APP) {
       this.handleJsonNodeInfo(json, topic);
@@ -1748,21 +1893,7 @@ export class MQTTManager extends EventEmitter {
     const nodeId = this.parseFromNodeId(json.from, `nodeinfo topic=${topic}`);
     if (nodeId === null) return;
 
-    const user = json.user as Record<string, unknown> | undefined;
-    const payload = json.payload as Record<string, unknown> | undefined;
-    // Fall back to the root JSON object when node info fields are at the top level
-    // (no "user" or "payload" wrapper) — some firmware versions omit the wrapper.
-    const userData = user ?? payload ?? json;
-
-    const longName = (userData.longName ?? userData.long_name ?? userData.longname ?? '') as string;
-    const shortName = (userData.shortName ??
-      userData.short_name ??
-      userData.shortname ??
-      '') as string;
-    const hwModelNum = userData.hwModel ?? userData.hw_model ?? userData.hardware ?? 0;
-    const hwModel = typeof hwModelNum === 'number' ? hwModelNum : 0;
-    const role = userData.role as number | undefined;
-
+    const { longName, shortName, hwModel, role } = resolveJsonNodeInfoFields(json);
     const now = Date.now();
     const processedShortName = meshtasticShortNameAfterClearingDefault(longName, shortName, nodeId);
 
@@ -1791,25 +1922,27 @@ export class MQTTManager extends EventEmitter {
     const nodeId = this.parseFromNodeId(json.from, `text topic=${topic}`);
     if (nodeId === null) return;
 
-    const jsonPayload = json.payload as Record<string, unknown> | undefined;
-    const payloadText = jsonPayload?.text ?? json.text ?? '';
-    const text = typeof payloadText === 'string' ? payloadText : '';
-    const emojiRaw = jsonPayload?.emoji ?? json.emoji;
-    const emoji = typeof emojiRaw === 'number' && emojiRaw !== 0 ? emojiRaw : undefined;
-    const replyIdRaw = jsonPayload?.replyId ?? json.replyId;
-    const replyId = typeof replyIdRaw === 'number' && replyIdRaw !== 0 ? replyIdRaw : undefined;
-
+    const { text, emoji, replyId } = parseJsonTextFields(json);
     if (!text && !emoji) return;
-
-    if (text) {
-      const textBytes = new TextEncoder().encode(text);
-      if (!isLikelyReadableChatText(textBytes)) return;
-    }
+    if (text && !isLikelyReadableChatText(new TextEncoder().encode(text))) return;
 
     const packetId = typeof json.id === 'number' ? json.id >>> 0 : 0;
     if (packetId !== 0 && this.isDuplicate(packetId)) return;
 
-    const msg: Omit<ChatMessage, 'id'> & { from_mqtt: boolean } = {
+    const msg = this.buildJsonTextMessage(nodeId, json, topic, { text, emoji, replyId, packetId });
+    this.emit('message', msg);
+    this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
+    this.emitMinimalNodeUpdate(nodeId, undefined, PortNum.TEXT_MESSAGE_APP);
+  }
+
+  private buildJsonTextMessage(
+    nodeId: number,
+    json: Record<string, unknown>,
+    topic: string,
+    fields: ParsedJsonTextFields & { packetId: number },
+  ): Omit<ChatMessage, 'id'> & { from_mqtt: boolean } {
+    const { text, emoji, replyId, packetId } = fields;
+    return {
       sender_id: nodeId,
       sender_name: formatMeshtasticNodeId(nodeId),
       payload: text,
@@ -1823,35 +1956,13 @@ export class MQTTManager extends EventEmitter {
       emoji,
       replyId,
     };
-    this.emit('message', msg);
-    this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-    this.emitMinimalNodeUpdate(nodeId, undefined, PortNum.TEXT_MESSAGE_APP);
   }
 
   private handleJsonPosition(json: Record<string, unknown>, topic: string): void {
     const nodeId = this.parseFromNodeId(json.from, `position topic=${topic}`);
     if (nodeId === null) return;
 
-    const jsonPayload = json.payload as Record<string, unknown> | undefined;
-    const data = jsonPayload ?? json;
-
-    const latitudeI = (data.latitudeI ?? data.latitude_i) as number | undefined;
-    const longitudeI = (data.longitudeI ?? data.longitude_i) as number | undefined;
-    const altitude = data.altitude as number | undefined;
-
-    const latRaw = (data.latitude ?? data.lat) as number | undefined;
-    const lonRaw = (data.longitude ?? data.lon) as number | undefined;
-
-    let lat: number | undefined;
-    let lon: number | undefined;
-
-    if (latitudeI !== undefined && longitudeI !== undefined) {
-      lat = latitudeI / 1e7;
-      lon = longitudeI / 1e7;
-    } else if (latRaw !== undefined && lonRaw !== undefined) {
-      lat = latRaw;
-      lon = lonRaw;
-    }
+    const { lat, lon, altitude } = resolveJsonPositionCoords(json);
 
     if (lat === undefined || lon === undefined) {
       this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
@@ -1982,287 +2093,402 @@ export class MQTTManager extends EventEmitter {
     const portnum = data.portnum ?? PortNum.UNKNOWN_APP;
     const payload = data.payload;
 
-    if (portnum === PortNum.NODEINFO_APP && payload) {
-      try {
-        const user = fromBinary(UserSchema, payload);
-        const now = Date.now();
-        const long_name = user.longName || '';
-        const short_name = meshtasticShortNameAfterClearingDefault(
-          long_name,
-          user.shortName || '',
-          nodeId,
-        );
-        const nodeUpdate: Partial<MeshNode> & { node_id: number; from_mqtt: boolean } = {
-          node_id: nodeId,
-          long_name,
-          short_name,
-          hw_model: String(user.hwModel ?? ''),
-          role: user.role,
-          last_heard: now,
-          from_mqtt: true,
-          ...(hopsAway !== undefined && { hops_away: hopsAway }),
-        };
-        this.upsertNodeCache({
-          node_id: nodeId,
-          long_name: nodeUpdate.long_name,
-          short_name: nodeUpdate.short_name,
-          hw_model: nodeUpdate.hw_model,
-          last_heard: now,
-        });
-        this.emit('nodeUpdate', nodeUpdate);
-      } catch (e) {
-        console.warn(
-          'mcL0256 [Meshtastic MQTT] NodeInfo parse failed for node',
-          nodeId,
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-        this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
-      }
-    } else if (portnum === PortNum.POSITION_APP && payload) {
-      try {
-        const pos = fromBinary(PositionSchema, payload);
-        const lat = (pos.latitudeI ?? 0) / 1e7;
-        const lon = (pos.longitudeI ?? 0) / 1e7;
-        const warning = coordWarning(lat, lon);
-
-        if (warning) {
-          this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-          this.emit('nodeUpdate', {
-            node_id: nodeId,
-            positionWarning: warning,
-            last_heard: Date.now(),
-            from_mqtt: true,
-            portnum: PortNum.POSITION_APP,
-            ...(hopsAway !== undefined && { hops_away: hopsAway }),
-          });
-        } else if (pos.latitudeI || pos.longitudeI) {
-          const now = Date.now();
-          this.upsertNodeCache({
-            node_id: nodeId,
-            last_heard: now,
-            latitude: lat,
-            longitude: lon,
-            altitude: pos.altitude ?? undefined,
-          });
-          const nodeUpdate: Partial<MeshNode> & {
-            node_id: number;
-            from_mqtt: boolean;
-            positionWarning: null;
-            portnum?: number;
-          } = {
-            node_id: nodeId,
-            latitude: lat,
-            longitude: lon,
-            altitude: pos.altitude ?? undefined,
-            last_heard: now,
-            from_mqtt: true,
-            positionWarning: null,
-            portnum: PortNum.POSITION_APP,
-            ...(hopsAway !== undefined && { hops_away: hopsAway }),
-          };
-          this.emit('nodeUpdate', nodeUpdate);
-        } else {
-          this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-          this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
-        }
-      } catch (e) {
-        console.warn(
-          'mcL0257 [Meshtastic MQTT] Position parse failed for node',
-          nodeId,
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-        this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
-      }
-    } else if (
-      (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) &&
-      (payload?.length || data.emoji)
-    ) {
-      try {
-        const payloadBytes = payload ?? new Uint8Array();
-        const resolved = resolveMeshtasticTextMessagePayload(payloadBytes);
-        if (!resolved) {
-          console.debug(
-            `[Meshtastic MQTT] Dropped non-readable ${portnum === PortNum.ALERT_APP ? 'ALERT_APP' : 'TEXT_MESSAGE'} from node ${nodeId} len=${payloadBytes.length}`,
-          ); // log-filter-ok Meshtastic MQTT logs → App log panel
-          this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-          this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
+    switch (portnum) {
+      case PortNum.NODEINFO_APP:
+        if (payload) {
+          this.handleMqttNodeInfo(nodeId, payload, hopsAway);
           return;
         }
-        const emoji = data.emoji || undefined;
-        const replyId = data.replyId || undefined;
-        const msg: Omit<ChatMessage, 'id'> & { from_mqtt: boolean } = {
-          sender_id: nodeId,
-          sender_name: formatMeshtasticNodeId(nodeId),
-          payload: resolved.text,
-          channel: this.resolveMqttInboundTextChannelIndex(rfChannel, topic),
-          timestamp: Date.now(),
-          packetId,
-          from_mqtt: true,
-          emoji,
-          replyId,
-          ...(resolved.viaStoreForward ? { viaStoreForward: true } : {}),
-        };
-        this.emit('message', msg);
-        this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
-      } catch (e) {
-        console.warn(
-          'mcL0258 [Meshtastic MQTT] TextMessage parse failed for node',
-          nodeId,
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-        this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
-      }
-    } else if (portnum === PortNum.TELEMETRY_APP && payload) {
-      try {
-        const telemetry = fromBinary(
-          TelemetrySchema as Parameters<typeof fromBinary>[0],
-          payload,
-        ) as {
-          variant?: {
-            case?: string;
-            value?: unknown;
-            deviceMetrics?: MqttDeviceMetrics;
-          };
-        };
-        // protobuf-es v2 decodes the oneof as { case, value }; keep the flat shape for older fixtures.
-        const variantCase = telemetry.variant?.case;
-        const device =
-          variantCase === 'deviceMetrics'
-            ? (telemetry.variant?.value as MqttDeviceMetrics | undefined)
-            : telemetry.variant?.deviceMetrics;
-        const environment =
-          variantCase === 'environmentMetrics' || variantCase === 'airQualityMetrics'
-            ? sanitizeEnvironmentReading(telemetry.variant?.value)
-            : null;
-        if (environment) {
-          const now = Date.now();
-          this.emit('nodeUpdate', {
-            node_id: nodeId,
-            ...environmentNodePatchFromReading(environment),
-            [ENVIRONMENT_NODE_UPDATE_MARKER]: now,
-            last_heard: now,
-            from_mqtt: true,
-          });
-        } else if (device) {
-          this.emit('nodeUpdate', {
-            node_id: nodeId,
-            battery: device.batteryLevel,
-            voltage: device.voltage,
-            channel_utilization: device.channelUtilization,
-            air_util_tx: device.airUtilTx,
-            uptime_seconds: device.uptimeSeconds,
-            last_heard: Date.now(),
-            from_mqtt: true,
-          });
+        break;
+      case PortNum.POSITION_APP:
+        if (payload) {
+          this.handleMqttPosition(nodeId, payload, hopsAway);
+          return;
         }
-      } catch (e) {
-        console.warn(
-          'mcL0259 [Meshtastic MQTT] Telemetry parse failed',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
-    } else if (portnum === PortNum.PAXCOUNTER_APP && payload) {
-      try {
-        const pax = fromBinary(PaxcountSchema as Parameters<typeof fromBinary>[0], payload) as {
-          wifi?: number;
-          ble?: number;
-        };
-        const wifiCount = typeof pax.wifi === 'number' ? pax.wifi : 0;
-        const bleCount = typeof pax.ble === 'number' ? pax.ble : 0;
+        break;
+      case PortNum.TEXT_MESSAGE_APP:
+      case PortNum.ALERT_APP:
+        if (payload?.length || data.emoji) {
+          this.handleMqttText(nodeId, packetId, data, hopsAway, rfChannel, topic, portnum);
+          return;
+        }
+        break;
+      case PortNum.TELEMETRY_APP:
+        if (payload) {
+          this.handleMqttTelemetry(nodeId, payload);
+          return;
+        }
+        break;
+      case PortNum.PAXCOUNTER_APP:
+      case PortNum.DETECTION_SENSOR_APP:
+      case PortNum.MAP_REPORT_APP:
+        if (payload) {
+          this.handleMqttSensorPayload(nodeId, payload, portnum);
+          return;
+        }
+        break;
+      case PortNum.ROUTING_APP:
+      case PortNum.TRACEROUTE_APP:
+        if (payload) {
+          this.handleMqttRoutePayload(nodeId, payload, hopsAway, portnum);
+          return;
+        }
+        break;
+      default:
+        break;
+    }
+    // Unknown portnum (or missing payload) — at least track the node as seen.
+    this.markMqttNodeSeen(nodeId, hopsAway, portnum);
+  }
+
+  private markMqttNodeSeen(nodeId: number, hopsAway: number | undefined, portnum: number): void {
+    this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
+    this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
+  }
+
+  private handleMqttNodeInfo(
+    nodeId: number,
+    payload: Uint8Array,
+    hopsAway: number | undefined,
+  ): void {
+    try {
+      const user = fromBinary(UserSchema, payload);
+      const now = Date.now();
+      const long_name = user.longName || '';
+      const short_name = meshtasticShortNameAfterClearingDefault(
+        long_name,
+        user.shortName || '',
+        nodeId,
+      );
+      const nodeUpdate: Partial<MeshNode> & { node_id: number; from_mqtt: boolean } = {
+        node_id: nodeId,
+        long_name,
+        short_name,
+        hw_model: String(user.hwModel ?? ''),
+        role: user.role,
+        last_heard: now,
+        from_mqtt: true,
+        ...(hopsAway !== undefined && { hops_away: hopsAway }),
+      };
+      this.upsertNodeCache({
+        node_id: nodeId,
+        long_name: nodeUpdate.long_name,
+        short_name: nodeUpdate.short_name,
+        hw_model: nodeUpdate.hw_model,
+        last_heard: now,
+      });
+      this.emit('nodeUpdate', nodeUpdate);
+    } catch (e) {
+      console.warn(
+        'mcL0256 [Meshtastic MQTT] NodeInfo parse failed for node',
+        nodeId,
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
+      this.emitMinimalNodeUpdate(nodeId, hopsAway, PortNum.NODEINFO_APP);
+    }
+  }
+
+  private handleMqttPosition(
+    nodeId: number,
+    payload: Uint8Array,
+    hopsAway: number | undefined,
+  ): void {
+    try {
+      const pos = fromBinary(PositionSchema, payload);
+      const lat = (pos.latitudeI ?? 0) / 1e7;
+      const lon = (pos.longitudeI ?? 0) / 1e7;
+      const warning = coordWarning(lat, lon);
+
+      if (warning) {
+        this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
         this.emit('nodeUpdate', {
           node_id: nodeId,
-          pax_count: wifiCount + bleCount,
+          positionWarning: warning,
+          last_heard: Date.now(),
+          from_mqtt: true,
+          portnum: PortNum.POSITION_APP,
+          ...(hopsAway !== undefined && { hops_away: hopsAway }),
+        });
+      } else if (pos.latitudeI || pos.longitudeI) {
+        const now = Date.now();
+        this.upsertNodeCache({
+          node_id: nodeId,
+          last_heard: now,
+          latitude: lat,
+          longitude: lon,
+          altitude: pos.altitude ?? undefined,
+        });
+        const nodeUpdate: Partial<MeshNode> & {
+          node_id: number;
+          from_mqtt: boolean;
+          positionWarning: null;
+          portnum?: number;
+        } = {
+          node_id: nodeId,
+          latitude: lat,
+          longitude: lon,
+          altitude: pos.altitude ?? undefined,
+          last_heard: now,
+          from_mqtt: true,
+          positionWarning: null,
+          portnum: PortNum.POSITION_APP,
+          ...(hopsAway !== undefined && { hops_away: hopsAway }),
+        };
+        this.emit('nodeUpdate', nodeUpdate);
+      } else {
+        this.markMqttNodeSeen(nodeId, hopsAway, PortNum.POSITION_APP);
+      }
+    } catch (e) {
+      console.warn(
+        'mcL0257 [Meshtastic MQTT] Position parse failed for node',
+        nodeId,
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      this.markMqttNodeSeen(nodeId, hopsAway, PortNum.POSITION_APP);
+    }
+  }
+
+  private handleMqttText(
+    nodeId: number,
+    packetId: number,
+    data: {
+      portnum?: (typeof PortNum)[keyof typeof PortNum];
+      payload?: Uint8Array;
+      emoji?: number;
+      replyId?: number;
+    },
+    hopsAway: number | undefined,
+    rfChannel: number,
+    topic: string | undefined,
+    portnum: (typeof PortNum)[keyof typeof PortNum],
+  ): void {
+    try {
+      const payloadBytes = data.payload ?? new Uint8Array();
+      const resolved = resolveMeshtasticTextMessagePayload(payloadBytes);
+      if (!resolved) {
+        console.debug(
+          `[Meshtastic MQTT] Dropped non-readable ${portnum === PortNum.ALERT_APP ? 'ALERT_APP' : 'TEXT_MESSAGE'} from node ${nodeId} len=${payloadBytes.length}`,
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
+        this.markMqttNodeSeen(nodeId, hopsAway, portnum);
+        return;
+      }
+      const emoji = data.emoji || undefined;
+      const replyId = data.replyId || undefined;
+      const msg: Omit<ChatMessage, 'id'> & { from_mqtt: boolean } = {
+        sender_id: nodeId,
+        sender_name: formatMeshtasticNodeId(nodeId),
+        payload: resolved.text,
+        channel: this.resolveMqttInboundTextChannelIndex(rfChannel, topic),
+        timestamp: Date.now(),
+        packetId,
+        from_mqtt: true,
+        emoji,
+        replyId,
+        ...(resolved.viaStoreForward ? { viaStoreForward: true } : {}),
+      };
+      this.emit('message', msg);
+      this.markMqttNodeSeen(nodeId, hopsAway, portnum);
+    } catch (e) {
+      console.warn(
+        'mcL0258 [Meshtastic MQTT] TextMessage parse failed for node',
+        nodeId,
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      this.markMqttNodeSeen(nodeId, hopsAway, portnum);
+    }
+  }
+
+  private handleMqttTelemetry(nodeId: number, payload: Uint8Array): void {
+    try {
+      const telemetry = fromBinary(
+        TelemetrySchema as Parameters<typeof fromBinary>[0],
+        payload,
+      ) as {
+        variant?: {
+          case?: string;
+          value?: unknown;
+          deviceMetrics?: MqttDeviceMetrics;
+        };
+      };
+      // protobuf-es v2 decodes the oneof as { case, value }; keep the flat shape for older fixtures.
+      const variantCase = telemetry.variant?.case;
+      const device =
+        variantCase === 'deviceMetrics'
+          ? (telemetry.variant?.value as MqttDeviceMetrics | undefined)
+          : telemetry.variant?.deviceMetrics;
+      const environment =
+        variantCase === 'environmentMetrics' || variantCase === 'airQualityMetrics'
+          ? sanitizeEnvironmentReading(telemetry.variant?.value)
+          : null;
+      if (environment) {
+        const now = Date.now();
+        this.emit('nodeUpdate', {
+          node_id: nodeId,
+          ...environmentNodePatchFromReading(environment),
+          [ENVIRONMENT_NODE_UPDATE_MARKER]: now,
+          last_heard: now,
+          from_mqtt: true,
+        });
+      } else if (device) {
+        this.emit('nodeUpdate', {
+          node_id: nodeId,
+          battery: device.batteryLevel,
+          voltage: device.voltage,
+          channel_utilization: device.channelUtilization,
+          air_util_tx: device.airUtilTx,
+          uptime_seconds: device.uptimeSeconds,
           last_heard: Date.now(),
           from_mqtt: true,
         });
-      } catch (e) {
-        console.warn(
-          'mcL0260 [Meshtastic MQTT] PaxCount parse failed',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
       }
-    } else if (portnum === PortNum.DETECTION_SENSOR_APP && payload) {
-      const text = new TextDecoder().decode(payload);
+    } catch (e) {
+      console.warn(
+        'mcL0259 [Meshtastic MQTT] Telemetry parse failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+    }
+  }
+
+  private handleMqttSensorPayload(
+    nodeId: number,
+    payload: Uint8Array,
+    portnum: (typeof PortNum)[keyof typeof PortNum],
+  ): void {
+    if (portnum === PortNum.PAXCOUNTER_APP) {
+      this.handleMqttPaxCount(nodeId, payload);
+      return;
+    }
+    if (portnum === PortNum.DETECTION_SENSOR_APP) {
+      this.handleMqttDetectionSensor(nodeId, payload);
+      return;
+    }
+    this.handleMqttMapReport(nodeId, payload);
+  }
+
+  private handleMqttRoutePayload(
+    nodeId: number,
+    payload: Uint8Array,
+    hopsAway: number | undefined,
+    portnum: (typeof PortNum)[keyof typeof PortNum],
+  ): void {
+    if (portnum === PortNum.ROUTING_APP) {
+      this.handleMqttRouting(nodeId, payload, hopsAway, portnum);
+      return;
+    }
+    this.handleMqttTraceRoute(nodeId, payload, hopsAway, portnum);
+  }
+
+  private handleMqttPaxCount(nodeId: number, payload: Uint8Array): void {
+    try {
+      const pax = fromBinary(PaxcountSchema as Parameters<typeof fromBinary>[0], payload) as {
+        wifi?: number;
+        ble?: number;
+      };
+      const wifiCount = typeof pax.wifi === 'number' ? pax.wifi : 0;
+      const bleCount = typeof pax.ble === 'number' ? pax.ble : 0;
       this.emit('nodeUpdate', {
         node_id: nodeId,
-        detection_text: text,
+        pax_count: wifiCount + bleCount,
         last_heard: Date.now(),
         from_mqtt: true,
       });
-    } else if (portnum === PortNum.MAP_REPORT_APP && payload) {
-      try {
-        const report = fromBinary(MapReportSchema as Parameters<typeof fromBinary>[0], payload) as {
-          longName?: string;
-          shortName?: string;
-          hwModel?: unknown;
-          role?: unknown;
-          latitudeI?: number;
-          longitudeI?: number;
-        };
-        this.emit('nodeUpdate', {
-          node_id: nodeId,
-          long_name: report.longName ?? undefined,
-          short_name: report.shortName ?? undefined,
-          // eslint-disable-next-line @typescript-eslint/no-base-to-string
-          hw_model: report.hwModel != null ? String(report.hwModel) : undefined,
-          role: report.role,
-          latitude: report.latitudeI ? report.latitudeI / 1e7 : undefined,
-          longitude: report.longitudeI ? report.longitudeI / 1e7 : undefined,
-          last_heard: Date.now(),
-          from_mqtt: true,
-        });
-      } catch (e) {
-        console.warn(
-          'mcL0261 [Meshtastic MQTT] MapReport parse failed',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-      }
-    } else if (portnum === PortNum.ROUTING_APP && payload) {
-      try {
-        const routing = fromBinary(RoutingSchema as Parameters<typeof fromBinary>[0], payload) as {
-          errorReason?: number;
-        };
-        if (routing.errorReason && routing.errorReason !== 0) {
-          console.debug(
-            `[Meshtastic MQTT] ROUTING error: nodeId=0x${nodeId.toString(16)} reason=${routing.errorReason}`,
-          );
-        }
-        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
+    } catch (e) {
+      console.warn(
+        'mcL0260 [Meshtastic MQTT] PaxCount parse failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+    }
+  }
 
-        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
-      }
-    } else if (portnum === PortNum.TRACEROUTE_APP && payload) {
-      try {
-        const rd = fromBinary(RouteDiscoverySchema, payload) as {
-          route?: readonly number[];
-          routeBack?: readonly number[];
-        };
-        this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emit('traceRouteReply', {
-          meshFrom: nodeId,
-          route: rd.route != null ? [...rd.route] : [],
-          routeBack: rd.routeBack != null ? [...rd.routeBack] : [],
-        });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
-      } catch (e) {
-        console.warn(
-          'mcL0262 [Meshtastic MQTT] TRACEROUTE RouteDiscovery parse failed',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+  private handleMqttDetectionSensor(nodeId: number, payload: Uint8Array): void {
+    const text = new TextDecoder().decode(payload);
+    this.emit('nodeUpdate', {
+      node_id: nodeId,
+      detection_text: text,
+      last_heard: Date.now(),
+      from_mqtt: true,
+    });
+  }
+
+  private handleMqttMapReport(nodeId: number, payload: Uint8Array): void {
+    try {
+      const report = fromBinary(MapReportSchema as Parameters<typeof fromBinary>[0], payload) as {
+        longName?: string;
+        shortName?: string;
+        hwModel?: unknown;
+        role?: unknown;
+        latitudeI?: number;
+        longitudeI?: number;
+      };
+      this.emit('nodeUpdate', {
+        node_id: nodeId,
+        long_name: report.longName ?? undefined,
+        short_name: report.shortName ?? undefined,
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+        hw_model: report.hwModel != null ? String(report.hwModel) : undefined,
+        role: report.role,
+        latitude: report.latitudeI ? report.latitudeI / 1e7 : undefined,
+        longitude: report.longitudeI ? report.longitudeI / 1e7 : undefined,
+        last_heard: Date.now(),
+        from_mqtt: true,
+      });
+    } catch (e) {
+      console.warn(
+        'mcL0261 [Meshtastic MQTT] MapReport parse failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+    }
+  }
+
+  private handleMqttRouting(
+    nodeId: number,
+    payload: Uint8Array,
+    hopsAway: number | undefined,
+    portnum: number,
+  ): void {
+    try {
+      const routing = fromBinary(RoutingSchema as Parameters<typeof fromBinary>[0], payload) as {
+        errorReason?: number;
+      };
+      if (routing.errorReason && routing.errorReason !== 0) {
+        console.debug(
+          `[Meshtastic MQTT] ROUTING error: nodeId=0x${nodeId.toString(16)} reason=${routing.errorReason}`,
         );
-        this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
-        this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
       }
-    } else {
-      // Unknown portnum — at least track the node as seen
+      this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
+    } catch (e: unknown) {
+      console.debug(
+        '[main/mqtt-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
+    }
+  }
+
+  private handleMqttTraceRoute(
+    nodeId: number,
+    payload: Uint8Array,
+    hopsAway: number | undefined,
+    portnum: number,
+  ): void {
+    try {
+      const rd = fromBinary(RouteDiscoverySchema, payload) as {
+        route?: readonly number[];
+        routeBack?: readonly number[];
+      };
+      this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
+      this.emit('traceRouteReply', {
+        meshFrom: nodeId,
+        route: rd.route != null ? [...rd.route] : [],
+        routeBack: rd.routeBack != null ? [...rd.routeBack] : [],
+      });
+      this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
+    } catch (e) {
+      console.warn(
+        'mcL0262 [Meshtastic MQTT] TRACEROUTE RouteDiscovery parse failed',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
       this.upsertNodeCache({ node_id: nodeId, last_heard: Date.now() });
       this.emitMinimalNodeUpdate(nodeId, hopsAway, portnum);
     }
@@ -2315,6 +2541,22 @@ export class MQTTManager extends EventEmitter {
    * Reject those candidates so tryDecryptAllKeys keeps searching for a key whose nested payload
    * matches the port (same bar as handleDecoded before emitting chat/node updates).
    */
+  private decodesCandidatePayload(
+    schema: Parameters<typeof fromBinary>[0],
+    payload: Uint8Array,
+  ): boolean {
+    try {
+      fromBinary(schema, payload);
+      return true;
+    } catch (e: unknown) {
+      console.debug(
+        '[main/mqtt-manager] catch:',
+        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+      );
+      return false;
+    }
+  }
+
   private acceptsDecryptedDataCandidate(data: {
     portnum?: (typeof PortNum)[keyof typeof PortNum];
     payload?: Uint8Array;
@@ -2323,124 +2565,24 @@ export class MQTTManager extends EventEmitter {
     const portnum = data.portnum ?? PortNum.UNKNOWN_APP;
     const payload = data.payload;
 
-    if (portnum === PortNum.UNKNOWN_APP) {
-      return false;
-    }
+    if (portnum === PortNum.UNKNOWN_APP) return false;
 
     if (portnum === PortNum.TEXT_MESSAGE_APP || portnum === PortNum.ALERT_APP) {
       if (data.emoji === MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG) return true;
       if (!payload?.length && !data.emoji) return false;
       return resolveMeshtasticTextMessagePayload(payload ?? new Uint8Array()) !== null;
     }
-
-    if (portnum === PortNum.NODEINFO_APP) {
-      try {
-        fromBinary(UserSchema, payload ?? new Uint8Array());
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
+    const emptyOkSchema = CANDIDATE_EMPTY_OK_SCHEMAS[portnum];
+    if (emptyOkSchema) {
+      return this.decodesCandidatePayload(emptyOkSchema, payload ?? new Uint8Array());
     }
+    const predicate = CANDIDATE_PORTNUM_PREDICATES[portnum];
+    if (predicate) return Boolean(payload?.length && predicate(payload));
 
-    if (portnum === PortNum.POSITION_APP) {
-      try {
-        fromBinary(PositionSchema, payload ?? new Uint8Array());
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.TELEMETRY_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(TelemetrySchema as Parameters<typeof fromBinary>[0], payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.PAXCOUNTER_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(PaxcountSchema as Parameters<typeof fromBinary>[0], payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.TRACEROUTE_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(RouteDiscoverySchema, payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.MAP_REPORT_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(MapReportSchema as Parameters<typeof fromBinary>[0], payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.ROUTING_APP) {
-      if (!payload?.length) return false;
-      try {
-        fromBinary(RoutingSchema as Parameters<typeof fromBinary>[0], payload);
-        return true;
-      } catch (e: unknown) {
-        console.debug(
-          '[main/mqtt-manager] catch:',
-          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-        );
-
-        return false;
-      }
-    }
-
-    if (portnum === PortNum.DETECTION_SENSOR_APP) {
-      return Boolean(payload?.length && isLikelyReadableChatText(payload));
-    }
-
-    return Boolean(payload?.length);
+    const schema = CANDIDATE_PORTNUM_SCHEMAS[portnum];
+    if (!schema) return Boolean(payload?.length);
+    if (!payload?.length) return false;
+    return this.decodesCandidatePayload(schema, payload);
   }
 
   /**

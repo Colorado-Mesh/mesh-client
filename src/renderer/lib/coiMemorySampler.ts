@@ -29,7 +29,7 @@ interface MemoryPerformance extends Performance {
   };
 }
 
-interface MemorySamplerEnvironment {
+export interface MemorySamplerEnvironment {
   isIsolated: () => boolean;
   getMeasure: () => (() => Promise<{ bytes: number }>) | undefined;
   getProcessMeasure?: () => (() => Promise<{ bytes: number }>) | undefined;

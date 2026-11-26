@@ -19,7 +19,7 @@ const serialDisconnectTargets = new Map<MeshProtocol, SerialDisconnectTarget | n
 let lastSerialDisconnectNotifyAt = 0;
 const SERIAL_DISCONNECT_DEBOUNCE_MS = 500;
 
-export function registerSerialDisconnectTarget(
+function registerSerialDisconnectTarget(
   protocol: MeshProtocol,
   target: SerialDisconnectTarget | null,
 ): void {

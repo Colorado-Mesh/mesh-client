@@ -7,7 +7,7 @@ import type { ChatOrderSide } from './useChatOrder';
 /** Private drag type: a dropped chip never inserts text into the composer or another app. */
 export const CHIP_ORDER_DRAG_TYPE = 'application/x-mesh-client-chip-order';
 
-interface Options {
+export interface Options {
   /**
    * The order the chips belong to (protocol and radio). A drag that started under another scope
    * is refused, so a radio switch mid-drag cannot save into the new radio's order.
@@ -27,7 +27,7 @@ interface DragState {
   hadFocus: boolean;
 }
 
-type ChipDragProps = Pick<
+export type ChipDragProps = Pick<
   HTMLAttributes<HTMLElement>,
   | 'draggable'
   | 'onDragStart'

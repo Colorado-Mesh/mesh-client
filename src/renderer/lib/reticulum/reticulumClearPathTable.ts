@@ -6,7 +6,7 @@
  */
 export const RETICULUM_CLEAR_PATH_TABLE_ROUTE = '/api/v1/maintenance/path-table';
 
-export interface ReticulumClearPathTableResponse {
+interface ReticulumClearPathTableResponse {
   ok?: boolean;
   cleared?: number;
   error?: string;

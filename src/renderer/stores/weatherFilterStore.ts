@@ -5,12 +5,12 @@ import {
   isWeatherOnlinePlaceLookupEnabled,
   mergeAppSetting,
 } from '../lib/appSettingsStorage';
+import type { ChatMessage, MeshProtocol } from '../lib/types';
+import { REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 import {
   loadWeatherMarkedSenders,
   saveWeatherMarkedSenders,
-} from '../lib/chatPanelProtocolStorage';
-import type { ChatMessage, MeshProtocol } from '../lib/types';
-import { REGISTERED_MESH_PROTOCOLS } from '../lib/types';
+} from '../lib/weatherMarkedSendersStorage';
 import {
   compileWeatherPattern,
   isChannelBroadcastMessage,

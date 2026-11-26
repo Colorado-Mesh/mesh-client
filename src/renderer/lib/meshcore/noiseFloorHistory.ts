@@ -22,7 +22,7 @@ export interface NoiseFloorAggregate {
 }
 
 /** Keep roughly one hour of live samples while a node detail panel is watched. */
-export const NOISE_FLOOR_HISTORY_WINDOW_MS = 60 * 60 * 1000;
+const NOISE_FLOOR_HISTORY_WINDOW_MS = 60 * 60 * 1000;
 
 /** Cap per-node series (60s poll ≈ 60 pts/hour; leave headroom for manual refreshes). */
 export const NOISE_FLOOR_HISTORY_MAX_POINTS = 120;

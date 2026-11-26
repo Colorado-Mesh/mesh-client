@@ -74,7 +74,7 @@ export function loadLastBleDeviceId(protocol: MeshProtocol): string | null {
   }
 }
 
-export function clearLastBleDeviceId(protocol: MeshProtocol): void {
+function clearLastBleDeviceId(protocol: MeshProtocol): void {
   try {
     removeRendererStorageItem(lastBleDeviceKey(protocol));
   } catch (e: unknown) {

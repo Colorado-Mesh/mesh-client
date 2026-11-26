@@ -61,7 +61,7 @@ export interface ChatMacroSlot {
   room?: RoomMacroTarget;
 }
 
-interface ChatMacrosPersisted {
+export interface ChatMacrosPersisted {
   slots: ChatMacroSlot[];
   /** Null follows the pointer: large on touch screens, small otherwise. */
   size: ChatMacroSize | null;
@@ -102,7 +102,7 @@ function isSlotIndex(index: number): boolean {
   return Number.isInteger(index) && index >= 0 && index < CHAT_MACRO_SLOT_COUNT;
 }
 
-export function sanitizeRoomTarget(raw: unknown): RoomMacroTarget | undefined {
+function sanitizeRoomTarget(raw: unknown): RoomMacroTarget | undefined {
   if (raw === null || typeof raw !== 'object') return undefined;
   const r = raw as Record<string, unknown>;
   const label = typeof r.label === 'string' ? r.label.slice(0, CHAT_MACRO_LABEL_MAX) : '';
@@ -191,7 +191,7 @@ export function isChatMacroSlotEmpty(slot: ChatMacroSlot | undefined): boolean {
   return slot.text.trim() === '';
 }
 
-export function prefersCoarsePointer(): boolean {
+function prefersCoarsePointer(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(pointer: coarse)').matches
     : false;

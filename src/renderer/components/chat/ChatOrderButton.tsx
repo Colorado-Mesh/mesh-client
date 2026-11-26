@@ -8,7 +8,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { Button, IconButton } from '../ui/Button';
 
-interface Props {
+export interface Props {
   items: readonly OrderedChat[];
   ids: readonly string[];
   onSave: (ids: readonly string[]) => void;

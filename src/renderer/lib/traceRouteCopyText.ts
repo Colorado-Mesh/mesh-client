@@ -8,7 +8,7 @@ export function formatTraceRouteHops(hops: readonly string[]): string {
 }
 
 /** SNR as the trace views print it: sign, two decimals, dB. */
-export function formatTraceSnrDb(snr: number): string {
+function formatTraceSnrDb(snr: number): string {
   return `${snr > 0 ? '+' : ''}${snr.toFixed(2)} dB`;
 }
 

@@ -32,7 +32,8 @@ export const SCHEDULED_BROADCASTS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('ScheduledB
 export const TEAM_CONTACTS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('TeamContacts');
 export const TEAM_ROSTER_PANEL_INDEX = TAB_SLOT_IDS.indexOf('TeamRoster');
 
-type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof ProtocolCapabilities)[] };
+export type TabCapabilityRequirement =
+  keyof ProtocolCapabilities | { or: (keyof ProtocolCapabilities)[] };
 
 /** Parallel to `TAB_SLOT_IDS`; `undefined` = always visible. */
 export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [

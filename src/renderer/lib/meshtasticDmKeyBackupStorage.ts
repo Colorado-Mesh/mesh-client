@@ -3,7 +3,7 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { nodeNumDisplayHex } from './keyBackupBytes';
 
 export const LEGACY_MESHTASTIC_DM_KEY_BACKUP_KEY = 'mesh-client:key-backup';
-export const MESHTASTIC_DM_KEY_BACKUP_PREFIX = 'mesh-client:meshtastic-dm-key-backup:';
+const MESHTASTIC_DM_KEY_BACKUP_PREFIX = 'mesh-client:meshtastic-dm-key-backup:';
 export const MESHTASTIC_DM_KEY_BACKUP_INDEX_KEY = 'mesh-client:meshtastic-dm-key-backup-index';
 
 const MESHTASTIC_KEY_LEN = 32;

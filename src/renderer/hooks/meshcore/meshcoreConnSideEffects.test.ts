@@ -129,7 +129,7 @@ function makeHarness(overrides?: {
       ingestResponse,
       handleResponse: (text: string, senderId?: number) =>
         ingestResponse(text, senderId).kind === 'resolved',
-      clear: vi.fn(),
+      cancelPending: vi.fn(),
       parseResponseToken: (text: string) => {
         const match = /^([0-9A-Fa-f]{2})\|(.*)$/s.exec(text);
         return match

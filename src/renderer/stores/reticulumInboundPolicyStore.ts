@@ -6,7 +6,7 @@ import type {
   UpsertRemoteInboundPolicyRequest,
 } from '@/shared/remote-types';
 
-interface ReticulumInboundPolicyStoreState {
+export interface ReticulumInboundPolicyStoreState {
   policies: Map<string, RemoteInboundPolicyRow>;
   hydrated: boolean;
   loading: boolean;

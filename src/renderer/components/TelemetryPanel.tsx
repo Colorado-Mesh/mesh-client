@@ -60,7 +60,7 @@ function formatChartValue(value: number | undefined, fallback: string): string {
   return value === undefined ? fallback : String(value);
 }
 
-interface Props {
+export interface Props {
   telemetry: TelemetryPoint[];
   signalTelemetry: TelemetryPoint[];
   /** Session stream kept for CSV merge; charts read the persisted store. */

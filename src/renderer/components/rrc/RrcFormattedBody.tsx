@@ -10,7 +10,7 @@ import {
 import { renderRrcFormattedBodyHtml, rrcBodyLooksFormatted } from '@/renderer/lib/rrcFormattedBody';
 import { isRrcLink } from '@/renderer/lib/rrcLink';
 
-interface RrcFormattedBodyProps {
+export interface RrcFormattedBodyProps {
   text: string;
   /** Fallback when the body is plain IRC text (mentions + linkify). */
   fallback: ReactNode;

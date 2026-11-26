@@ -5,7 +5,7 @@ import type { TranslationManifestPack } from './translationManifest';
 
 const requireFromHere = createRequire(__filename);
 
-interface Mod {
+export interface Mod {
   TRANSLATION_ENGINE: TranslationManifestPack;
   TRANSLATION_MODEL_PACKS: TranslationManifestPack[];
   TRANSLATION_MANIFEST: TranslationManifestPack[];

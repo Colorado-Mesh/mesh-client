@@ -163,10 +163,7 @@ export function detectImpossibleHop(node: MeshNode, homeNode: MeshNode | null): 
   return null;
 }
 
-export function detectRouteFlapping(
-  nodeId: number,
-  hopHistory: HopHistoryPoint[],
-): NodeAnomaly | null {
+function detectRouteFlapping(nodeId: number, hopHistory: HopHistoryPoint[]): NodeAnomaly | null {
   const tenMinAgo = Date.now() - 10 * MS_PER_MINUTE;
   const recent = hopHistory.filter((p) => p.t >= tenMinAgo);
   if (recent.length < 2) return null;

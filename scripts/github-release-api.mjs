@@ -13,9 +13,9 @@ import {
   versionFromTrustedTag,
 } from './github-release-version.mjs';
 
-export const OWNER = 'Colorado-Mesh';
-export const REPO = 'mesh-client';
-export const API_ROOT = `https://api.github.com/repos/${OWNER}/${REPO}`;
+const OWNER = 'Colorado-Mesh';
+const REPO = 'mesh-client';
+const API_ROOT = `https://api.github.com/repos/${OWNER}/${REPO}`;
 
 /** Release tags must be vX.Y.Z — validated before any GitHub API call (CodeQL file-access-to-http). */
 export const SAFE_RELEASE_TAG_RE = /^v\d+\.\d+\.\d+$/;
@@ -24,12 +24,12 @@ export const SAFE_RELEASE_TAG_RE = /^v\d+\.\d+\.\d+$/;
  * GitHub placeholder tags left when a release loses its v* tag.
  * Hex-only suffix — validated before DELETE /git/refs/tags/… (CodeQL).
  */
-export const SAFE_UNTAGGED_PLACEHOLDER_TAG_RE = /^untagged-[0-9a-f]+$/i;
+const SAFE_UNTAGGED_PLACEHOLDER_TAG_RE = /^untagged-[0-9a-f]+$/i;
 
 /** Positive GitHub release ids as decimal digits (validated before Number conversion). */
-export const SAFE_GITHUB_RELEASE_ID_RE = /^([1-9]\d{0,18})$/;
+const SAFE_GITHUB_RELEASE_ID_RE = /^([1-9]\d{0,18})$/;
 
-export function versionFromTag(tag) {
+function versionFromTag(tag) {
   return tag.startsWith('v') ? tag.slice(1) : tag;
 }
 
@@ -153,7 +153,7 @@ export function authToken(env) {
   return token;
 }
 
-export async function githubRequest(path, { token, method = 'GET', body, headers = {} } = {}) {
+async function githubRequest(path, { token, method = 'GET', body, headers = {} } = {}) {
   const response = await fetch(`${API_ROOT}${path}`, {
     method,
     headers: {
@@ -183,8 +183,6 @@ export async function githubRequest(path, { token, method = 'GET', body, headers
 
   return { response, json };
 }
-
-export { releaseMatchesTag } from './github-release-version.mjs';
 
 export async function listReleasesForTag(tag, token) {
   assertSafeReleaseTag(tag);
@@ -225,7 +223,7 @@ export function pickCanonicalRelease(releases) {
   })[0];
 }
 
-export async function deleteRelease(releaseId, token) {
+async function deleteRelease(releaseId, token) {
   const { response, json } = await githubRequest(`/releases/${releaseId}`, {
     token,
     method: 'DELETE',
@@ -237,7 +235,7 @@ export async function deleteRelease(releaseId, token) {
   }
 }
 
-export async function deleteReleaseAsset(assetId, token) {
+async function deleteReleaseAsset(assetId, token) {
   const { response, json } = await githubRequest(`/releases/assets/${assetId}`, {
     token,
     method: 'DELETE',
@@ -280,7 +278,7 @@ export function resolveCreateTargetCommitish(env) {
  * @param {unknown} tag
  * @returns {string}
  */
-export function assertSafeUntaggedPlaceholderTag(tag) {
+function assertSafeUntaggedPlaceholderTag(tag) {
   if (typeof tag !== 'string' || !SAFE_UNTAGGED_PLACEHOLDER_TAG_RE.test(tag)) {
     fail(`Unsafe untagged placeholder tag: ${JSON.stringify(tag)}`);
     return /** @type {never} */ ('');
@@ -492,7 +490,7 @@ export async function patchRelease(releaseId, token, patch) {
  * @param {string} token
  * @param {{ fallbackToken?: string, draft?: boolean, log?: (...args: unknown[]) => void }} [opts]
  */
-export async function patchReleaseTagMetadataRequired(
+async function patchReleaseTagMetadataRequired(
   releaseId,
   tag,
   token,
@@ -539,7 +537,7 @@ export async function patchReleaseTagMetadataRequired(
   return json;
 }
 
-export async function patchReleaseMetadataBestEffort(releaseId, token, patch, log = console.debug) {
+async function patchReleaseMetadataBestEffort(releaseId, token, patch, log = console.debug) {
   if (!patch || Object.keys(patch).length === 0) {
     return null;
   }
@@ -576,7 +574,7 @@ export async function getRelease(releaseId, token) {
   return json;
 }
 
-export async function uploadReleaseAsset(
+async function uploadReleaseAsset(
   releaseId,
   fileName,
   bytes,
@@ -777,11 +775,7 @@ export async function uploadOrReplaceReleaseAsset({
  * Delete empty duplicate draft releases for a tag. Returns the canonical release, if any.
  * @deprecated Prefer normalizeDraftReleasesForTag, which also merges duplicates that hold assets.
  */
-export async function dedupeEmptyDraftReleases(tag, token, log = console.debug) {
-  return normalizeDraftReleasesForTag(tag, token, { log });
-}
-
-export async function downloadReleaseAsset(assetId, token) {
+async function downloadReleaseAsset(assetId, token) {
   const response = await fetch(`${API_ROOT}/releases/assets/${assetId}`, {
     headers: {
       Accept: 'application/octet-stream',

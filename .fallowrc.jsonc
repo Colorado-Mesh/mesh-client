@@ -1,0 +1,91 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "typeAware": {
+    "enabled": true,
+    "projects": ["tsconfig.json", "tsconfig.main.json", "tsconfig.e2e.json"],
+  },
+  "entry": [
+    // Extra Vite HTML entries (src/renderer/*.html), not imported by the main renderer.
+    "src/renderer/liveMapWindow.tsx",
+    "src/renderer/liveTrafficPreview.tsx",
+  ],
+  "supportEntry": [
+    // Loaded by path from the E2E Electron harness.
+    "e2e/fixtures/**",
+    // Invoked by path (spawn/manual) rather than imported.
+    "scripts/i18n-auto-translate-write-subprocess.mjs",
+    "scripts/consolidate-github-release-duplicates.mjs",
+    "scripts/translation-smoke.mjs",
+    "scripts/backfill-log-ids.mjs",
+  ],
+  "ignorePatterns": [
+    // MkDocs theme asset, not part of the app bundle.
+    "docs/stylesheets/**",
+    // Vendored third-party sources (Micron parser, translation engines).
+    "src/renderer/lib/nomad/vendor/**",
+    "src/main/translation/vendor/**",
+  ],
+  "ignoreDependencies": [
+    // Direct production deps kept for packaged Windows/asar resolution; contract tests enforce them.
+    "builder-util-runtime",
+    "readable-stream",
+    // Resolved through tooling/dev orchestration rather than a static import.
+    "@meshtastic/transport-http",
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser",
+    "concurrently",
+    // Imported by the vendored Micron parser (ignored above), not by first-party source.
+    "dompurify",
+  ],
+  "ignoreBinaries": [
+    // Provided by the host/CI image, not npm.
+    "act",
+    "dpkg-deb",
+    "pipx",
+    "zig",
+  ],
+  "ignoreExports": [
+    // Named in exported component/hook signatures; removing `export` breaks declaration emit.
+    { "file": "src/renderer/components/MapPanel.tsx", "exports": ["MapPanelProps"] },
+    { "file": "src/renderer/components/NodeListPanel.tsx", "exports": ["NodeListPanelProps"] },
+    {
+      "file": "src/renderer/stores/aiSummaryStore.ts",
+      "exports": ["AiSummaryPhase", "ConversationSummary"],
+    },
+    // Re-exported for mecpMessages.ts; type-aware resolver misses the transitive use.
+    { "file": "src/renderer/lib/mecp/engine/index.ts", "exports": ["EncodeResult"] },
+    // Static i18n registry consumed by the unused-key scanner, not by runtime code.
+    {
+      "file": "src/renderer/lib/diagnostics/ReticulumDiagnosticEngine.ts",
+      "exports": ["RETICULUM_RUNTIME_CAUSE_I18N_KEYS"],
+    },
+  ],
+  "health": {
+    // CRAP-only findings are dominated by uncovered small functions and drown out the complexity
+    // gate. `0` is fallow's documented "disable CRAP enforcement" value: no CRAP findings and
+    // nothing counts above threshold; the complexity rules are disabled below.
+    // Review coverage debt with `fallow health --max-crap 30 --coverage <coverage-final.json>`.
+    "maxCrap": 0,
+  },
+  "rules": {
+    // All three complexity metrics are advisory by policy (2026-11). Cognitive is dominated by
+    // JSX nesting depth; cyclomatic in this codebase is dominated by component prop conditionals
+    // and event dispatch, which the refactor backlog tracks separately. Synthesis checks
+    // (dead code, cycles, type leaks, duplicates) still gate both `fallow audit` and CI.
+    // Review complexity locally with:
+    //   pnpm exec fallow health --max-cyclomatic 20 --max-cognitive 15
+    "complexity-cognitive": "off",
+    "complexity-cyclomatic": "off",
+    "private-type-leaks": "error",
+    // Renderer libraries are bundled by Vite from devDependencies; no production install is needed.
+    "dev-dependencies-in-production": "off",
+    // Multiple modules legitimately expose the same short constant/type name; renaming would
+    // churn public APIs without a correctness benefit.
+    "duplicate-exports": "off",
+    "duplicate-export-aliases": "off",
+  },
+  "circularDependencies": {
+    // perfTrace lazy-loads the lag probe; the dynamic edge is intentional and not a runtime cycle.
+    "ignoreLazyImports": true,
+  },
+}

@@ -5,7 +5,7 @@ import { IconUpToDate, IconWarning } from '@/renderer/lib/icons/statusIcons';
 
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
 
-interface Props {
+export interface Props {
   phase: FirmwareCheckResult['phase'];
   latestVersion?: string;
   onOpenReleases: () => void;

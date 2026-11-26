@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   collectChangedPathsForCheck,
+  computePrepushCacheKey,
+  isPrepushCacheValid,
+  PREPUSH_CACHE_VERSION,
   runCheckChanged,
   runEslintOnChangedFiles,
   spawnExitCode,
@@ -83,5 +86,51 @@ describe('prepush-check', () => {
     });
     expect(code).toBe(1);
     expect(spawnSyncFn).not.toHaveBeenCalledWith('pnpm', ['run', 'typecheck'], expect.anything());
+  });
+
+  it('prepush cache key tracks HEAD, merge-base and working-tree content', () => {
+    const makeSpawn = (state) => (cmd, args) => {
+      if (args[0] === 'rev-parse' && args[1] === 'HEAD') return { status: 0, stdout: state.head };
+      if (args[0] === 'diff' && args[1] === 'HEAD') return { status: 0, stdout: state.diff };
+      if (args[0] === 'ls-files') return { status: 0, stdout: state.untracked };
+      if (args[0] === 'hash-object') return { status: 0, stdout: state.untrackedHashes };
+      return { status: 0, stdout: '' };
+    };
+    const base = {
+      head: 'abc',
+      diff: '',
+      untracked: '',
+      untrackedHashes: '',
+    };
+    const keyOf = (state) =>
+      computePrepushCacheKey({
+        mergeBase: 'merge-base',
+        cwd: process.cwd(),
+        spawnSyncFn: makeSpawn(state),
+      });
+
+    const a = keyOf(base);
+    expect(keyOf({ ...base })).toBe(a);
+    expect(keyOf({ ...base, head: 'def' })).not.toBe(a);
+    expect(keyOf({ ...base, diff: 'diff --git a/x b/x' })).not.toBe(a);
+    expect(keyOf({ ...base, untracked: 'new.test.ts\n' })).not.toBe(a);
+  });
+
+  it('prepush cache key changes with the merge-base', () => {
+    const spawnSyncFn = () => ({ status: 0, stdout: '' });
+    const a = computePrepushCacheKey({ mergeBase: 'm1', cwd: process.cwd(), spawnSyncFn });
+    const b = computePrepushCacheKey({ mergeBase: 'm2', cwd: process.cwd(), spawnSyncFn });
+    expect(a).not.toBe(b);
+  });
+
+  it('isPrepushCacheValid requires the current version and key', () => {
+    const current = { version: PREPUSH_CACHE_VERSION, key: 'k1' };
+    expect(isPrepushCacheValid(current, 'k1')).toBe(true);
+    expect(isPrepushCacheValid(current, 'k2')).toBe(false);
+    expect(isPrepushCacheValid({ ...current, version: PREPUSH_CACHE_VERSION + 1 }, 'k1')).toBe(
+      false,
+    );
+    expect(isPrepushCacheValid(null, 'k1')).toBe(false);
+    expect(isPrepushCacheValid({}, 'k1')).toBe(false);
   });
 });

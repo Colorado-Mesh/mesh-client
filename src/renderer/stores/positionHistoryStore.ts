@@ -28,7 +28,7 @@ function loadHistoryWindowHours(): number {
   return typeof v === 'number' && v > 0 ? v : 24;
 }
 
-interface PositionHistoryState {
+export interface PositionHistoryState {
   history: Map<number, PositionPoint[]>;
   showPaths: boolean;
   historyWindowHours: number;

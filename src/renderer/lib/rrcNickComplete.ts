@@ -1,5 +1,5 @@
 /** Cap for @/Tab nick completion dropdown. */
-export const RRC_NICK_COMPLETE_CAP = 8;
+const RRC_NICK_COMPLETE_CAP = 8;
 
 export interface RrcAtMentionAtCaret {
   /** Index of `@` in `text`. */

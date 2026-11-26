@@ -271,7 +271,7 @@ function loadSettings(): AppSettings {
   };
 }
 
-interface Props {
+export interface Props {
   protocol: MeshProtocol;
   logPanelVisible?: boolean;
   onLogPanelVisibleChange?: (visible: boolean) => void;

@@ -1,10 +1,7 @@
 import { isReticulumTcpRnodeSerialPort } from './reticulumRnodeTransport';
 import { RETICULUM_SHARED_INSTANCE_CLIENT_NAME } from './reticulumSharedInstanceNames';
 
-export { isReticulumTcpRnodeSerialPort } from './reticulumRnodeTransport';
-export { RETICULUM_SHARED_INSTANCE_CLIENT_NAME } from './reticulumSharedInstanceNames';
-
-export const RETICULUM_LOCAL_SERIAL_INTERFACE_TYPES = new Set(['rnode', 'rnode_multi', 'kiss']);
+const RETICULUM_LOCAL_SERIAL_INTERFACE_TYPES = new Set(['rnode', 'rnode_multi', 'kiss']);
 
 const ONLINE_STATUSES = new Set(['up', 'connected', 'online', 'running']);
 
@@ -32,7 +29,7 @@ export interface ReticulumLocalInterfaceAlert {
 }
 
 /** True when mesh-client attached as a shared-instance client (local hubs not spawned). */
-export function isReticulumSharedInstanceClientMode(
+function isReticulumSharedInstanceClientMode(
   interfaces: readonly ReticulumLocalInterfaceInput[],
 ): boolean {
   return interfaces.some(
@@ -85,7 +82,7 @@ export function isReticulumRemoteInterfaceType(type: string): boolean {
   return normalized === 'tcp' || normalized === 'tcpclient' || normalized.includes('tcp');
 }
 
-export function classifyReticulumRemoteInterface(
+function classifyReticulumRemoteInterface(
   iface: ReticulumLocalInterfaceInput,
 ): ReticulumLocalInterfaceHealth {
   if (!isReticulumRemoteInterfaceType(iface.type)) {

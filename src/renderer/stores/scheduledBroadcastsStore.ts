@@ -6,7 +6,7 @@ import type {
 } from '@/shared/scheduledBroadcastTypes';
 import { SCHEDULED_BROADCAST_SLOT_COUNT } from '@/shared/scheduledBroadcastTypes';
 
-interface ScheduledBroadcastsState {
+export interface ScheduledBroadcastsState {
   hydrated: boolean;
   slots: Record<number, ScheduledBroadcastRow | null>;
   hydrate: () => Promise<void>;

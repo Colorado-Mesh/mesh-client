@@ -25,7 +25,7 @@ export const CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX = 40;
 
 /** Per-URL link-preview card height budget (matches LinkPreview layout). */
 export const CHAT_LINK_PREVIEW_ESTIMATE_PX = 120;
-export const CHAT_LINK_PREVIEW_ESTIMATE_COMPACT_PX = 80;
+const CHAT_LINK_PREVIEW_ESTIMATE_COMPACT_PX = 80;
 
 export interface EstimateChatRowHeightOptions {
   compactMode?: boolean;

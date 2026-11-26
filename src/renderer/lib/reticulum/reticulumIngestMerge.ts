@@ -16,7 +16,7 @@ export interface ReticulumIngestMergeContext {
   replacesMessageHash?: string | null;
 }
 
-interface LxmfDirectionPayload {
+export interface LxmfDirectionPayload {
   direction?: string;
 }
 

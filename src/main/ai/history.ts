@@ -5,122 +5,207 @@ import { MS_PER_SECOND } from '../../shared/timeConstants';
 import type { NodeSqliteDB } from '../db-compat';
 import { MESHCORE_MESSAGE_CHANNEL_SQL } from '../meshcoreMessageChannel';
 
+function isHistoryNodeIdValue(value: number | undefined): boolean {
+  return value === undefined || (Number.isSafeInteger(value) && value >= 0 && value <= 0xffffffff);
+}
+
+function isHistoryStringValue(value: string | undefined): boolean {
+  return (
+    value === undefined || (typeof value === 'string' && value.length > 0 && value.length <= 256)
+  );
+}
+
+function assertHistoryProtocolAndRange(q: AiHistoryQuery): void {
+  const protocolOk = ['meshtastic', 'meshcore', 'reticulum'].includes(q.protocol);
+  const surfaceOk = ['channel', 'dm', 'room', 'rrc'].includes(q.surface);
+  const rangeOk =
+    Number.isFinite(q.sinceMs) &&
+    Number.isFinite(q.untilMs) &&
+    q.sinceMs >= 0 &&
+    q.untilMs >= q.sinceMs &&
+    q.untilMs <= 8.64e15;
+  if (!protocolOk || !surfaceOk || !rangeOk) throw new Error('Invalid AI history range');
+}
+
+function assertHistoryNodeIds(q: AiHistoryQuery): void {
+  for (const value of [q.channel, q.peerId, q.roomServerId, q.radioNodeId]) {
+    if (!isHistoryNodeIdValue(value)) throw new Error('Invalid AI conversation');
+  }
+}
+
+function assertHistoryStringFields(q: AiHistoryQuery): void {
+  for (const value of [q.identityId, q.peerHash, q.hubHash, q.room, q.channelKey]) {
+    if (!isHistoryStringValue(value)) throw new Error('Invalid AI conversation');
+  }
+}
+
+function assertHistoryOwnNodeIds(q: AiHistoryQuery): void {
+  if (q.ownNodeIds === undefined) return;
+  const valid =
+    Array.isArray(q.ownNodeIds) &&
+    q.ownNodeIds.length <= 32 &&
+    q.ownNodeIds.every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 0xffffffff);
+  if (!valid) throw new Error('Invalid AI identities');
+}
+
+function assertHistoryLimit(q: AiHistoryQuery): void {
+  if (q.limit === undefined) return;
+  if (!Number.isSafeInteger(q.limit) || q.limit < 1 || q.limit > AI_MAX_MESSAGES) {
+    throw new Error('Invalid AI history limit');
+  }
+}
+
+function assertHistoryCursor(q: AiHistoryQuery): void {
+  if (q.beforeAt === undefined && q.beforeId === undefined) return;
+  const valid =
+    typeof q.beforeAt === 'number' &&
+    Number.isFinite(q.beforeAt) &&
+    q.beforeAt >= 0 &&
+    typeof q.beforeId === 'number' &&
+    Number.isSafeInteger(q.beforeId) &&
+    q.beforeId >= 0;
+  if (!valid) throw new Error('Invalid AI history cursor');
+}
+
+function assertHistoryOrder(q: AiHistoryQuery): void {
+  if (q.byArrival !== undefined && typeof q.byArrival !== 'boolean') {
+    throw new Error('Invalid AI history order');
+  }
+}
+
 export function validateHistoryQuery(value: unknown): AiHistoryQuery {
   if (!value || typeof value !== 'object') throw new Error('Invalid AI history query');
   const q = value as AiHistoryQuery;
-  if (
-    !['meshtastic', 'meshcore', 'reticulum'].includes(q.protocol) ||
-    !['channel', 'dm', 'room', 'rrc'].includes(q.surface) ||
-    !Number.isFinite(q.sinceMs) ||
-    !Number.isFinite(q.untilMs) ||
-    q.sinceMs < 0 ||
-    q.untilMs < q.sinceMs ||
-    q.untilMs > 8.64e15
-  )
-    throw new Error('Invalid AI history range');
-  for (const v of [q.channel, q.peerId, q.roomServerId, q.radioNodeId])
-    if (v !== undefined && (!Number.isSafeInteger(v) || v < 0 || v > 0xffffffff))
-      throw new Error('Invalid AI conversation');
-  for (const v of [q.identityId, q.peerHash, q.hubHash, q.room, q.channelKey])
-    if (v !== undefined && (typeof v !== 'string' || !v || v.length > 256))
-      throw new Error('Invalid AI conversation');
-  if (
-    q.ownNodeIds !== undefined &&
-    (!Array.isArray(q.ownNodeIds) ||
-      q.ownNodeIds.length > 32 ||
-      q.ownNodeIds.some((n) => !Number.isSafeInteger(n) || n < 0 || n > 0xffffffff))
-  )
-    throw new Error('Invalid AI identities');
-  if (
-    q.limit !== undefined &&
-    (!Number.isSafeInteger(q.limit) || q.limit < 1 || q.limit > AI_MAX_MESSAGES)
-  )
-    throw new Error('Invalid AI history limit');
-  if (
-    (q.beforeAt !== undefined || q.beforeId !== undefined) &&
-    (typeof q.beforeAt !== 'number' ||
-      !Number.isFinite(q.beforeAt) ||
-      q.beforeAt < 0 ||
-      typeof q.beforeId !== 'number' ||
-      !Number.isSafeInteger(q.beforeId) ||
-      q.beforeId < 0)
-  )
-    throw new Error('Invalid AI history cursor');
-  if (q.byArrival !== undefined && typeof q.byArrival !== 'boolean')
-    throw new Error('Invalid AI history order');
+  assertHistoryProtocolAndRange(q);
+  assertHistoryNodeIds(q);
+  assertHistoryStringFields(q);
+  assertHistoryOwnNodeIds(q);
+  assertHistoryLimit(q);
+  assertHistoryCursor(q);
+  assertHistoryOrder(q);
   return q;
 }
+
+interface AiHistoryQueryParts {
+  table: string;
+  where: string[];
+  args: (string | number)[];
+  body: string;
+  sender: string;
+  timestamp: string;
+}
+
+function buildAiRrcRoomQuery(q: AiHistoryQuery, parts: AiHistoryQueryParts): void {
+  if (!q.hubHash || !q.room || !/^[a-f0-9]{32}$/i.test(q.hubHash))
+    throw new Error('Invalid AI room');
+  parts.table = 'rrc_messages';
+  // Reaction lines (rrc-extensions.md K_REACT_TO) are emoji, not conversation.
+  parts.where.push('hub_hash = ?', 'room = ?', "kind IN ('msg', 'action')", 'react_to IS NULL');
+  parts.args.push(q.hubHash.toLowerCase(), q.room.trim().toLowerCase().replace(/^#+/, ''));
+  parts.body = 'body';
+  parts.sender = "COALESCE(nickname, sender_hash, '')";
+}
+
+function buildAiRrcDmQuery(q: AiHistoryQuery, parts: AiHistoryQueryParts): void {
+  if (!q.identityId || !q.peerHash || !/^[a-f0-9]{32}$/i.test(q.peerHash)) {
+    throw new Error('Invalid AI DM');
+  }
+  parts.table = 'reticulum_messages';
+  parts.where.push('identity_id = ?', '(sender_id = ? OR to_hash = ?)');
+  parts.args.push(q.identityId, q.peerHash.toLowerCase(), q.peerHash.toLowerCase());
+}
+
+function applyAiHistoryRoomQuery(q: AiHistoryQuery, parts: AiHistoryQueryParts): void {
+  if (q.roomServerId === undefined) throw new Error('Invalid AI room');
+  parts.where.push(
+    '(room_server_id = ? OR (room_server_id IS NULL AND (sender_id = ? OR to_node = ?)))',
+  );
+  parts.args.push(q.roomServerId, q.roomServerId, q.roomServerId);
+}
+
+function applyAiHistoryDmQuery(
+  q: AiHistoryQuery,
+  parts: AiHistoryQueryParts,
+  meshcore: boolean,
+): void {
+  if (q.peerId === undefined || !q.ownNodeIds?.length) throw new Error('Invalid AI DM');
+  const marks = q.ownNodeIds.map(() => '?').join(',');
+  parts.where.push(
+    `((sender_id = ? AND (to_node IN (${marks})${meshcore ? ' OR (channel_idx = -1 AND (to_node IS NULL OR to_node = 0))' : ''})) OR (to_node = ? AND sender_id IN (${marks})))`,
+  );
+  parts.args.push(q.peerId, ...q.ownNodeIds, q.peerId, ...q.ownNodeIds);
+  if (meshcore) parts.where.push('room_server_id IS NULL');
+}
+
+function applyAiHistoryChannelQuery(
+  q: AiHistoryQuery,
+  parts: AiHistoryQueryParts,
+  meshcore: boolean,
+): void {
+  if (q.channel === undefined) throw new Error('Invalid AI channel');
+  const channelSql = meshcore ? MESHCORE_MESSAGE_CHANNEL_SQL : 'channel';
+  parts.where.push('(to_node IS NULL OR to_node = 0 OR to_node = 4294967295)');
+  if (q.channelKey) {
+    parts.where.push(
+      `(channel_key = ? OR (channel_key IS NULL AND ${channelSql} = ? AND (radio_node_id IS NULL OR radio_node_id = ?)))`,
+    );
+    parts.args.push(q.channelKey, q.channel, q.radioNodeId ?? -1);
+  } else {
+    parts.where.push(
+      `${channelSql} = ? AND channel_key IS NULL AND (radio_node_id IS NULL OR radio_node_id = ?)`,
+    );
+    parts.args.push(q.channel, q.radioNodeId ?? -1);
+  }
+  if (meshcore) parts.where.push('room_server_id IS NULL');
+}
+
+function applyAiHistoryLoraQuery(q: AiHistoryQuery, parts: AiHistoryQueryParts, now: number): void {
+  const meshcore = q.protocol === 'meshcore';
+  parts.table = meshcore ? 'meshcore_messages' : 'messages';
+  if (meshcore) {
+    parts.sender = "COALESCE(sender_name, 'Unknown')";
+    parts.timestamp = 'CASE WHEN timestamp <= 0 OR timestamp > ? THEN ? ELSE timestamp END';
+    parts.args.push(now + MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC * MS_PER_SECOND, now);
+  }
+  if (q.surface === 'room' && meshcore) {
+    applyAiHistoryRoomQuery(q, parts);
+  } else if (q.surface === 'dm') {
+    applyAiHistoryDmQuery(q, parts, meshcore);
+  } else if (q.surface === 'channel') {
+    applyAiHistoryChannelQuery(q, parts, meshcore);
+  } else {
+    throw new Error('Invalid AI conversation');
+  }
+  parts.where.push('(emoji IS NULL OR emoji = 0)');
+  if (q.surface !== 'channel' && q.radioNodeId !== undefined) {
+    parts.where.push('(radio_node_id IS NULL OR radio_node_id = ?)');
+    parts.args.push(q.radioNodeId);
+  }
+}
+
 export function querySummaryHistory(
   db: NodeSqliteDB,
   q: AiHistoryQuery,
   now = Date.now(),
 ): AiHistoryMessage[] {
-  const args: (string | number)[] = [];
-  const where: string[] = [];
-  let table: string;
-  let body = 'payload';
-  let sender = "COALESCE(sender_name, CAST(sender_id AS TEXT), '')";
-  let timestamp = 'timestamp';
+  const parts: AiHistoryQueryParts = {
+    table: '',
+    where: [],
+    args: [],
+    body: 'payload',
+    sender: "COALESCE(sender_name, CAST(sender_id AS TEXT), '')",
+    timestamp: 'timestamp',
+  };
   if (q.protocol === 'reticulum' && q.surface === 'rrc') {
-    if (!q.hubHash || !q.room || !/^[a-f0-9]{32}$/i.test(q.hubHash))
-      throw new Error('Invalid AI room');
-    table = 'rrc_messages';
-    // Reaction lines (rrc-extensions.md K_REACT_TO) are emoji, not conversation.
-    where.push('hub_hash = ?', 'room = ?', "kind IN ('msg', 'action')", 'react_to IS NULL');
-    args.push(q.hubHash.toLowerCase(), q.room.trim().toLowerCase().replace(/^#+/, ''));
-    body = 'body';
-    sender = "COALESCE(nickname, sender_hash, '')";
+    buildAiRrcRoomQuery(q, parts);
   } else if (q.protocol === 'reticulum' && q.surface === 'dm') {
-    if (!q.identityId || !q.peerHash || !/^[a-f0-9]{32}$/i.test(q.peerHash))
-      throw new Error('Invalid AI DM');
-    table = 'reticulum_messages';
-    where.push('identity_id = ?', '(sender_id = ? OR to_hash = ?)');
-    args.push(q.identityId, q.peerHash.toLowerCase(), q.peerHash.toLowerCase());
+    buildAiRrcDmQuery(q, parts);
   } else if (q.protocol === 'meshtastic' || q.protocol === 'meshcore') {
-    const meshcore = q.protocol === 'meshcore';
-    table = meshcore ? 'meshcore_messages' : 'messages';
-    if (meshcore) {
-      sender = "COALESCE(sender_name, 'Unknown')";
-      timestamp = 'CASE WHEN timestamp <= 0 OR timestamp > ? THEN ? ELSE timestamp END';
-      args.push(now + MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC * MS_PER_SECOND, now);
-    }
-    if (q.surface === 'room' && meshcore) {
-      if (q.roomServerId === undefined) throw new Error('Invalid AI room');
-      where.push(
-        '(room_server_id = ? OR (room_server_id IS NULL AND (sender_id = ? OR to_node = ?)))',
-      );
-      args.push(q.roomServerId, q.roomServerId, q.roomServerId);
-    } else if (q.surface === 'dm') {
-      if (q.peerId === undefined || !q.ownNodeIds?.length) throw new Error('Invalid AI DM');
-      const marks = q.ownNodeIds.map(() => '?').join(',');
-      where.push(
-        `((sender_id = ? AND (to_node IN (${marks})${meshcore ? ' OR (channel_idx = -1 AND (to_node IS NULL OR to_node = 0))' : ''})) OR (to_node = ? AND sender_id IN (${marks})))`,
-      );
-      args.push(q.peerId, ...q.ownNodeIds, q.peerId, ...q.ownNodeIds);
-      if (meshcore) where.push('room_server_id IS NULL');
-    } else if (q.surface === 'channel') {
-      if (q.channel === undefined) throw new Error('Invalid AI channel');
-      const channelSql = meshcore ? MESHCORE_MESSAGE_CHANNEL_SQL : 'channel';
-      where.push('(to_node IS NULL OR to_node = 0 OR to_node = 4294967295)');
-      if (q.channelKey) {
-        where.push(
-          `(channel_key = ? OR (channel_key IS NULL AND ${channelSql} = ? AND (radio_node_id IS NULL OR radio_node_id = ?)))`,
-        );
-        args.push(q.channelKey, q.channel, q.radioNodeId ?? -1);
-      } else {
-        where.push(
-          `${channelSql} = ? AND channel_key IS NULL AND (radio_node_id IS NULL OR radio_node_id = ?)`,
-        );
-        args.push(q.channel, q.radioNodeId ?? -1);
-      }
-      if (meshcore) where.push('room_server_id IS NULL');
-    } else throw new Error('Invalid AI conversation');
-    where.push('(emoji IS NULL OR emoji = 0)');
-    if (q.surface !== 'channel' && q.radioNodeId !== undefined) {
-      where.push('(radio_node_id IS NULL OR radio_node_id = ?)');
-      args.push(q.radioNodeId);
-    }
-  } else throw new Error('Invalid AI conversation');
+    applyAiHistoryLoraQuery(q, parts, now);
+  } else {
+    throw new Error('Invalid AI conversation');
+  }
+  const { table, where, args, body, sender, timestamp } = parts;
   // Normalize MeshCore clock skew before both the range predicate and ordering, without
   // changing the insertion-order semantics of existing unbounded chat history APIs.
   const senderId =

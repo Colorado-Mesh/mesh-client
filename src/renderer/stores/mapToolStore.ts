@@ -13,7 +13,7 @@ export interface MapProfileEndpoint {
   groundAltitudeM?: number;
 }
 
-interface MapToolState {
+export interface MapToolState {
   measureActive: boolean;
   setMeasureActive: (active: boolean) => void;
   profileActive: boolean;

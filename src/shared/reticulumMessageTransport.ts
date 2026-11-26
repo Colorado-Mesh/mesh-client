@@ -12,12 +12,8 @@ export const RETICULUM_SINGLE_VIA_ATOMS = [
   'mqtt',
   'both',
   'paper',
-] as const;
-
-export type ReticulumSingleViaAtom = (typeof RETICULUM_SINGLE_VIA_ATOMS)[number];
-
-/** Atoms that may appear in explicit `+`-joined multi-egress labels (e.g. `rf+tcp`). */
-export const RETICULUM_MULTI_VIA_ATOMS = ['ble', 'rf', 'tcp', 'network'] as const;
+] as const; /** Atoms that may appear in explicit `+`-joined multi-egress labels (e.g. `rf+tcp`). */
+const RETICULUM_MULTI_VIA_ATOMS = ['ble', 'rf', 'tcp', 'network'] as const;
 
 const SINGLE = new Set<string>(RETICULUM_SINGLE_VIA_ATOMS);
 const MULTI = new Set<string>(RETICULUM_MULTI_VIA_ATOMS);

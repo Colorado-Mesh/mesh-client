@@ -14,8 +14,8 @@ import { isElectronBinaryInstalled } from './electron-binary.mjs';
 import { joinUnderRoot } from './lib/path-under-root.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const projectRoot = path.resolve(__dirname, '..');
-export const FLATPAK_ELECTRON_PREBUILT = joinUnderRoot(projectRoot, 'electron-prebuilt');
+const projectRoot = path.resolve(__dirname, '..');
+const FLATPAK_ELECTRON_PREBUILT = joinUnderRoot(projectRoot, 'electron-prebuilt');
 
 /**
  * @param {object} [opts]

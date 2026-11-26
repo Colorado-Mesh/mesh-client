@@ -7,9 +7,9 @@ import { ModuleConfig } from '@meshtastic/protobufs';
 
 const Flags = ModuleConfig.ModuleConfig_MeshBeaconConfig_Flags;
 
-export const MESH_BEACON_FLAG_LISTEN: number = Flags.FLAG_LISTEN_ENABLED;
-export const MESH_BEACON_FLAG_BROADCAST: number = Flags.FLAG_BROADCAST_ENABLED;
-export const MESH_BEACON_FLAG_LEGACY_SPLIT: number = Flags.FLAG_LEGACY_SPLIT;
+const MESH_BEACON_FLAG_LISTEN: number = Flags.FLAG_LISTEN_ENABLED;
+const MESH_BEACON_FLAG_BROADCAST: number = Flags.FLAG_BROADCAST_ENABLED;
+const MESH_BEACON_FLAG_LEGACY_SPLIT: number = Flags.FLAG_LEGACY_SPLIT;
 
 /** `broadcast_message` nanopb max_size is 61 including the terminator. */
 export const MESH_BEACON_MESSAGE_MAX_BYTES = 60;

@@ -22,7 +22,7 @@ export interface RelayCoverage {
   updatedAt: number;
 }
 
-export type RelayCoveragePatch = Partial<Omit<RelayCoverage, 'updatedAt'>> &
+type RelayCoveragePatch = Partial<Omit<RelayCoverage, 'updatedAt'>> &
   Pick<RelayCoverage, 'protocol' | 'mode'>;
 
 interface RelayCoverageState {

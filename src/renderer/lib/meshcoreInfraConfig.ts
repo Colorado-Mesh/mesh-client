@@ -143,14 +143,15 @@ function sectionReads(section: InfraConfigSection): ConfigRead[] {
   return INFRA_CONFIG_FIELDS[section].map(({ key }) => ({ command: `get ${key}`, keys: [key] }));
 }
 
-function parseRead(read: ConfigRead, response: string): InfraConfigValues {
-  if (read.command === 'region default') {
-    const match = /^default scope is (\S+)$/i.exec(response.trim().replace(/^>\s*/, ''));
-    if (!match) throw configError('infraConfig.invalidReply');
-    const value = match[1] === '<null>' ? '' : match[1];
-    validateInfraConfigValue(INFRA_CONFIG_FIELDS.scope[0], value);
-    return { 'region.default': value };
-  }
+function parseRegionDefault(response: string): InfraConfigValues {
+  const match = /^default scope is (\S+)$/i.exec(response.trim().replace(/^>\s*/, ''));
+  if (!match) throw configError('infraConfig.invalidReply');
+  const value = match[1] === '<null>' ? '' : match[1];
+  validateInfraConfigValue(INFRA_CONFIG_FIELDS.scope[0], value);
+  return { 'region.default': value };
+}
+
+function parseKeyedValues(read: ConfigRead, response: string): InfraConfigValues {
   if (!response.trimStart().startsWith('>')) throw configError('infraConfig.invalidReply');
   const body = response.trimStart();
   const value = body.startsWith('> ') ? body.slice(2) : body.slice(1);
@@ -160,20 +161,40 @@ function parseRead(read: ConfigRead, response: string): InfraConfigValues {
   read.keys.forEach((key, index) => {
     values[key] = parts[index];
   });
-  for (const field of Object.values(INFRA_CONFIG_FIELDS).flat()) {
-    const current = values[field.key];
-    if (current === undefined || field.type === 'text' || field.type === 'password') continue;
-    if (field.type === 'boolean' && !['on', 'off'].includes(current))
-      throw configError('infraConfig.invalidReply');
-    if (field.type === 'select') {
-      const option = field.options?.find((item) => Number(item) === Number(current));
-      if (!current || option === undefined) throw configError('infraConfig.invalidReply');
-      values[field.key] = option;
-    }
-    if (field.type === 'number' && (!current || !Number.isFinite(Number(current))))
-      throw configError('infraConfig.invalidReply');
-  }
+  normalizeParsedValues(values);
   return values;
+}
+
+function normalizeParsedField(
+  field: InfraConfigField,
+  current: string | undefined,
+): string | undefined {
+  if (current === undefined || field.type === 'text' || field.type === 'password') return undefined;
+  if (field.type === 'boolean') {
+    if (!['on', 'off'].includes(current)) throw configError('infraConfig.invalidReply');
+    return undefined;
+  }
+  if (field.type === 'select') {
+    const option = field.options?.find((item) => Number(item) === Number(current));
+    if (!current || option === undefined) throw configError('infraConfig.invalidReply');
+    return option;
+  }
+  if (!current || !Number.isFinite(Number(current))) {
+    throw configError('infraConfig.invalidReply');
+  }
+  return undefined;
+}
+
+function normalizeParsedValues(values: InfraConfigValues): void {
+  for (const field of Object.values(INFRA_CONFIG_FIELDS).flat()) {
+    const normalized = normalizeParsedField(field, values[field.key]);
+    if (normalized !== undefined) values[field.key] = normalized;
+  }
+}
+
+function parseRead(read: ConfigRead, response: string): InfraConfigValues {
+  if (read.command === 'region default') return parseRegionDefault(response);
+  return parseKeyedValues(read, response);
 }
 
 export async function readInfraConfig(
@@ -193,32 +214,56 @@ export async function readInfraConfig(
   return { values, unavailable };
 }
 
-export function validateInfraConfigValue(field: InfraConfigField, value: string): void {
-  if (/[\r\n\0]/.test(value)) throw configError('infraConfig.invalidValue');
-  if (field.maxBytes != null && new TextEncoder().encode(value).length > field.maxBytes)
+function hasControlChars(value: string): boolean {
+  return /[\r\n\0]/.test(value);
+}
+
+function exceedsMaxBytes(field: InfraConfigField, value: string): boolean {
+  return field.maxBytes != null && new TextEncoder().encode(value).length > field.maxBytes;
+}
+
+function violatesInfraKeyRules(field: InfraConfigField, value: string): boolean {
+  if (field.key === 'name' && (!value.trim() || /[[\]\\:,?*]/.test(value))) return true;
+  if (field.key === 'region.default' && value !== '' && !/^#?[\p{L}\p{N}_-]+$/u.test(value)) {
+    return true;
+  }
+  return false;
+}
+
+function isInvalidInfraNumber(field: InfraConfigField, value: string): boolean {
+  const number = Number(value);
+  if (
+    !value.trim() ||
+    !Number.isFinite(number) ||
+    (field.integer && !Number.isInteger(number)) ||
+    (field.min != null && number < field.min) ||
+    (field.max != null && number > field.max)
+  ) {
+    return true;
+  }
+  if (field.key === 'flood.advert.interval' && number > 0 && number < 3) return true;
+  if (field.key === 'advert.interval' && (number % 2 !== 0 || (number > 0 && number < 60))) {
+    return true;
+  }
+  return false;
+}
+
+function validateInfraConfigValue(field: InfraConfigField, value: string): void {
+  if (
+    hasControlChars(value) ||
+    exceedsMaxBytes(field, value) ||
+    violatesInfraKeyRules(field, value)
+  ) {
     throw configError('infraConfig.invalidValue');
-  if (field.key === 'name' && (!value.trim() || /[[\]\\:,?*]/.test(value)))
+  }
+  if (field.type === 'boolean' && !['on', 'off'].includes(value)) {
     throw configError('infraConfig.invalidValue');
-  if (field.key === 'region.default' && value !== '' && !/^#?[\p{L}\p{N}_-]+$/u.test(value))
+  }
+  if (field.type === 'select' && !field.options?.includes(value)) {
     throw configError('infraConfig.invalidValue');
-  if (field.type === 'boolean' && !['on', 'off'].includes(value))
+  }
+  if (field.type === 'number' && isInvalidInfraNumber(field, value)) {
     throw configError('infraConfig.invalidValue');
-  if (field.type === 'select' && !field.options?.includes(value))
-    throw configError('infraConfig.invalidValue');
-  if (field.type === 'number') {
-    const number = Number(value);
-    if (
-      !value.trim() ||
-      !Number.isFinite(number) ||
-      (field.integer && !Number.isInteger(number)) ||
-      (field.min != null && number < field.min) ||
-      (field.max != null && number > field.max)
-    )
-      throw configError('infraConfig.invalidValue');
-    if (field.key === 'flood.advert.interval' && number > 0 && number < 3)
-      throw configError('infraConfig.invalidValue');
-    if (field.key === 'advert.interval' && (number % 2 !== 0 || (number > 0 && number < 60)))
-      throw configError('infraConfig.invalidValue');
   }
 }
 

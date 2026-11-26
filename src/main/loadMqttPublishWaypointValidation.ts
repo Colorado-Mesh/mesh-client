@@ -6,7 +6,7 @@ import { validateMqttPublishWaypointArgs as validateMqttPublishWaypointArgsImpl 
 
 const requireFromHere = createRequire(__filename);
 
-type ValidateMqttPublishWaypointArgs = typeof ValidateFn;
+export type ValidateMqttPublishWaypointArgs = typeof ValidateFn;
 
 let cached: ValidateMqttPublishWaypointArgs | undefined;
 

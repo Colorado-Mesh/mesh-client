@@ -20,14 +20,14 @@ import { isValidLatLon } from '@/shared/geoCoords';
 export const RMAP_GLOBAL_MAP_URL = 'https://rmap.world/';
 
 export const RMAP_ANNOUNCE_INTERVAL_DEFAULT_MIN = 360;
-export const RMAP_ANNOUNCE_INTERVAL_MIN_MIN = 60;
-export const RMAP_ANNOUNCE_INTERVAL_MIN_MAX = 1440;
-export const RMAP_REACHABLE_ON_MAX_LEN = 256;
+const RMAP_ANNOUNCE_INTERVAL_MIN_MIN = 60;
+const RMAP_ANNOUNCE_INTERVAL_MIN_MAX = 1440;
+const RMAP_REACHABLE_ON_MAX_LEN = 256;
 /** Upstream rsReticulum DEFAULT_STAMP_VALUE (manual text still cites 14). */
 export const RMAP_DISCOVERY_STAMP_DEFAULT = 16;
 export const RMAP_DISCOVERY_STAMP_MIN = 8;
 export const RMAP_DISCOVERY_STAMP_MAX = 32;
-export const RMAP_DISCOVERY_LXMF_ADDRESS_MAX_LEN = 64;
+const RMAP_DISCOVERY_LXMF_ADDRESS_MAX_LEN = 64;
 
 export const RMAP_SETTINGS_KEYS = {
   announceIntervalMin: 'reticulumRmapAnnounceIntervalMin',
@@ -361,7 +361,7 @@ async function fetchReticulumInterfaceRows(): Promise<ReticulumInterfaceRow[]> {
   return body.interfaces ?? [];
 }
 
-export async function syncReticulumRmapDiscoveryToInterface(
+async function syncReticulumRmapDiscoveryToInterface(
   iface: ReticulumInterfaceRow,
   opts: { discoveryName?: string | null },
 ): Promise<boolean> {

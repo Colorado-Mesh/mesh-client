@@ -23,7 +23,7 @@ function persistUseFahrenheit(value: boolean): void {
   }
 }
 
-interface TemperatureUnitState {
+export interface TemperatureUnitState {
   useFahrenheit: boolean;
   setUseFahrenheit: (value: boolean) => void;
   toggleUseFahrenheit: () => void;

@@ -3,7 +3,7 @@
 import type { EmergencyIncident, IncidentEventKind } from './mecp/incidentTypes';
 
 export const TOPOLOGY_EXPORT_FORMAT = 'mesh-client-topology';
-export const DIAGNOSTICS_EXPORT_FORMAT = 'mesh-client-diagnostics';
+const DIAGNOSTICS_EXPORT_FORMAT = 'mesh-client-diagnostics';
 export const INCIDENT_EXPORT_FORMAT = 'mesh-client-incidents';
 export const EXPORT_FORMAT_VERSION = 1;
 
@@ -135,7 +135,7 @@ export type IncidentExportField = (typeof INCIDENT_EXPORT_FIELDS)[number];
 export type IncidentExportRow = Record<IncidentExportField, unknown>;
 
 /** One timeline entry in the incident export (`events` field). */
-export interface IncidentExportEvent {
+interface IncidentExportEvent {
   at: string | null;
   kind: IncidentEventKind;
   peer_id: string | null;

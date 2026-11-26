@@ -57,7 +57,7 @@ function isFeatureCollection(value: unknown): value is MapOverlayFeatureCollecti
 }
 
 /** Accept only well-shaped persisted overlay records; drop the rest. */
-export function sanitizePersistedOverlayLayers(raw: unknown): MapOverlayLayer[] | null {
+function sanitizePersistedOverlayLayers(raw: unknown): MapOverlayLayer[] | null {
   if (!Array.isArray(raw)) return null;
   const out: MapOverlayLayer[] = [];
   for (const item of raw) {

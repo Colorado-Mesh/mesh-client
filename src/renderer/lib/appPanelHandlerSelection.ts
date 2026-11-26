@@ -1,6 +1,6 @@
 import type { ProtocolCapabilities } from './radio/BaseRadioProvider';
 
-type HandlerSelectionCapabilities = Pick<
+export type HandlerSelectionCapabilities = Pick<
   ProtocolCapabilities,
   | 'hasFullPositionConfig'
   | 'hasCompanionContactManagementConfig'

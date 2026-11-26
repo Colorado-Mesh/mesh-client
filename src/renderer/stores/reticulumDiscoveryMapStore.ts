@@ -10,7 +10,7 @@ export const RMAP_DISCOVERY_TTL_SEC = 7 * (MS_PER_DAY / MS_PER_SECOND);
 
 const MAX_RMAP_STRING_FIELD_LEN = 256;
 
-interface ReticulumDiscoveryMapState {
+export interface ReticulumDiscoveryMapState {
   discovered: ReticulumRmapDiscoveredWireRow[];
   loading: boolean;
   lastRefreshAt: number | null;

@@ -27,7 +27,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-export const STORE_DIR = '/run/build/mesh-client/flatpak-node/pnpm-store';
+const STORE_DIR = '/run/build/mesh-client/flatpak-node/pnpm-store';
 const maxAttempts = 3;
 
 /** Args passed to `pnpm` for Flatpak offline install (exported for contract tests). */
@@ -101,7 +101,7 @@ export function sanitizeFlatpakPnpmStoreDirConfig(root = projectRoot) {
   return { workspaceRemoved, npmrcRemoved };
 }
 
-export function runFlatpakPnpmInstall() {
+function runFlatpakPnpmInstall() {
   if (!fs.existsSync(STORE_DIR)) {
     console.error(
       `[flatpak-pnpm] offline store missing: ${STORE_DIR} (Flatpak sandbox path required)`,

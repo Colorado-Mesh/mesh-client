@@ -157,7 +157,7 @@ export function repairMeshcoreHydratedDmRfDuplicates(messages: ChatMessage[]): C
  * Failure point: older builds stored dual-ingress rows that did not dedup.
  * Fallback: keep resolved identity when replacing an ambiguous twin; otherwise drop the later row.
  */
-export function repairMeshcoreHydratedRoomPostDuplicates(messages: ChatMessage[]): ChatMessage[] {
+function repairMeshcoreHydratedRoomPostDuplicates(messages: ChatMessage[]): ChatMessage[] {
   const kept: ChatMessage[] = [];
   for (const msg of messages) {
     if (!isMeshcoreRoomChatMessage(msg)) {

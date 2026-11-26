@@ -5,7 +5,7 @@ import { GAMES_CMD, type GamesActionRequest, type GamesAppId } from '@/shared/ga
 
 const DEST_HASH_RE = /^[0-9a-f]{32}$/;
 
-export function normalizeGamesDestHash(hash: string): string | null {
+function normalizeGamesDestHash(hash: string): string | null {
   const v = hash.trim().toLowerCase();
   return DEST_HASH_RE.test(v) ? v : null;
 }

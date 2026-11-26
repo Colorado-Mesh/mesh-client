@@ -43,7 +43,7 @@ export function shouldDeferMeshcoreTcpReconnectAfterBurst(opts: {
   return opts.burstCaptured;
 }
 
-type MeshcoreTcpWriteDeadListener = () => void;
+export type MeshcoreTcpWriteDeadListener = () => void;
 
 let meshcoreTcpWriteDeadListener: MeshcoreTcpWriteDeadListener | null = null;
 
@@ -63,7 +63,7 @@ export function isMeshcoreTcpOpenHopDeadAccepted(): boolean {
 }
 
 /** OpenHop user TX: wait for getSelfInfo live window before getContacts / peer FIN. */
-export const MESHCORE_TCP_USER_TX_LIVE_TIMEOUT_MS = 20 * MS_PER_SECOND;
+const MESHCORE_TCP_USER_TX_LIVE_TIMEOUT_MS = 20 * MS_PER_SECOND;
 
 /**
  * OpenHop often FINs a reconnect that starts immediately after the prior session.

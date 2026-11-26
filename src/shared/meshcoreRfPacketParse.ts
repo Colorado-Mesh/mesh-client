@@ -157,7 +157,7 @@ function utf8Slice(u8: Uint8Array, start: number): string {
  * Parse ADVERT inner payload starting at `inner` (first byte = pubkey start).
  * Layout: pubkey 32, timestamp LE 4, signature 64, flags 1, optional lat/lon signed microdegrees LE, name UTF-8.
  */
-export function parseMeshCoreAdvertInner(inner: Uint8Array): MeshCoreAdvertParsed | null {
+function parseMeshCoreAdvertInner(inner: Uint8Array): MeshCoreAdvertParsed | null {
   const minCore = 32 + 4 + 64 + 1;
   if (inner.length < minCore) return null;
 
@@ -376,10 +376,4 @@ export async function meshCoreTransportCodeMatchesRegion(
 ): Promise<boolean> {
   const code = await meshCoreTransportCodeForRegion(regionName, payloadTypeNibble, innerPayload);
   return code === transportCodeScope;
-}
-
-export function analyzeMeshCorePacketStructure(raw: Uint8Array): MeshCoreStructureAnalysis | null {
-  const p = parseMeshCoreRfPacket(raw);
-  if (!p.ok) return null;
-  return p.structure;
 }

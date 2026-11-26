@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { RemoteAddressBookRow, UpsertRemoteAddressRequest } from '@/shared/remote-types';
 
-interface ReticulumRemoteAddressStoreState {
+export interface ReticulumRemoteAddressStoreState {
   addresses: Map<string, RemoteAddressBookRow>;
   hydrated: boolean;
   loading: boolean;

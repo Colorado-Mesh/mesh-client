@@ -298,6 +298,287 @@ function resolveRrcHubView(hubHash: string | undefined): {
 
 export type ReticulumRuntime = ReturnType<typeof useReticulumRuntime>;
 
+type RrcInboundKind = 'msg' | 'notice' | 'action' | 'error' | 'system';
+type RrcSessionState = ReturnType<typeof useRrcSessionStore.getState>;
+
+/** Chunked `/list` directory replies open/append/replace/close the listed-rooms directory. */
+function applyRrcListDirectoryNotice({
+  body,
+  hubDestHash,
+  session,
+}: {
+  body: string;
+  hubDestHash?: string;
+  session: RrcSessionState;
+}): void {
+  const listed = parseRrcListNotice(body);
+  if (listed?.action === 'begin') {
+    session.beginListedRoomsDirectory(hubDestHash);
+  } else if (listed?.action === 'replace') {
+    session.setListedRooms(listed.rooms, hubDestHash);
+  } else if (listed?.action === 'append') {
+    if (session.isListedRoomsDirectoryOpen(hubDestHash)) {
+      session.appendListedRooms(listed.rooms, hubDestHash);
+    }
+  } else if (listed?.action === 'end') {
+    session.endListedRoomsDirectory(hubDestHash);
+  } else if (session.isListedRoomsDirectoryOpen(hubDestHash) && !/^[ \t]/.test(body)) {
+    // Non-directory notice (join-info, /who, greeting) closes chunked /list.
+    session.endListedRoomsDirectory(hubDestHash);
+  }
+}
+
+/** Room topic and join-info membership; join-info may arrive without a usable JOINED list. */
+function applyRrcTopicAndJoinMembership({
+  body,
+  hubDestHash,
+  session,
+}: {
+  body: string;
+  hubDestHash?: string;
+  session: RrcSessionState;
+}): void {
+  const topic = parseRrcTopicNotice(body);
+  if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
+  // Never treat synthetic `[hub]` / `@dm` names as hub JOIN targets.
+  if (!isRrcJoinInfoNotice(body) || !topic) return;
+  if (topic.room.startsWith('[') || topic.room.startsWith('@')) return;
+  session.roomJoined(topic.room, undefined, hubDestHash);
+  // When actor JOINED with full roster is dropped (oversize MDU), join-info still means we are
+  // in-room — seed ourselves so the nicklist is not blank.
+  const selfHash = session.localIdentityHash;
+  if (selfHash && selfHash.length >= 8) {
+    session.mergeRoomMembers(
+      topic.room,
+      [{ identity_hash: selfHash, nickname: session.nickname || null }],
+      'merge',
+      hubDestHash,
+    );
+  }
+}
+
+function resolveRrcWhoInbound({
+  body,
+  hubDestHash,
+  session,
+}: {
+  body: string;
+  hubDestHash?: string;
+  session: RrcSessionState;
+}): ReturnType<typeof applyRrcWhoInboundNotice> {
+  const hubKey = hubDestHash?.toLowerCase();
+  const hubSession = hubKey ? session.sessionsByHub.get(hubKey) : undefined;
+  // Materialize Map.keys() — one-shot iterators must not be re-walked.
+  const joinedRooms = hubDestHash
+    ? [...(hubSession?.rooms.keys() ?? [])]
+    : [...session.rooms.keys()];
+  return applyRrcWhoInboundNotice(body, joinedRooms, {
+    hubDestHash,
+    mergeRoomMembers: (whoRoom, members, mode, hub) => {
+      session.mergeRoomMembers(whoRoom, members, mode, hub);
+    },
+    consumeWhoTranscriptSlot: (whoRoom, hub) => session.consumeWhoTranscriptSlot(whoRoom, hub),
+    clearWhoReplyPending: (whoRoom, hub) => {
+      session.clearWhoReplyPending(whoRoom, hub);
+    },
+  });
+}
+
+/**
+ * Route an inbound RRC message to its transcript room and apply NOTICE side effects.
+ * Returns `null` when the message must be dropped instead of rendered.
+ */
+function applyRrcInboundRoomRouting({
+  body,
+  roomHint,
+  kind,
+  isDirect,
+  hubDestHash,
+  view,
+  session,
+  room: initialRoom,
+}: {
+  body: string;
+  roomHint?: string;
+  kind: RrcInboundKind;
+  isDirect: boolean;
+  hubDestHash?: string;
+  view: ReturnType<typeof resolveRrcHubView>;
+  session: RrcSessionState;
+  room: string;
+}): string | null {
+  let room = initialRoom;
+  if (kind === 'notice') {
+    applyRrcListDirectoryNotice({ body, hubDestHash, session });
+    const whoResult = resolveRrcWhoInbound({ body, hubDestHash, session });
+    applyRrcTopicAndJoinMembership({ body, hubDestHash, session });
+    if (isRrcModerationLanguage(body)) {
+      // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.
+      session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+    }
+    // Unmatched / nicklist-only `/who` must not reach addMessage or [hub] persistence.
+    if (whoResult.action === 'unjoined' || whoResult.action === 'nicklist-only') return null;
+    if (whoResult.action === 'transcript') {
+      room = whoResult.room;
+    } else if (!isDirect) {
+      // Hub-global slash replies (/list, usage, not authorized) use empty K_ROOM.
+      room = resolveRrcHubScopedNoticeRoom(roomHint, view.activeRoom);
+    }
+  } else if ((kind === 'error' || kind === 'system') && !isDirect) {
+    room = resolveRrcHubScopedNoticeRoom(roomHint, view.activeRoom);
+  }
+  return room;
+}
+
+interface RrcMessagePayload {
+  id?: string;
+  room?: string;
+  kind?: string;
+  body?: string;
+  sender_hash?: string | null;
+  nickname?: string | null;
+  timestamp?: number;
+  hub_dest_hash?: string | null;
+  dst_hash?: string | null;
+  react_to?: string | null;
+  react_op?: number | null;
+}
+
+function normalizeRrcInboundKind(kind?: string): RrcInboundKind {
+  return kind === 'notice' || kind === 'action' || kind === 'error' || kind === 'system'
+    ? kind
+    : 'msg';
+}
+
+function resolveRrcInboundMessageRoom({
+  p,
+  session,
+  view,
+  hubDestHash,
+  isDirect,
+}: {
+  p: RrcMessagePayload;
+  session: RrcSessionState;
+  view: ReturnType<typeof resolveRrcHubView>;
+  hubDestHash?: string;
+  isDirect: boolean;
+}): string {
+  if (!isDirect) return resolveRrcInboundChatRoom(typeof p.room === 'string' ? p.room : undefined);
+  return applyRrcDirectMessageRoom({
+    dst_hash: typeof p.dst_hash === 'string' ? p.dst_hash : null,
+    sender_hash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
+    nickname: typeof p.nickname === 'string' ? p.nickname : null,
+    localIdentityHash: session.localIdentityHash,
+    hubDestHash,
+    fallbackRoom: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+    openDm: (peer, hub, openOpts) => {
+      session.openDm(peer, hub, openOpts);
+    },
+  });
+}
+
+/** Room chat reveals senders even before `/who` returns a roster. */
+function mergeRrcOpportunisticSender({
+  p,
+  kind,
+  isDirect,
+  room,
+  hubDestHash,
+  session,
+}: {
+  p: RrcMessagePayload;
+  kind: RrcInboundKind;
+  isDirect: boolean;
+  room: string;
+  hubDestHash?: string;
+  session: RrcSessionState;
+}): void {
+  if (kind !== 'msg' && kind !== 'action') return;
+  if (isDirect) return;
+  if (typeof p.sender_hash !== 'string' || p.sender_hash.length < 8) return;
+  if (room.startsWith('[') || room.startsWith('@')) return;
+  session.mergeRoomMembers(
+    room,
+    [
+      {
+        identity_hash: p.sender_hash.toLowerCase(),
+        nickname: typeof p.nickname === 'string' ? p.nickname : null,
+      },
+    ],
+    'merge',
+    hubDestHash,
+  );
+}
+
+function deliverRrcInboundMessage({
+  p,
+  body,
+  kind,
+  isDirect,
+  room,
+  hubDestHash,
+  view,
+  session,
+}: {
+  p: RrcMessagePayload;
+  body: string;
+  kind: RrcInboundKind;
+  isDirect: boolean;
+  room: string;
+  hubDestHash?: string;
+  view: ReturnType<typeof resolveRrcHubView>;
+  session: RrcSessionState;
+}): void {
+  const messageId = typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`;
+  session.addMessage(
+    {
+      id: messageId,
+      room,
+      kind,
+      body,
+      sender_hash: p.sender_hash,
+      nickname: p.nickname,
+      timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
+      dst_hash: p.dst_hash,
+      ...(typeof p.react_to === 'string' ? { react_to: p.react_to } : {}),
+      ...(typeof p.react_op === 'number' ? { react_op: p.react_op } : {}),
+    },
+    {
+      bumpUnread:
+        Boolean(view.hub) &&
+        resolveRrcAlertType({
+          msg: { body, room, kind, dst_hash: p.dst_hash, react_to: p.react_to },
+          nickname: session.nickname,
+          notifyMode: isRrcUnreadAllRoomMessagesEnabled() ? 'all' : 'mentions',
+          muted: isRrcRoomMuted(view.hub!, room, loadMutedViews('reticulum')),
+        }) != null,
+      hubDestHash,
+    },
+  );
+  // MECP in RRC rooms is not on messageStore — bridge into incidents / rebroadcast.
+  // Prefer resolved session hub (view.hub) when the event omits hub_dest_hash.
+  const mecpHub =
+    typeof view.hub === 'string' && view.hub.length >= 8
+      ? view.hub
+      : typeof hubDestHash === 'string' && hubDestHash.length >= 8
+        ? hubDestHash
+        : null;
+  if (kind !== 'msg' || isDirect || !mecpHub) return;
+  void handleRrcMecpInbound({
+    messageId,
+    body,
+    room,
+    hubDestHash: mecpHub,
+    senderHash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
+    nickname: typeof p.nickname === 'string' ? p.nickname : null,
+    localIdentityHash: session.localIdentityHash,
+    localNickname: session.nickname,
+    timestampMs: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
+  }).catch((err: unknown) => {
+    console.warn('mcL1373 [useReticulumRuntime] RRC MECP inbound failed', err);
+  });
+}
+
 export function useReticulumRuntime(): ProtocolRuntime {
   const identityId =
     useIdentityStore(() => getIdentityIdForProtocol('reticulum')) ??
@@ -909,772 +1190,726 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const handleSidecarEvent = useCallback(
     (evt: ReticulumSidecarEvent) => {
-      if (evt.type === 'wire_packet' && evt.payload && typeof evt.payload === 'object') {
-        appendRawPacket(reticulumWireRowToEntry(evt.payload as ReticulumWirePacketRow));
-      }
-      if (evt.type === 'lxmf_message' && evt.payload && typeof evt.payload === 'object') {
-        ingestLxmfPayload(evt.payload);
-      }
-      if (evt.type === 'resource.received' && evt.payload && typeof evt.payload === 'object') {
-        ingestLxmfPayload(evt.payload);
-      }
-      if (evt.type === 'events_lagged') {
-        const skipped =
-          evt.payload && typeof evt.payload === 'object'
-            ? (evt.payload as { skipped?: number }).skipped
-            : undefined;
-        noteReticulumEventsLagged(skipped);
-        // Gate unknown identity-activity SQLite writes as soon as lag indicates pressure.
-        if (shouldEmitAnnounceBusPressure(undefined, getReticulumInboundLxmfDiagnostics())) {
-          setReticulumAnnounceBusPressureActive(true);
+      const handleSidecarEvent_rnsh_stdout = (evt: ReticulumSidecarEvent): void => {
+        if (evt.type === 'rnsh.stdout' || evt.type === 'rnsh.stderr') {
+          const p = evt.payload as { session_id?: string; data?: string } | undefined;
+          if (p?.session_id && typeof p.data === 'string') {
+            useRnshSessionStore
+              .getState()
+              .applyOutput(p.session_id, evt.type === 'rnsh.stdout' ? 'stdout' : 'stderr', p.data);
+          }
         }
-        console.warn(
-          `mcL1369 [useReticulumRuntime] sidecar WS lagged skipped=${skipped ?? '?'} — catching up inbound LXMF`,
-        );
-        void catchUpRecentInboundLxmf({ reason: 'events_lagged' }).catch((e: unknown) => {
-          console.warn(
-            'mcL1370 [useReticulumRuntime] catch-up after events_lagged failed ' +
-              errLikeToLogString(e),
-          );
-        });
-        void scheduleRrcSessionStatusReconcile('events_lagged');
-      }
-      if (evt.type === 'ws_connected' && evt.payload && typeof evt.payload === 'object') {
-        const reconnect = (evt.payload as { reconnect?: boolean }).reconnect === true;
-        if (reconnect) {
-          console.debug('[useReticulumRuntime] sidecar WS reconnected — catching up inbound LXMF');
-          void catchUpRecentInboundLxmf({ reason: 'ws_reconnect' }).catch((e: unknown) => {
+      };
+      const earlyEventHandlers: Record<string, (evt: ReticulumSidecarEvent) => void> = {
+        wire_packet: (evt) => {
+          if (evt.type === 'wire_packet' && evt.payload && typeof evt.payload === 'object') {
+            appendRawPacket(reticulumWireRowToEntry(evt.payload as ReticulumWirePacketRow));
+          }
+        },
+        lxmf_message: (evt) => {
+          if (evt.type === 'lxmf_message' && evt.payload && typeof evt.payload === 'object') {
+            ingestLxmfPayload(evt.payload);
+          }
+        },
+        'resource.received': (evt) => {
+          if (evt.type === 'resource.received' && evt.payload && typeof evt.payload === 'object') {
+            ingestLxmfPayload(evt.payload);
+          }
+        },
+        events_lagged: (evt) => {
+          if (evt.type === 'events_lagged') {
+            const skipped =
+              evt.payload && typeof evt.payload === 'object'
+                ? (evt.payload as { skipped?: number }).skipped
+                : undefined;
+            noteReticulumEventsLagged(skipped);
+            // Gate unknown identity-activity SQLite writes as soon as lag indicates pressure.
+            if (shouldEmitAnnounceBusPressure(undefined, getReticulumInboundLxmfDiagnostics())) {
+              setReticulumAnnounceBusPressureActive(true);
+            }
             console.warn(
-              'mcL1371 [useReticulumRuntime] catch-up after ws_reconnect failed ' +
-                errLikeToLogString(e),
+              `mcL1369 [useReticulumRuntime] sidecar WS lagged skipped=${skipped ?? '?'} — catching up inbound LXMF`,
             );
-          });
-          void scheduleRrcSessionStatusReconcile('ws_reconnect');
-        }
-      }
-      if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          message_hash?: string;
-          status?: string;
-          sent_via?: string;
-          delivery_method?: string;
-          delivery_attempts?: number;
-          error?: string;
-        };
-        if (identityId && p.message_hash && p.status) {
-          applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status, {
-            sentVia: p.sent_via,
-            deliveryMethod: p.delivery_method,
-            deliveryAttempts: p.delivery_attempts,
-            error: p.error,
-          });
-        }
-      }
-      if (
-        (evt.type === 'propagation_sync' || evt.type === 'propagation.sync_progress') &&
-        evt.payload &&
-        typeof evt.payload === 'object'
-      ) {
-        const p = evt.payload as { progress?: number; active?: boolean; message?: string | null };
-        const wasSyncActive = useReticulumPropagationStore.getState().sync.active;
-        applyPropagationSyncEvent(p);
-        scheduleDebouncedDiagnosticsRefresh();
-        // Sync Completes can leave inbound LXMF only in the sidecar ring until the next
-        // periodic catch-up — pull immediately so Chat updates without waiting ~60s.
-        const normalizedProgress = normalizePropagationSyncProgress(
-          typeof p.progress === 'number' ? p.progress : 0,
-        );
-        if (
-          wasSyncActive &&
-          p.active === false &&
-          normalizedProgress >= 100 &&
-          (p.message == null || p.message === '')
-        ) {
-          void catchUpRecentInboundLxmf({ reason: 'propagation_sync' })
-            .then((outcome) => {
-              // null = empty ring / no watermark advance (HaveAll with no new mail).
-              const count = outcome?.count ?? 0;
-              console.debug(
-                `[useReticulumRuntime] propagation-retrieve catch-up after sync Completes count=${count}${
-                  outcome == null ? ' (empty ring)' : ''
-                }`,
-              );
-            })
-            .catch((e: unknown) => {
+            void catchUpRecentInboundLxmf({ reason: 'events_lagged' }).catch((e: unknown) => {
               console.warn(
-                'mcL1372 [useReticulumRuntime] propagation_sync catch-up failed ' +
+                'mcL1370 [useReticulumRuntime] catch-up after events_lagged failed ' +
                   errLikeToLogString(e),
               );
             });
-        }
-      }
-      if (evt.type === 'propagation.discovered' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          destination_hash?: string;
-          identity_hash?: string | null;
-          public_key?: string | null;
-          display_name?: string | null;
-          hops?: number | null;
-          last_seen?: number | null;
-          node_state?: boolean;
-          peering_cost?: number;
-          medium?: string | null;
-        };
-        if (typeof p.destination_hash === 'string') {
-          useReticulumPropagationStore.getState().upsertDiscovered({
-            destination_hash: p.destination_hash,
-            identity_hash: p.identity_hash,
-            public_key: p.public_key,
-            display_name: p.display_name,
-            hops: p.hops,
-            last_seen: p.last_seen,
-            node_state: p.node_state !== false,
-            peering_cost: typeof p.peering_cost === 'number' ? p.peering_cost : 0,
-            medium: p.medium === 'rf' || p.medium === 'network' ? p.medium : null,
-          });
-        }
-      }
-      if (evt.type === 'rmap.discovery' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { discovered?: unknown };
-        if (Array.isArray(p.discovered)) {
-          useReticulumDiscoveryMapStore
-            .getState()
-            .setDiscovered(normalizeRmapDiscoveryRows(p.discovered));
-        }
-      }
-      if (evt.type === 'nomadnetwork.node') {
-        void useNomadNetworkStore.getState().refreshFromSidecar();
-        recordAnnounceActivity(evt.payload, 'nomadnetwork.node');
-      }
-      if (evt.type === 'nomad.page_progress' && evt.payload && typeof evt.payload === 'object') {
-        useNomadPageViewerStore.getState().applyPageProgress(evt.payload);
-      }
-      if (evt.type === 'rrc.hub' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          destination_hash?: string;
-          identity_hash?: string | null;
-          display_name?: string | null;
-          hops?: number | null;
-          source?: string;
-        };
-        if (typeof p.destination_hash === 'string') {
-          useRrcHubStore.getState().upsertFromEvent({
-            destination_hash: p.destination_hash,
-            identity_hash: p.identity_hash,
-            display_name: p.display_name,
-            hops: p.hops,
-            source: (p.source as 'discovered' | undefined) ?? 'discovered',
-            name_source: p.display_name ? 'announce' : undefined,
-          });
-        }
-      }
-      if (evt.type === 'rrc.connected' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          hub_dest_hash?: string;
-          hub_name?: string | null;
-          status?: string;
-          capabilities?: {
-            direct_notice?: boolean;
-            action?: boolean;
-            resource_envelope?: boolean;
-          };
-          limits?: {
-            max_nick_bytes?: number | null;
-            max_room_name_bytes?: number | null;
-            max_msg_body_bytes?: number | null;
-            max_rooms_per_session?: number | null;
-            rate_limit_msgs_per_minute?: number | null;
-          };
-        };
-        const hubDestHash = p.hub_dest_hash ?? undefined;
-        const st =
-          p.status === 'connecting'
-            ? 'connecting'
-            : p.status === 'active'
-              ? 'active'
-              : 'awaiting_welcome';
-        useRrcSessionStore.getState().applyStatus(st, hubDestHash ?? null, p.hub_name ?? null);
-        if (st === 'active') {
-          useRrcSessionStore.getState().setError(null, hubDestHash);
-          if (hubDestHash) clearRrcHubAutoJoinBackoff(hubDestHash);
-        }
-        if (p.capabilities) {
-          useRrcSessionStore.getState().setCapabilities(
-            {
-              direct_notice: Boolean(p.capabilities.direct_notice),
-              action: Boolean(p.capabilities.action),
-              resource_envelope: Boolean(p.capabilities.resource_envelope),
-            },
-            hubDestHash,
-          );
-        }
-        // Always apply: absent WELCOME limits normalize to {} and clear stale caps.
-        useRrcSessionStore.getState().setLimits(parseRrcHubLimits(p.limits), hubDestHash);
-        if (st === 'active' && hubDestHash && p.hub_name) {
-          useRrcHubStore.getState().applyWelcomeName(hubDestHash, p.hub_name);
-        }
-        void window.electronAPI.reticulum.rrc
-          .getStatus()
-          .then((snap) => {
-            if (typeof snap.identity_hash === 'string' && snap.identity_hash) {
-              useRrcSessionStore.getState().setLocalIdentityHash(snap.identity_hash);
+            void scheduleRrcSessionStatusReconcile('events_lagged');
+          }
+        },
+        ws_connected: (evt) => {
+          if (evt.type === 'ws_connected' && evt.payload && typeof evt.payload === 'object') {
+            const reconnect = (evt.payload as { reconnect?: boolean }).reconnect === true;
+            if (reconnect) {
+              console.debug(
+                '[useReticulumRuntime] sidecar WS reconnected — catching up inbound LXMF',
+              );
+              void catchUpRecentInboundLxmf({ reason: 'ws_reconnect' }).catch((e: unknown) => {
+                console.warn(
+                  'mcL1371 [useReticulumRuntime] catch-up after ws_reconnect failed ' +
+                    errLikeToLogString(e),
+                );
+              });
+              void scheduleRrcSessionStatusReconcile('ws_reconnect');
             }
-            const sessionSnap = hubDestHash
-              ? snap.sessions?.find(
-                  (s) => s.hub_dest_hash?.toLowerCase() === hubDestHash.toLowerCase(),
-                )
-              : undefined;
-            if (sessionSnap?.capabilities) {
+          }
+        },
+        lxmf_outbound_status: (evt) => {
+          if (
+            evt.type === 'lxmf_outbound_status' &&
+            evt.payload &&
+            typeof evt.payload === 'object'
+          ) {
+            const p = evt.payload as {
+              message_hash?: string;
+              status?: string;
+              sent_via?: string;
+              delivery_method?: string;
+              delivery_attempts?: number;
+              error?: string;
+            };
+            if (identityId && p.message_hash && p.status) {
+              applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status, {
+                sentVia: p.sent_via,
+                deliveryMethod: p.delivery_method,
+                deliveryAttempts: p.delivery_attempts,
+                error: p.error,
+              });
+            }
+          }
+          if (
+            (evt.type === 'propagation_sync' || evt.type === 'propagation.sync_progress') &&
+            evt.payload &&
+            typeof evt.payload === 'object'
+          ) {
+            const p = evt.payload as {
+              progress?: number;
+              active?: boolean;
+              message?: string | null;
+            };
+            const wasSyncActive = useReticulumPropagationStore.getState().sync.active;
+            applyPropagationSyncEvent(p);
+            scheduleDebouncedDiagnosticsRefresh();
+            // Sync Completes can leave inbound LXMF only in the sidecar ring until the next
+            // periodic catch-up — pull immediately so Chat updates without waiting ~60s.
+            const normalizedProgress = normalizePropagationSyncProgress(
+              typeof p.progress === 'number' ? p.progress : 0,
+            );
+            if (
+              wasSyncActive &&
+              p.active === false &&
+              normalizedProgress >= 100 &&
+              (p.message == null || p.message === '')
+            ) {
+              void catchUpRecentInboundLxmf({ reason: 'propagation_sync' })
+                .then((outcome) => {
+                  // null = empty ring / no watermark advance (HaveAll with no new mail).
+                  const count = outcome?.count ?? 0;
+                  console.debug(
+                    `[useReticulumRuntime] propagation-retrieve catch-up after sync Completes count=${count}${
+                      outcome == null ? ' (empty ring)' : ''
+                    }`,
+                  );
+                })
+                .catch((e: unknown) => {
+                  console.warn(
+                    'mcL1372 [useReticulumRuntime] propagation_sync catch-up failed ' +
+                      errLikeToLogString(e),
+                  );
+                });
+            }
+          }
+        },
+        'propagation.discovered': (evt) => {
+          if (
+            evt.type === 'propagation.discovered' &&
+            evt.payload &&
+            typeof evt.payload === 'object'
+          ) {
+            const p = evt.payload as {
+              destination_hash?: string;
+              identity_hash?: string | null;
+              public_key?: string | null;
+              display_name?: string | null;
+              hops?: number | null;
+              last_seen?: number | null;
+              node_state?: boolean;
+              peering_cost?: number;
+              medium?: string | null;
+            };
+            if (typeof p.destination_hash === 'string') {
+              useReticulumPropagationStore.getState().upsertDiscovered({
+                destination_hash: p.destination_hash,
+                identity_hash: p.identity_hash,
+                public_key: p.public_key,
+                display_name: p.display_name,
+                hops: p.hops,
+                last_seen: p.last_seen,
+                node_state: p.node_state !== false,
+                peering_cost: typeof p.peering_cost === 'number' ? p.peering_cost : 0,
+                medium: p.medium === 'rf' || p.medium === 'network' ? p.medium : null,
+              });
+            }
+          }
+        },
+        'rmap.discovery': (evt) => {
+          if (evt.type === 'rmap.discovery' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as { discovered?: unknown };
+            if (Array.isArray(p.discovered)) {
+              useReticulumDiscoveryMapStore
+                .getState()
+                .setDiscovered(normalizeRmapDiscoveryRows(p.discovered));
+            }
+          }
+        },
+        'nomadnetwork.node': (evt) => {
+          if (evt.type === 'nomadnetwork.node') {
+            void useNomadNetworkStore.getState().refreshFromSidecar();
+            recordAnnounceActivity(evt.payload, 'nomadnetwork.node');
+          }
+        },
+        'nomad.page_progress': (evt) => {
+          if (
+            evt.type === 'nomad.page_progress' &&
+            evt.payload &&
+            typeof evt.payload === 'object'
+          ) {
+            useNomadPageViewerStore.getState().applyPageProgress(evt.payload);
+          }
+        },
+        'rrc.hub': (evt) => {
+          if (evt.type === 'rrc.hub' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              destination_hash?: string;
+              identity_hash?: string | null;
+              display_name?: string | null;
+              hops?: number | null;
+              source?: string;
+            };
+            if (typeof p.destination_hash === 'string') {
+              useRrcHubStore.getState().upsertFromEvent({
+                destination_hash: p.destination_hash,
+                identity_hash: p.identity_hash,
+                display_name: p.display_name,
+                hops: p.hops,
+                source: (p.source as 'discovered' | undefined) ?? 'discovered',
+                name_source: p.display_name ? 'announce' : undefined,
+              });
+            }
+          }
+        },
+        'rrc.connected': (evt) => {
+          if (evt.type === 'rrc.connected' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              hub_dest_hash?: string;
+              hub_name?: string | null;
+              status?: string;
+              capabilities?: {
+                direct_notice?: boolean;
+                action?: boolean;
+                resource_envelope?: boolean;
+              };
+              limits?: {
+                max_nick_bytes?: number | null;
+                max_room_name_bytes?: number | null;
+                max_msg_body_bytes?: number | null;
+                max_rooms_per_session?: number | null;
+                rate_limit_msgs_per_minute?: number | null;
+              };
+            };
+            const hubDestHash = p.hub_dest_hash ?? undefined;
+            const st =
+              p.status === 'connecting'
+                ? 'connecting'
+                : p.status === 'active'
+                  ? 'active'
+                  : 'awaiting_welcome';
+            useRrcSessionStore.getState().applyStatus(st, hubDestHash ?? null, p.hub_name ?? null);
+            if (st === 'active') {
+              useRrcSessionStore.getState().setError(null, hubDestHash);
+              if (hubDestHash) clearRrcHubAutoJoinBackoff(hubDestHash);
+            }
+            if (p.capabilities) {
               useRrcSessionStore.getState().setCapabilities(
                 {
-                  direct_notice: Boolean(sessionSnap.capabilities.direct_notice),
-                  action: Boolean(sessionSnap.capabilities.action),
-                  resource_envelope: Boolean(sessionSnap.capabilities.resource_envelope),
+                  direct_notice: Boolean(p.capabilities.direct_notice),
+                  action: Boolean(p.capabilities.action),
+                  resource_envelope: Boolean(p.capabilities.resource_envelope),
                 },
                 hubDestHash,
               );
             }
-            if (sessionSnap) {
+            // Always apply: absent WELCOME limits normalize to {} and clear stale caps.
+            useRrcSessionStore.getState().setLimits(parseRrcHubLimits(p.limits), hubDestHash);
+            if (st === 'active' && hubDestHash && p.hub_name) {
+              useRrcHubStore.getState().applyWelcomeName(hubDestHash, p.hub_name);
+            }
+            void window.electronAPI.reticulum.rrc
+              .getStatus()
+              .then((snap) => {
+                if (typeof snap.identity_hash === 'string' && snap.identity_hash) {
+                  useRrcSessionStore.getState().setLocalIdentityHash(snap.identity_hash);
+                }
+                const sessionSnap = hubDestHash
+                  ? snap.sessions?.find(
+                      (s) => s.hub_dest_hash?.toLowerCase() === hubDestHash.toLowerCase(),
+                    )
+                  : undefined;
+                if (sessionSnap?.capabilities) {
+                  useRrcSessionStore.getState().setCapabilities(
+                    {
+                      direct_notice: Boolean(sessionSnap.capabilities.direct_notice),
+                      action: Boolean(sessionSnap.capabilities.action),
+                      resource_envelope: Boolean(sessionSnap.capabilities.resource_envelope),
+                    },
+                    hubDestHash,
+                  );
+                }
+                if (sessionSnap) {
+                  useRrcSessionStore
+                    .getState()
+                    .setLimits(parseRrcHubLimits(sessionSnap.limits), hubDestHash);
+                }
+              })
+              .catch((e: unknown) => {
+                console.debug(
+                  '[useReticulumRuntime] rrc getStatus identity ' + errLikeToLogString(e),
+                );
+              });
+          }
+        },
+        'rrc.disconnected': (evt) => {
+          if (evt.type === 'rrc.disconnected' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              reason?: string;
+              hub_dest_hash?: string | null;
+              will_reconnect?: boolean;
+            };
+            const hubDestHash = p.hub_dest_hash ?? undefined;
+            if (hubDestHash) {
+              const session = useRrcSessionStore.getState();
+              const hubSession = session.sessionsByHub.get(hubDestHash.toLowerCase());
+              const disconnectIntentForHub = hubSession?.disconnectIntent ?? false;
+              const willReconnect = p.will_reconnect === true;
+              console.debug(
+                '[useReticulumRuntime] rrc.disconnected hub=' +
+                  sanitizeLogMessage(hubDestHash) +
+                  ' reason=' +
+                  sanitizeLogMessage(p.reason ?? '') +
+                  ' will_reconnect=' +
+                  String(p.will_reconnect) +
+                  ' disconnectIntent=' +
+                  String(disconnectIntentForHub),
+              );
+              if (
+                p.reason === 'local_disconnect' ||
+                disconnectIntentForHub ||
+                p.will_reconnect === false
+              ) {
+                if (
+                  p.will_reconnect === false &&
+                  !disconnectIntentForHub &&
+                  isRrcAutoJoinBackoffWorthyReason(p.reason)
+                ) {
+                  // Initial handshake failed — back off hub auto-join so we do not thrash every ~21s.
+                  recordRrcHubAutoJoinFailure(hubDestHash);
+                }
+                session.clearHubSession(hubDestHash);
+              } else if (willReconnect || p.will_reconnect === undefined) {
+                // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.
+                // Older sidecars omit will_reconnect — treat as reconnecting unless local disconnect.
+                session.applyStatus('reconnecting', hubDestHash);
+                if (p.reason) session.setError(p.reason, hubDestHash);
+                session.setModerationBanner(null, hubDestHash);
+              } else {
+                session.clearHubSession(hubDestHash);
+              }
+            }
+          }
+        },
+        'rrc.room.joined': (evt) => {
+          if (evt.type === 'rrc.room.joined' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              room?: string;
+              members?: { identity_hash: string; nickname?: string | null }[];
+              hub_dest_hash?: string | null;
+            };
+            if (typeof p.room === 'string') {
               useRrcSessionStore
                 .getState()
-                .setLimits(parseRrcHubLimits(sessionSnap.limits), hubDestHash);
+                .roomJoined(p.room, p.members, p.hub_dest_hash ?? undefined);
             }
-          })
-          .catch((e: unknown) => {
-            console.debug('[useReticulumRuntime] rrc getStatus identity ' + errLikeToLogString(e));
-          });
-      }
-      if (evt.type === 'rrc.disconnected' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          reason?: string;
-          hub_dest_hash?: string | null;
-          will_reconnect?: boolean;
-        };
-        const hubDestHash = p.hub_dest_hash ?? undefined;
-        if (hubDestHash) {
-          const session = useRrcSessionStore.getState();
-          const hubSession = session.sessionsByHub.get(hubDestHash.toLowerCase());
-          const disconnectIntentForHub = hubSession?.disconnectIntent ?? false;
-          const willReconnect = p.will_reconnect === true;
-          console.debug(
-            '[useReticulumRuntime] rrc.disconnected hub=' +
-              sanitizeLogMessage(hubDestHash) +
-              ' reason=' +
-              sanitizeLogMessage(p.reason ?? '') +
-              ' will_reconnect=' +
-              String(p.will_reconnect) +
-              ' disconnectIntent=' +
-              String(disconnectIntentForHub),
-          );
+          }
+        },
+        'rrc.room.peer_parted': (evt) => {
           if (
-            p.reason === 'local_disconnect' ||
-            disconnectIntentForHub ||
-            p.will_reconnect === false
+            evt.type === 'rrc.room.peer_parted' &&
+            evt.payload &&
+            typeof evt.payload === 'object'
           ) {
-            if (
-              p.will_reconnect === false &&
-              !disconnectIntentForHub &&
-              isRrcAutoJoinBackoffWorthyReason(p.reason)
-            ) {
-              // Initial handshake failed — back off hub auto-join so we do not thrash every ~21s.
-              recordRrcHubAutoJoinFailure(hubDestHash);
-            }
-            session.clearHubSession(hubDestHash);
-          } else if (willReconnect || p.will_reconnect === undefined) {
-            // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.
-            // Older sidecars omit will_reconnect — treat as reconnecting unless local disconnect.
-            session.applyStatus('reconnecting', hubDestHash);
-            if (p.reason) session.setError(p.reason, hubDestHash);
-            session.setModerationBanner(null, hubDestHash);
-          } else {
-            session.clearHubSession(hubDestHash);
-          }
-        }
-      }
-      if (evt.type === 'rrc.room.joined' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          room?: string;
-          members?: { identity_hash: string; nickname?: string | null }[];
-          hub_dest_hash?: string | null;
-        };
-        if (typeof p.room === 'string') {
-          useRrcSessionStore.getState().roomJoined(p.room, p.members, p.hub_dest_hash ?? undefined);
-        }
-      }
-      if (evt.type === 'rrc.room.peer_parted' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          room?: string;
-          members?: { identity_hash: string; nickname?: string | null }[];
-          hub_dest_hash?: string | null;
-        };
-        if (typeof p.room === 'string' && Array.isArray(p.members)) {
-          const validMembers = p.members.flatMap((m) => {
-            if (m == null || typeof m !== 'object') return [];
-            const identity_hash = (m as { identity_hash?: unknown }).identity_hash;
-            if (typeof identity_hash !== 'string' || identity_hash.length === 0) return [];
-            const nickname = (m as { nickname?: unknown }).nickname;
-            return [
-              {
-                identity_hash,
-                nickname: typeof nickname === 'string' ? nickname : null,
-              },
-            ];
-          });
-          if (validMembers.length > 0) {
-            useRrcSessionStore
-              .getState()
-              .removeRoomMembers(p.room, validMembers, p.hub_dest_hash ?? undefined);
-          }
-        }
-      }
-      if (evt.type === 'rrc.room.parted' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { room?: string; hub_dest_hash?: string | null };
-        if (typeof p.room === 'string') {
-          const hubDestHash = p.hub_dest_hash ?? undefined;
-          const view = resolveRrcHubView(hubDestHash);
-          const session = useRrcSessionStore.getState();
-          const voluntary = [...view.partIntentRooms].some((k) => rrcRoomsMatch(k, p.room!));
-          const bannerKey = resolveRrcInvoluntaryPartBannerKey({
-            voluntary,
-            sessionStatus: view.status,
-          });
-          console.debug(
-            '[useReticulumRuntime] rrc.room.parted hub=' +
-              sanitizeLogMessage(hubDestHash ?? '') +
-              ' room=' +
-              sanitizeLogMessage(p.room) +
-              ' voluntary=' +
-              String(voluntary) +
-              ' status=' +
-              sanitizeLogMessage(view.status ?? '') +
-              ' banner=' +
-              sanitizeLogMessage(bannerKey ?? 'none'),
-          );
-          if (!voluntary) {
-            if (bannerKey) session.setModerationBanner(bannerKey, hubDestHash);
-            session.addMessage(
-              {
-                id: `part-${Date.now()}`,
-                room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
-                kind: 'system',
-                body: i18n.t('rrc.moderation.removedFromRoomSystem', { room: p.room }),
-                timestamp: Date.now(),
-              },
-              { hubDestHash },
-            );
-          }
-          session.roomParted(p.room, { forced: !voluntary }, hubDestHash);
-        }
-      }
-      if (evt.type === 'rrc.message' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          id?: string;
-          room?: string;
-          kind?: string;
-          body?: string;
-          sender_hash?: string | null;
-          nickname?: string | null;
-          timestamp?: number;
-          hub_dest_hash?: string | null;
-          dst_hash?: string | null;
-          react_to?: string | null;
-          react_op?: number | null;
-        };
-        if (typeof p.body === 'string') {
-          const hubDestHash = p.hub_dest_hash ?? undefined;
-          const view = resolveRrcHubView(hubDestHash);
-          const session = useRrcSessionStore.getState();
-          const kind =
-            p.kind === 'notice' || p.kind === 'action' || p.kind === 'error' || p.kind === 'system'
-              ? p.kind
-              : 'msg';
-          const isDirect = Boolean(p.dst_hash);
-          let room: string;
-          if (isDirect) {
-            room = applyRrcDirectMessageRoom({
-              dst_hash: typeof p.dst_hash === 'string' ? p.dst_hash : null,
-              sender_hash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
-              nickname: typeof p.nickname === 'string' ? p.nickname : null,
-              localIdentityHash: session.localIdentityHash,
-              hubDestHash,
-              fallbackRoom: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
-              openDm: (peer, hub, openOpts) => {
-                session.openDm(peer, hub, openOpts);
-              },
-            });
-          } else {
-            room = resolveRrcInboundChatRoom(typeof p.room === 'string' ? p.room : undefined);
-          }
-
-          if (kind === 'notice') {
-            const listed = parseRrcListNotice(p.body);
-            if (listed?.action === 'begin') {
-              session.beginListedRoomsDirectory(hubDestHash);
-            } else if (listed?.action === 'replace') {
-              session.setListedRooms(listed.rooms, hubDestHash);
-            } else if (listed?.action === 'append') {
-              if (session.isListedRoomsDirectoryOpen(hubDestHash)) {
-                session.appendListedRooms(listed.rooms, hubDestHash);
+            const p = evt.payload as {
+              room?: string;
+              members?: { identity_hash: string; nickname?: string | null }[];
+              hub_dest_hash?: string | null;
+            };
+            if (typeof p.room === 'string' && Array.isArray(p.members)) {
+              const validMembers = p.members.flatMap((m) => {
+                if (m == null || typeof m !== 'object') return [];
+                const identity_hash = (m as { identity_hash?: unknown }).identity_hash;
+                if (typeof identity_hash !== 'string' || identity_hash.length === 0) return [];
+                const nickname = (m as { nickname?: unknown }).nickname;
+                return [
+                  {
+                    identity_hash,
+                    nickname: typeof nickname === 'string' ? nickname : null,
+                  },
+                ];
+              });
+              if (validMembers.length > 0) {
+                useRrcSessionStore
+                  .getState()
+                  .removeRoomMembers(p.room, validMembers, p.hub_dest_hash ?? undefined);
               }
-            } else if (listed?.action === 'end') {
-              session.endListedRoomsDirectory(hubDestHash);
-            } else if (session.isListedRoomsDirectoryOpen(hubDestHash) && !/^[ \t]/.test(p.body)) {
-              // Non-directory notice (join-info, /who, greeting) closes chunked /list.
-              session.endListedRoomsDirectory(hubDestHash);
             }
-            const hubKey = hubDestHash?.toLowerCase();
-            const hubSession = hubKey ? session.sessionsByHub.get(hubKey) : undefined;
-            // Materialize Map.keys() — one-shot iterators must not be re-walked.
-            const joinedRooms = hubDestHash
-              ? [...(hubSession?.rooms.keys() ?? [])]
-              : [...session.rooms.keys()];
-            const whoResult = applyRrcWhoInboundNotice(p.body, joinedRooms, {
-              hubDestHash,
-              mergeRoomMembers: (whoRoom, members, mode, hub) => {
-                session.mergeRoomMembers(whoRoom, members, mode, hub);
-              },
-              consumeWhoTranscriptSlot: (whoRoom, hub) =>
-                session.consumeWhoTranscriptSlot(whoRoom, hub),
-              clearWhoReplyPending: (whoRoom, hub) => {
-                session.clearWhoReplyPending(whoRoom, hub);
-              },
-            });
-            const topic = parseRrcTopicNotice(p.body);
-            if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
-            // rrcd may emit join-info NOTICE without a usable JOINED member list —
-            // treat it as membership so JOINED UI + `/who` can run.
-            // Never treat synthetic `[hub]` / `@dm` names as hub JOIN targets.
-            if (
-              isRrcJoinInfoNotice(p.body) &&
-              topic &&
-              !topic.room.startsWith('[') &&
-              !topic.room.startsWith('@')
-            ) {
-              session.roomJoined(topic.room, undefined, hubDestHash);
-              // When actor JOINED with full roster is dropped (oversize MDU), join-info
-              // still means we are in-room — seed ourselves so the nicklist is not blank.
-              const selfHash = session.localIdentityHash;
-              if (selfHash && selfHash.length >= 8) {
-                session.mergeRoomMembers(
-                  topic.room,
-                  [{ identity_hash: selfHash, nickname: session.nickname || null }],
-                  'merge',
-                  hubDestHash,
+          }
+        },
+        'rrc.room.parted': (evt) => {
+          if (evt.type === 'rrc.room.parted' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as { room?: string; hub_dest_hash?: string | null };
+            if (typeof p.room === 'string') {
+              const hubDestHash = p.hub_dest_hash ?? undefined;
+              const view = resolveRrcHubView(hubDestHash);
+              const session = useRrcSessionStore.getState();
+              const voluntary = [...view.partIntentRooms].some((k) => rrcRoomsMatch(k, p.room!));
+              const bannerKey = resolveRrcInvoluntaryPartBannerKey({
+                voluntary,
+                sessionStatus: view.status,
+              });
+              console.debug(
+                '[useReticulumRuntime] rrc.room.parted hub=' +
+                  sanitizeLogMessage(hubDestHash ?? '') +
+                  ' room=' +
+                  sanitizeLogMessage(p.room) +
+                  ' voluntary=' +
+                  String(voluntary) +
+                  ' status=' +
+                  sanitizeLogMessage(view.status ?? '') +
+                  ' banner=' +
+                  sanitizeLogMessage(bannerKey ?? 'none'),
+              );
+              if (!voluntary) {
+                if (bannerKey) session.setModerationBanner(bannerKey, hubDestHash);
+                session.addMessage(
+                  {
+                    id: `part-${Date.now()}`,
+                    room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+                    kind: 'system',
+                    body: i18n.t('rrc.moderation.removedFromRoomSystem', { room: p.room }),
+                    timestamp: Date.now(),
+                  },
+                  { hubDestHash },
+                );
+              }
+              session.roomParted(p.room, { forced: !voluntary }, hubDestHash);
+            }
+          }
+        },
+        'rrc.message': (evt) => {
+          if (!(evt.type === 'rrc.message' && evt.payload && typeof evt.payload === 'object')) {
+            return;
+          }
+          const p = evt.payload as RrcMessagePayload;
+          if (typeof p.body !== 'string') return;
+          const body = p.body;
+          const hubDestHash = p.hub_dest_hash ?? undefined;
+          const view = resolveRrcHubView(hubDestHash);
+          const session = useRrcSessionStore.getState();
+          const kind = normalizeRrcInboundKind(p.kind);
+          const isDirect = Boolean(p.dst_hash);
+          const room = resolveRrcInboundMessageRoom({ p, session, view, hubDestHash, isDirect });
+          const routedRoom = applyRrcInboundRoomRouting({
+            body,
+            roomHint: typeof p.room === 'string' ? p.room : undefined,
+            kind,
+            isDirect,
+            hubDestHash,
+            view,
+            session,
+            room,
+          });
+          if (routedRoom === null) return;
+          mergeRrcOpportunisticSender({
+            p,
+            kind,
+            isDirect,
+            room: routedRoom,
+            hubDestHash,
+            session,
+          });
+          // Empty notice/system/error would render as a lone IRC `*` — skip transcript.
+          if (shouldDropEmptyRrcInbound(kind, body)) return;
+          deliverRrcInboundMessage({
+            p,
+            body,
+            kind,
+            isDirect,
+            room: routedRoom,
+            hubDestHash,
+            view,
+            session,
+          });
+        },
+        'rrc.error': (evt) => {
+          if (evt.type === 'rrc.error' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as { message?: string; hub_dest_hash?: string | null };
+            if (typeof p.message === 'string') {
+              const hubDestHash = p.hub_dest_hash ?? undefined;
+              const view = resolveRrcHubView(hubDestHash);
+              const session = useRrcSessionStore.getState();
+              // Keep raw message; panel humanizes for display. Do not freeze UI on timeouts.
+              session.setError(p.message, hubDestHash);
+              if (isRrcModerationLanguage(p.message)) {
+                session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+              }
+              if (view.hub) {
+                session.addMessage(
+                  {
+                    id: `err-${Date.now()}`,
+                    room: resolveRrcHubScopedNoticeRoom(undefined, view.activeRoom),
+                    kind: 'error',
+                    body: p.message,
+                    timestamp: Date.now(),
+                  },
+                  { hubDestHash },
                 );
               }
             }
-            if (isRrcModerationLanguage(p.body)) {
-              // Reserve kick/ban banner copy for moderation notices; transcript keeps hub text.
-              session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
-            }
-            // Unmatched / nicklist-only `/who` must not reach addMessage or [hub] persistence.
-            if (whoResult.action === 'unjoined' || whoResult.action === 'nicklist-only') {
-              return;
-            }
-            if (whoResult.action === 'transcript') {
-              room = whoResult.room;
-            } else if (!isDirect) {
-              // Hub-global slash replies (/list, usage, not authorized) use empty K_ROOM.
-              room = resolveRrcHubScopedNoticeRoom(
-                typeof p.room === 'string' ? p.room : undefined,
-                view.activeRoom,
-              );
-            }
-          } else if ((kind === 'error' || kind === 'system') && !isDirect) {
-            room = resolveRrcHubScopedNoticeRoom(
-              typeof p.room === 'string' ? p.room : undefined,
-              view.activeRoom,
-            );
           }
-
-          // Opportunistic nicklist: room chat reveals senders even before `/who`.
-          if (
-            (kind === 'msg' || kind === 'action') &&
-            !isDirect &&
-            typeof p.sender_hash === 'string' &&
-            p.sender_hash.length >= 8 &&
-            typeof room === 'string' &&
-            !room.startsWith('[') &&
-            !room.startsWith('@')
-          ) {
-            session.mergeRoomMembers(
-              room,
-              [
-                {
-                  identity_hash: p.sender_hash.toLowerCase(),
-                  nickname: typeof p.nickname === 'string' ? p.nickname : null,
-                },
-              ],
-              'merge',
-              hubDestHash,
-            );
+        },
+        'rnsh.stdout': handleSidecarEvent_rnsh_stdout,
+        'rnsh.stderr': handleSidecarEvent_rnsh_stdout,
+        'rnsh.status': (evt) => {
+          if (evt.type === 'rnsh.status' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              session_id?: string;
+              status?: 'connecting' | 'active' | 'closed' | 'error';
+              destination_hash?: string;
+            };
+            if (p.session_id && p.status) {
+              useRnshSessionStore
+                .getState()
+                .applyStatus(p.session_id, p.status, p.destination_hash);
+              if (p.status === 'active') {
+                useRnshSessionStore.getState().resetReconnectAttempts(p.session_id);
+              }
+            }
           }
-
-          // Empty notice/system/error would render as a lone IRC `*` — skip transcript.
-          if (shouldDropEmptyRrcInbound(kind, p.body)) {
-            return;
+        },
+        'rnsh.closed': (evt) => {
+          if (evt.type === 'rnsh.closed' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              session_id?: string;
+              return_code?: number | null;
+              reason_key?: string | null;
+            };
+            if (p.session_id) {
+              useRnshSessionStore.getState().applyClosed(p.session_id, p.return_code, p.reason_key);
+            }
           }
-
-          const messageId = typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`;
-          session.addMessage(
-            {
-              id: messageId,
-              room,
-              kind,
-              body: p.body,
-              sender_hash: p.sender_hash,
-              nickname: p.nickname,
-              timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
-              dst_hash: p.dst_hash,
-              ...(typeof p.react_to === 'string' ? { react_to: p.react_to } : {}),
-              ...(typeof p.react_op === 'number' ? { react_op: p.react_op } : {}),
-            },
-            {
-              bumpUnread:
-                Boolean(view.hub) &&
-                resolveRrcAlertType({
-                  msg: { body: p.body, room, kind, dst_hash: p.dst_hash, react_to: p.react_to },
-                  nickname: session.nickname,
-                  notifyMode: isRrcUnreadAllRoomMessagesEnabled() ? 'all' : 'mentions',
-                  muted: isRrcRoomMuted(view.hub!, room, loadMutedViews('reticulum')),
-                }) != null,
-              hubDestHash,
-            },
-          );
-          // MECP in RRC rooms is not on messageStore — bridge into incidents / rebroadcast.
-          // Prefer resolved session hub (view.hub) when the event omits hub_dest_hash.
-          const mecpHub =
-            typeof view.hub === 'string' && view.hub.length >= 8
-              ? view.hub
-              : typeof hubDestHash === 'string' && hubDestHash.length >= 8
-                ? hubDestHash
-                : null;
-          if (kind === 'msg' && !isDirect && mecpHub) {
-            void handleRrcMecpInbound({
-              messageId,
-              body: p.body,
-              room,
-              hubDestHash: mecpHub,
-              senderHash: typeof p.sender_hash === 'string' ? p.sender_hash : null,
-              nickname: typeof p.nickname === 'string' ? p.nickname : null,
-              localIdentityHash: session.localIdentityHash,
-              localNickname: session.nickname,
-              timestampMs: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
-            }).catch((err: unknown) => {
-              console.warn('mcL1373 [useReticulumRuntime] RRC MECP inbound failed', err);
+        },
+        'rnsh.error': (evt) => {
+          if (evt.type === 'rnsh.error' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as { session_id?: string; reason_key?: string; message?: string };
+            if (p.session_id) {
+              useRnshSessionStore
+                .getState()
+                .applyError(p.session_id, p.reason_key ?? 'error', p.message ?? '');
+            }
+          }
+        },
+        'voice.update': (evt) => {
+          if (evt.type === 'voice.update' && evt.payload && typeof evt.payload === 'object') {
+            useReticulumVoiceStore.getState().applyUpdate(evt.payload);
+          }
+        },
+        'voice.incoming': (evt) => {
+          if (evt.type === 'voice.incoming' && evt.payload && typeof evt.payload === 'object') {
+            useReticulumVoiceStore.getState().applyIncoming(evt.payload);
+          }
+        },
+        'voice.stats': (evt) => {
+          if (evt.type === 'voice.stats' && evt.payload && typeof evt.payload === 'object') {
+            useReticulumVoiceStore.getState().applyStats(evt.payload);
+          }
+        },
+        'voice.terminated': (evt) => {
+          if (evt.type === 'voice.terminated' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as { link_id?: string; reason?: string | null };
+            handleReticulumVoiceTerminal({
+              linkId: p.link_id ?? null,
+              reason: p.reason ?? null,
+              callGeneration: useReticulumVoiceStore.getState().callGeneration,
             });
           }
-        }
-      }
-      if (evt.type === 'rrc.error' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { message?: string; hub_dest_hash?: string | null };
-        if (typeof p.message === 'string') {
-          const hubDestHash = p.hub_dest_hash ?? undefined;
-          const view = resolveRrcHubView(hubDestHash);
-          const session = useRrcSessionStore.getState();
-          // Keep raw message; panel humanizes for display. Do not freeze UI on timeouts.
-          session.setError(p.message, hubDestHash);
-          if (isRrcModerationLanguage(p.message)) {
-            session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+        },
+        'voice.error': (evt) => {
+          if (evt.type === 'voice.error' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              message?: string;
+              link_id?: string;
+              remote_identity?: string;
+            };
+            handleReticulumVoiceTerminal({
+              linkId: typeof p.link_id === 'string' ? p.link_id : null,
+              errorMessage:
+                typeof p.message === 'string' && p.message.trim() ? p.message : 'failed',
+              remoteIdentity: typeof p.remote_identity === 'string' ? p.remote_identity : null,
+              callGeneration: useReticulumVoiceStore.getState().callGeneration,
+            });
           }
-          if (view.hub) {
-            session.addMessage(
-              {
-                id: `err-${Date.now()}`,
-                room: resolveRrcHubScopedNoticeRoom(undefined, view.activeRoom),
-                kind: 'error',
-                body: p.message,
-                timestamp: Date.now(),
-              },
-              { hubDestHash },
+        },
+        'games.update': (evt) => {
+          if (evt.type === 'games.update' && evt.payload && typeof evt.payload === 'object') {
+            useReticulumGamesStore.getState().applyGamesUpdate(evt.payload);
+            maybeNotifyInboundGamesChallenge(evt.payload);
+          }
+        },
+        'games.action_result': (evt) => {
+          if (
+            evt.type === 'games.action_result' &&
+            evt.payload &&
+            typeof evt.payload === 'object'
+          ) {
+            const p = evt.payload as { ok?: boolean };
+            useReticulumGamesStore.getState().applyActionResult(evt.payload);
+            // Sidecar may have rolled back state on failure — refresh so boards match.
+            if (p.ok === false) {
+              void refreshGamesSessions();
+            }
+          }
+        },
+        BleLtkDesync: (evt) => {
+          if (evt.type === 'BleLtkDesync' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              device_address?: string;
+              bond_purged?: boolean;
+              message?: string;
+            };
+            setReticulumBleBondDesyncActive(true);
+            pushAppToast(
+              p.bond_purged === true
+                ? i18n.t('connectionPanel.reticulumSidecarIssues.bleLtkDesyncPurged')
+                : i18n.t('connectionPanel.reticulumSidecarIssues.bleLtkDesyncManualForget'),
+              'error',
+              12_000,
             );
           }
-        }
-      }
-      if (evt.type === 'rnsh.stdout' || evt.type === 'rnsh.stderr') {
-        const p = evt.payload as { session_id?: string; data?: string } | undefined;
-        if (p?.session_id && typeof p.data === 'string') {
-          useRnshSessionStore
-            .getState()
-            .applyOutput(p.session_id, evt.type === 'rnsh.stdout' ? 'stdout' : 'stderr', p.data);
-        }
-      }
-      if (evt.type === 'rnsh.status' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          session_id?: string;
-          status?: 'connecting' | 'active' | 'closed' | 'error';
-          destination_hash?: string;
-        };
-        if (p.session_id && p.status) {
-          useRnshSessionStore.getState().applyStatus(p.session_id, p.status, p.destination_hash);
-          if (p.status === 'active') {
-            useRnshSessionStore.getState().resetReconnectAttempts(p.session_id);
+        },
+        'rncp.progress': (evt) => {
+          if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as { transfer_id?: string; progress?: number };
+            if (p.transfer_id && typeof p.progress === 'number') {
+              useRncpTransferStore.getState().applyProgress(p.transfer_id, p.progress);
+            }
           }
-        }
-      }
-      if (evt.type === 'rnsh.closed' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          session_id?: string;
-          return_code?: number | null;
-          reason_key?: string | null;
-        };
-        if (p.session_id) {
-          useRnshSessionStore.getState().applyClosed(p.session_id, p.return_code, p.reason_key);
-        }
-      }
-      if (evt.type === 'rnsh.error' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { session_id?: string; reason_key?: string; message?: string };
-        if (p.session_id) {
-          useRnshSessionStore
-            .getState()
-            .applyError(p.session_id, p.reason_key ?? 'error', p.message ?? '');
-        }
-      }
-      if (evt.type === 'voice.update' && evt.payload && typeof evt.payload === 'object') {
-        useReticulumVoiceStore.getState().applyUpdate(evt.payload);
-      }
-      if (evt.type === 'voice.incoming' && evt.payload && typeof evt.payload === 'object') {
-        useReticulumVoiceStore.getState().applyIncoming(evt.payload);
-      }
-      if (evt.type === 'voice.stats' && evt.payload && typeof evt.payload === 'object') {
-        useReticulumVoiceStore.getState().applyStats(evt.payload);
-      }
-      if (evt.type === 'voice.terminated' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { link_id?: string; reason?: string | null };
-        handleReticulumVoiceTerminal({
-          linkId: p.link_id ?? null,
-          reason: p.reason ?? null,
-          callGeneration: useReticulumVoiceStore.getState().callGeneration,
-        });
-      }
-      if (evt.type === 'voice.error' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          message?: string;
-          link_id?: string;
-          remote_identity?: string;
-        };
-        handleReticulumVoiceTerminal({
-          linkId: typeof p.link_id === 'string' ? p.link_id : null,
-          errorMessage: typeof p.message === 'string' && p.message.trim() ? p.message : 'failed',
-          remoteIdentity: typeof p.remote_identity === 'string' ? p.remote_identity : null,
-          callGeneration: useReticulumVoiceStore.getState().callGeneration,
-        });
-      }
-      if (evt.type === 'games.update' && evt.payload && typeof evt.payload === 'object') {
-        useReticulumGamesStore.getState().applyGamesUpdate(evt.payload);
-        maybeNotifyInboundGamesChallenge(evt.payload);
-      }
-      if (evt.type === 'games.action_result' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { ok?: boolean };
-        useReticulumGamesStore.getState().applyActionResult(evt.payload);
-        // Sidecar may have rolled back state on failure — refresh so boards match.
-        if (p.ok === false) {
-          void refreshGamesSessions();
-        }
-      }
-      if (evt.type === 'BleLtkDesync' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          device_address?: string;
-          bond_purged?: boolean;
-          message?: string;
-        };
-        setReticulumBleBondDesyncActive(true);
-        pushAppToast(
-          p.bond_purged === true
-            ? i18n.t('connectionPanel.reticulumSidecarIssues.bleLtkDesyncPurged')
-            : i18n.t('connectionPanel.reticulumSidecarIssues.bleLtkDesyncManualForget'),
-          'error',
-          12_000,
-        );
-      }
-      if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { transfer_id?: string; progress?: number };
-        if (p.transfer_id && typeof p.progress === 'number') {
-          useRncpTransferStore.getState().applyProgress(p.transfer_id, p.progress);
-        }
-      }
-      if (evt.type === 'rncp.completed' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          transfer_id?: string;
-          file_name?: string;
-          bytes?: number;
-          path?: string;
-          destination_hash?: string;
-          identity_hash?: string | null;
-        };
-        if (typeof p.file_name === 'string' && typeof p.bytes === 'number') {
-          useRncpTransferStore.getState().applyCompleted({
-            transfer_id: p.transfer_id,
-            file_name: p.file_name,
-            bytes: p.bytes,
-            path: p.path,
-            destination_hash: p.destination_hash,
-            identity_hash: p.identity_hash,
-          });
-        }
-      }
-      if (evt.type === 'rncp.failed' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          transfer_id?: string;
-          error?: string;
-          reason?: string;
-          file_name?: string;
-          destination_hash?: string;
-          identity_hash?: string | null;
-        };
-        const errPart =
-          typeof p.error === 'string' && p.error.trim() ? sanitizeLogMessage(p.error.trim()) : '';
-        const reasonPart =
-          typeof p.reason === 'string' && p.reason.trim()
-            ? ' reason=' + sanitizeLogMessage(p.reason.trim())
-            : '';
-        const destPart =
-          typeof p.destination_hash === 'string' && p.destination_hash.trim()
-            ? ' dest=' + sanitizeLogMessage(p.destination_hash.trim().slice(0, 32))
-            : '';
-        console.warn(
-          `mcL1374 [useReticulumRuntime] rncp.failed${errPart ? ' ' + errPart : ''}${reasonPart}${destPart}`,
-        );
-        useRncpTransferStore.getState().applyFailed(p);
-      }
-      if (evt.type === 'rncp.cancelled' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { transfer_id?: string; reason?: string };
-        if (p.transfer_id) {
-          useRncpTransferStore.getState().applyCancelled({
-            transfer_id: p.transfer_id,
-            reason: p.reason,
-          });
-        }
-      }
-      if (evt.type === 'rncp.offer' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as {
-          transfer_id?: string;
-          file_name?: string;
-          bytes?: number;
-          identity_hash?: string | null;
-        };
-        if (p.transfer_id && typeof p.file_name === 'string' && typeof p.bytes === 'number') {
-          useRncpTransferStore.getState().applyOffer({
-            transfer_id: p.transfer_id,
-            file_name: p.file_name,
-            bytes: p.bytes,
-            identity_hash: p.identity_hash,
-          });
-          // Toast so offers are visible even when the user is not on Remote/Chat DM.
-          console.debug(
-            `[useReticulumRuntime] rncp.offer ${sanitizeLogMessage(p.file_name.slice(0, 200))}`,
-          );
-          try {
-            window.dispatchEvent(
-              new CustomEvent('mesh-client:rncp-offer', {
-                detail: { transfer_id: p.transfer_id, file_name: p.file_name },
-              }),
+        },
+        'rncp.completed': (evt) => {
+          if (evt.type === 'rncp.completed' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              transfer_id?: string;
+              file_name?: string;
+              bytes?: number;
+              path?: string;
+              destination_hash?: string;
+              identity_hash?: string | null;
+            };
+            if (typeof p.file_name === 'string' && typeof p.bytes === 'number') {
+              useRncpTransferStore.getState().applyCompleted({
+                transfer_id: p.transfer_id,
+                file_name: p.file_name,
+                bytes: p.bytes,
+                path: p.path,
+                destination_hash: p.destination_hash,
+                identity_hash: p.identity_hash,
+              });
+            }
+          }
+        },
+        'rncp.failed': (evt) => {
+          if (evt.type === 'rncp.failed' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              transfer_id?: string;
+              error?: string;
+              reason?: string;
+              file_name?: string;
+              destination_hash?: string;
+              identity_hash?: string | null;
+            };
+            const errPart =
+              typeof p.error === 'string' && p.error.trim()
+                ? sanitizeLogMessage(p.error.trim())
+                : '';
+            const reasonPart =
+              typeof p.reason === 'string' && p.reason.trim()
+                ? ' reason=' + sanitizeLogMessage(p.reason.trim())
+                : '';
+            const destPart =
+              typeof p.destination_hash === 'string' && p.destination_hash.trim()
+                ? ' dest=' + sanitizeLogMessage(p.destination_hash.trim().slice(0, 32))
+                : '';
+            console.warn(
+              `mcL1374 [useReticulumRuntime] rncp.failed${errPart ? ' ' + errPart : ''}${reasonPart}${destPart}`,
             );
-          } catch (e: unknown) {
-            console.debug('[renderer/runtime/useReticulumRuntime] catch:', e);
+            useRncpTransferStore.getState().applyFailed(p);
           }
-        }
-      }
+        },
+        'rncp.cancelled': (evt) => {
+          if (evt.type === 'rncp.cancelled' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as { transfer_id?: string; reason?: string };
+            if (p.transfer_id) {
+              useRncpTransferStore.getState().applyCancelled({
+                transfer_id: p.transfer_id,
+                reason: p.reason,
+              });
+            }
+          }
+        },
+        'rncp.offer': (evt) => {
+          if (evt.type === 'rncp.offer' && evt.payload && typeof evt.payload === 'object') {
+            const p = evt.payload as {
+              transfer_id?: string;
+              file_name?: string;
+              bytes?: number;
+              identity_hash?: string | null;
+            };
+            if (p.transfer_id && typeof p.file_name === 'string' && typeof p.bytes === 'number') {
+              useRncpTransferStore.getState().applyOffer({
+                transfer_id: p.transfer_id,
+                file_name: p.file_name,
+                bytes: p.bytes,
+                identity_hash: p.identity_hash,
+              });
+              // Toast so offers are visible even when the user is not on Remote/Chat DM.
+              console.debug(
+                `[useReticulumRuntime] rncp.offer ${sanitizeLogMessage(p.file_name.slice(0, 200))}`,
+              );
+              try {
+                window.dispatchEvent(
+                  new CustomEvent('mesh-client:rncp-offer', {
+                    detail: { transfer_id: p.transfer_id, file_name: p.file_name },
+                  }),
+                );
+              } catch (e: unknown) {
+                console.debug('[renderer/runtime/useReticulumRuntime] catch:', e);
+              }
+            }
+          }
+        },
+      };
+      earlyEventHandlers[evt.type]?.(evt);
+
       const refreshActions = reticulumSidecarEventRefreshActions(evt.type);
       if (refreshActions.interfaces) {
         logReticulumInterfaceStateEvent(evt.payload);
@@ -1715,6 +1950,51 @@ export function useReticulumRuntime(): ProtocolRuntime {
           applyReticulumPeersUpdatedPatches(evt.payload);
         }
       }
+      const lateEventHandlers: Record<string, (evt: ReticulumSidecarEvent) => void> = {
+        stack_restart_requested: (evt) => {
+          if (evt.type === 'stack_restart_requested') {
+            void restartStackRef.current?.().catch((e: unknown) => {
+              console.error(
+                'mcL1375 [useReticulumRuntime] stack_restart_requested failed ' +
+                  errLikeToLogString(e),
+              );
+            });
+          }
+        },
+        'announce.received': (evt) => {
+          if (evt.type === 'announce.received') {
+            applyReticulumAnnounceReceivedOptimistic(evt.payload);
+            recordAnnounceActivity(evt.payload);
+            requestChatOutboxDrain('reticulum');
+            // Opt-in: a fresh announce means failed sends to that peer are worth one retry.
+            const autoResendEnabled = isReticulumAutoResendOnAnnounceEnabled();
+            if (autoResendEnabled) {
+              for (const destinationHash of announceDestinationHashes(evt.payload)) {
+                resendFailedReticulumForDestination({
+                  identityId,
+                  destinationHash,
+                  enabled: autoResendEnabled,
+                  send: (text, destination, retryOfStoreId) => {
+                    sendMessageRef.current?.(text, destination, undefined, retryOfStoreId);
+                  },
+                });
+              }
+            }
+          }
+        },
+        peers_updated: (evt) => {
+          if (evt.type === 'peers_updated' && refreshActions.peerPatches) {
+            recordReticulumPeerInterfaceSamplesFromPeersUpdated(evt.payload);
+            if (peersUpdatedRequiresFullRefresh(evt.payload)) {
+              scheduleFullPeerRefresh();
+            } else {
+              applyReticulumPeersUpdatedPatches(evt.payload);
+            }
+          }
+        },
+      };
+      lateEventHandlers[evt.type]?.(evt);
+
       if (refreshActions.peers) {
         scheduleFullPeerRefresh();
       } else if (refreshActions.diagnostics) {

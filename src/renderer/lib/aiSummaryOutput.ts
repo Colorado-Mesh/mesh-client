@@ -59,7 +59,7 @@ function stripBulletPrefix(line: string): string {
 }
 
 /** Normalize a bullet for near-duplicate comparison. */
-export function normalizeAiSummaryBullet(text: string): string {
+function normalizeAiSummaryBullet(text: string): string {
   let body = stripBulletPrefix(text).normalize('NFKC').toLowerCase();
   // Drop a leading "Name: Name …" restatement ("KE4IQR-1: KE4IQR-1 sent…").
   body = body.replace(/^([\p{L}\p{N}][\p{L}\p{N}\s._-]{0,40}?):\s*\1\b/u, '$1:');

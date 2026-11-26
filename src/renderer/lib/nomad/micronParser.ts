@@ -7,7 +7,7 @@ import MicronParser, {
   type MicronPartialInfo,
 } from './vendor/micron-parser.js';
 
-export type { MicronPartialCleanup, MicronPartialFetchResult, MicronPartialInfo };
+export type { MicronPartialCleanup, MicronPartialInfo };
 export { MICRON_RENDER_LIMITS, MicronParser };
 
 export const DEFAULT_NOMAD_NODE_PAGE_PATH = '/page/index.mu';
@@ -120,7 +120,7 @@ export async function loadNomadMicronPartial(options: {
   };
 }
 
-type NomadMicronBoundPartialResult =
+export type NomadMicronBoundPartialResult =
   MicronPartialFetchResult | NomadMicronPartialFetchResultWithSize;
 
 interface NomadMicronPartialBinding {

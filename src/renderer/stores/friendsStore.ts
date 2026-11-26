@@ -5,14 +5,13 @@ import {
   canonicalizeReticulumChatDmNodeId,
   reticulumChatDmNodeIdsEquivalent,
 } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
-import type { MeshProtocol } from '@/renderer/lib/types';
 
 import { omitRecordKey } from './storeUtils';
 
-export const FRIENDS_STORAGE_KEY = 'mesh-client:friends';
+const FRIENDS_STORAGE_KEY = 'mesh-client:friends';
 
 /** Friend peer ids keyed by protocol identity id. */
-export type FriendsByIdentity = Record<string, number[]>;
+type FriendsByIdentity = Record<string, number[]>;
 
 interface FriendsPersisted {
   byIdentity: FriendsByIdentity;
@@ -120,9 +119,3 @@ export function friendNodeIdSet(identityId: string | null | undefined): Set<numb
 }
 
 /** Touch helper so callers can depend on friend list revision in useMemo. */
-export function friendsListKey(identityId: string | null | undefined): string {
-  if (!identityId) return '';
-  return useFriendsStore.getState().listFriends(identityId).join(',');
-}
-
-export type FriendsProtocol = MeshProtocol;

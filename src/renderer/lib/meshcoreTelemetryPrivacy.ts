@@ -147,7 +147,7 @@ export function parseMeshcoreSelfInfoTelemetry(
 }
 
 /** Companion `CMD_SET_OTHER_PARAMS` (meshcore-dev/MeshCore MyMesh.cpp). */
-export const MESHCORE_CMD_SET_OTHER_PARAMS = 38;
+const MESHCORE_CMD_SET_OTHER_PARAMS = 38;
 
 /** CMD_SET_OTHER_PARAMS extended frame (v5+ firmware): manual, telemetry packed, advert loc policy, multi-acks. */
 export function buildMeshcoreSetOtherParamsFrame(

@@ -7,7 +7,7 @@ import type { ReticulumWirePacketRow } from '@/shared/reticulum-types';
 
 export const RETICULUM_PACKET_RING_CAPACITY = 500;
 
-interface ReticulumPacketStoreState {
+export interface ReticulumPacketStoreState {
   packets: ReticulumRawPacketEntry[];
   appendPacket: (entry: ReticulumRawPacketEntry) => void;
   replacePackets: (entries: ReticulumRawPacketEntry[]) => void;

@@ -39,7 +39,6 @@ export const RRC_AUTO_CONNECT_FAST_MS = MS_PER_SECOND / 2;
 /** Steady poll once hubs are linked (or none configured). */
 export const RRC_AUTO_CONNECT_STEADY_MS = 4 * MS_PER_SECOND;
 
-export { RETICULUM_CONFIGURED_EVENT };
 let hubAutoConnectBusy = false;
 
 function isRrcHubLinkedNow(hub: string): boolean {

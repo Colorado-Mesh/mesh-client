@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   MESHCOM_MQTT_SETTINGS_KEY,
@@ -21,7 +19,6 @@ import {
 import type { MeshProtocol, MQTTSettings } from '@/renderer/lib/types';
 
 const MESHCORE_MQTT_SETTINGS_KEY = 'mesh-client:mqttSettings:meshcore';
-export const MQTT_SETTINGS_PERSIST_DEBOUNCE_MS = 100;
 const pendingMqttSecretWrites = new Map<string, Promise<void>>();
 
 function mqttSecretKeyForStorageKey(key: string): string {
@@ -114,42 +111,3 @@ export function flushPendingMqttSave(
 }
 
 /** Shared MQTT settings load/persist for ConnectionPanel (Meshtastic + MeshCore + MeshCom). */
-export function useProtocolMqttSettings(protocol: MeshProtocol) {
-  const storageKey = getMqttSettingsStorageKey(protocol);
-  const [settings, setSettings] = useState<MQTTSettings>(() => loadProtocolMqttSettings(protocol));
-  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const settingsRef = useRef(settings);
-
-  useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
-
-  useEffect(() => {
-    return () => {
-      if (persistTimerRef.current) {
-        flushPendingMqttSave(persistTimerRef, storageKey, settingsRef.current);
-      }
-    };
-  }, [storageKey]);
-
-  const persistNow = useCallback(() => {
-    flushPendingMqttSave(persistTimerRef, storageKey, settingsRef.current);
-  }, [storageKey]);
-
-  const updateSettings = useCallback(
-    (updater: MQTTSettings | ((prev: MQTTSettings) => MQTTSettings)) => {
-      setSettings((prev) => {
-        const next = typeof updater === 'function' ? updater(prev) : updater;
-        if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
-        persistTimerRef.current = setTimeout(() => {
-          persistMqttSettingsIfChanged(storageKey, next);
-          persistTimerRef.current = null;
-        }, MQTT_SETTINGS_PERSIST_DEBOUNCE_MS);
-        return next;
-      });
-    },
-    [storageKey],
-  );
-
-  return { settings, setSettings: updateSettings, persistNow, storageKey };
-}

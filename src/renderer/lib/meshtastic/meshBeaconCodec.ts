@@ -19,7 +19,7 @@ const file_meshtastic_mesh_beacon = fileDesc(
   [file_meshtastic_channel, Config.file_meshtastic_config],
 );
 
-export type MeshBeaconMessage = Message<'meshtastic.MeshBeacon'> & {
+type MeshBeaconMessage = Message<'meshtastic.MeshBeacon'> & {
   message: string;
   offerChannel?: { name: string; psk: Uint8Array };
   offerRegion: number;
@@ -27,10 +27,7 @@ export type MeshBeaconMessage = Message<'meshtastic.MeshBeacon'> & {
   offerFrequencySlot?: number;
 };
 
-export const MeshBeaconSchema: GenMessage<MeshBeaconMessage> = messageDesc(
-  file_meshtastic_mesh_beacon,
-  0,
-);
+const MeshBeaconSchema: GenMessage<MeshBeaconMessage> = messageDesc(file_meshtastic_mesh_beacon, 0);
 
 /** Decoded beacon in plain fields; `null` means the sender did not include that offer. */
 export interface MeshBeaconPayload {

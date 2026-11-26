@@ -9,15 +9,15 @@ import { MC_CMD_RUN_CLI_COMMAND, MC_RESP_CLI_REPLY } from '../meshcoreWireCodes'
 import { serializeMeshcoreUserMessage } from './meshcoreMessageI18n';
 
 /** Companion protocol version (`deviceQuery().firmwareVer`) that added CMD_RUN_CLI_COMMAND. */
-export const MESHCORE_COMPANION_CLI_MIN_VER = 14;
+const MESHCORE_COMPANION_CLI_MIN_VER = 14;
 
-export const MESHCORE_COMPANION_CLI_TIMEOUT_MS = 8_000;
+const MESHCORE_COMPANION_CLI_TIMEOUT_MS = 8_000;
 
 /**
  * Firmware copies the frame into a fixed buffer and the reply into `reply_buf[166]`; keep
  * commands comfortably under one companion frame including the reflected `xx|` prefix.
  */
-export const MESHCORE_COMPANION_CLI_MAX_COMMAND_BYTES = 150;
+const MESHCORE_COMPANION_CLI_MAX_COMMAND_BYTES = 150;
 
 const UNKNOWN_COMMAND = 'Unknown command';
 

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
-interface Props {
+export interface Props {
   disabled?: boolean;
   onApply: (pubkeyHex: string, level: number) => Promise<void> | Promise<boolean>;
 }

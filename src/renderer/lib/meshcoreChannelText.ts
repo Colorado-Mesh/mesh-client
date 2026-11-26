@@ -1,4 +1,3 @@
-import { LAST_HEARD_MS_THRESHOLD } from '../../shared/lastHeardUnits';
 import { compareChatReceiveOrder } from './chatReceiveOrder';
 import { normalizeMeshcoreGifOutboundWire } from './meshcoreGifWire';
 import { orderMeshcoreDmsWithinSecond } from './meshcoreMessageOrder';
@@ -6,12 +5,15 @@ import {
   buildMeshcoreOpenReactionIncomingMessage,
   parseMeshcoreOpenReactionWire,
 } from './meshcoreOpenReaction';
+import { meshcoreMessageMatchesReplyKey } from './meshcoreReplyKey';
 import {
   meshcoreChatStubNodeIdFromDisplayName,
   sanitizeMeshcoreChatWireText,
 } from './meshcoreUtils';
 import { isReactionPickerEmojiGlyph, normalizeReactionEmoji } from './reactions';
 import { truncateReplyPreviewText } from './replyPreview';
+
+export { meshcoreMessageMatchesReplyKey };
 import type { ChatMessage, MeshNode } from './types';
 
 export interface MeshcoreNormalizedText {
@@ -268,7 +270,7 @@ export interface MeshcoreParentResolveOpts {
 }
 
 /** Alphanumeric tokens for callsign matching (emoji/punctuation stripped). */
-export function meshcoreDisplayNameTokens(name: string): string[] {
+function meshcoreDisplayNameTokens(name: string): string[] {
   const stripped = name.replace(/\p{Extended_Pictographic}/gu, ' ');
   const tokens: string[] = [];
   for (const part of stripped.toLowerCase().split(/\s+/)) {
@@ -279,6 +281,18 @@ export function meshcoreDisplayNameTokens(name: string): string[] {
 }
 
 /** Compare bracket `@[Name]` targets to stored `sender_name` (trim, case, callsign tokens). */
+function meshcoreDisplayNameTokensMatch(target: string, senderName: string): boolean {
+  const tTokens = meshcoreDisplayNameTokens(target);
+  const nTokens = meshcoreDisplayNameTokens(senderName);
+  if (tTokens.length === 0 || nTokens.length === 0) return false;
+  for (const tt of tTokens) {
+    for (const nt of nTokens) {
+      if (tt === nt || nt.startsWith(tt) || tt.startsWith(nt)) return true;
+    }
+  }
+  return false;
+}
+
 export function meshcoreBracketDisplayNamesMatch(target: string, senderName: string): boolean {
   const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
   const t = norm(target);
@@ -286,16 +300,7 @@ export function meshcoreBracketDisplayNamesMatch(target: string, senderName: str
   if (!t || !n) return false;
   if (t === n) return true;
   if (t.length >= 4 && (n.includes(t) || t.includes(n))) return true;
-  const tTokens = meshcoreDisplayNameTokens(target);
-  const nTokens = meshcoreDisplayNameTokens(senderName);
-  if (tTokens.length > 0 && nTokens.length > 0) {
-    for (const tt of tTokens) {
-      for (const nt of nTokens) {
-        if (tt === nt || nt.startsWith(tt) || tt.startsWith(nt)) return true;
-      }
-    }
-  }
-  return false;
+  return meshcoreDisplayNameTokensMatch(target, senderName);
 }
 
 function meshcoreBracketUnresolvedReplyFields(
@@ -345,6 +350,23 @@ function compareMeshcoreDisplayTie(a: ChatMessage, b: ChatMessage): number {
   return (a.packetId ?? 0) - (b.packetId ?? 0) || a.sender_id - b.sender_id;
 }
 
+function latestMeshcoreMessageBefore(
+  messages: readonly ChatMessage[],
+  beforeTimestamp: number,
+  targetName: string,
+  matchesThread: (m: ChatMessage) => boolean,
+): ChatMessage | undefined {
+  let best: ChatMessage | undefined;
+  for (const m of messages) {
+    if (!matchesThread(m)) continue;
+    if (m.emoji != null && m.replyId != null) continue;
+    if (m.timestamp >= beforeTimestamp) continue;
+    if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
+    if (!best || m.timestamp > best.timestamp) best = m;
+  }
+  return best;
+}
+
 /**
  * Latest message in the same thread whose `sender_name` matches `targetName` and is strictly older than `beforeTimestamp`.
  */
@@ -352,17 +374,13 @@ export function resolveMeshcoreBracketParentKey(
   messages: readonly ChatMessage[],
   opts: MeshcoreParentResolveOpts,
 ): number | undefined {
-  let best: ChatMessage | undefined;
-  for (const m of messages) {
-    if (m.channel !== opts.channel) continue;
-    if ((m.to ?? undefined) !== (opts.to ?? undefined)) continue;
-    if (m.emoji != null && m.replyId != null) continue;
-    if (m.timestamp >= opts.beforeTimestamp) continue;
-    if (!meshcoreBracketDisplayNamesMatch(opts.targetName, m.sender_name)) continue;
-    if (!best || m.timestamp > best.timestamp) best = m;
-  }
-  if (!best) return undefined;
-  return best.packetId ?? best.timestamp;
+  const best = latestMeshcoreMessageBefore(
+    messages,
+    opts.beforeTimestamp,
+    opts.targetName,
+    (m) => m.channel === opts.channel && (m.to ?? undefined) === (opts.to ?? undefined),
+  );
+  return best ? (best.packetId ?? best.timestamp) : undefined;
 }
 
 /**
@@ -378,20 +396,16 @@ export function resolveMeshcoreBracketParentKeyDm(
     beforeTimestamp: number;
   },
 ): number | undefined {
-  let best: ChatMessage | undefined;
-  for (const m of messages) {
-    if (m.channel !== -1) continue;
-    const inThread =
-      (m.sender_id === opts.peerNodeId && m.to === opts.myNodeId) ||
-      (m.sender_id === opts.myNodeId && m.to === opts.peerNodeId);
-    if (!inThread) continue;
-    if (m.emoji != null && m.replyId != null) continue;
-    if (m.timestamp >= opts.beforeTimestamp) continue;
-    if (!meshcoreBracketDisplayNamesMatch(opts.targetName, m.sender_name)) continue;
-    if (!best || m.timestamp > best.timestamp) best = m;
-  }
-  if (!best) return undefined;
-  return best.packetId ?? best.timestamp;
+  const best = latestMeshcoreMessageBefore(
+    messages,
+    opts.beforeTimestamp,
+    opts.targetName,
+    (m) =>
+      m.channel === -1 &&
+      ((m.sender_id === opts.peerNodeId && m.to === opts.myNodeId) ||
+        (m.sender_id === opts.myNodeId && m.to === opts.peerNodeId)),
+  );
+  return best ? (best.packetId ?? best.timestamp) : undefined;
 }
 
 export interface MeshcoreReplyLookupOptions {
@@ -414,34 +428,9 @@ function meshcoreThreadMatchesForReply(
   return true;
 }
 
-const MESHCORE_REPLY_KEY_MS_THRESHOLD = LAST_HEARD_MS_THRESHOLD;
-
 /** Canonical parent key for replyId storage and quote jump (`packetId` preferred). */
-export function meshcoreCanonicalReplyKey(msg: ChatMessage): number {
+function meshcoreCanonicalReplyKey(msg: ChatMessage): number {
   return msg.packetId ?? msg.timestamp;
-}
-
-/**
- * True when wire reply key matches a stored row (exact, firmware seconds ↔ stored ms, or packetId).
- * Official clients often embed `senderTimestamp` (Unix seconds) in `@[Name#key]`.
- */
-export function meshcoreMessageMatchesReplyKey(msg: ChatMessage, replyKey: number): boolean {
-  if (!Number.isFinite(replyKey) || replyKey <= 0) return false;
-  if (msg.packetId === replyKey || msg.timestamp === replyKey) return true;
-
-  const keyLooksSec = replyKey < MESHCORE_REPLY_KEY_MS_THRESHOLD;
-  if (keyLooksSec && msg.timestamp >= MESHCORE_REPLY_KEY_MS_THRESHOLD) {
-    if (Math.floor(msg.timestamp / 1000) === replyKey) return true;
-    if (msg.timestamp === replyKey * 1000) return true;
-  }
-
-  if (msg.packetId != null && msg.packetId !== replyKey) {
-    if (keyLooksSec && msg.packetId >= MESHCORE_REPLY_KEY_MS_THRESHOLD) {
-      if (Math.floor(msg.packetId / 1000) === replyKey) return true;
-    }
-  }
-
-  return false;
 }
 
 /** Resolve quoted parent for MeshCore (`packetId` or `timestamp` keys) with thread/chronology guards. */
@@ -586,6 +575,105 @@ export interface BuildMeshcoreChannelIncomingOpts {
  * Build a channel `ChatMessage` from raw RF/MQTT text: tap-backs, text replies (`@[Parent] body`),
  * or plain payloads. Uses `messages` only to resolve `replyId` for bracketed lines.
  */
+type MeshcoreIncomingBase = Pick<
+  ChatMessage,
+  | 'sender_id'
+  | 'sender_name'
+  | 'channel'
+  | 'timestamp'
+  | 'status'
+  | 'receivedVia'
+  | 'rxHops'
+  | 'rxPathHashSizeBytes'
+> & { meshcoreDedupeKey: string };
+
+function meshcoreIncomingRxFields(opts: {
+  rxHops?: number | null;
+  rxPathHashSizeBytes?: 1 | 2 | 3 | null;
+}): Pick<ChatMessage, 'rxHops' | 'rxPathHashSizeBytes'> {
+  return {
+    ...(opts.rxHops != null && Number.isFinite(opts.rxHops) ? { rxHops: opts.rxHops } : {}),
+    ...(opts.rxPathHashSizeBytes === 1 ||
+    opts.rxPathHashSizeBytes === 2 ||
+    opts.rxPathHashSizeBytes === 3
+      ? { rxPathHashSizeBytes: opts.rxPathHashSizeBytes }
+      : {}),
+  };
+}
+
+function finalizeMeshcoreBracketReply(
+  base: MeshcoreIncomingBase | MeshcoreDmIncomingBase,
+  target: string,
+  parentKey: number | undefined,
+  parent: ChatMessage | undefined,
+  payload: string,
+  fallbackPayload: string,
+): ChatMessage {
+  const previewFields = parent
+    ? {
+        replyPreviewText: truncateReplyPreviewText(parent.payload),
+        replyPreviewSender: parent.sender_name,
+      }
+    : undefined;
+  if (parentKey != null && payload.length > 0) {
+    return meshcorePromoteEmojiOnlyReplyToTapback({
+      ...base,
+      payload,
+      replyId: parentKey,
+      ...previewFields,
+    });
+  }
+  return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, payload, fallbackPayload) };
+}
+
+function buildMeshcoreBracketReplyMessage(
+  messages: readonly ChatMessage[],
+  base: MeshcoreIncomingBase,
+  normalized: ReturnType<typeof normalizeMeshcoreIncomingText>,
+  beforeTimestamp: number,
+  channel: number,
+  fallbackPayload: string,
+): ChatMessage {
+  const target = normalized.bracketTargetName ?? '';
+  let parentKey: number | undefined;
+  let parent: ChatMessage | undefined;
+
+  if (normalized.wireReplyKey != null) {
+    parent = findMeshcoreParentMessageForReply(messages, normalized.wireReplyKey, {
+      beforeTimestamp,
+      channel,
+      replyPreviewSender: target,
+    });
+    if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
+  }
+
+  if (parentKey == null && normalized.wireReplyKey == null) {
+    parentKey = resolveMeshcoreBracketParentKey(messages, {
+      channel,
+      targetName: target,
+      beforeTimestamp,
+      to: undefined,
+    });
+    if (parentKey != null) {
+      parent = findMeshcoreParentMessageForReply(messages, parentKey, {
+        beforeTimestamp,
+        channel,
+        replyPreviewSender: target,
+      });
+      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
+    }
+  }
+
+  return finalizeMeshcoreBracketReply(
+    base,
+    target,
+    parentKey,
+    parent,
+    normalized.payload.trim(),
+    fallbackPayload,
+  );
+}
+
 export function buildMeshcoreChannelIncomingMessage(
   messages: readonly ChatMessage[],
   opts: BuildMeshcoreChannelIncomingOpts,
@@ -595,19 +683,9 @@ export function buildMeshcoreChannelIncomingMessage(
   const colonIdx = rawText.indexOf(':');
   const fallbackPayload = colonIdx > 0 ? rawText.slice(colonIdx + 1).trim() : rawText.trim();
 
-  const rxFields: Pick<ChatMessage, 'rxHops' | 'rxPathHashSizeBytes'> = {
-    ...(opts.rxHops != null && Number.isFinite(opts.rxHops) ? { rxHops: opts.rxHops } : {}),
-    ...(opts.rxPathHashSizeBytes === 1 ||
-    opts.rxPathHashSizeBytes === 2 ||
-    opts.rxPathHashSizeBytes === 3
-      ? { rxPathHashSizeBytes: opts.rxPathHashSizeBytes }
-      : {}),
-  };
+  const rxFields = meshcoreIncomingRxFields(opts);
 
-  const base: Pick<
-    ChatMessage,
-    'sender_id' | 'sender_name' | 'channel' | 'timestamp' | 'status' | 'receivedVia'
-  > & { meshcoreDedupeKey: string } = {
+  const base: MeshcoreIncomingBase = {
     sender_id: opts.senderId,
     sender_name: opts.displayName,
     channel: opts.channel,
@@ -636,54 +714,14 @@ export function buildMeshcoreChannelIncomingMessage(
     };
   }
   if (target) {
-    let parentKey: number | undefined;
-    let parent: ChatMessage | undefined;
-
-    if (normalized.wireReplyKey != null) {
-      parent = findMeshcoreParentMessageForReply(messages, normalized.wireReplyKey, {
-        beforeTimestamp: opts.timestamp,
-        channel: opts.channel,
-        replyPreviewSender: target,
-      });
-      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
-    }
-
-    if (parentKey == null && normalized.wireReplyKey == null) {
-      parentKey = resolveMeshcoreBracketParentKey(messages, {
-        channel: opts.channel,
-        targetName: target,
-        beforeTimestamp: opts.timestamp,
-        to: undefined,
-      });
-      if (parentKey != null) {
-        parent = findMeshcoreParentMessageForReply(messages, parentKey, {
-          beforeTimestamp: opts.timestamp,
-          channel: opts.channel,
-          replyPreviewSender: target,
-        });
-        if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
-      }
-    }
-
-    if (parentKey != null) {
-      const body = normalized.payload.trim();
-      const previewFields = parent
-        ? {
-            replyPreviewText: truncateReplyPreviewText(parent.payload),
-            replyPreviewSender: parent.sender_name,
-          }
-        : undefined;
-      if (body.length > 0) {
-        return meshcorePromoteEmojiOnlyReplyToTapback({
-          ...base,
-          payload: body,
-          replyId: parentKey,
-          ...previewFields,
-        });
-      }
-    }
-    const body = normalized.payload.trim();
-    return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, body, fallbackPayload) };
+    return buildMeshcoreBracketReplyMessage(
+      messages,
+      base,
+      normalized,
+      opts.timestamp,
+      opts.channel,
+      fallbackPayload,
+    );
   }
 
   return {
@@ -771,22 +809,28 @@ export function meshcoreReplyBodyReferencesParent(body: string, parentPayload: s
 
   if (bodyNorm === parentNorm) return true;
 
+  if (meshcorePayloadShorterContained(bodyNorm, parentNorm)) return true;
+  const shared = meshcoreSharedTokenCount(body, parentPayload);
+  return shared >= 2 || (shared >= 1 && bodyNorm.length >= 12);
+}
+
+function meshcorePayloadShorterContained(bodyNorm: string, parentNorm: string): boolean {
   const shorter = bodyNorm.length <= parentNorm.length ? bodyNorm : parentNorm;
   const longer = bodyNorm.length <= parentNorm.length ? parentNorm : bodyNorm;
   if (shorter.length >= 8 && longer.includes(shorter)) return true;
-  if (shorter.length >= 4 && shorter.length / longer.length >= 0.4 && longer.includes(shorter)) {
-    return true;
-  }
+  return shorter.length >= 4 && shorter.length / longer.length >= 0.4 && longer.includes(shorter);
+}
 
+function meshcoreSharedTokenCount(body: string, parentPayload: string): number {
   const parentTokens = new Set(
     meshcoreDisplayNameTokens(parentPayload).filter((t) => t.length >= 4),
   );
-  if (parentTokens.size === 0) return false;
+  if (parentTokens.size === 0) return 0;
   let shared = 0;
   for (const t of meshcoreDisplayNameTokens(body)) {
     if (t.length >= 4 && parentTokens.has(t)) shared++;
   }
-  return shared >= 2 || (shared >= 1 && bodyNorm.length >= 12);
+  return shared;
 }
 
 function resolveMeshcoreLatestBracketParentKey(
@@ -910,6 +954,29 @@ function parseMeshcoreReplyQuotedNeedle(payload: string): string | undefined {
 }
 
 /** Match incoming reply body text to a prior parent (e.g. `reply to "parent text…"`). */
+function findBestMeshcoreParentCandidate(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+  targetName: string,
+  matchesPayload: (payload: string) => boolean,
+): ChatMessage | undefined {
+  let best: ChatMessage | undefined;
+  for (const candidate of prior) {
+    if (!meshcoreThreadMatchesMessage(msg, candidate)) continue;
+    if (candidate.timestamp >= msg.timestamp) continue;
+    if (!meshcoreBracketDisplayNamesMatch(targetName, candidate.sender_name)) continue;
+    if (candidate.emoji != null && candidate.replyId != null) continue;
+    if (!matchesPayload(candidate.payload)) continue;
+    if (!best || candidate.timestamp > best.timestamp) best = candidate;
+  }
+  return best;
+}
+
+function meshcoreQuotedNeedleMatches(payload: string, quotedNeedle: string): boolean {
+  const hay = normalizePayloadMatchText(payload);
+  return hay === quotedNeedle || hay.startsWith(quotedNeedle) || quotedNeedle.startsWith(hay);
+}
+
 function meshcoreFindParentFromReplyPayloadHint(
   msg: ChatMessage,
   prior: readonly ChatMessage[],
@@ -919,15 +986,9 @@ function meshcoreFindParentFromReplyPayloadHint(
 
   const letterToken = parseMeshcoreReplyLetterRef(payload);
   if (letterToken) {
-    let best: ChatMessage | undefined;
-    for (const m of prior) {
-      if (!meshcoreThreadMatchesMessage(msg, m)) continue;
-      if (m.timestamp >= msg.timestamp) continue;
-      if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
-      if (m.emoji != null && m.replyId != null) continue;
-      if (!parentPayloadMatchesLetterRef(m.payload, letterToken)) continue;
-      if (!best || m.timestamp > best.timestamp) best = m;
-    }
+    const best = findBestMeshcoreParentCandidate(msg, prior, targetName, (candidate) =>
+      parentPayloadMatchesLetterRef(candidate, letterToken),
+    );
     if (best) return best;
   }
 
@@ -935,31 +996,17 @@ function meshcoreFindParentFromReplyPayloadHint(
 
   const quotedNeedle = parseMeshcoreReplyQuotedNeedle(payload);
   if (quotedNeedle) {
-    let best: ChatMessage | undefined;
-    for (const m of prior) {
-      if (!meshcoreThreadMatchesMessage(msg, m)) continue;
-      if (m.timestamp >= msg.timestamp) continue;
-      if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
-      if (m.emoji != null && m.replyId != null) continue;
-      const hay = normalizePayloadMatchText(m.payload);
-      if (hay === quotedNeedle || hay.startsWith(quotedNeedle) || quotedNeedle.startsWith(hay)) {
-        if (!best || m.timestamp > best.timestamp) best = m;
-      }
-    }
+    const best = findBestMeshcoreParentCandidate(msg, prior, targetName, (candidate) =>
+      meshcoreQuotedNeedleMatches(candidate, quotedNeedle),
+    );
     if (best) return best;
   }
 
   const numRef = parseMeshcoreReplyNumericRef(payload);
   if (numRef) {
-    let best: ChatMessage | undefined;
-    for (const m of prior) {
-      if (!meshcoreThreadMatchesMessage(msg, m)) continue;
-      if (m.timestamp >= msg.timestamp) continue;
-      if (!meshcoreBracketDisplayNamesMatch(targetName, m.sender_name)) continue;
-      if (m.emoji != null && m.replyId != null) continue;
-      if (!parentPayloadMatchesNumericRef(m.payload, numRef)) continue;
-      if (!best || m.timestamp > best.timestamp) best = m;
-    }
+    const best = findBestMeshcoreParentCandidate(msg, prior, targetName, (candidate) =>
+      parentPayloadMatchesNumericRef(candidate, numRef),
+    );
     if (best) return best;
   }
 
@@ -967,7 +1014,7 @@ function meshcoreFindParentFromReplyPayloadHint(
 }
 
 /** Historical / hydrated-row repair only (see {@link parseMeshcoreChannelIncomingFromThread}). */
-export function applyMeshcoreReplyParentRefresh(
+function applyMeshcoreReplyParentRefresh(
   msg: ChatMessage,
   prior: readonly ChatMessage[],
 ): ChatMessage {
@@ -1033,6 +1080,68 @@ function meshcoreIsOwnSentMessage(
  * - Incoming `@[Name]` without `#key`: re-resolve latest target message once the full thread is loaded.
  * - Incoming keyed rows: keep a corroborated parent, but refresh stale seconds/ms keys for generic replies.
  */
+interface MeshcoreReplyResolution {
+  replyId: number | undefined;
+  parent: ChatMessage | undefined;
+}
+
+function upgradeMeshcoreReplyParent(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+  targetName: string,
+  lookupOpts: MeshcoreReplyLookupOptions,
+  parent: ChatMessage | undefined,
+): MeshcoreReplyResolution | undefined {
+  const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
+    msg,
+    prior,
+    targetName,
+    lookupOpts,
+    parent,
+  );
+  if (!upgraded) return undefined;
+  return { replyId: upgraded.replyId, parent: upgraded.parent };
+}
+
+function applyMeshcoreReplyPreview(
+  msg: ChatMessage,
+  replyId: number,
+  parent: ChatMessage | undefined,
+): ChatMessage {
+  if (!parent) {
+    if (msg.replyPreviewText || msg.replyPreviewSender) {
+      return { ...msg, replyId, replyPreviewText: undefined, replyPreviewSender: undefined };
+    }
+    return replyId !== msg.replyId ? { ...msg, replyId } : msg;
+  }
+  const preview = truncateReplyPreviewText(parent.payload);
+  const sender = parent.sender_name;
+  if (
+    replyId === msg.replyId &&
+    msg.replyPreviewText === preview &&
+    msg.replyPreviewSender === sender
+  ) {
+    return msg;
+  }
+  return { ...msg, replyId, replyPreviewText: preview, replyPreviewSender: sender };
+}
+
+function resolveMeshcoreIncomingBracketParent(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+  targetName: string,
+  lookupOpts: MeshcoreReplyLookupOptions,
+  current: MeshcoreReplyResolution,
+  explicitWireKey: boolean,
+): MeshcoreReplyResolution {
+  const hintParent = meshcoreFindParentFromReplyPayloadHint(msg, prior, targetName);
+  if (hintParent) {
+    return { replyId: meshcoreCanonicalReplyKey(hintParent), parent: hintParent };
+  }
+  if (explicitWireKey && !current.parent) return current;
+  return upgradeMeshcoreReplyParent(msg, prior, targetName, lookupOpts, current.parent) ?? current;
+}
+
 function refreshMeshcoreReplyParent(
   msg: ChatMessage,
   prior: readonly ChatMessage[],
@@ -1061,143 +1170,125 @@ function refreshMeshcoreReplyParent(
   const explicitWireKey = meshcoreWireHadExplicitReplyKey(msg);
 
   if (incomingBracket && targetName) {
-    const hintParent = meshcoreFindParentFromReplyPayloadHint(msg, prior, targetName);
-    if (hintParent) {
-      replyId = meshcoreCanonicalReplyKey(hintParent);
-      parent = hintParent;
-    } else if (!(explicitWireKey && !parent)) {
-      const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
-        msg,
-        prior,
-        targetName,
-        lookupOpts,
-        parent,
-      );
-      if (upgraded) {
-        replyId = upgraded.replyId;
-        parent = upgraded.parent;
-      }
-    }
-  } else if (!keepPickedParent && !parent && targetName && !explicitWireKey) {
-    const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
+    const resolved = resolveMeshcoreIncomingBracketParent(
       msg,
       prior,
       targetName,
       lookupOpts,
-      parent,
+      { replyId, parent },
+      explicitWireKey,
     );
-    if (upgraded) {
-      replyId = upgraded.replyId;
-      parent = upgraded.parent;
-    }
+    if (resolved.replyId != null) replyId = resolved.replyId;
+    parent = resolved.parent;
+  } else if (!keepPickedParent && !parent && targetName && !explicitWireKey) {
+    const upgraded = upgradeMeshcoreReplyParent(msg, prior, targetName, lookupOpts, parent);
+    if (upgraded) ({ replyId, parent } = upgraded);
   }
 
   if (replyId == null) return msg;
+  return applyMeshcoreReplyPreview(msg, replyId, parent);
+}
 
-  if (!parent) {
-    if (msg.replyPreviewText || msg.replyPreviewSender) {
-      return { ...msg, replyId, replyPreviewText: undefined, replyPreviewSender: undefined };
-    }
-    return replyId !== msg.replyId ? { ...msg, replyId } : msg;
-  }
-
-  const preview = truncateReplyPreviewText(parent.payload);
-  const sender = parent.sender_name;
-  if (
-    replyId === msg.replyId &&
-    msg.replyPreviewText === preview &&
-    msg.replyPreviewSender === sender
-  ) {
-    return msg;
-  }
+function repairMeshcoreReplyPreviewFromParent(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+): ChatMessage {
+  if (msg.replyId == null || msg.replyPreviewSender || msg.replyPreviewText) return msg;
+  const parent = findMeshcoreParentMessageForReply(prior, msg.replyId, {
+    beforeTimestamp: msg.timestamp,
+    channel: msg.channel,
+    to: msg.to,
+    excludeSenderId: msg.sender_id,
+  });
+  if (!parent) return msg;
   return {
     ...msg,
-    replyId,
-    replyPreviewText: preview,
-    replyPreviewSender: sender,
+    replyPreviewText: truncateReplyPreviewText(parent.payload),
+    replyPreviewSender: parent.sender_name,
   };
 }
 
-export function repairMeshcoreDisplayMessages(
+function repairMeshcoreEmptyBracketMessage(
+  msg: ChatMessage,
+  parsed: ReturnType<typeof parseMeshcorePlainBracketLine>,
+  prior: readonly ChatMessage[],
+): ChatMessage {
+  const body =
+    parsed.payload.length > 0 ? parsed.payload : msg.payload.replace(/^@\[\s*\]\s*/u, '').trim();
+  const inferred = inferMeshcoreEmptyBracketReplyParent(prior, msg);
+  if (!inferred) return { ...msg, payload: body };
+  return {
+    ...msg,
+    payload: body,
+    replyId: inferred.packetId ?? inferred.timestamp,
+    replyPreviewText: truncateReplyPreviewText(inferred.payload),
+    replyPreviewSender: inferred.sender_name,
+  };
+}
+
+function rebuildMeshcoreBracketThreadMessage(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+): ChatMessage {
+  if (msg.channel === -1 && msg.to != null) {
+    return mergeRepairedMeshcoreMessage(
+      msg,
+      buildMeshcoreDmIncomingMessage(prior, {
+        rawText: msg.payload,
+        senderId: msg.sender_id,
+        displayName: msg.sender_name,
+        timestamp: msg.timestamp,
+        receivedVia: msg.receivedVia,
+        peerNodeId: msg.sender_id,
+        myNodeId: msg.to,
+        to: msg.to,
+        rxHops: msg.rxHops,
+        rxPathHashSizeBytes: msg.rxPathHashSizeBytes,
+      }),
+    );
+  }
+  if (msg.channel < 0) return msg;
+  return mergeRepairedMeshcoreMessage(
+    msg,
+    buildMeshcoreChannelIncomingMessage(prior, {
+      rawText: meshcoreChannelRepairRawText(msg),
+      senderId: msg.sender_id,
+      displayName: msg.sender_name,
+      channel: msg.channel,
+      timestamp: msg.timestamp,
+      receivedVia: msg.receivedVia,
+      rxHops: msg.rxHops,
+      rxPathHashSizeBytes: msg.rxPathHashSizeBytes,
+    }),
+  );
+}
+
+function repairMeshcoreBracketMessage(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+): ChatMessage {
+  const parsed = parseMeshcorePlainBracketLine(msg.payload.trim());
+  if (parsed.hadBracketReplyPrefix && !parsed.bracketTargetName) {
+    return repairMeshcoreEmptyBracketMessage(msg, parsed, prior);
+  }
+  if (parsed.bracketTargetName) return rebuildMeshcoreBracketThreadMessage(msg, prior);
+  return msg;
+}
+
+function repairMeshcoreDisplayMessages(
   messages: readonly ChatMessage[],
   opts: MeshcoreDisplayRepairOpts = {},
 ): ChatMessage[] {
   const prior: ChatMessage[] = [];
   const out: ChatMessage[] = [];
   for (const msg of messages) {
-    let next = msg;
     if (msg.emoji != null && msg.replyId != null) {
-      prior.push(next);
-      out.push(next);
+      prior.push(msg);
+      out.push(msg);
       continue;
     }
-    if (msg.replyId != null && !msg.replyPreviewSender && !msg.replyPreviewText) {
-      const parent = findMeshcoreParentMessageForReply(prior, msg.replyId, {
-        beforeTimestamp: msg.timestamp,
-        channel: msg.channel,
-        to: msg.to,
-        excludeSenderId: msg.sender_id,
-      });
-      if (parent) {
-        next = {
-          ...msg,
-          replyPreviewText: truncateReplyPreviewText(parent.payload),
-          replyPreviewSender: parent.sender_name,
-        };
-      }
-    }
-    const parsed = parseMeshcorePlainBracketLine(msg.payload.trim());
-    if (parsed.hadBracketReplyPrefix && !parsed.bracketTargetName) {
-      const body =
-        parsed.payload.length > 0
-          ? parsed.payload
-          : msg.payload.replace(/^@\[\s*\]\s*/u, '').trim();
-      const inferred = inferMeshcoreEmptyBracketReplyParent(prior, msg);
-      if (inferred) {
-        const parentKey = inferred.packetId ?? inferred.timestamp;
-        next = {
-          ...msg,
-          payload: body,
-          replyId: parentKey,
-          replyPreviewText: truncateReplyPreviewText(inferred.payload),
-          replyPreviewSender: inferred.sender_name,
-        };
-      } else {
-        next = { ...msg, payload: body };
-      }
-    } else if (parsed.bracketTargetName) {
-      if (msg.channel === -1 && msg.to != null) {
-        next = mergeRepairedMeshcoreMessage(
-          msg,
-          buildMeshcoreDmIncomingMessage(prior, {
-            rawText: msg.payload,
-            senderId: msg.sender_id,
-            displayName: msg.sender_name,
-            timestamp: msg.timestamp,
-            receivedVia: msg.receivedVia,
-            peerNodeId: msg.sender_id,
-            myNodeId: msg.to,
-            to: msg.to,
-            rxHops: msg.rxHops,
-            rxPathHashSizeBytes: msg.rxPathHashSizeBytes,
-          }),
-        );
-      } else if (msg.channel >= 0) {
-        next = mergeRepairedMeshcoreMessage(
-          msg,
-          buildMeshcoreChannelIncomingMessage(prior, {
-            rawText: meshcoreChannelRepairRawText(msg),
-            senderId: msg.sender_id,
-            displayName: msg.sender_name,
-            channel: msg.channel,
-            timestamp: msg.timestamp,
-            receivedVia: msg.receivedVia,
-            rxHops: msg.rxHops,
-            rxPathHashSizeBytes: msg.rxPathHashSizeBytes,
-          }),
-        );
-      }
-    }
+    let next = repairMeshcoreReplyPreviewFromParent(msg, prior);
+    next = repairMeshcoreBracketMessage(next, prior);
     next = refreshMeshcoreReplyParent(next, prior, opts.selfNodeId);
     next = meshcorePromoteEmojiOnlyReplyToTapback(next);
     prior.push(next);
@@ -1226,25 +1317,75 @@ export interface BuildMeshcoreDmIncomingOpts {
  * Build a DM `ChatMessage` from raw text: tapbacks `@[Name] emoji`, text replies `@[Name] body`,
  * or plain payload (no leading bracket line).
  */
+type MeshcoreDmIncomingBase = Pick<
+  ChatMessage,
+  | 'sender_id'
+  | 'sender_name'
+  | 'channel'
+  | 'timestamp'
+  | 'status'
+  | 'receivedVia'
+  | 'to'
+  | 'rxHops'
+  | 'rxPathHashSizeBytes'
+> & { meshcoreDedupeKey: string };
+
+function buildMeshcoreDmBracketReplyMessage(
+  messages: readonly ChatMessage[],
+  base: MeshcoreDmIncomingBase,
+  parsed: ReturnType<typeof parseMeshcorePlainBracketLine>,
+  opts: BuildMeshcoreDmIncomingOpts,
+  rawText: string,
+): ChatMessage {
+  const target = parsed.bracketTargetName ?? '';
+  let parentKey: number | undefined;
+  let parent: ChatMessage | undefined;
+
+  if (parsed.wireReplyKey != null) {
+    parent = findMeshcoreDmReplyParent(messages, {
+      peerNodeId: opts.peerNodeId,
+      myNodeId: opts.myNodeId,
+      replyKey: parsed.wireReplyKey,
+    });
+    if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
+  }
+
+  if (parentKey == null && parsed.wireReplyKey == null) {
+    parentKey = resolveMeshcoreBracketParentKeyDm(messages, {
+      peerNodeId: opts.peerNodeId,
+      myNodeId: opts.myNodeId,
+      targetName: target,
+      beforeTimestamp: opts.timestamp,
+    });
+    if (parentKey != null) {
+      parent = findMeshcoreDmReplyParent(messages, {
+        peerNodeId: opts.peerNodeId,
+        myNodeId: opts.myNodeId,
+        replyKey: parentKey,
+      });
+      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
+    }
+  }
+
+  return finalizeMeshcoreBracketReply(
+    base,
+    target,
+    parentKey,
+    parent,
+    parsed.payload.trim(),
+    rawText,
+  );
+}
+
 export function buildMeshcoreDmIncomingMessage(
   messages: readonly ChatMessage[],
   opts: BuildMeshcoreDmIncomingOpts,
 ): ChatMessage {
   const rawText = sanitizeMeshcoreChatWireText(opts.rawText);
   const parsed = parseMeshcorePlainBracketLine(rawText);
-  const rxFields: Pick<ChatMessage, 'rxHops' | 'rxPathHashSizeBytes'> = {
-    ...(opts.rxHops != null && Number.isFinite(opts.rxHops) ? { rxHops: opts.rxHops } : {}),
-    ...(opts.rxPathHashSizeBytes === 1 ||
-    opts.rxPathHashSizeBytes === 2 ||
-    opts.rxPathHashSizeBytes === 3
-      ? { rxPathHashSizeBytes: opts.rxPathHashSizeBytes }
-      : {}),
-  };
+  const rxFields = meshcoreIncomingRxFields(opts);
 
-  const base: Pick<
-    ChatMessage,
-    'sender_id' | 'sender_name' | 'channel' | 'timestamp' | 'status' | 'receivedVia' | 'to'
-  > & { meshcoreDedupeKey: string } = {
+  const base: MeshcoreDmIncomingBase = {
     sender_id: opts.senderId,
     sender_name: opts.displayName,
     channel: -1,
@@ -1271,56 +1412,8 @@ export function buildMeshcoreDmIncomingMessage(
     const body = parsed.payload.trim();
     return { ...base, payload: body.length > 0 ? body : rawText };
   }
-  const target = parsed.bracketTargetName;
-  if (target) {
-    let parentKey: number | undefined;
-    let parent: ChatMessage | undefined;
-
-    if (parsed.wireReplyKey != null) {
-      parent = findMeshcoreDmReplyParent(messages, {
-        peerNodeId: opts.peerNodeId,
-        myNodeId: opts.myNodeId,
-        replyKey: parsed.wireReplyKey,
-      });
-      if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
-    }
-
-    if (parentKey == null && parsed.wireReplyKey == null) {
-      parentKey = resolveMeshcoreBracketParentKeyDm(messages, {
-        peerNodeId: opts.peerNodeId,
-        myNodeId: opts.myNodeId,
-        targetName: target,
-        beforeTimestamp: opts.timestamp,
-      });
-      if (parentKey != null) {
-        parent = findMeshcoreDmReplyParent(messages, {
-          peerNodeId: opts.peerNodeId,
-          myNodeId: opts.myNodeId,
-          replyKey: parentKey,
-        });
-        if (parent) parentKey = meshcoreCanonicalReplyKey(parent);
-      }
-    }
-
-    if (parentKey != null) {
-      const body = parsed.payload.trim();
-      const previewFields = parent
-        ? {
-            replyPreviewText: truncateReplyPreviewText(parent.payload),
-            replyPreviewSender: parent.sender_name,
-          }
-        : undefined;
-      if (body.length > 0) {
-        return meshcorePromoteEmojiOnlyReplyToTapback({
-          ...base,
-          payload: body,
-          replyId: parentKey,
-          ...previewFields,
-        });
-      }
-    }
-    const body = parsed.payload.trim();
-    return { ...base, ...meshcoreBracketUnresolvedReplyFields(target, body, rawText) };
+  if (parsed.bracketTargetName) {
+    return buildMeshcoreDmBracketReplyMessage(messages, base, parsed, opts, rawText);
   }
 
   return { ...base, payload: rawText };

@@ -9,7 +9,7 @@ import {
   shouldSwallowLateMeshtasticConfigureRetryableRejection,
 } from './meshtasticLateConfigureRetryableSwallow';
 
-export const MESHTASTIC_CONFIGURE_RETRY_MAX_ATTEMPTS = 6;
+const MESHTASTIC_CONFIGURE_RETRY_MAX_ATTEMPTS = 6;
 
 export {
   armMeshtasticLateConfigureRetryableSwallow,

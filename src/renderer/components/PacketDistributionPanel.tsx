@@ -15,7 +15,7 @@ import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 type Variant = 'meshtastic' | 'meshcore' | 'reticulum';
 
-type PacketDistributionPanelProps =
+export type PacketDistributionPanelProps =
   | {
       variant: 'meshtastic';
       packets: MeshtasticRawPacketEntry[];

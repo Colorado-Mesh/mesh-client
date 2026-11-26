@@ -1,30 +1,14 @@
-import type { BlePeripheralOwner } from '@/shared/electron-api.types';
-
 import {
   acquireReticulumBleScan,
-  isBlePeripheralConflictErrorMessage,
-  isBleScanBusyErrorMessage,
   normalizeBleMac,
   parseBleMacFromReticulumSerialPort,
-  prepareReticulumBleRnodeConnect,
   registerReticulumBleMac,
   releaseReticulumBleRnodeConnect,
   releaseReticulumBleScan,
   unregisterReticulumBleMac,
 } from './reticulumBleAdapterLease';
 
-export type { BlePeripheralOwner };
-export {
-  acquireReticulumBleScan,
-  isBlePeripheralConflictErrorMessage,
-  isBleScanBusyErrorMessage,
-  parseBleMacFromReticulumSerialPort,
-  prepareReticulumBleRnodeConnect,
-  registerReticulumBleMac,
-  releaseReticulumBleRnodeConnect,
-  releaseReticulumBleScan,
-  unregisterReticulumBleMac,
-};
+export { acquireReticulumBleScan, releaseReticulumBleRnodeConnect, releaseReticulumBleScan };
 
 export interface ReticulumInterfaceBleRow {
   type: string;
@@ -39,15 +23,6 @@ export function isReticulumBleRnodeInterfaceRow(row: ReticulumInterfaceBleRow): 
     (normalized === 'rnode' || normalized === 'rnodeinterface') &&
     typeof row.serial_port === 'string' &&
     row.serial_port.startsWith('ble://')
-  );
-}
-
-export function isReticulumBleRnodeOnline(
-  row: ReticulumInterfaceBleRow & { status?: string },
-): boolean {
-  const status = row.status?.toLowerCase() ?? '';
-  return (
-    row.enabled && isReticulumBleRnodeInterfaceRow(row) && (status === 'up' || status === 'online')
   );
 }
 

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatCheckResult,
   formatLocalActDockerNote,
+  evaluateActionlintCheck,
   evaluateContainerEngineCheck,
   evaluatePlaywrightCheck,
   evaluateRustCheck,
@@ -223,6 +224,26 @@ describe('check-environment formatLocalActDockerNote', () => {
         { status: 'pass', severity: 'optional', label: 'act', detail: 'act version 0.2.76' },
       ]),
     ).toContain('act:ci:native');
+  });
+});
+
+describe('check-environment evaluateActionlintCheck', () => {
+  it('passes when github-actionlint is installed in node_modules/.bin', () => {
+    expect(
+      evaluateActionlintCheck({ binPath: '/repo/node_modules/.bin/github-actionlint' }),
+    ).toMatchObject({
+      status: 'pass',
+      severity: 'optional',
+      detail: '/repo/node_modules/.bin/github-actionlint',
+    });
+  });
+
+  it('warns and points at pnpm install when missing', () => {
+    expect(evaluateActionlintCheck({ binPath: null })).toMatchObject({
+      status: 'warn',
+      severity: 'optional',
+      hint: expect.stringContaining('pnpm install'),
+    });
   });
 });
 

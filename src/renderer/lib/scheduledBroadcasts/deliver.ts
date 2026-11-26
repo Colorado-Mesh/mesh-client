@@ -43,7 +43,7 @@ import {
 import { isScheduledBroadcastIdentityConnected } from './identityLabel';
 import { resolveChannelTargetIndex } from './resolveChannelTarget';
 
-export type ScheduledBroadcastFailReason =
+type ScheduledBroadcastFailReason =
   | 'not-connected'
   | 'text-too-long'
   | 'deferred'
@@ -129,7 +129,7 @@ function defaultGetRrcHubRoomState(hubDestHash: string, room: string): RrcHubRoo
   };
 }
 
-export function createDefaultDeliverDeps(): DeliverDeps {
+function createDefaultDeliverDeps(): DeliverDeps {
   return {
     sendChat: sendChatOnIdentity,
     waitForSettlement: waitForChatSettlement,

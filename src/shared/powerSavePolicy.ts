@@ -11,8 +11,7 @@
 /** SQLite `app_settings` key for the App → Window "keep computer awake" setting. */
 export const PREVENT_SLEEP_SETTING_KEY = 'preventSleepWhileConnected';
 
-export const POWER_SAVE_MODES = ['off', 'rf', 'always'] as const;
-export type PowerSaveMode = (typeof POWER_SAVE_MODES)[number];
+export type PowerSaveMode = 'off' | 'rf' | 'always';
 
 /** Default for every platform: only local radio hardware holds the blocker. */
 export const DEFAULT_POWER_SAVE_MODE: PowerSaveMode = 'rf';

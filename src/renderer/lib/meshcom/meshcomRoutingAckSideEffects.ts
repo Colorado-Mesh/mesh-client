@@ -172,10 +172,6 @@ export function scheduleMeshcomDmAckTimeout(identityId: IdentityId, messageId: s
 }
 
 /** Cancel a pending DM ACK timer (tests / successful ACK). */
-export function cancelMeshcomDmAckTimeout(identityId: IdentityId, messageId: string): void {
-  clearDmAckTimer(identityId, messageId);
-}
-
 /** Clear all pending MeshCom DM ACK timers (tests). */
 export function clearAllMeshcomDmAckTimeouts(): void {
   for (const timer of pendingDmTimers.values()) clearTimeout(timer);

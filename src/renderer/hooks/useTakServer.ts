@@ -10,7 +10,7 @@ const DEFAULT_SETTINGS: TAKSettings = {
   autoStart: false,
 };
 
-interface UseTakServerResult {
+export interface UseTakServerResult {
   status: TAKServerStatus;
   clients: TAKClientInfo[];
   settings: TAKSettings;

@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react-motion';
+import { Check, ChevronDown } from 'lucide-react-motion';
 import type { KeyboardEvent, ReactNode, RefObject } from 'react';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -16,14 +16,28 @@ export interface MenuItem {
   icon?: ReactNode;
   tone?: 'default' | 'danger';
   disabled?: boolean;
+  /** Set on items of a {@link MenuGroup}: renders `menuitemradio` with `aria-checked`. */
+  checked?: boolean;
   onSelect: () => void;
 }
 
-export type MenuEntry = MenuItem | 'separator';
+/** A labelled set of choices (`role="group"`); give its items `checked` to make them radios. */
+export interface MenuGroup {
+  id: string;
+  label: string;
+  items: readonly MenuItem[];
+}
+
+export type MenuEntry = MenuItem | MenuGroup | 'separator';
+
+const MENU_ITEM_SELECTOR =
+  '[role="menuitem"]:not([disabled]), [role="menuitemradio"]:not([disabled])';
 
 interface MenuPosition {
   top: number;
   left: number;
+  /** Set when the menu fits on neither side: it scrolls within the roomier side. */
+  maxHeight?: number;
 }
 
 const MENU_GAP = 4;
@@ -40,9 +54,13 @@ function computePosition(
   let left = align === 'end' ? a.right - width : a.left;
   left = Math.max(VIEWPORT_MARGIN, Math.min(left, window.innerWidth - width - VIEWPORT_MARGIN));
   const below = a.bottom + MENU_GAP;
-  const fitsBelow = below + height <= window.innerHeight - VIEWPORT_MARGIN;
-  const top = fitsBelow ? below : Math.max(VIEWPORT_MARGIN, a.top - MENU_GAP - height);
-  return { top, left };
+  const roomBelow = window.innerHeight - VIEWPORT_MARGIN - below;
+  const roomAbove = a.top - MENU_GAP - VIEWPORT_MARGIN;
+  if (height <= roomBelow) return { top: below, left };
+  if (height <= roomAbove) return { top: a.top - MENU_GAP - height, left };
+  // Fits on neither side: cap it to the roomier one and scroll, so it never covers its trigger.
+  if (roomBelow >= roomAbove) return { top: below, left, maxHeight: Math.max(0, roomBelow) };
+  return { top: VIEWPORT_MARGIN, left, maxHeight: roomAbove };
 }
 
 export interface MenuProps {
@@ -78,10 +96,7 @@ export function Menu({
   const [position, setPosition] = useState<MenuPosition | null>(null);
 
   const itemButtons = () =>
-    Array.from(
-      menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ??
-        [],
-    );
+    Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>(MENU_ITEM_SELECTOR) ?? []);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -91,6 +106,10 @@ export function Menu({
     setPosition(computePosition(anchor, menu, align));
     // With every item disabled, focus the menu itself so Escape and Tab still reach its handler.
     (itemButtons()[0] ?? menu).focus();
+    // Forget the placement on close: the next open must measure the menu without an old cap.
+    return () => {
+      setPosition(null);
+    };
   }, [open, align, anchorRef]);
 
   useEffect(() => {
@@ -103,13 +122,18 @@ export function Menu({
     const onDismiss = () => {
       onClose();
     };
+    // A menu capped to the window scrolls its own items; only a scroll elsewhere moves the anchor.
+    const onScroll = (e: Event) => {
+      if (e.target instanceof Node && menuRef.current?.contains(e.target)) return;
+      onClose();
+    };
     document.addEventListener('mousedown', onPointerDown);
     window.addEventListener('resize', onDismiss);
-    window.addEventListener('scroll', onDismiss, true);
+    window.addEventListener('scroll', onScroll, true);
     return () => {
       document.removeEventListener('mousedown', onPointerDown);
       window.removeEventListener('resize', onDismiss);
-      window.removeEventListener('scroll', onDismiss, true);
+      window.removeEventListener('scroll', onScroll, true);
     };
   }, [open, onClose, anchorRef]);
 
@@ -142,6 +166,46 @@ export function Menu({
     buttons[next]?.focus();
   };
 
+  const renderItem = (entry: MenuItem) => {
+    const isRadio = entry.checked !== undefined;
+    return (
+      <button
+        key={entry.id}
+        type="button"
+        role={isRadio ? 'menuitemradio' : 'menuitem'}
+        aria-checked={isRadio ? entry.checked : undefined}
+        aria-label={entry.label}
+        aria-describedby={entry.description ? `${menuDomId}-${entry.id}-desc` : undefined}
+        disabled={entry.disabled}
+        onClick={() => {
+          closeAndRefocus();
+          entry.onSelect();
+        }}
+        className={`text-body rounded-badge flex w-full items-start gap-2.5 px-2.5 py-2 text-left transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+          entry.tone === 'danger'
+            ? 'text-red-400 hover:bg-red-400/10 focus-visible:bg-red-400/10'
+            : 'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-ink-200'
+        }`}
+      >
+        {isRadio ? (
+          <span className="mt-px flex w-4 shrink-0" aria-hidden="true">
+            {entry.checked ? <Check className={ICON_MD} size={16} /> : null}
+          </span>
+        ) : (
+          entry.icon && <span className="mt-px flex shrink-0">{entry.icon}</span>
+        )}
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="font-medium">{entry.label}</span>
+          {entry.description && (
+            <span id={`${menuDomId}-${entry.id}-desc`} className="text-meta text-ink-300">
+              {entry.description}
+            </span>
+          )}
+        </span>
+      </button>
+    );
+  };
+
   return createPortal(
     <div
       ref={menuRef}
@@ -156,46 +220,35 @@ export function Menu({
         maxWidth: `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`,
         top: position?.top ?? -9999,
         left: position?.left ?? -9999,
+        ...(position?.maxHeight != null
+          ? { maxHeight: `${position.maxHeight}px`, overflowY: 'auto' as const }
+          : {}),
       }}
       className="border-secondary-dark bg-deep-black rounded-card shadow-level-2 fixed border p-1"
     >
-      {entries.map((entry, index) =>
-        entry === 'separator' ? (
-          <div
-            key={`separator-${index}`}
-            role="separator"
-            className="bg-ink-800 mx-1.5 my-1 h-px"
-          />
-        ) : (
-          <button
-            key={entry.id}
-            type="button"
-            role="menuitem"
-            aria-label={entry.label}
-            aria-describedby={entry.description ? `${menuDomId}-${entry.id}-desc` : undefined}
-            disabled={entry.disabled}
-            onClick={() => {
-              closeAndRefocus();
-              entry.onSelect();
-            }}
-            className={`text-body rounded-badge flex w-full items-start gap-2.5 px-2.5 py-2 text-left transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
-              entry.tone === 'danger'
-                ? 'text-red-400 hover:bg-red-400/10 focus-visible:bg-red-400/10'
-                : 'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-ink-200'
-            }`}
-          >
-            {entry.icon && <span className="mt-px flex shrink-0">{entry.icon}</span>}
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="font-medium">{entry.label}</span>
-              {entry.description && (
-                <span id={`${menuDomId}-${entry.id}-desc`} className="text-meta text-ink-300">
-                  {entry.description}
-                </span>
-              )}
-            </span>
-          </button>
-        ),
-      )}
+      {entries.map((entry, index) => {
+        if (entry === 'separator') {
+          return (
+            <div
+              key={`separator-${index}`}
+              role="separator"
+              className="bg-ink-800 mx-1.5 my-1 h-px"
+            />
+          );
+        }
+        if ('items' in entry) {
+          const labelId = `${menuDomId}-${entry.id}-label`;
+          return (
+            <div key={entry.id} role="group" aria-labelledby={labelId}>
+              <div id={labelId} className="text-meta text-ink-300 px-2.5 pt-1.5 pb-1 font-medium">
+                {entry.label}
+              </div>
+              {entry.items.map((item) => renderItem(item))}
+            </div>
+          );
+        }
+        return renderItem(entry);
+      })}
     </div>,
     document.body,
   );

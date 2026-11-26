@@ -17,7 +17,7 @@ import type { SupportBundleMode } from '@/shared/support-bundle.types';
 import { buttonClassName } from './ui/Button';
 import { SettingsCollapsible } from './ui/SettingsSection';
 
-interface AppSupportSectionProps {
+export interface AppSupportSectionProps {
   exporting: SupportBundleMode | null;
   onExport: (mode: SupportBundleMode) => Promise<void>;
 }

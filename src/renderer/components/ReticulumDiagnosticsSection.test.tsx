@@ -17,10 +17,6 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('sonner', () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
-}));
-
 vi.mock('@/renderer/components/Toast', () => ({
   useToast: () => ({ addToast: vi.fn() }),
 }));

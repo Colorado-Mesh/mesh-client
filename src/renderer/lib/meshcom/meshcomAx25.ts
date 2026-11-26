@@ -4,9 +4,9 @@
 
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
 
-export const AX25_CONTROL_UI = 0x03;
-export const AX25_PID_NO_LAYER3 = 0xf0;
-export const AX25_ADDR_LEN = 7;
+const AX25_CONTROL_UI = 0x03;
+const AX25_PID_NO_LAYER3 = 0xf0;
+const AX25_ADDR_LEN = 7;
 
 export interface Ax25Address {
   /** Callsign with optional SSID (`CALL` or `CALL-N`). */

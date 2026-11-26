@@ -9,7 +9,7 @@
 export const LOG_MESSAGE_ID_RE = /\bmcL\d{4,}\b/;
 
 /** Full-string form used when validating registry keys / helper args. */
-export const LOG_MESSAGE_ID_FULL_RE = /^mcL\d{4,}$/;
+const LOG_MESSAGE_ID_FULL_RE = /^mcL\d{4,}$/;
 
 export type LogMessageId = `mcL${string}`;
 
@@ -1514,6 +1514,7 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1503: 'src/renderer/lib/protocols/meshcom/MeshComTransport.ts:connectEmptyGranted',
   mcL1504: 'src/renderer/runtime/useMeshcomRuntime.ts:rebindMeshcomIdentity',
   mcL1505: 'src/renderer/lib/hydrateMeshcomIdentityStores.ts:rebindMeshcomIdentity',
+  mcL1506: 'src/renderer/lib/meshcoreRepeaterRouteEscalation.ts:sameRouteRetry',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

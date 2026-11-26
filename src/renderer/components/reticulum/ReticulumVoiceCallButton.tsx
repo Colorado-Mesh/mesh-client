@@ -8,7 +8,7 @@ import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumId
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 import { isReticulumVoiceSessionBusy } from '@/shared/voice-types';
 
-interface ReticulumVoiceCallButtonProps {
+export interface ReticulumVoiceCallButtonProps {
   lxmfPeerHash: string;
   identityHash?: string | null;
   disabled?: boolean;

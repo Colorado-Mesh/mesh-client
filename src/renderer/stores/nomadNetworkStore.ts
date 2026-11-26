@@ -346,7 +346,7 @@ export interface FetchNomadPageOpts {
   identify?: boolean;
 }
 
-interface NomadNetworkStoreState {
+export interface NomadNetworkStoreState {
   nodes: Map<string, NomadNodeRow>;
   lastRefreshAt: number | null;
   nomadApiAvailable: boolean;

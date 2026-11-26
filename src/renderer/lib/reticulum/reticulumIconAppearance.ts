@@ -1,7 +1,7 @@
 import {
   isReticulumProfileIconName,
   type ReticulumProfileIconName,
-} from '@/renderer/components/ReticulumProfileIcon';
+} from '@/renderer/lib/reticulum/reticulumProfileIconNames';
 
 export type ReticulumProfileIconColor = 'green' | 'cyan' | 'amber' | 'red' | 'purple';
 

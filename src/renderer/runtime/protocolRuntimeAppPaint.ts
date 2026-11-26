@@ -88,7 +88,7 @@ export const PROTOCOL_RUNTIME_APP_PAINT_FIELDS = [
   'environmentTelemetry',
 ] as const;
 
-export type ProtocolRuntimeAppPaintField = (typeof PROTOCOL_RUNTIME_APP_PAINT_FIELDS)[number];
+type ProtocolRuntimeAppPaintField = (typeof PROTOCOL_RUNTIME_APP_PAINT_FIELDS)[number];
 
 function isMap(value: unknown): value is Map<unknown, unknown> {
   return value instanceof Map;

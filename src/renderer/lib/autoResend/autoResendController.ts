@@ -20,7 +20,7 @@ import type { IdentityId, MeshProtocol } from '../types';
 import { autoResendDelayMs, REGULAR_MESSAGE_MAX_AUTO_RESENDS } from './autoResendPolicy';
 
 /** A scheduled automatic resend of one failed bubble. */
-export interface AutoResendEntry {
+interface AutoResendEntry {
   identityId: IdentityId;
   protocol: MeshProtocol;
   messageId: string;
@@ -285,7 +285,7 @@ function schedule(key: string, info: TrackedOutbound, messageId: string, now: nu
 }
 
 /** Re-check tracked session sends (O(tracked), not O(messages)). */
-export function evaluateTrackedOutbound(now: number = Date.now()): void {
+function evaluateTrackedOutbound(now: number = Date.now()): void {
   const entries = useAutoResendStore.getState().entries;
   for (const [key, info] of [...tracked]) {
     const messageId = key.slice(info.protocol.length + 1);

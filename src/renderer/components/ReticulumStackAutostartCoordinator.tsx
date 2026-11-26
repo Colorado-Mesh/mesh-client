@@ -5,7 +5,7 @@ import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSid
 
 import { useToast } from './Toast';
 
-interface ReticulumStackAutostartCoordinatorProps {
+export interface ReticulumStackAutostartCoordinatorProps {
   connecting: boolean;
   onStartStack: () => Promise<void>;
   enabled?: boolean;

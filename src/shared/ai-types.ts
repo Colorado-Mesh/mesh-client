@@ -302,9 +302,9 @@ export function aiSummaryOutputTokens(
 export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 12_288;
 /** Whole-prompt UTF-8 ceiling for local/remote HTTP engines. */
 export const AI_ENDPOINT_MAX_PROMPT_BYTES = 64_000;
-export const AI_OS_MAX_CHARS = 9000;
-export const AI_BUNDLED_MAX_CHARS = 20_000;
-export const AI_ENDPOINT_MAX_CHARS = 60_000;
+const AI_OS_MAX_CHARS = 9000;
+const AI_BUNDLED_MAX_CHARS = 20_000;
+const AI_ENDPOINT_MAX_CHARS = 60_000;
 /**
  * Approximate UTF-8 size of one transcript line (timestamp + callsign + short body)
  * used only for App → AI capacity estimates — not a hard limit.
@@ -312,7 +312,7 @@ export const AI_ENDPOINT_MAX_CHARS = 60_000;
 export const AI_TYPICAL_SUMMARY_LINE_BYTES = 120;
 export const AI_REQUEST_TIMEOUT_MS = MS_PER_MINUTE;
 /** CPU WASM also needs time to load and evaluate the downloaded model. */
-export const AI_LOCAL_REQUEST_TIMEOUT_MS = 5 * MS_PER_MINUTE;
+const AI_LOCAL_REQUEST_TIMEOUT_MS = 5 * MS_PER_MINUTE;
 export const AI_MIN_TIMEOUT_SECONDS = 30;
 export const AI_MAX_TIMEOUT_SECONDS = 1800;
 export function aiSummaryTimeoutMs(engine: AiEngine | null, seconds?: number): number {

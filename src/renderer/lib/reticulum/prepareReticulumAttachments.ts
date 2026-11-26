@@ -41,7 +41,7 @@ export type PrepareResult =
   | { ok: true; prepared: PreparedReticulumAttachments }
   | { ok: false; error: PrepareAttachmentError };
 
-export async function readBlobBytes(blob: Blob): Promise<Uint8Array> {
+async function readBlobBytes(blob: Blob): Promise<Uint8Array> {
   if (typeof blob.arrayBuffer === 'function') {
     return new Uint8Array(await blob.arrayBuffer());
   }

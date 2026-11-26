@@ -69,7 +69,7 @@ const MESHCOM_KISS_TX_ACK_TIMEOUT_MS = 8 * MS_PER_SECOND;
 const MESHCOM_TX_ECHO_TTL_MS = 5 * MS_PER_SECOND;
 const MESHCOM_TX_ECHO_MAX = 16;
 
-interface MeshcomRecentOutbound {
+export interface MeshcomRecentOutbound {
   /** Normalized wire dest (`*`, GRC digits, or callsign). */
   dst: string;
   msg: string;

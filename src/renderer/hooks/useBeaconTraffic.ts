@@ -27,7 +27,7 @@ import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 export { COLORADO_BEACON_URL } from '@/renderer/lib/map/beaconPresets';
 
-export interface BeaconRegionOption {
+interface BeaconRegionOption {
   slug: string;
   name: string;
 }

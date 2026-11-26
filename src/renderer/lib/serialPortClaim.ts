@@ -8,7 +8,7 @@ import {
 } from './serialPortSignature';
 import type { MeshProtocol } from './types';
 
-export const LORA_SERIAL_PROTOCOLS: readonly MeshProtocol[] = ['meshtastic', 'meshcore', 'meshcom'];
+const LORA_SERIAL_PROTOCOLS: readonly MeshProtocol[] = ['meshtastic', 'meshcore', 'meshcom'];
 
 export type LoraSerialConnectedSnapshot = Record<'meshtastic' | 'meshcore' | 'meshcom', boolean>;
 

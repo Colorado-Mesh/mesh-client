@@ -11,11 +11,9 @@ import type { ProtocolRuntime } from './protocolRuntime';
  */
 export const PROTOCOL_RUNTIME_DISABLED_STUBS = {
   meshcom: createMeshcomRuntimeDisabledStub,
-} as const satisfies Partial<Record<MeshProtocol, () => ProtocolRuntime>>;
-
-export type ProtocolWithDisabledStub = keyof typeof PROTOCOL_RUNTIME_DISABLED_STUBS;
-
-/** Stub for `protocol` when App may put a pre-live / hidden stand-in in RuntimeMap. */
+} as const satisfies Partial<
+  Record<MeshProtocol, () => ProtocolRuntime>
+>; /** Stub for `protocol` when App may put a pre-live / hidden stand-in in RuntimeMap. */
 export function getProtocolRuntimeDisabledStub(
   protocol: MeshProtocol,
 ): ProtocolRuntime | undefined {

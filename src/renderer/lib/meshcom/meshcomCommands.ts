@@ -13,10 +13,7 @@ import { buildMeshcomSettimeCommand } from './meshcomCommandWire';
 import { sanitizeMeshcomWireLine } from './meshcomWireSanitize';
 
 export {
-  buildMeshcomSettimeCommand,
   formatMeshcomSettimeUtc,
-  isMeshcomSensitiveCommand,
-  MESHCOM_APP_SHORTCUTS,
   normalizeMeshcomCommandInput,
   redactMeshcomCommandForLog,
 } from './meshcomCommandWire';
@@ -776,10 +773,6 @@ export const MESHCOM_RM_ONLY_COMMAND_TOKENS: ReadonlySet<string> = new Set(
 
 export function getMeshcomCommandById(id: string): MeshcomCommandDescriptor | undefined {
   return BY_ID.get(id);
-}
-
-export function getMeshcomCommandsByGroup(group: MeshcomCommandGroup): MeshcomCommandDescriptor[] {
-  return MESHCOM_COMMANDS.filter((c) => c.group === group);
 }
 
 export function buildMeshcomCommandLine(

@@ -198,7 +198,7 @@ import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_CLASS, INPUT_BOX_SM_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 import { SettingsCollapsible } from './ui/SettingsSection';
 
-interface ChannelConfig {
+export interface ChannelConfig {
   index: number;
   name: string;
   role: number;
@@ -237,7 +237,7 @@ function loadMeshcoreRadioExperimentalSettings(): {
   };
 }
 
-interface Props {
+export interface Props {
   configTarget?: ConfigTargetContext;
   onSetConfig: (config: unknown) => Promise<void>;
   onCommit: () => Promise<void>;
@@ -676,7 +676,7 @@ export function ConfigNumber({
   );
 }
 
-export function ConfigBluetoothPin({
+function ConfigBluetoothPin({
   label,
   value,
   onChange,
@@ -905,6 +905,26 @@ function parseMeshcoreFreqMhzToHz(text: string): number | null {
   }
   // Whole kHz: the radio takes kHz, so the field (3 decimals) and the sent value always agree.
   return Math.round(mhz * 1000) * 1000;
+}
+
+function applyLoraNumberFields(
+  lora: Record<string, unknown>,
+  fields: readonly (readonly [string, (value: number) => void])[],
+): void {
+  for (const [key, set] of fields) {
+    const value = lora[key];
+    if (typeof value === 'number') set(value);
+  }
+}
+
+function applyLoraBooleanFields(
+  lora: Record<string, unknown>,
+  fields: readonly (readonly [string, (value: boolean) => void])[],
+): void {
+  for (const [key, set] of fields) {
+    const value = lora[key];
+    if (typeof value === 'boolean') set(value);
+  }
 }
 
 export default function RadioPanel({
@@ -1287,23 +1307,28 @@ export default function RadioPanel({
     const signature = meshtasticConfigSignature(stripMeshtasticProtobufMeta(lora));
     if (syncedMeshtasticLoraRef.current === signature) return;
     syncedMeshtasticLoraRef.current = signature;
-    if (typeof lora.region === 'number') setRegion(lora.region);
-    if (typeof lora.modemPreset === 'number') setModemPreset(lora.modemPreset);
-    if (typeof lora.usePreset === 'boolean') setUsePreset(lora.usePreset);
-    if (typeof lora.hopLimit === 'number') setHopLimit(lora.hopLimit);
-    if (typeof lora.bandwidth === 'number') setBandwidth(lora.bandwidth);
-    if (typeof lora.spreadFactor === 'number') setSpreadFactor(lora.spreadFactor);
-    if (typeof lora.codingRate === 'number') setCodingRate(lora.codingRate);
-    if (typeof lora.txPower === 'number') setTxPower(lora.txPower);
-    if (typeof lora.sx126xRxBoostedGain === 'boolean') setRxBoostedGain(lora.sx126xRxBoostedGain);
-    if (typeof lora.txEnabled === 'boolean') setTxEnabled(lora.txEnabled);
-    if (typeof lora.channelNum === 'number') setChannelNum(lora.channelNum);
-    if (typeof lora.overrideDutyCycle === 'boolean') setOverrideDutyCycle(lora.overrideDutyCycle);
-    if (typeof lora.overrideFrequency === 'number') setOverrideFrequency(lora.overrideFrequency);
-    if (typeof lora.frequencyOffset === 'number') setFrequencyOffset(lora.frequencyOffset);
-    if (typeof lora.paFanDisabled === 'boolean') setPaFanDisabled(lora.paFanDisabled);
-    if (typeof lora.ignoreMqtt === 'boolean') setIgnoreMqtt(lora.ignoreMqtt);
-    if (typeof lora.configOkToMqtt === 'boolean') setConfigOkToMqtt(lora.configOkToMqtt);
+    const values = lora;
+    applyLoraNumberFields(values, [
+      ['region', setRegion],
+      ['modemPreset', setModemPreset],
+      ['hopLimit', setHopLimit],
+      ['bandwidth', setBandwidth],
+      ['spreadFactor', setSpreadFactor],
+      ['codingRate', setCodingRate],
+      ['txPower', setTxPower],
+      ['channelNum', setChannelNum],
+      ['overrideFrequency', setOverrideFrequency],
+      ['frequencyOffset', setFrequencyOffset],
+    ]);
+    applyLoraBooleanFields(values, [
+      ['usePreset', setUsePreset],
+      ['sx126xRxBoostedGain', setRxBoostedGain],
+      ['txEnabled', setTxEnabled],
+      ['overrideDutyCycle', setOverrideDutyCycle],
+      ['paFanDisabled', setPaFanDisabled],
+      ['ignoreMqtt', setIgnoreMqtt],
+      ['configOkToMqtt', setConfigOkToMqtt],
+    ]);
   }, [meshtasticLoraConfig, meshtasticConfigSlices?.lora]);
 
   useEffect(() => {

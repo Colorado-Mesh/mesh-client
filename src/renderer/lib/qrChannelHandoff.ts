@@ -7,7 +7,7 @@
 export type ChannelQrSettleOutcome = 'accepted' | 'rejected';
 export type ChannelQrOfferOutcome = ChannelQrSettleOutcome | 'deferred' | 'alreadyPending';
 
-export type ChannelQrSettle = (outcome: ChannelQrSettleOutcome) => void;
+type ChannelQrSettle = (outcome: ChannelQrSettleOutcome) => void;
 
 export interface MeshcoreChannelQrPayload {
   name: string;

@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
-interface RoleInfo {
+export interface RoleInfo {
   labelKey: string;
   labelParams?: Record<string, string | number>;
   colorClass: string;
@@ -72,7 +72,7 @@ export function getRoleInfo(role: number | undefined): RoleInfo {
   };
 }
 
-export function RoleIcon({ role }: { role: number | undefined }) {
+function RoleIcon({ role }: { role: number | undefined }) {
   const trigger = useIconTrigger();
   const p = { 'aria-hidden': true as const, className: 'w-3.5 h-3.5', trigger, size: 14 };
 

@@ -24,7 +24,7 @@ import { buildRncpReceiveDestShareBody } from '@/shared/rncpRequestEnable';
  * Resolve a Reticulum **identity** hash for an LXMF delivery destination hash.
  * rncp LinkIdentify gates on identity_hash, which is not the LXMF sender dest.
  */
-export async function resolveIdentityHashForLxmfPeer(peerDestHash: string): Promise<string | null> {
+async function resolveIdentityHashForLxmfPeer(peerDestHash: string): Promise<string | null> {
   const dest = canonicalizeReticulumDestinationHash(peerDestHash);
   if (!dest) return null;
 

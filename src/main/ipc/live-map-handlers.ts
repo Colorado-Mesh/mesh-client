@@ -41,7 +41,7 @@ export interface LiveMapWindowDeps {
   openExternal: (currentUrl: string, targetUrl: string) => boolean;
 }
 
-interface StoredWindow {
+export interface StoredWindow {
   x: number;
   y: number;
   width: number;
@@ -49,7 +49,7 @@ interface StoredWindow {
   alwaysOnTop: boolean;
 }
 
-type StoredState = Partial<Record<LiveMapProtocol, StoredWindow>>;
+export type StoredState = Partial<Record<LiveMapProtocol, StoredWindow>>;
 
 interface PopOut {
   window: BrowserWindow;

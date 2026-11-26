@@ -73,7 +73,29 @@ export function isPeerMecpNetworkAck(ours: MecpParsed, incoming: MecpParsed): bo
   );
 }
 
-type TransportVerdict = 'acked' | 'failed' | undefined;
+export type TransportVerdict = 'acked' | 'failed' | undefined;
+
+/** Per-protocol "heard by the network" verdict for the tracked outbound record. */
+function readMeshtasticTransportVerdict(record: MessageRecord): TransportVerdict {
+  if (record.status === 'acked' || record.mqttStatus === 'acked') return 'acked';
+  const deviceFailed = record.status === 'failed' || record.status == null;
+  const mqttDone = record.mqttStatus == null || record.mqttStatus === 'failed';
+  if (deviceFailed && mqttDone && (record.status != null || record.mqttStatus != null)) {
+    return 'failed';
+  }
+  return undefined;
+}
+
+function readMeshcoreTransportVerdict(
+  identityId: IdentityId,
+  record: MessageRecord,
+): TransportVerdict {
+  if (record.status === 'failed' || record.status === 'blocked') return 'failed';
+  if (!isGroupChannelRecord(record)) return record.status === 'acked' ? 'acked' : undefined;
+  // Companion accept marks channel floods `acked`; only a repeater rebroadcast counts.
+  const coverage = useRelayCoverageStore.getState().coverageFor(identityId, record.id);
+  return (coverage?.heardRepeaters?.length ?? 0) > 0 ? 'acked' : undefined;
+}
 
 /** Per-protocol "heard by the network" verdict for the tracked outbound record. */
 export function readTransportVerdict(
@@ -81,24 +103,8 @@ export function readTransportVerdict(
   identityId: IdentityId,
   record: MessageRecord,
 ): TransportVerdict {
-  if (protocol === 'meshtastic') {
-    if (record.status === 'acked' || record.mqttStatus === 'acked') return 'acked';
-    const deviceFailed = record.status === 'failed' || record.status == null;
-    const mqttDone = record.mqttStatus == null || record.mqttStatus === 'failed';
-    if (deviceFailed && mqttDone && (record.status != null || record.mqttStatus != null)) {
-      return 'failed';
-    }
-    return undefined;
-  }
-  if (protocol === 'meshcore') {
-    if (record.status === 'failed' || record.status === 'blocked') return 'failed';
-    if (isGroupChannelRecord(record)) {
-      // Companion accept marks channel floods `acked`; only a repeater rebroadcast counts.
-      const coverage = useRelayCoverageStore.getState().coverageFor(identityId, record.id);
-      return (coverage?.heardRepeaters?.length ?? 0) > 0 ? 'acked' : undefined;
-    }
-    return record.status === 'acked' ? 'acked' : undefined;
-  }
+  if (protocol === 'meshtastic') return readMeshtasticTransportVerdict(record);
+  if (protocol === 'meshcore') return readMeshcoreTransportVerdict(identityId, record);
   if (record.status === 'acked') return 'acked';
   if (record.status === 'failed' || record.status === 'blocked') return 'failed';
   return undefined;

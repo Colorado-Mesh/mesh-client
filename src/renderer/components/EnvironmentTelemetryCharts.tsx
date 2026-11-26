@@ -105,7 +105,7 @@ function expandMetricSeries(
   }));
 }
 
-interface Props {
+export interface Props {
   protocol: MeshProtocol;
   capabilities?: ProtocolCapabilities;
   useFahrenheit: boolean;

@@ -1,7 +1,7 @@
 import type { Virtualizer } from '@tanstack/react-virtual';
 import { type RefObject, useLayoutEffect, useRef } from 'react';
 
-type RowKey = ReturnType<Virtualizer<HTMLDivElement, Element>['options']['getItemKey']>;
+export type RowKey = ReturnType<Virtualizer<HTMLDivElement, Element>['options']['getItemKey']>;
 
 /** About two seconds at 60 frames per second; after that the rows are resized anyway. */
 const MAX_WAIT_FRAMES = 120;

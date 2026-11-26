@@ -80,7 +80,7 @@ export const ENVIRONMENT_READING_ARRAY_DB_COLUMNS: Readonly<
   oneWireTemperatures: 'one_wire_temperatures_json',
 };
 
-export const ENVIRONMENT_TELEMETRY_SOURCES = ['rf', 'mqtt', 'rpc', 'push'] as const;
+const ENVIRONMENT_TELEMETRY_SOURCES = ['rf', 'mqtt', 'rpc', 'push'] as const;
 export type EnvironmentTelemetrySource = (typeof ENVIRONMENT_TELEMETRY_SOURCES)[number];
 
 export function isEnvironmentTelemetrySource(value: unknown): value is EnvironmentTelemetrySource {
@@ -249,7 +249,7 @@ export function environmentReadingsEqual(a: EnvironmentReading, b: EnvironmentRe
 }
 
 /** `MeshNode.env_*` field per scalar reading field (latest-reading columns on the node row). */
-export const ENVIRONMENT_READING_NODE_FIELDS: Readonly<Record<EnvironmentReadingField, string>> = {
+const ENVIRONMENT_READING_NODE_FIELDS: Readonly<Record<EnvironmentReadingField, string>> = {
   temperature: 'env_temperature',
   mcuTemperature: 'env_mcu_temperature',
   relativeHumidity: 'env_humidity',

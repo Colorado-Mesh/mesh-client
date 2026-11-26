@@ -5,10 +5,10 @@
  */
 
 /** Keys under this prefix describe Meshtastic radio channels (not TV/broadcast). */
-export const CHANNEL_URL_PREFIX = 'radioPanel.channelUrl.';
+const CHANNEL_URL_PREFIX = 'radioPanel.channelUrl.';
 
 /** Leaf keys that must be translated (not left identical to English). */
-export const MUST_TRANSLATE_LEAF_KEYS = new Set([
+const MUST_TRANSLATE_LEAF_KEYS = new Set([
   'copyMeshtastic',
   'copyPublicKey',
   'generateLink',
@@ -19,7 +19,7 @@ export const MUST_TRANSLATE_LEAF_KEYS = new Set([
 ]);
 
 /** appPanel filter where French "chaînes" is a known false friend. */
-export const FR_MESH_CHANNEL_KEYS = new Set([
+const FR_MESH_CHANNEL_KEYS = new Set([
   `${CHANNEL_URL_PREFIX}addWarning`,
   `${CHANNEL_URL_PREFIX}confirmReplaceMessage`,
   `${CHANNEL_URL_PREFIX}confirmAddTitle`,
@@ -28,7 +28,7 @@ export const FR_MESH_CHANNEL_KEYS = new Set([
 ]);
 
 /** MT often mis-parses "Retry loading channels" as freight/TV "loading channels". */
-export const RETRY_REMOTE_CHANNELS_FORBIDDEN = {
+const RETRY_REMOTE_CHANNELS_FORBIDDEN = {
   es: [
     {
       re: /canales de carga/i,
@@ -52,13 +52,13 @@ export const RETRY_REMOTE_CHANNELS_FORBIDDEN = {
   ko: [{ re: /로딩\s*채널/i, hint: 'use "채널 불러오기", not English loanword "로딩 채널"' }],
 };
 
-export const RETRY_REMOTE_CHANNELS_KEY = 'radioPanel.retryRemoteChannels';
+const RETRY_REMOTE_CHANNELS_KEY = 'radioPanel.retryRemoteChannels';
 
 /** MeshCore Room panel — chat room servers, not hotel/bedroom/meeting rooms. */
-export const ROOMS_PANEL_PREFIX = 'roomsPanel.';
+const ROOMS_PANEL_PREFIX = 'roomsPanel.';
 
 /** Keys outside roomsPanel that still refer to MeshCore Room servers. */
-export const MESHCORE_ROOM_UI_KEYS = new Set([
+const MESHCORE_ROOM_UI_KEYS = new Set([
   'tabs.rooms',
   'nodeDetailModal.openRoomButton',
   'meshcoreContactSettings.typeRoomServers',
@@ -72,13 +72,13 @@ export const MESHCORE_ROOM_UI_KEYS = new Set([
 ]);
 
 /** modulePanel MQTT proxy toggle + error (must not use legal/delegation false friends). */
-export const MQTT_PROXY_UI_KEYS = new Set([
+const MQTT_PROXY_UI_KEYS = new Set([
   'modulePanel.fields.mqttProxyToClientEnabled',
   'modulePanel.errors.mqttProxyRequired',
 ]);
 
 /** Auto-translate often turns "proxy to client" into power-of-attorney / legal delegation. */
-export const MQTT_PROXY_LEGAL_FALSE_FRIENDS = [
+const MQTT_PROXY_LEGAL_FALSE_FRIENDS = [
   { re: /\bProkura\b/i, hint: 'use networking "Proxy … client", not legal Prokura' },
   { re: /Volmacht aan/i, hint: 'use "Proxy naar client", not legal volmacht' },
   { re: /Pełnomocnik/i, hint: 'use "Proxy do klienta", not legal pełnomocnik' },
@@ -88,20 +88,20 @@ export const MQTT_PROXY_LEGAL_FALSE_FRIENDS = [
 ];
 
 /** English toggle label left in localized mqttProxyRequired error text. */
-export const MQTT_PROXY_EN_LABEL_RE = /Proxy to client/i;
+const MQTT_PROXY_EN_LABEL_RE = /Proxy to client/i;
 
 /** MyMemory/CAT often inserts spaces inside Wi-Fi. */
-export const WIFI_SPACED_RE = /Wi\s+-\s*Fi/i;
+const WIFI_SPACED_RE = /Wi\s+-\s*Fi/i;
 
 /** CJK in locales that are not Chinese, Japanese, or Korean. */
-export const CJK_SCRIPT_RE = /[\u3040-\u30ff\u4e00-\u9fff\uac00-\ud7af]/;
-export const CJK_LOCALES = new Set(['zh', 'ja', 'ko']);
+const CJK_SCRIPT_RE = /[\u3040-\u30ff\u4e00-\u9fff\uac00-\ud7af]/;
+const CJK_LOCALES = new Set(['zh', 'ja', 'ko']);
 
 /**
  * MT often translates MeshCore Room (chat server) as hotel/bedroom/meeting room.
  * Matched by locale on roomsPanel.* and tabs.rooms.
  */
-export const ROOMS_PANEL_FALSE_FRIENDS = {
+const ROOMS_PANEL_FALSE_FRIENDS = {
   de: [{ re: /\bZimmer/i, hint: 'use "Raum" for MeshCore Room, not hotel "Zimmer"' }],
   fr: [{ re: /\bchambre/i, hint: 'use "salle" for MeshCore Room, not hotel "chambre"' }],
   es: [{ re: /\bhabitaci[oó]n/i, hint: 'use "sala" for MeshCore Room, not hotel "habitación"' }],
@@ -147,7 +147,7 @@ export const ROOMS_PANEL_FALSE_FRIENDS = {
 };
 
 /** Leaf keys from flood-advert / zero-hop UI where MT must not use commercial "ad" wording. */
-export const MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS = new Set([
+const MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS = new Set([
   'floodAdvertTypeLabel',
   'floodAdvertTypeFlood',
   'floodAdvertTypeZeroHop',
@@ -157,7 +157,7 @@ export const MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS = new Set([
   'filterChipAdvertTooltip',
 ]);
 
-export function isMeshAdvertCommercialCheckKey(flatKey) {
+function isMeshAdvertCommercialCheckKey(flatKey) {
   const leaf = flatKey.split('.').pop() ?? flatKey;
   return MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS.has(leaf);
 }
@@ -167,7 +167,7 @@ export function isMeshAdvertCommercialCheckKey(flatKey) {
  * Checked on MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS and any isMeshAdvertUiKey()
  * (English/key contains advert or flood advert).
  */
-export const MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS = {
+const MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS = {
   nl: [
     {
       re: /advertentie/i,
@@ -247,37 +247,33 @@ export const MESH_ADVERT_COMMERCIAL_FALSE_FRIENDS = {
 };
 
 /** Raw packet log panel — route/transport labels and protocol enum copy. */
-export const RAW_PACKET_LOG_PREFIX = 'rawPacketLog.';
+const RAW_PACKET_LOG_PREFIX = 'rawPacketLog.';
 
 /** Reticulum RNS header column labels under rawPacketLog.reticulum.* */
-export const RAW_PACKET_LOG_RETICULUM_PREFIX = 'rawPacketLog.reticulum.';
+const RAW_PACKET_LOG_RETICULUM_PREFIX = 'rawPacketLog.reticulum.';
 
 /** RX/TX direction tokens must stay verbatim when English uses them. */
-export const RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS = new Set(['rx', 'tx']);
+const RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS = new Set(['rx', 'tx']);
 
-export const RETICULUM_TOPOLOGY_SELF_KEY = 'reticulumTopology.self';
-export const RETICULUM_TOPOLOGY_HOP_BADGE_KEY = 'reticulumTopology.hopBadge';
+const RETICULUM_TOPOLOGY_SELF_KEY = 'reticulumTopology.self';
+const RETICULUM_TOPOLOGY_HOP_BADGE_KEY = 'reticulumTopology.hopBadge';
 
 /** Topology graph label for the local node — short pronoun, not a phrase. */
-export const RETICULUM_TOPOLOGY_SELF_FALSE_FRIEND_RES = [
+const RETICULUM_TOPOLOGY_SELF_FALSE_FRIEND_RES = [
   { re: /pour vous/i, hint: 'use short pronoun "Vous", not phrase "pour vous"' },
   { re: /pobrać/i, hint: 'use pronoun "Ty", not download phrase "Możesz pobrać"' },
 ];
 
-export const RAW_PACKET_LOG_PROTOCOL_KEYS = new Set([
+const RAW_PACKET_LOG_PROTOCOL_KEYS = new Set([
   'transportLegendHint',
   'transportCodesAbsent',
   'transportCodesAbsentTooltip',
 ]);
 
-export const RAW_PACKET_LOG_SHORT_LABEL_KEYS = new Set([
-  'routeLabel',
-  'payloadLabel',
-  'transportHeading',
-]);
+const RAW_PACKET_LOG_SHORT_LABEL_KEYS = new Set(['routeLabel', 'payloadLabel', 'transportHeading']);
 
 /** Sniffer quick-filter chips — protocol tokens must match English verbatim. */
-export const RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS = new Set([
+const RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS = new Set([
   'filterChipAdvert',
   'filterChipTxtMsg',
   'filterChipGrpTxt',
@@ -291,12 +287,12 @@ export const RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS = new Set([
 ]);
 
 /** MQTT-only channel PSK hint — wire literals must not be corrupted by auto-translate. */
-export const CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_KEY = 'connectionPanel.channelPsksMqttOnlyIndexHint';
+const CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_KEY = 'connectionPanel.channelPsksMqttOnlyIndexHint';
 
 const CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_LITERALS = ['ChannelName@index=base64', 'LongFast@1=AQ=='];
 
 /** Sniffer hop-count tooltips — must use routing hop terms, not jump/leap false friends. */
-export const RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS = new Set(['colHbTooltip', 'hbRowTooltip']);
+const RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS = new Set(['colHbTooltip', 'hbRowTooltip']);
 
 const RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS = {
   es: [{ re: /\bsaltos\b/i, hint: 'use routing hop count, not jump "saltos"' }],
@@ -305,13 +301,13 @@ const RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS = {
 };
 
 /** Flood-routing filter tooltips — must not use natural-disaster flood wording. */
-export const RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS = new Set([
+const RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS = new Set([
   'filterChipFlood',
   'filterChipFloodTooltip',
 ]);
 
 /** Shared water-disaster false friends for FLOOD routing (protocol term, not natural flood). */
-export const FLOOD_ROUTING_FALSE_FRIENDS = {
+const FLOOD_ROUTING_FALSE_FRIENDS = {
   de: [
     { re: /Hochwasser/i, hint: 'use flood-routing "Flood", not water "Hochwasser"' },
     { re: /Überschwemmung/i, hint: 'use flood-routing "Flood", not water "Überschwemmung"' },
@@ -360,10 +356,8 @@ export const FLOOD_ROUTING_FALSE_FRIENDS = {
 };
 
 /** @deprecated Prefer {@link FLOOD_ROUTING_FALSE_FRIENDS} — kept as alias for existing imports/tests. */
-export const RAW_PACKET_LOG_FLOOD_ROUTING_FALSE_FRIENDS = FLOOD_ROUTING_FALSE_FRIENDS;
-
 /** Keys / prefixes where flood-routing false friends apply (beyond rawPacketLog chips). */
-export function isFloodRoutingUiKey(flatKey) {
+function isFloodRoutingUiKey(flatKey) {
   if (
     flatKey.startsWith('rawPacketLog.') &&
     RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS.has(flatKey.split('.').pop() ?? '')
@@ -382,7 +376,7 @@ export function isFloodRoutingUiKey(flatKey) {
 }
 
 /** Cap = impose a limit — not a physical hat/cover. */
-export const CAP_STORED_RRC_FALSE_FRIENDS = {
+const CAP_STORED_RRC_FALSE_FRIENDS = {
   ru: [{ re: /Кепк/i, hint: 'use "Ограничить" for Cap=limit, not hat "Кепка"' }],
   es: [{ re: /^Tapar\b/i, hint: 'use "Limitar" for Cap=limit, not cover "Tapar"' }],
   de: [
@@ -402,7 +396,7 @@ export const CAP_STORED_RRC_FALSE_FRIENDS = {
  * @param {string} val
  * @returns {string[]}
  */
-export function channelPsksMqttOnlyIndexHintIssues(val) {
+function channelPsksMqttOnlyIndexHintIssues(val) {
   const issues = [];
   for (const literal of CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_LITERALS) {
     if (!val.includes(literal)) {
@@ -421,17 +415,17 @@ export function channelPsksMqttOnlyIndexHintIssues(val) {
 }
 
 /** Flasher UI when no USB serial ports are enumerated. */
-export const FLASHER_NO_SERIAL_PORTS_KEYS = new Set([
+const FLASHER_NO_SERIAL_PORTS_KEYS = new Set([
   'flasher.noSerialPorts',
   'flasher.errors.noSerialPorts',
 ]);
 
 /** French MT inverts "No … found" into affirmative "trouvé(s):" labels. */
-export const FR_NO_SERIAL_PORTS_INVERTED_RE = /\btrouvés?\s*:/i;
-export const FR_NO_SERIAL_PORTS_NEGATION_RE = /\b(aucun|pas de|non trouv|introuvable)/i;
+const FR_NO_SERIAL_PORTS_INVERTED_RE = /\btrouvés?\s*:/i;
+const FR_NO_SERIAL_PORTS_NEGATION_RE = /\b(aucun|pas de|non trouv|introuvable)/i;
 
 /** flasher.errors.esp32FlashStalled — MT often translates "flash again" as LED blink verbs. */
-export const FLASHER_ESP32_FLASH_BLINK_FALSE_FRIENDS = new Map([
+const FLASHER_ESP32_FLASH_BLINK_FALSE_FRIENDS = new Map([
   ['de', /\bblink/i],
   ['fr', /\bclignot/i],
   ['es', /\bparpad/i],
@@ -448,10 +442,10 @@ export const FLASHER_ESP32_FLASH_BLINK_FALSE_FRIENDS = new Map([
 ]);
 
 /** Flasher backup/read strings where "flash" is flash memory (read it, back it up). */
-export const FLASHER_FLASH_MEMORY_KEY_RE =
+const FLASHER_FLASH_MEMORY_KEY_RE =
   /^flasher\.(?:backupFirmwareHint|backingUp|errors\.esp32(?:Read\w+|FlashSizeUnknown|FlashTooLarge))$/;
 /** MT renders flash memory as camera flash / lightning, and "before you flash" as LED blink. */
-export const FLASHER_FLASH_MEMORY_FALSE_FRIENDS = new Map([
+const FLASHER_FLASH_MEMORY_FALSE_FRIENDS = new Map([
   ['de', /blitz|blink/i],
   ['cs', /blesk|blik/i],
   ['nl', /flits/i],
@@ -469,28 +463,28 @@ export const FLASHER_FLASH_MEMORY_FALSE_FRIENDS = new Map([
 ]);
 
 /** flasher.errors.provision* — MT booking/reservation false friends for "Provision". */
-export const FLASHER_PROVISION_RESERVATION_FALSE_FRIENDS =
+const FLASHER_PROVISION_RESERVATION_FALSE_FRIENDS =
   /\b(rezerv[auy]|rezerwacj|reservierung|резерв|reservation)\b/i;
 /** Physical wipe false friends vs EEPROM erase/clear (aligned with wipeEeprom siblings). */
-export const FLASHER_PROVISION_PHYSICAL_WIPE_FALSE_FRIENDS =
+const FLASHER_PROVISION_PHYSICAL_WIPE_FALSE_FRIENDS =
   /\b(wischen|veeg|протри|протер|拭|닦|擦拭)\b/i;
 
 /** flasher.clearPairedDevices* — Bluetooth bond table, not financial bonds/securities. */
-export const FLASHER_CLEAR_PAIRED_DEVICES_KEYS = new Set([
+const FLASHER_CLEAR_PAIRED_DEVICES_KEYS = new Set([
   'flasher.clearPairedDevicesConfirm',
   'flasher.clearPairedDevicesConfirmMessage',
   'flasher.clearPairedDevicesSuccess',
 ]);
 
 /** MT often maps Bluetooth "bond" → financial bond/obligation/securities. */
-export const FLASHER_BT_BOND_FINANCIAL_FALSE_FRIENDS =
+const FLASHER_BT_BOND_FINANCIAL_FALSE_FRIENDS =
   /(?:\b(?:Bonos|obligaciones|obligaties|Obligationen|tahvil|obligacje|cautionnement|títulos de rádio|radiobonos)\b)|(?:облигаци|債券|债券)/i;
 
 /** Must preserve the USB unpair command token verbatim. */
-export const FLASHER_CMD_BT_UNPAIR_TOKEN = 'CMD_BT_UNPAIR';
+const FLASHER_CMD_BT_UNPAIR_TOKEN = 'CMD_BT_UNPAIR';
 
 /** flasher.errors.rnodeCommandTimeout — MT garbles "close apps using the serial port". */
-export const RNODE_TIMEOUT_BAD_UNPLUG_RE = new Map([
+const RNODE_TIMEOUT_BAD_UNPLUG_RE = new Map([
   ['de', /über den port/i],
   ['fr', /\bdébranchez.*en utilisant le port/i],
   ['ja', /ポートを使用して.*抜/],
@@ -502,15 +496,10 @@ export const RNODE_TIMEOUT_BAD_UNPLUG_RE = new Map([
 ]);
 
 /** MyMemory/CAT padding with dot runs in short UI labels. */
-export const CAT_DOT_PADDING_RE = /\.{4,}/;
+const CAT_DOT_PADDING_RE = /\.{4,}/;
 
 /** Protocol enum names that must stay verbatim when English includes them. */
-export const MESHCORE_ROUTE_PROTOCOL_TOKENS = [
-  'TRANSPORT_FLOOD',
-  'TRANSPORT_DIRECT',
-  'FLOOD',
-  'DIRECT',
-];
+const MESHCORE_ROUTE_PROTOCOL_TOKENS = ['TRANSPORT_FLOOD', 'TRANSPORT_DIRECT', 'FLOOD', 'DIRECT'];
 
 /**
  * @param {string} flatKey
@@ -518,7 +507,7 @@ export const MESHCORE_ROUTE_PROTOCOL_TOKENS = [
  * @param {string} val
  * @returns {string[]}
  */
-export function meshcoreProtocolTokenIssues(flatKey, enVal, val) {
+function meshcoreProtocolTokenIssues(flatKey, enVal, val) {
   if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return [];
   const leafKey = flatKey.split('.').pop() ?? flatKey;
   if (!RAW_PACKET_LOG_PROTOCOL_KEYS.has(leafKey)) return [];
@@ -532,27 +521,25 @@ export function meshcoreProtocolTokenIssues(flatKey, enVal, val) {
 }
 
 /** App → Appearance reduce-motion accessibility copy (added with lucide icon motion). */
-export const REDUCE_MOTION_KEY = 'appPanel.reduceMotion';
-export const REDUCE_MOTION_DESC_KEY = 'appPanel.reduceMotionDesc';
+const REDUCE_MOTION_KEY = 'appPanel.reduceMotion';
+const REDUCE_MOTION_DESC_KEY = 'appPanel.reduceMotionDesc';
 
 /** Toast hint for large MeshCore map contact sets (App tab → Appearance section). */
-export const MESHCORE_DISTANCE_FILTER_HINT_KEY = 'toasts.meshcoreDistanceFilterHint';
+const MESHCORE_DISTANCE_FILTER_HINT_KEY = 'toasts.meshcoreDistanceFilterHint';
 
 /** appPanel import guard when backup schema exceeds build version. */
-export const IMPORT_SCHEMA_TOO_NEW_KEY = 'appPanel.importSchemaTooNew';
-
 /** App Panel debug snapshot copy (support reports). */
-export const APP_PANEL_DEBUG_SNAPSHOT_LEAF_KEYS = new Set([
+const APP_PANEL_DEBUG_SNAPSHOT_LEAF_KEYS = new Set([
   'copyDebugSnapshot',
   'copyDebugSnapshotButton',
   'debugSnapshotCopied',
   'debugSnapshotFailed',
 ]);
 
-export const DEBUG_SNAPSHOT_COPIED_KEY = 'appPanel.debugSnapshotCopied';
+const DEBUG_SNAPSHOT_COPIED_KEY = 'appPanel.debugSnapshotCopied';
 
 /** MT parses "Debug snapshot copied" as imperative "Debug [the] snapshot". */
-export const DEBUG_SNAPSHOT_COPIED_FALSE_FRIENDS = {
+const DEBUG_SNAPSHOT_COPIED_FALSE_FRIENDS = {
   fr: [
     {
       re: /^D[ée]boguer\b/i,
@@ -574,7 +561,7 @@ export const DEBUG_SNAPSHOT_COPIED_FALSE_FRIENDS = {
 };
 
 /** English "snapshot" loanword in locales that should fully translate debug snapshot UI. */
-export const DEBUG_SNAPSHOT_MIXED_EN_SNAPSHOT_RES = {
+const DEBUG_SNAPSHOT_MIXED_EN_SNAPSHOT_RES = {
   nl: [
     {
       re: /\bfoutopsporing\s+snapshot\b/i,
@@ -590,16 +577,16 @@ export const DEBUG_SNAPSHOT_MIXED_EN_SNAPSHOT_RES = {
 };
 
 /** German debugSnapshotFailed must match Debug-Snapshot term used elsewhere. */
-export const DE_DEBUG_SNAPSHOT_FAILED_WRONG_TERM_RE = /Fehlerbehebungs/i;
+const DE_DEBUG_SNAPSHOT_FAILED_WRONG_TERM_RE = /Fehlerbehebungs/i;
 
 /** MyMemory often inserts spaces in the Mesh-Client product name. */
-export const MESH_CLIENT_SPACED_RE = /Mesh\s+-\s+Client/;
+const MESH_CLIENT_SPACED_RE = /Mesh\s+-\s+Client/;
 
 /** Lowercase mesh-client product name with CAT spaces around the hyphen. */
-export const MESH_CLIENT_LOWERCASE_SPACED_RE = /mesh\s+-\s+client/i;
+const MESH_CLIENT_LOWERCASE_SPACED_RE = /mesh\s+-\s+client/i;
 
 /** Reticulum connection panel strings added with Phase B sidecar scaffold. */
-export const RETICULUM_CONNECTION_PANEL_LEAF_KEYS = new Set([
+const RETICULUM_CONNECTION_PANEL_LEAF_KEYS = new Set([
   'reticulumStackTitle',
   'reticulumStackHint',
   'reticulumStartStack',
@@ -618,7 +605,7 @@ export const RETICULUM_CONNECTION_PANEL_LEAF_KEYS = new Set([
 ]);
 
 /** networkPanel.* top-level Reticulum keys (not nested objects). */
-export const RETICULUM_NETWORK_PANEL_TOP_LEAF_KEYS = new Set([
+const RETICULUM_NETWORK_PANEL_TOP_LEAF_KEYS = new Set([
   'reticulumConfigImportFailed',
   'reticulumConfigNotFound',
 ]);
@@ -638,7 +625,7 @@ export const MODULE_PANEL_MUST_TRANSLATE_IDENTICAL_KEYS = new Set([
 ]);
 
 /** Leaf keys that must not remain identical to English in Reticulum UI copy. */
-export const RETICULUM_MUST_TRANSLATE_LEAF_KEYS = new Set([
+const RETICULUM_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'reticulumStackRunning',
   'reticulumStopStack',
   'reticulumConfigNotFound',
@@ -671,9 +658,9 @@ export function reticulumRequiresTranslation(flatKey, leafKey, enVal) {
 }
 
 /** MT mistranslates UI Disable as parallax / unrelated accessibility jargon. */
-export const RETICULUM_DISABLE_PARALLAX_RE = /parallax/i;
+const RETICULUM_DISABLE_PARALLAX_RE = /parallax/i;
 
-export const RETICULUM_DEFAULT_HUB_KEYS = [
+const RETICULUM_DEFAULT_HUB_KEYS = [
   'connectionPanel.reticulumInterfaces.defaultHubsLabel',
   'connectionPanel.reticulumInterfaces.addDefaultHubs',
   'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
@@ -682,19 +669,19 @@ export const RETICULUM_DEFAULT_HUB_KEYS = [
 ];
 
 /** Repeaters panel CLI hint must mention automatic pre-ping on multi-hop (middle sentence often dropped by MT). */
-export const REPEATERS_CLI_MULTI_HOP_HINT_KEY = 'repeatersPanel.cliMultiHopHint';
-export const REPEATERS_CLI_AUTO_PING_FAILED_KEY = 'repeatersPanel.cliAutoPingFailed';
-export const REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY = 'repeatersPanel.cliDangerConfirmAction';
-export const REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN = 'Run command';
+const REPEATERS_CLI_MULTI_HOP_HINT_KEY = 'repeatersPanel.cliMultiHopHint';
+const REPEATERS_CLI_AUTO_PING_FAILED_KEY = 'repeatersPanel.cliAutoPingFailed';
+const REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY = 'repeatersPanel.cliDangerConfirmAction';
+const REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN = 'Run command';
 
 /** Locale-specific markers that the auto-ping middle sentence was translated (not exhaustive MT output). */
-export function repeatersCliAutoPingSentencePresent(val) {
+function repeatersCliAutoPingSentencePresent(val) {
   if (!/Ping/i.test(val)) return false;
   return /autom[aáàâä]t|automatic|自动|自動|자동|otomatik|otomatis|автоматич|автомат/i.test(val);
 }
 
 /** Known false friends for destructive CLI confirm button label. */
-export const REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS = {
+const REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS = {
   es: [{ re: /Reproducir sonido/i, hint: 'confirm button must mean run command, not play sound' }],
   fr: [
     {
@@ -706,7 +693,7 @@ export const REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS = {
 };
 
 /** MT mistranslates network Host as recording venue / unrelated nouns. */
-export const RETICULUM_HOST_FALSE_FRIEND_RES = [
+const RETICULUM_HOST_FALSE_FRIEND_RES = [
   {
     re: /Aufnehmende/i,
     hint: 'reticulumInterfaces.host must be Host/hostname, not recording-facility wording',
@@ -714,7 +701,7 @@ export const RETICULUM_HOST_FALSE_FRIEND_RES = [
 ];
 
 /** MT mistranslates routing peers as colleagues, pressure, points, or people. */
-export const RETICULUM_PEER_NAME_FALSE_FRIEND_RES = [
+const RETICULUM_PEER_NAME_FALSE_FRIEND_RES = [
   {
     re: /^Pressione$/i,
     hint: 'reticulumPeers.name must be peer wording, not Italian "Pressione" (pressure)',
@@ -750,7 +737,7 @@ export const RETICULUM_PEER_NAME_FALSE_FRIEND_RES = [
 ];
 
 /** MT confuses software stack running with chimney/pallet stacks or starting. */
-export const RETICULUM_STACK_RUNNING_FALSE_FRIENDS = {
+const RETICULUM_STACK_RUNNING_FALSE_FRIENDS = {
   ru: [
     {
       re: /дымов/i,
@@ -790,7 +777,7 @@ export const RETICULUM_STACK_RUNNING_FALSE_FRIENDS = {
 };
 
 /** MT mistranslates Stop stack as road barriers or physical pallet stacks. */
-export const RETICULUM_STOP_STACK_FALSE_FRIENDS = {
+const RETICULUM_STOP_STACK_FALSE_FRIENDS = {
   pl: [
     {
       re: /ogranicznik/i,
@@ -806,7 +793,7 @@ export const RETICULUM_STOP_STACK_FALSE_FRIENDS = {
 };
 
 /** Enable toggle mistranslated as Edit. */
-export const RETICULUM_ENABLE_EDIT_FALSE_FRIEND_RES = [
+const RETICULUM_ENABLE_EDIT_FALSE_FRIEND_RES = [
   {
     re: /^Редактировать$/i,
     hint: 'reticulum enable must be "Включить", not "Редактировать" (Edit)',
@@ -814,10 +801,10 @@ export const RETICULUM_ENABLE_EDIT_FALSE_FRIEND_RES = [
 ];
 
 /** Russian sidecar mistranslated as baby stroller (коляска). */
-export const RETICULUM_SIDECAR_STROLLER_RE = /коляск/i;
+const RETICULUM_SIDECAR_STROLLER_RE = /коляск/i;
 
 /** Extra probe column false friends beyond anemometer/transducer checks. */
-export const RETICULUM_PROBE_EXTRA_FALSE_FRIEND_RES = [
+const RETICULUM_PROBE_EXTRA_FALSE_FRIEND_RES = [
   { re: /^Taster$/i, hint: 'reticulumPeers.probe is probe action, not button "Taster"' },
   {
     re: /^Deşmeyin$/i,
@@ -826,7 +813,7 @@ export const RETICULUM_PROBE_EXTRA_FALSE_FRIEND_RES = [
 ];
 
 /** Propagation nodes title mistranslated as reproduction or anatomical nodules. */
-export const RETICULUM_PROPAGATION_TITLE_FALSE_FRIEND_RES = [
+const RETICULUM_PROPAGATION_TITLE_FALSE_FRIEND_RES = [
   {
     re: /Voortplanting/i,
     hint: 'use "Propagatie", not biological reproduction "Voortplanting"',
@@ -838,14 +825,14 @@ export const RETICULUM_PROPAGATION_TITLE_FALSE_FRIEND_RES = [
 ];
 
 /** Peer table Actions column mistranslated as interventions/measures. */
-export const RETICULUM_PEERS_ACTIONS_FALSE_FRIEND_RES = [
+const RETICULUM_PEERS_ACTIONS_FALSE_FRIEND_RES = [
   { re: /^Maßnahmen$/i, hint: 'use "Aktionen" for table Actions column' },
   { re: /^Opatření$/i, hint: 'use "Akce" for table Actions column' },
   { re: /^Interventions$/i, hint: 'use "Actions" equivalent, not "Interventions"' },
 ];
 
 /** MT mistranslates mesh Probe as weather/anemometer/transducer wording. */
-export const RETICULUM_PROBE_FALSE_FRIEND_RES = [
+const RETICULUM_PROBE_FALSE_FRIEND_RES = [
   {
     re: /anemometer/i,
     hint: 'reticulumPeers.probe must be short probe wording, not anemometer copy',
@@ -869,9 +856,9 @@ export const RETICULUM_PROBE_FALSE_FRIEND_RES = [
 ];
 
 /** Remote-panel Shell section is a command shell (rnsh), not a physical casing/seashell. */
-export const RETICULUM_REMOTE_SHELL_SECTION_KEY = 'reticulumRemote.sections.shell';
+const RETICULUM_REMOTE_SHELL_SECTION_KEY = 'reticulumRemote.sections.shell';
 
-export const RETICULUM_REMOTE_SHELL_FALSE_FRIENDS = {
+const RETICULUM_REMOTE_SHELL_FALSE_FRIENDS = {
   de: [
     { re: /Gehäuse/i, hint: 'use command shell "Shell"/"Konsole", not device casing "Gehäuse"' },
   ],
@@ -890,17 +877,17 @@ export const RETICULUM_REMOTE_SHELL_FALSE_FRIENDS = {
 };
 
 /** Reticulum utility names (rnsh remote shell, rncp file copy) must survive translation verbatim. */
-export const RETICULUM_REMOTE_WIRE_TOKENS = [
+const RETICULUM_REMOTE_WIRE_TOKENS = [
   // Sentence-initial capitalization is fine; translating or dropping the token is not.
   { token: 'rncp', re: /\brncp\b/i },
   { token: 'rnsh', re: /\brnsh\b/i },
 ];
 
 /** Keys carrying rncp/rnsh literals: Remote panel + Chat DM send-file control. */
-export const RETICULUM_REMOTE_WIRE_TOKEN_KEY_RE = /^(reticulumRemote\.|chatPanel\.rncp\.)/;
+const RETICULUM_REMOTE_WIRE_TOKEN_KEY_RE = /^(reticulumRemote\.|chatPanel\.rncp\.)/;
 
 /** MT turns "other peers" into office colleagues on stack transport toggle. */
-export const RETICULUM_OTHER_PEERS_COLLEAGUE_RES = [
+const RETICULUM_OTHER_PEERS_COLLEAGUE_RES = [
   { re: /\bKollegen\b/i, hint: 'use networking "Peers", not German office colleague "Kollegen"' },
   { re: /\bcolleagues\b/i, hint: 'use networking "peers", not office "colleagues"' },
 ];
@@ -909,7 +896,7 @@ export const RETICULUM_OTHER_PEERS_COLLEAGUE_RES = [
  * Broader office-colleague false friends for History/Contacts empty copy only
  * (too noisy for stack transport strings that legitimately reuse some lemmas).
  */
-export const HISTORY_EMPTY_PEER_COLLEAGUE_RES = [
+const HISTORY_EMPTY_PEER_COLLEAGUE_RES = [
   ...RETICULUM_OTHER_PEERS_COLLEAGUE_RES,
   { re: /\bkoleg/i, hint: 'use networking "peers", not Czech/Slovak office colleague "kolega"' },
   { re: /\bcompañer/i, hint: 'use networking "peers", not Spanish office "compañero"' },
@@ -935,7 +922,7 @@ export const HISTORY_EMPTY_PEER_COLLEAGUE_RES = [
 ];
 
 /** UI History tab must mean message history, not school historiography / calendar date. */
-export const HISTORY_TAB_FALSE_FRIEND_RES = [
+const HISTORY_TAB_FALSE_FRIEND_RES = [
   { re: /^Dějepis$/i, hint: 'use UI "Historie", not school subject "Dějepis"' },
   { re: /^Geschichte$/i, hint: 'use message history "Verlauf", not general "Geschichte"' },
   { re: /^歴史$/, hint: 'use message history 履歴, not general history 歴史' },
@@ -944,7 +931,7 @@ export const HISTORY_TAB_FALSE_FRIEND_RES = [
 ];
 
 /** Leaf keys allowed to stay identical to English in Reticulum UI copy. */
-export const RETICULUM_IDENTICAL_OK_LEAF_KEYS = new Set([
+const RETICULUM_IDENTICAL_OK_LEAF_KEYS = new Set([
   'reticulumNetworkUnknown',
   'hops',
   'port',
@@ -952,7 +939,7 @@ export const RETICULUM_IDENTICAL_OK_LEAF_KEYS = new Set([
 ]);
 
 /** @param {string} flatKey */
-export function isReticulumUiFlatKey(flatKey) {
+function isReticulumUiFlatKey(flatKey) {
   if (flatKey === 'aria.switchToReticulum') return true;
   if (flatKey.startsWith('connectionPanel.reticulum')) return true;
   if (flatKey.startsWith('networkPanel.reticulum')) return true;
@@ -969,17 +956,17 @@ export function isReticulumUiFlatKey(flatKey) {
  * @param {string} val
  * @param {string} enVal
  */
-export function isReticulumIdenticalEnglishOk(flatKey, leafKey, val, enVal) {
+function isReticulumIdenticalEnglishOk(flatKey, leafKey, val, enVal) {
   if (RETICULUM_IDENTICAL_OK_LEAF_KEYS.has(leafKey)) return true;
   if (leafKey === 'hashLabel' && /LXMF/i.test(val) && /LXMF/i.test(enVal)) return true;
   if (flatKey.endsWith('reticulumPeers.name') && /^Peer$/i.test(val)) return true;
   return false;
 }
 
-export const RETICULUM_SIDECAR_BUILD_CMD = 'pnpm run reticulum:sidecar:build';
+const RETICULUM_SIDECAR_BUILD_CMD = 'pnpm run reticulum:sidecar:build';
 
 /** MyMemory often breaks npm script colons or translates Rust/cargo as common nouns. */
-export const RETICULUM_SIDECAR_BUILD_SPACED_RE = /reticulum\s*:\s*sidecar\s*:\s*build/i;
+const RETICULUM_SIDECAR_BUILD_SPACED_RE = /reticulum\s*:\s*sidecar\s*:\s*build/i;
 
 const RETICULUM_STACK_HINT_PROTOCOL_TOKENS = ['LXMF', 'TCP', 'Auto'];
 
@@ -1051,7 +1038,7 @@ const CARGO_TOOLCHAIN_FALSE_FRIEND_RES = [
  * @param {string} val
  * @returns {string[]}
  */
-export function reticulumConnectionPanelLiteralIssues(enVal, val) {
+function reticulumConnectionPanelLiteralIssues(enVal, val) {
   const issues = [];
   if (enVal.includes(RETICULUM_SIDECAR_BUILD_CMD)) {
     if (!val.includes(RETICULUM_SIDECAR_BUILD_CMD)) {
@@ -1082,7 +1069,27 @@ export function reticulumConnectionPanelLiteralIssues(enVal, val) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkReticulumConnectionPanelIssues(ctx) {
+function isReticulumQualityKey(flatKey, leafKey) {
+  const isConnectionTopLevel =
+    flatKey.startsWith('connectionPanel.') && RETICULUM_CONNECTION_PANEL_LEAF_KEYS.has(leafKey);
+  const isNetworkTopLevel =
+    flatKey.startsWith('networkPanel.') && RETICULUM_NETWORK_PANEL_TOP_LEAF_KEYS.has(leafKey);
+  const isNestedReticulum =
+    flatKey.startsWith('connectionPanel.reticulum') ||
+    flatKey.startsWith('networkPanel.reticulum') ||
+    flatKey.startsWith('adminPanel.reticulum') ||
+    flatKey.startsWith('reticulumRemote.') ||
+    flatKey.startsWith('reticulumVoice.') ||
+    flatKey.startsWith('chatPanel.rncp.');
+  return (
+    isConnectionTopLevel ||
+    isNetworkTopLevel ||
+    isNestedReticulum ||
+    flatKey === 'aria.switchToReticulum'
+  );
+}
+
+function collectReticulumTranslationIssues(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (!isReticulumUiFlatKey(flatKey)) {
@@ -1122,7 +1129,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
   if (leafKey === 'reticulumNetworkDisabled' && locale !== 'en' && /^disabled$/i.test(val)) {
     issues.push('translate reticulumNetworkDisabled — do not leave English "disabled"');
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule1(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'reticulumStackHint' && locale !== 'en') {
     for (const token of RETICULUM_STACK_HINT_PROTOCOL_TOKENS) {
       if (enVal.includes(token) && !val.includes(token)) {
@@ -1130,7 +1142,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule2(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey.endsWith('.disable') || flatKey.endsWith('.enable')) &&
     enVal === 'Disable' &&
@@ -1138,7 +1155,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
   ) {
     issues.push('reticulum disable label must not use parallax/accessibility false-friend wording');
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumInterfaces.host') && enVal === 'Host') {
     for (const { re, hint } of RETICULUM_HOST_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1146,7 +1168,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumPeers.name') && enVal === 'Peer') {
     for (const { re, hint } of RETICULUM_PEER_NAME_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1154,7 +1181,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule5(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumPeers.probe') && enVal === 'Probe') {
     for (const { re, hint } of RETICULUM_PROBE_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1167,7 +1199,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumIfaceRule6(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumPeers.actions') && enVal === 'Actions') {
     for (const { re, hint } of RETICULUM_PEERS_ACTIONS_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1175,7 +1212,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumStackAndPropagationIssues(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     flatKey.endsWith('reticulumPropagation.title') &&
     enVal === 'Propagation nodes' &&
@@ -1195,8 +1237,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
-  // LXST voice Answer must be a phone-UI verb, not the noun "answer/response".
+function collectReticulumVoiceRule1(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === 'reticulumVoice.answer' && enVal === 'Answer' && locale !== 'en') {
     if (/^(Antwort|Antwoord)$/i.test(val)) {
       issues.push(
@@ -1204,6 +1250,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       );
     }
   }
+  return issues;
+}
+
+function collectReticulumVoiceRule2(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === 'reticulumVoice.capabilityUnknownShort' && enVal === '?' && locale !== 'en') {
     if (val.trim().length > 2 || /\s/.test(val) || /^\.\?/.test(val)) {
       issues.push(
@@ -1211,6 +1263,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       );
     }
   }
+  return issues;
+}
+
+function collectReticulumVoiceRule3(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === 'reticulumVoice.errors.noIdentity' && locale !== 'en') {
     if (/\bKollegen\b/i.test(val) || /\bcollega\b/i.test(val)) {
       issues.push(
@@ -1218,6 +1276,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       );
     }
   }
+  return issues;
+}
+
+function collectReticulumVoiceRule4(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.startsWith('reticulumVoice.') && locale !== 'en') {
     for (const token of ['LXST', 'Sideband', 'rsLXST', 'mesh-client', 'Ratspeak']) {
       if (enVal.includes(token) && !val.includes(token)) {
@@ -1226,7 +1290,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumActionRule1(ctx) {
+  const { locale, val, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'reticulumStopStack' && locale !== 'en') {
     for (const { re, hint } of RETICULUM_STOP_STACK_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -1234,7 +1303,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumActionRule2(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey.endsWith('.enable') || flatKey.endsWith('reticulumPropagation.enable')) &&
     enVal === 'Enable'
@@ -1245,7 +1319,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumActionRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey.endsWith('reticulumInterfaces.bleAvailable') &&
     enVal.includes('sidecar') &&
@@ -1255,7 +1334,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       'reticulum sidecar false friend: use sidecar process wording, not stroller "коляска"',
     );
   }
+  return issues;
+}
 
+function collectReticulumActionRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey.endsWith('reticulumStackSettings.enableTransport') && enVal.includes('other peers')) {
     for (const { re, hint } of RETICULUM_OTHER_PEERS_COLLEAGUE_RES) {
       if (re.test(val)) {
@@ -1263,7 +1347,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumHistoryRule1(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (
     flatKey === 'peerListPanel.emptyHistory' ||
     flatKey === 'peerListPanel.emptyContacts' ||
@@ -1275,7 +1364,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumHistoryRule2(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === 'peerListPanel.tabHistory' || flatKey === 'nodeListPanel.tabHistory') {
     for (const { re, hint } of HISTORY_TAB_FALSE_FRIEND_RES) {
       if (re.test(val.trim())) {
@@ -1283,7 +1377,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function collectReticulumHistoryRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === 'peerDetailModal.removeContact' ||
       flatKey === 'peerDetailModal.removeContactConfirmTitle') &&
@@ -1297,7 +1396,12 @@ function checkReticulumConnectionPanelIssues(ctx) {
   for (const issue of reticulumConnectionPanelLiteralIssues(enVal, val)) {
     issues.push(issue);
   }
+  return issues;
+}
 
+function collectReticulumSidecarIssues(ctx) {
+  const { locale, val, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'reticulumSidecarMissing' || leafKey === 'reticulumSidecarCargoMissing') {
     for (const { re, hint } of RUST_PROGRAMMING_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -1317,8 +1421,35 @@ function checkReticulumConnectionPanelIssues(ctx) {
   if (leafKey === 'reticulumSidecarStartFailed' && locale === 'ja' && /網膜/.test(val)) {
     issues.push('reticulumSidecarStartFailed uses 網膜 (retina) — use Reticulum stack wording');
   }
-
   return issues;
+}
+
+function checkReticulumConnectionPanelIssues(ctx) {
+  const { flatKey, leafKey } = ctx;
+  if (!isReticulumUiFlatKey(flatKey)) return [];
+  if (!isReticulumQualityKey(flatKey, leafKey)) return [];
+  return [
+    ...collectReticulumTranslationIssues(ctx),
+    ...collectReticulumIfaceRule1(ctx),
+    ...collectReticulumIfaceRule2(ctx),
+    ...collectReticulumIfaceRule3(ctx),
+    ...collectReticulumIfaceRule4(ctx),
+    ...collectReticulumIfaceRule5(ctx),
+    ...collectReticulumIfaceRule6(ctx),
+    ...collectReticulumStackAndPropagationIssues(ctx),
+    ...collectReticulumVoiceRule1(ctx),
+    ...collectReticulumVoiceRule2(ctx),
+    ...collectReticulumVoiceRule3(ctx),
+    ...collectReticulumVoiceRule4(ctx),
+    ...collectReticulumActionRule1(ctx),
+    ...collectReticulumActionRule2(ctx),
+    ...collectReticulumActionRule3(ctx),
+    ...collectReticulumActionRule4(ctx),
+    ...collectReticulumHistoryRule1(ctx),
+    ...collectReticulumHistoryRule2(ctx),
+    ...collectReticulumHistoryRule3(ctx),
+    ...collectReticulumSidecarIssues(ctx),
+  ];
 }
 
 /**
@@ -1331,12 +1462,18 @@ function checkReticulumConnectionPanelIssues(ctx) {
  * Top-level `reticulumPropagation.*` keys (Network section) — not under connectionPanel.
  * Catches English rewrite drift that key-parity / --audit cannot see.
  */
-function checkReticulumPropagationModeHelpIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+function checkReticulumPropagationModeHelpIssuesRule1(ctx) {
+  const { locale, flatKey } = ctx;
   const issues = [];
   if (!flatKey.startsWith('reticulumPropagation.') || locale === 'en') return issues;
 
   // Wire paths must stay English literals in hosting/sync copy.
+  return issues;
+}
+
+function checkReticulumPropagationModeHelpIssuesRule2(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === 'reticulumPropagation.localHostHint' ||
       flatKey === 'reticulumPropagation.enableLocalHostConfirmBody') &&
@@ -1351,6 +1488,12 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
   }
 
   // EN moved from "local inbox" → "local propagation node"; catch leftover mailbox copy.
+  return issues;
+}
+
+function checkReticulumPropagationModeHelpIssuesRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === 'reticulumPropagation.syncLocalSettled' ||
       flatKey === 'reticulumPropagation.modeHelpAuto' ||
@@ -1377,7 +1520,12 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumPropagationModeHelpIssuesRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === 'reticulumPropagation.modeHelpAuto' &&
     /one-time syncs the best Discovered/i.test(enVal)
@@ -1416,7 +1564,12 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumPropagationModeHelpIssuesRule5(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === 'reticulumPropagation.syncLocalLoading' && /still loading/i.test(enVal)) {
     // Split on sentence punctuation only so Japanese/Chinese clauses without whitespace still separate.
     const clauses = val
@@ -1441,7 +1594,12 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumPropagationModeHelpIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === 'reticulumPropagation.modeHelpManual' &&
     /^Manual:/i.test(enVal) &&
@@ -1454,6 +1612,17 @@ function checkReticulumPropagationModeHelpIssues(ctx) {
   }
 
   return issues;
+}
+
+function checkReticulumPropagationModeHelpIssues(ctx) {
+  return [
+    ...checkReticulumPropagationModeHelpIssuesRule1(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule2(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule3(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule4(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule5(ctx),
+    ...checkReticulumPropagationModeHelpIssuesRule6(ctx),
+  ];
 }
 
 function checkReticulumRemoteIssues(ctx) {
@@ -1482,14 +1651,14 @@ function checkReticulumRemoteIssues(ctx) {
   return issues;
 }
 
-export const MESHCORE_OPEN_WIRE_APP_LEAF_KEYS = new Set([
+const MESHCORE_OPEN_WIRE_APP_LEAF_KEYS = new Set([
   'meshcoreOpenWireExperimentalTitle',
   'meshcoreOpenWireCompatLabel',
   'meshcoreOpenWireCompatHint',
 ]);
 
 /** Chat composer Giphy / MeshCore Open g: wire copy. */
-export const MESHCORE_GIF_WIRE_CHAT_LEAF_KEYS = new Set([
+const MESHCORE_GIF_WIRE_CHAT_LEAF_KEYS = new Set([
   'meshcoreGifButton',
   'meshcoreGifButtonHint',
   'meshcoreGifTitle',
@@ -1500,17 +1669,17 @@ export const MESHCORE_GIF_WIRE_CHAT_LEAF_KEYS = new Set([
 ]);
 
 /** MeshCore mesh reaction picker (added with Open wire / tapback work). */
-export const MESHCORE_REACTION_UI_LEAF_KEYS = new Set([
+const MESHCORE_REACTION_UI_LEAF_KEYS = new Set([
   'meshcoreReactionPickerLabel',
   'meshcoreReactionEmojiOption',
   'meshcoreReactionNotInteroperable',
 ]);
 
 /** connectionBanner USB serial reselect CTA (added with zombie-port recovery). */
-export const CONNECTION_BANNER_SERIAL_RESELECT_ACTION_KEY = 'connectionBanner.serialReselectAction';
+const CONNECTION_BANNER_SERIAL_RESELECT_ACTION_KEY = 'connectionBanner.serialReselectAction';
 
 /** MT often copies COM-port picker ellipsis into the reselect action label. */
-export const SERIAL_RESELECT_ACTION_FALSE_FRIEND_RES = [
+const SERIAL_RESELECT_ACTION_FALSE_FRIEND_RES = [
   { re: /COM…/, hint: 'serialReselectAction must not include COM… placeholder text' },
   {
     re: /\bporto\s+serie\b/i,
@@ -1519,17 +1688,17 @@ export const SERIAL_RESELECT_ACTION_FALSE_FRIEND_RES = [
 ];
 
 /** MT mistranslates "bare GIF id" as naked/empty instead of without g: prefix. */
-export const MESHCORE_GIF_HINT_BARE_FALSE_FRIEND_RES = [
+const MESHCORE_GIF_HINT_BARE_FALSE_FRIEND_RES = [
   { re: /\bholého\b/i, hint: 'bare GIF id means without g: prefix, not Czech "holý/naked"' },
   { re: /\bkosong\b/i, hint: 'bare GIF id means without prefix, not Indonesian "empty/kosong"' },
 ];
 
 /** MT inserts spaces inside Ukrainian apostrophe words (з 'єднання, пам 'ять). */
-export const UK_BROKEN_APOSTROPHE_RE =
+const UK_BROKEN_APOSTROPHE_RE =
   /[\s(][а-яіїєґА-ЯІЇЄҐ]+\s+'|[а-яіїєґА-ЯІЇЄҐ]\s+'|[а-яіїєґА-ЯІЇЄҐ]'\s+[а-яіїєґ]/;
 
 /** MT confuses "React with" and "Contact" on meshcoreReactionEmojiOption. */
-export const MESHCORE_REACTION_EMOJI_OPTION_FALSE_FRIENDS = {
+const MESHCORE_REACTION_EMOJI_OPTION_FALSE_FRIENDS = {
   uk: [
     {
       re: /Зв\s*'?яжіться/i,
@@ -1545,13 +1714,13 @@ export const MESHCORE_REACTION_EMOJI_OPTION_FALSE_FRIENDS = {
 };
 
 /** roomsPanel sidebar collapse/expand controls (MeshCore Room servers). */
-export const ROOMS_LIST_COLLAPSE_LEAF_KEYS = new Set(['collapseRoomList', 'expandRoomList']);
+const ROOMS_LIST_COLLAPSE_LEAF_KEYS = new Set(['collapseRoomList', 'expandRoomList']);
 
 /** MT leaves English "Open-aware" in meshcoreOpenWireCompatHint. */
-export const OPEN_AWARE_ENGLISH_RE = /\bOpen\s*-?\s*aware\b/i;
+const OPEN_AWARE_ENGLISH_RE = /\bOpen\s*-?\s*aware\b/i;
 
 /** MT mistranslates mesh "companion wire format" as physical cable/wiring. */
-export const COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES = [
+const COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES = [
   { re: /metaaldraad/i, hint: 'use companion wire protocol format, not metal "metaaldraad"' },
   {
     re: /Begleitdraht/i,
@@ -1574,7 +1743,7 @@ export const COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES = [
 ];
 
 /** MT confuses keyed text replies with encryption/typing/encoding. */
-export const KEYED_REPLY_FALSE_FRIENDS = {
+const KEYED_REPLY_FALSE_FRIENDS = {
   de: [
     {
       re: /verschlüsselte/i,
@@ -1600,7 +1769,7 @@ export const KEYED_REPLY_FALSE_FRIENDS = {
  * @param {string} val
  * @returns {string[]}
  */
-export function meshcoreOpenWireProtocolTokenIssues(enVal, val) {
+function meshcoreOpenWireProtocolTokenIssues(enVal, val) {
   const issues = [];
   if (enVal.includes('@[Name#key]')) {
     if (!val.includes('@[Name#key]')) {
@@ -1623,23 +1792,23 @@ export function meshcoreOpenWireProtocolTokenIssues(enVal, val) {
   return issues;
 }
 
-export function isMeshcoreOpenWireUiLeafKey(leafKey) {
+function isMeshcoreOpenWireUiLeafKey(leafKey) {
   return (
     MESHCORE_OPEN_WIRE_APP_LEAF_KEYS.has(leafKey) || MESHCORE_GIF_WIRE_CHAT_LEAF_KEYS.has(leafKey)
   );
 }
 
 /** English UI nav left in auto-translated meshcoreDistanceFilterHint. */
-export const UNTRANSLATED_APP_APPEARANCE_NAV_RE = /App\s*→\s*Appearance/i;
+const UNTRANSLATED_APP_APPEARANCE_NAV_RE = /App\s*→\s*Appearance/i;
 
 /** MT drops the App tab name before → appearanceSection. */
-export const ORPHAN_UI_ARROW_NAV_RE = /\b(?:in|ve|na|w|vo)\s+→/i;
+const ORPHAN_UI_ARROW_NAV_RE = /\b(?:in|ve|na|w|vo)\s+→/i;
 
 /**
  * MT often mistranslates UI "loading spinner" as textile/industrial equipment.
  * Checked only on appPanel.reduceMotionDesc where English mentions "Loading spinners".
  */
-export const REDUCE_MOTION_LOADING_SPINNER_FALSE_FRIENDS = {
+const REDUCE_MOTION_LOADING_SPINNER_FALSE_FRIENDS = {
   es: [
     {
       re: /girador(es)?\s+de\s+carga/i,
@@ -1685,7 +1854,7 @@ export const REDUCE_MOTION_LOADING_SPINNER_FALSE_FRIENDS = {
 };
 
 /** MT sometimes translates "still animate" as "still active/alive". */
-export const REDUCE_MOTION_STILL_ANIMATE_FALSE_FRIENDS = {
+const REDUCE_MOTION_STILL_ANIMATE_FALSE_FRIENDS = {
   nl: [
     {
       re: /blijft\s+actief/i,
@@ -1707,7 +1876,7 @@ export const REDUCE_MOTION_STILL_ANIMATE_FALSE_FRIENDS = {
 };
 
 /** Keys or English copy that refer to MeshCore/Meshtastic adverts (not TV/commercial ads). */
-export function isMeshAdvertUiKey(flatKey, enVal) {
+function isMeshAdvertUiKey(flatKey, enVal) {
   return (
     /advert|floodAdvert/i.test(flatKey) ||
     /\bflood advert\b/i.test(enVal) ||
@@ -1716,7 +1885,7 @@ export function isMeshAdvertUiKey(flatKey, enVal) {
 }
 
 /** German MT confuses Meshtastic device roles with unrelated business/woodworking terms. */
-export const DE_DEVICE_ROLE_FALSE_FRIENDS = [
+const DE_DEVICE_ROLE_FALSE_FRIENDS = [
   {
     re: /\bOberfräse\b/,
     hint: '"Oberfräse" is woodworking equipment — use "Router" for the device role',
@@ -1732,22 +1901,22 @@ export const DE_DEVICE_ROLE_FALSE_FRIENDS = [
 ];
 
 /** Default-password hint placeholders — must stay short literals, not MT sentences. */
-export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_KEYS = new Set([
+const ROOMS_PANEL_PASSWORD_PLACEHOLDER_KEYS = new Set([
   'guestPasswordPlaceholder',
   'adminPasswordPlaceholder',
 ]);
 
-export const ROOMS_PANEL_PASSWORD_PLACEHOLDER_MAX_LEN = 24;
+const ROOMS_PANEL_PASSWORD_PLACEHOLDER_MAX_LEN = 24;
 
 /** Four or more whitespace-separated tokens, or sentence-ending punctuation. */
-export function looksLikePasswordPlaceholderSentence(text) {
+function looksLikePasswordPlaceholderSentence(text) {
   if (/[.!?]/.test(text)) return true;
   const tokens = text.trim().split(/\s+/).filter(Boolean);
   return tokens.length >= 4;
 }
 
 /** roomsPanel leaf keys that must not remain identical to English. */
-export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
+const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'readOnlyBadge',
   'aclLevelLabel',
   'aclLevelAdmin',
@@ -1759,7 +1928,7 @@ export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
 ]);
 
 /** Hints that describe the wire default guest password (literal hello, not a greeting translation). */
-export const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set([
+const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set([
   'loginHelp',
   'adminLoginHelp',
   'emptyGuestLoginHint',
@@ -1771,7 +1940,7 @@ export const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set([
  * Only checked on ROOMS_PANEL_LITERAL_HELLO_KEYS when English mentions "hello".
  * Returns opaque issue codes; human-readable log copy lives in check-i18n.mjs (CodeQL).
  */
-export const ROOMS_HELLO_PASSWORD_FALSE_FRIEND_RES = {
+const ROOMS_HELLO_PASSWORD_FALSE_FRIEND_RES = {
   cs: [/\bahoj\b/i],
   de: [/\bHallo\b/i],
   es: [/\bhola\b/i],
@@ -1787,14 +1956,14 @@ export const ROOMS_HELLO_PASSWORD_FALSE_FRIEND_RES = {
 };
 
 /** Opaque locale-quality codes for MeshCore wire-password hint checks. */
-export const LOCALE_QUALITY_ROOMS_HELLO_MISSING_LITERAL = 'rooms-hello-missing-literal';
+const LOCALE_QUALITY_ROOMS_HELLO_MISSING_LITERAL = 'rooms-hello-missing-literal';
 
-export function roomsHelloFalseFriendIssueCode(locale) {
+function roomsHelloFalseFriendIssueCode(locale) {
   return `rooms-hello-false-friend:${locale}`;
 }
 
 /** Outdated loginHelp that tells users to leave the field empty instead of Continue read-only. */
-export const STALE_ROOMS_LOGIN_HELP_RES = [
+const STALE_ROOMS_LOGIN_HELP_RES = [
   /leave (?:it )?empty/i,
   /leave blank/i,
   /leer lassen/i,
@@ -1814,12 +1983,12 @@ export const STALE_ROOMS_LOGIN_HELP_RES = [
 ];
 
 /** Polish MT often uses "Nowość" (novelty) instead of "new" for unread counts. */
-export const PL_UNREAD_NOWOSC_RE = /Nowość/i;
+const PL_UNREAD_NOWOSC_RE = /Nowość/i;
 
 /** chatPanel.composeLimit.approaching is a numeric ratio; identical "{{count}} / {{limit}}" is OK. */
-export const COMPOSE_LIMIT_NUMERIC_LEAF_KEYS = new Set(['approaching']);
+const COMPOSE_LIMIT_NUMERIC_LEAF_KEYS = new Set(['approaching']);
 
-export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
+const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'replyRequiresPacketId',
   'queueButton',
   'outboxStatusQueued',
@@ -1869,12 +2038,12 @@ export const CHAT_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
 ]);
 
 /** Reticulum DM-only chat copy — contact must not become customer inquiry (문의). */
-export const CHAT_RETICULUM_CONTACT_FALSE_FRIENDS = {
+const CHAT_RETICULUM_CONTACT_FALSE_FRIENDS = {
   ko: [{ re: /문의/, hint: 'use 연락처 (contact), not customer inquiry "문의"' }],
 };
 
 /** chatPanel outbox / date divider keys checked for known auto-translate false friends. */
-export const CHAT_PANEL_OUTBOX_UI_LEAF_KEYS = new Set([
+const CHAT_PANEL_OUTBOX_UI_LEAF_KEYS = new Set([
   'outboxStatusQueued',
   'outboxStatusSending',
   'outboxStatusBlocked',
@@ -1890,7 +2059,7 @@ export const CHAT_PANEL_OUTBOX_UI_LEAF_KEYS = new Set([
  * MyMemory often mistranslates chat outbox status and chat date dividers.
  * Matched on chatPanel.* keys listed in CHAT_PANEL_OUTBOX_UI_LEAF_KEYS.
  */
-export const CHAT_PANEL_OUTBOX_UI_FALSE_FRIENDS = {
+const CHAT_PANEL_OUTBOX_UI_FALSE_FRIENDS = {
   de: [
     {
       re: /^Nicht bestanden$/i,
@@ -1943,7 +2112,7 @@ export const CHAT_PANEL_OUTBOX_UI_FALSE_FRIENDS = {
 };
 
 /** MeshCore Rooms saved-password sidebar (recent work). */
-export const ROOMS_SAVED_PASSWORDS_MUST_TRANSLATE_LEAF_KEYS = new Set([
+const ROOMS_SAVED_PASSWORDS_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'savedPasswordsHeading',
   'sidebarLegendTitle',
   'legendNotSaved',
@@ -1953,30 +2122,30 @@ export const ROOMS_SAVED_PASSWORDS_MUST_TRANSLATE_LEAF_KEYS = new Set([
 ]);
 
 /** Polish MT often turns "Saved passwords" into browser autofill copy. */
-export const PL_SAVED_PASSWORDS_HEADING_AUTOFILL_RE = /wypełnianie.*hasłem/i;
+const PL_SAVED_PASSWORDS_HEADING_AUTOFILL_RE = /wypełnianie.*hasłem/i;
 
 /** Simplified Chinese should use 登录 for sign-in, not ship-boarding 登陆. */
-export const ZH_LOGIN_WRONG_CHAR_RE = /登陆/;
+const ZH_LOGIN_WRONG_CHAR_RE = /登陆/;
 
 /** Czech MT uses noun "login" instead of logged-in state on legendLoggedIn. */
-export const CS_LOGGED_IN_NOUN_RE = /^Přihlášení$/;
+const CS_LOGGED_IN_NOUN_RE = /^Přihlášení$/;
 
 /** MeshCore Rooms sidebar marker legend tooltips (sky ◐ / green ● / empty ○). */
-export const ROOMS_SIDEBAR_MARKER_TOOLTIP_KEYS = new Set([
+const ROOMS_SIDEBAR_MARKER_TOOLTIP_KEYS = new Set([
   'legendNotSavedTooltip',
   'legendSavedTooltip',
   'legendLoggedInTooltip',
 ]);
 
 /** Auto-translate often leaves "Sky half-circle" in legendSavedTooltip. */
-export const SKY_HALF_CIRCLE_ENGLISH_RES = [
+const SKY_HALF_CIRCLE_ENGLISH_RES = [
   /\bSky[\s-]*half/i,
   /\bSky[\s-]*Halb/i,
   /\bSky\s+semicerchio/i,
 ];
 
 /** MT mistranslates "leave the room" as "leave space" on legendLoggedInTooltip. */
-export const LEGEND_LEAVE_SPACE_FALSE_FRIEND_RES = [
+const LEGEND_LEAVE_SPACE_FALSE_FRIEND_RES = [
   /\bleave space\b/i,
   /\bdeixe espaço\b/i,
   /\blaisser de la place\b/i,
@@ -1993,29 +2162,29 @@ export const LEGEND_LEAVE_SPACE_FALSE_FRIEND_RES = [
 ];
 
 /** Turkish MT uses consulting-client "danışan" instead of software client. */
-export const TR_CLIENT_DANISAN_RE = /\bdanışan\b/i;
+const TR_CLIENT_DANISAN_RE = /\bdanışan\b/i;
 
 /** French MT uses hotel "pièce" for MeshCore Room in new sidebar copy. */
-export const FR_ROOM_PIECE_RE = /\bpièce\b/i;
+const FR_ROOM_PIECE_RE = /\bpièce\b/i;
 
 /** sidebarLegendTitle must mention markers when English does. */
-export const SIDEBAR_MARKER_WORD_RE =
+const SIDEBAR_MARKER_WORD_RE =
   /(?:\bmark(?:er|ierung|ierungen|ering|eringen|ör|e)?\b|markering(?:en)?|marqueur|marcador(?:es)?|indicat(?:or|ore|eur|e)?|znacznik|znak|značk|penanda|işaret|маркер|标记|マーカ|마커)/i;
 
 /** roomsPanel keys where French "pièce" is a known MT hotel-room false friend. */
-export const FR_ROOM_PIECE_SIDEBAR_KEYS = new Set([
+const FR_ROOM_PIECE_SIDEBAR_KEYS = new Set([
   'statusPasswordSaved',
   'statusLoggedInSessionTooltip',
   'legendNotSavedTooltip',
 ]);
 
-export const ROOMS_STATUS_LOGGED_IN_SESSION_KEY = `${ROOMS_PANEL_PREFIX}statusLoggedInSession`;
-export const ROOMS_LEGEND_LOGGED_IN_KEY = `${ROOMS_PANEL_PREFIX}legendLoggedIn`;
-export const ROOMS_STATUS_PASSWORD_SAVED_KEY = `${ROOMS_PANEL_PREFIX}statusPasswordSaved`;
-export const ROOMS_SIDEBAR_LEGEND_TITLE_KEY = `${ROOMS_PANEL_PREFIX}sidebarLegendTitle`;
+const ROOMS_STATUS_LOGGED_IN_SESSION_KEY = `${ROOMS_PANEL_PREFIX}statusLoggedInSession`;
+const ROOMS_LEGEND_LOGGED_IN_KEY = `${ROOMS_PANEL_PREFIX}legendLoggedIn`;
+const ROOMS_STATUS_PASSWORD_SAVED_KEY = `${ROOMS_PANEL_PREFIX}statusPasswordSaved`;
+const ROOMS_SIDEBAR_LEGEND_TITLE_KEY = `${ROOMS_PANEL_PREFIX}sidebarLegendTitle`;
 
 /** roomsPanel members / leave UX from recent MeshCore Rooms work. */
-export const ROOMS_MEMBERS_MUST_TRANSLATE_LEAF_KEYS = new Set([
+const ROOMS_MEMBERS_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'membersHeading',
   'membersRecognizedHeading',
   'membersRecognizedEmpty',
@@ -2029,7 +2198,7 @@ export const ROOMS_MEMBERS_MUST_TRANSLATE_LEAF_KEYS = new Set([
  * English "Recognized posters" means users who posted, not wall posters / beneficiaries.
  * Checked on membersRecognizedHeading and membersRecognizedEmpty.
  */
-export const RECOGNIZED_POSTER_PHYSICAL_RES = [
+const RECOGNIZED_POSTER_PHYSICAL_RES = [
   /plak[aá]t/i,
   /\bPlakat/i,
   /\baffiches?\b/i,
@@ -2046,7 +2215,7 @@ export const RECOGNIZED_POSTER_PHYSICAL_RES = [
 ];
 
 /** Obvious garbage for roomsPanel.membersHeading. */
-export const MEMBERS_HEADING_GARBAGE_RES = [
+const MEMBERS_HEADING_GARBAGE_RES = [
   /^zdarma$/i,
   /de la AEC/i,
   /^office$/i,
@@ -2078,7 +2247,7 @@ const UPGRADE_ACCESS_FALSE_FRIENDS = [
 const ACL_LISTING_AD_FALSE_FRIEND_RES = [/ACL-advertentie/i, /Iklan ACL/i];
 
 /** Leaf keys where English ends with … and locale must not use ASCII dot runs. */
-export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set([
+const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set([
   'channelLoading',
   'savingChannel',
   'autoConnectingTo',
@@ -2087,9 +2256,9 @@ export const ELLIPSIS_HYGIENE_LEAF_KEYS = new Set([
 ]);
 
 /** connectionPanel.autoReconnectInProgress — must mean reconnect, not initial connect. */
-export const AUTO_RECONNECT_IN_PROGRESS_KEY = 'connectionPanel.autoReconnectInProgress';
+const AUTO_RECONNECT_IN_PROGRESS_KEY = 'connectionPanel.autoReconnectInProgress';
 
-export const AUTO_RECONNECT_IN_PROGRESS_FALSE_FRIENDS = {
+const AUTO_RECONNECT_IN_PROGRESS_FALSE_FRIENDS = {
   uk: [
     {
       re: /^Триває автоматичне підключення/i,
@@ -2111,22 +2280,22 @@ export const AUTO_RECONNECT_IN_PROGRESS_FALSE_FRIENDS = {
 };
 
 /** CAT / Memsource placeholder tokens (e.g. __ PH0 __) that must be {{name}} instead. */
-export const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
+const CAT_PH_PLACEHOLDER_RE = /__\s*PH\s*\d/i;
 
 /** Bare CAT placeholder residue (e.g. "PH 0") without __ wrappers. */
-export const CAT_BARE_PH_PLACEHOLDER_RE = /\bPH\s*\d+\b/;
+const CAT_BARE_PH_PLACEHOLDER_RE = /\bPH\s*\d+\b/;
 
 /** HTML tags leaked from CAT export (e.g. <span>…</span>). */
-export const HTML_TAG_RESIDUE_RE = /<\/?[a-z][\w-]*\b/i;
+const HTML_TAG_RESIDUE_RE = /<\/?[a-z][\w-]*\b/i;
 
 /** Keys rendered via react-i18next <Trans> — allowed to contain markup like <strong>. */
-export const I18N_TRANS_HTML_KEYS = new Set(['connectionPanel.meshcoreBlePairingHint']);
+const I18N_TRANS_HTML_KEYS = new Set(['connectionPanel.meshcoreBlePairingHint']);
 
 /**
  * Keys where <placeholder> angle brackets are wire-format notation (e.g. v1_<public key>),
  * not HTML tags.
  */
-export const I18N_ANGLE_BRACKET_PLACEHOLDER_KEYS = new Set([
+const I18N_ANGLE_BRACKET_PLACEHOLDER_KEYS = new Set([
   'connectionPanel.meshcoreMqttIdentity.noPrivateKey',
   'connectionPanel.meshcoreMqttIdentity.usernameBuildFailed',
 ]);
@@ -2221,7 +2390,7 @@ export function interpolationPlaceholderIssues(enVal, val) {
 }
 
 /** CAT / XLIFF / Memsource XML tags that must never ship in JSON values. */
-export const LOCALE_ARTIFACT_RES = [
+const LOCALE_ARTIFACT_RES = [
   /<g\s+id=/i,
   /<\/g>/i,
   /<ph\s+/i,
@@ -2234,18 +2403,13 @@ export const LOCALE_ARTIFACT_RES = [
 ];
 
 /** HTML numeric entities leaked from CAT export (e.g. &#10; line feed). */
-export const HTML_ENTITY_RESIDUE_RE = /&#\d+;/;
+const HTML_ENTITY_RESIDUE_RE = /&#\d+;/;
 
 /** Bracket placeholders from CAT/MyMemory (e.g. [Data] dostarczenia). */
-export const BRACKET_CAT_PLACEHOLDER_RE = /\[(?:Data|Date|Time)\]/i;
+const BRACKET_CAT_PLACEHOLDER_RE = /\[(?:Data|Date|Time)\]/i;
 
 /** peerDetailModal probe toast keys — same probe wording rules as reticulumPeers.probe. */
-export const PEER_DETAIL_PROBE_LEAF_KEYS = new Set([
-  'probeHops',
-  'probeLocal',
-  'probeFailed',
-  'probeOk',
-]);
+const PEER_DETAIL_PROBE_LEAF_KEYS = new Set(['probeHops', 'probeLocal', 'probeFailed', 'probeOk']);
 
 /** Brand / product names preserved verbatim when present in English. */
 // GPIO is a hardware acronym that must not be translated or expanded in UI strings.
@@ -2333,10 +2497,10 @@ const PROTOCOL_TOKEN_RES = new Map([
 ]);
 
 export const RETICULUM_RUNTIME_PREFIX = 'diagnosticsPanel.reticulum.runtime.';
-export const RETICULUM_RUNTIME_PROTOCOL_TOKENS = ['RNS', 'LXMF'];
+const RETICULUM_RUNTIME_PROTOCOL_TOKENS = ['RNS', 'LXMF'];
 
-export const ROUTING_PORT_PREFIX = 'diagnosticsPanel.routingPort.';
-export const ROUTING_PORT_TOKENS = [
+const ROUTING_PORT_PREFIX = 'diagnosticsPanel.routingPort.';
+const ROUTING_PORT_TOKENS = [
   'NodeInfo',
   'Telemetry',
   'NeighborInfo',
@@ -2369,11 +2533,11 @@ const MESHTASTIC_CYRILLIC_TRANSLIT_RE = /мештаст/i;
 const ZH_CAT_GARBAGE_RE = /%\s*\d+.*文件夹|文件夹.*%\s*\d+/;
 
 /** MyMemory/CAT often leaks Qt plural-form notes into short labels. */
-export const CAT_PLURAL_FORM_RESIDUE_RE = /plural form:|&apos;/i;
+const CAT_PLURAL_FORM_RESIDUE_RE = /plural form:|&apos;/i;
 
 /** MeshCore path-hash UI — CLI token in meshcorePathHashModeHint must stay verbatim. */
-export const MESHCORE_PATH_HASH_HINT_KEY = 'appPanel.meshcorePathHashModeHint';
-export const MESHCORE_PATH_HASH_CLI_LITERAL = 'set path.hash.mode {0|1|2}';
+const MESHCORE_PATH_HASH_HINT_KEY = 'appPanel.meshcorePathHashModeHint';
+const MESHCORE_PATH_HASH_CLI_LITERAL = 'set path.hash.mode {0|1|2}';
 
 const MESHCORE_PATH_HASH_MODE_BYTE_LEAF_KEYS = new Set([
   'meshcorePathHashMode1Byte',
@@ -2414,7 +2578,7 @@ const ROOM_SENSE_KEY_RE =
  * @param {string} flatKey
  * @param {string} enVal
  */
-export function isRoomSenseUiKey(flatKey, enVal) {
+function isRoomSenseUiKey(flatKey, enVal) {
   if (flatKey.startsWith(ROOMS_PANEL_PREFIX) || flatKey.startsWith(RRC_PREFIX)) return false;
   if (flatKey.startsWith(ROUTING_PORT_PREFIX)) return false;
   if (isMeshcoreRoomUiKey(flatKey)) return true;
@@ -2654,7 +2818,7 @@ function checkCatEncodingAndMeshtasticIssues(ctx) {
  * @returns {string[]}
  */
 /** Statistical "average" / font-weight false friends for transport path medium. */
-export const PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES = [
+const PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES = [
   { re: /^Moyenne$/i, hint: 'fr: use transport "Support"/"médium", not statistical "Moyenne"' },
   { re: /^Gemiddeld$/i, hint: 'nl: use transport "Medium", not statistical "Gemiddeld"' },
   { re: /^Średnia$/i, hint: 'pl: use transport "Medium", not statistical "Średnia"' },
@@ -2673,8 +2837,8 @@ export const PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES = [
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkReticulumPeerAndPingIssues(ctx) {
-  const { locale, flatKey, val, enVal, leafKey } = ctx;
+function checkReticulumPeerAndPingIssuesRule1(ctx) {
+  const { flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
 
   if (
@@ -2688,6 +2852,12 @@ function checkReticulumPeerAndPingIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkReticulumPeerAndPingIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
 
   if (flatKey === 'reticulumPing.failed' && enVal.includes('Ping failed') && locale !== 'en') {
     if (/зв['\s]*язк|связ(и|ь)/i.test(val) && !/пінг|ping|эхо|sond|prob/i.test(val)) {
@@ -2696,59 +2866,99 @@ function checkReticulumPeerAndPingIssues(ctx) {
       );
     }
   }
-
-  if (locale !== 'en' && flatKey.startsWith('peerListPanel.paths')) {
-    if (flatKey === 'peerListPanel.pathsMedium') {
-      for (const { re, hint } of PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES) {
-        if (re.test(val)) {
-          issues.push(`peerListPanel.pathsMedium false friend: ${hint}`);
-        }
-      }
-    }
-    if (
-      (flatKey === 'peerListPanel.paths' ||
-        flatKey === 'peerListPanel.pathsActiveBadge' ||
-        flatKey === 'peerListPanel.pathsBackupBadge') &&
-      val === enVal
-    ) {
-      issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
-    }
-    if (flatKey === 'peerListPanel.pathsPreferRf' && enVal === 'RF' && locale !== 'en') {
-      // RF is a protocol token; MT must not expand the acronym alone into unrelated words
-      // (e.g. cs "regionální facilitátor"). Localized glosses that still keep "RF" are OK
-      // (e.g. pt-BR "Frequência de rádio (RF)").
-      const keepsRfToken = /\bRF\b/.test(val) || /射频|無線|무선/.test(val);
-      if (!keepsRfToken) {
-        issues.push('peerListPanel.pathsPreferRf must keep the RF protocol token');
-      }
-    }
-    if (flatKey === 'peerListPanel.pathsBackupBadge' && /Заднім ходом/i.test(val)) {
-      issues.push('peerListPanel.pathsBackupBadge must mean spare path, not reverse gear');
-    }
-  }
-
   return issues;
+}
+
+function peerListPathsMediumIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (locale === 'en' || flatKey !== 'peerListPanel.pathsMedium') return issues;
+  for (const { re, hint } of PEER_LIST_PATHS_MEDIUM_FALSE_FRIEND_RES) {
+    if (re.test(val)) issues.push(`peerListPanel.pathsMedium false friend: ${hint}`);
+  }
+  return issues;
+}
+
+function peerListPathsIdenticalEnglishIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en') return issues;
+  const keys = new Set([
+    'peerListPanel.paths',
+    'peerListPanel.pathsActiveBadge',
+    'peerListPanel.pathsBackupBadge',
+  ]);
+  if (keys.has(flatKey) && val === enVal) {
+    issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
+  }
+  return issues;
+}
+
+function peerListPathsPreferRfIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en' || flatKey !== 'peerListPanel.pathsPreferRf' || enVal !== 'RF') return issues;
+  // RF is a protocol token; MT must not expand the acronym alone into unrelated words
+  // (e.g. cs "regionální facilitátor"). Localized glosses that still keep "RF" are OK.
+  const keepsRfToken = /\bRF\b/.test(val) || /射频|無線|무선/.test(val);
+  if (!keepsRfToken) issues.push('peerListPanel.pathsPreferRf must keep the RF protocol token');
+  return issues;
+}
+
+function peerListPathsBackupBadgeIssues(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
+  if (flatKey === 'peerListPanel.pathsBackupBadge' && /Заднім ходом/i.test(val)) {
+    issues.push('peerListPanel.pathsBackupBadge must mean spare path, not reverse gear');
+  }
+  return issues;
+}
+
+function checkReticulumPeerAndPingIssues(ctx) {
+  return [
+    ...checkReticulumPeerAndPingIssuesRule1(ctx),
+    ...checkReticulumPeerAndPingIssuesRule2(ctx),
+    ...peerListPathsMediumIssues(ctx),
+    ...peerListPathsIdenticalEnglishIssues(ctx),
+    ...peerListPathsPreferRfIssues(ctx),
+    ...peerListPathsBackupBadgeIssues(ctx),
+  ];
 }
 
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMustTranslateAndFormFieldIssues(ctx) {
-  const { locale, flatKey, val, enVal, leafKey } = ctx;
+function checkMustTranslateAndFormFieldIssuesRule1(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
   const issues = [];
   if (locale !== 'en' && MUST_TRANSLATE_LEAF_KEYS.has(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && MODULE_PANEL_MUST_TRANSLATE_IDENTICAL_KEYS.has(flatKey) && val === enVal) {
     issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && ENVIRONMENT_TELEMETRY_MUST_TRANSLATE_KEYS.has(flatKey) && val === enVal) {
     issues.push(`"${flatKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule4(ctx) {
+  const { locale, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     leafKey === 'copyMeshtastic' &&
@@ -2756,7 +2966,12 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('copyMeshtastic still starts with English "Copy meshtastic"');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule5(ctx) {
+  const { locale, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     enVal.includes('remote admin docs') &&
@@ -2764,7 +2979,12 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('translate "remote admin docs" — do not leave the English phrase');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule6(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     leafKey === 'offline_gate' &&
@@ -2775,10 +2995,21 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   }
 
   // Single Latin letter (e.g. de "B") is a bad MT truncation; short CJK labels are OK.
+  return issues;
+}
+
+function checkMustTranslateAndFormFieldIssuesRule7(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'roleSecondary' && enVal.length > 5 && /^[A-Za-z]$/.test(val)) {
     issues.push('roleSecondary looks truncated');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule8(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     leafKey === 'modeAdd' &&
     val.length > 4 &&
@@ -2788,11 +3019,21 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('modeAdd must not be ALL CAPS');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule9(ctx) {
+  const { val, enVal } = ctx;
+  const issues = [];
   if (enVal.includes('{{usePreset}}') && !val.includes('{{usePreset}}')) {
     issues.push('missing {{usePreset}} interpolation from English source');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule10(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     ELLIPSIS_HYGIENE_LEAF_KEYS.has(leafKey) &&
@@ -2801,7 +3042,12 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('use Unicode ellipsis (…) instead of ASCII dots when English uses …');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule11(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     ELLIPSIS_HYGIENE_LEAF_KEYS.has(leafKey) &&
@@ -2810,7 +3056,12 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
   ) {
     issues.push('use a single Unicode ellipsis (…), not repeated ……');
   }
+  return issues;
+}
 
+function checkMustTranslateAndFormFieldIssuesRule12(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === AUTO_RECONNECT_IN_PROGRESS_KEY && locale !== 'en') {
     for (const { re, hint } of AUTO_RECONNECT_IN_PROGRESS_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -2819,6 +3070,23 @@ function checkMustTranslateAndFormFieldIssues(ctx) {
     }
   }
   return issues;
+}
+
+function checkMustTranslateAndFormFieldIssues(ctx) {
+  return [
+    ...checkMustTranslateAndFormFieldIssuesRule1(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule2(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule3(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule4(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule5(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule6(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule7(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule8(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule9(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule10(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule11(ctx),
+    ...checkMustTranslateAndFormFieldIssuesRule12(ctx),
+  ];
 }
 
 /**
@@ -2870,7 +3138,7 @@ function checkRoomsPanelFalseFriendIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMeshAdvertAndRawPacketLogIssues(ctx) {
+function checkMeshAdvertAndRawPacketLogIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
   const shouldCheckMeshAdvertCommercial =
@@ -2882,66 +3150,103 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
-  if (flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) {
-    const packetLeaf = flatKey.split('.').pop() ?? flatKey;
-    if (RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS.has(packetLeaf) && val !== enVal) {
-      issues.push(
-        `rawPacketLog ${packetLeaf} must stay verbatim "${enVal}" (protocol filter chip)`,
-      );
-    }
-    if (RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS.has(packetLeaf)) {
-      for (const { re, hint } of RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS[locale] ?? []) {
-        if (re.test(val)) {
-          issues.push(`rawPacketLog hop tooltip false friend: ${hint}`);
-        }
-      }
-    }
-    if (RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS.has(packetLeaf)) {
-      for (const { re, hint } of FLOOD_ROUTING_FALSE_FRIENDS[locale] ?? []) {
-        if (re.test(val)) {
-          issues.push(`rawPacketLog flood-routing false friend: ${hint}`);
-        }
-      }
-    }
-    if (RAW_PACKET_LOG_SHORT_LABEL_KEYS.has(packetLeaf)) {
-      if (CAT_DOT_PADDING_RE.test(val)) {
-        issues.push('rawPacketLog short label has CAT dot-padding garbage — use a concise label');
-      }
-      if (packetLeaf === 'payloadLabel' && val.length > 24) {
-        issues.push('payloadLabel looks too long — use a short label (e.g. Payload)');
-      }
-    }
-    if (flatKey.startsWith(RAW_PACKET_LOG_RETICULUM_PREFIX)) {
-      if (
-        RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS.has(packetLeaf) &&
-        (enVal === 'RX' || enVal === 'TX') &&
-        val !== enVal
-      ) {
-        issues.push(
-          `rawPacketLog reticulum ${packetLeaf} must stay verbatim "${enVal}" (radio direction token)`,
-        );
-      }
-      if (
-        packetLeaf === 'destination' &&
-        enVal === 'Destination' &&
-        /^[:;.,!?]+$/.test(val.trim())
-      ) {
-        issues.push(
-          'rawPacketLog reticulum destination must be a label, not punctuation-only garbage',
-        );
-      }
-    }
-    if (locale === 'uk' && packetLeaf === 'transportHeading' && /Телепортувати/i.test(val)) {
-      issues.push(
-        'transportHeading must be mesh transport header label, not verb "teleport" (Телепортувати)',
-      );
-    }
-    for (const issue of meshcoreProtocolTokenIssues(flatKey, enVal, val)) {
-      issues.push(issue);
+function rawPacketLogVerbatimIssues(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS.has(packetLeaf) && val !== enVal) {
+    issues.push(`rawPacketLog ${packetLeaf} must stay verbatim "${enVal}" (protocol filter chip)`);
+  }
+  return issues;
+}
+
+function rawPacketLogHopTooltipIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS.has(packetLeaf)) {
+    for (const { re, hint } of RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) issues.push(`rawPacketLog hop tooltip false friend: ${hint}`);
     }
   }
+  return issues;
+}
 
+function rawPacketLogFloodRoutingIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS.has(packetLeaf)) {
+    for (const { re, hint } of FLOOD_ROUTING_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) issues.push(`rawPacketLog flood-routing false friend: ${hint}`);
+    }
+  }
+  return issues;
+}
+
+function rawPacketLogShortLabelIssues(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (!RAW_PACKET_LOG_SHORT_LABEL_KEYS.has(packetLeaf)) return issues;
+  if (CAT_DOT_PADDING_RE.test(val)) {
+    issues.push('rawPacketLog short label has CAT dot-padding garbage — use a concise label');
+  }
+  if (packetLeaf === 'payloadLabel' && val.length > 24) {
+    issues.push('payloadLabel looks too long — use a short label (e.g. Payload)');
+  }
+  return issues;
+}
+
+function rawPacketLogReticulumIssues(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_RETICULUM_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (
+    RAW_PACKET_LOG_RETICULUM_VERBATIM_LEAF_KEYS.has(packetLeaf) &&
+    (enVal === 'RX' || enVal === 'TX') &&
+    val !== enVal
+  ) {
+    issues.push(
+      `rawPacketLog reticulum ${packetLeaf} must stay verbatim "${enVal}" (radio direction token)`,
+    );
+  }
+  if (packetLeaf === 'destination' && enVal === 'Destination' && /^[:;.,!?]+$/.test(val.trim())) {
+    issues.push('rawPacketLog reticulum destination must be a label, not punctuation-only garbage');
+  }
+  return issues;
+}
+
+function rawPacketLogTransportHeadingIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return issues;
+  const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+  if (locale === 'uk' && packetLeaf === 'transportHeading' && /Телепортувати/i.test(val)) {
+    issues.push(
+      'transportHeading must be mesh transport header label, not verb "teleport" (Телепортувати)',
+    );
+  }
+  return issues;
+}
+
+function rawPacketLogProtocolTokenIssues(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  if (!flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) return [];
+  return meshcoreProtocolTokenIssues(flatKey, enVal, val);
+}
+
+function checkMeshAdvertAndRawPacketLogIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === RETICULUM_TOPOLOGY_SELF_KEY && enVal === 'You' && locale !== 'en') {
     if (val === 'You') {
       issues.push('reticulumTopology.self must be translated (local pronoun for "You")');
@@ -2955,7 +3260,12 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
       issues.push('reticulumTopology.self should be a short pronoun, not a multi-word phrase');
     }
   }
+  return issues;
+}
 
+function checkMeshAdvertAndRawPacketLogIssuesRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === RETICULUM_TOPOLOGY_HOP_BADGE_KEY &&
     enVal.includes('{{count}}') &&
@@ -2963,7 +3273,12 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
   ) {
     issues.push('reticulumTopology.hopBadge must preserve {{count}} placeholder');
   }
+  return issues;
+}
 
+function checkMeshAdvertAndRawPacketLogIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale === 'de' &&
     (flatKey.startsWith('radioPanel.deviceRoles') || flatKey.startsWith('roleInfo.roles.'))
@@ -2974,6 +3289,12 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkMeshAdvertAndRawPacketLogIssuesRule6(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_KEY) {
     issues.push(...channelPsksMqttOnlyIndexHintIssues(val));
   }
@@ -2981,11 +3302,28 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
   return issues;
 }
 
+function checkMeshAdvertAndRawPacketLogIssues(ctx) {
+  return [
+    ...checkMeshAdvertAndRawPacketLogIssuesRule1(ctx),
+    ...rawPacketLogVerbatimIssues(ctx),
+    ...rawPacketLogHopTooltipIssues(ctx),
+    ...rawPacketLogFloodRoutingIssues(ctx),
+    ...rawPacketLogShortLabelIssues(ctx),
+    ...rawPacketLogReticulumIssues(ctx),
+    ...rawPacketLogTransportHeadingIssues(ctx),
+    ...rawPacketLogProtocolTokenIssues(ctx),
+    ...checkMeshAdvertAndRawPacketLogIssuesRule3(ctx),
+    ...checkMeshAdvertAndRawPacketLogIssuesRule4(ctx),
+    ...checkMeshAdvertAndRawPacketLogIssuesRule5(ctx),
+    ...checkMeshAdvertAndRawPacketLogIssuesRule6(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkFlasherIssues(ctx) {
+function checkFlasherIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
   if (
@@ -2999,7 +3337,12 @@ function checkFlasherIssues(ctx) {
       'flasher noSerialPorts must express absence (aucun/pas de), not affirmative "trouvé(s):"',
     );
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === 'flasher.errors.esp32FlashStalled' &&
@@ -3015,7 +3358,12 @@ function checkFlasherIssues(ctx) {
       issues.push('esp32FlashStalled must preserve literal button labels BOOT and RESET');
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && FLASHER_FLASH_MEMORY_KEY_RE.test(flatKey)) {
     if (FLASHER_FLASH_MEMORY_FALSE_FRIENDS.get(locale)?.test(val)) {
       issues.push(
@@ -3030,7 +3378,12 @@ function checkFlasherIssues(ctx) {
       issues.push('flasher backup copy must preserve literal button labels BOOT and RESET');
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule4(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === 'flasher.errors.rnodeCommandTimeout' &&
@@ -3043,7 +3396,12 @@ function checkFlasherIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     (flatKey === 'flasher.errors.provisionWipeRequired' ||
@@ -3060,7 +3418,12 @@ function checkFlasherIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && FLASHER_CLEAR_PAIRED_DEVICES_KEYS.has(flatKey)) {
     if (FLASHER_BT_BOND_FINANCIAL_FALSE_FRIENDS.test(val)) {
       issues.push(
@@ -3077,7 +3440,12 @@ function checkFlasherIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkFlasherIssuesRule7(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === 'meshcore.errors.removeContactFailed' &&
@@ -3088,6 +3456,18 @@ function checkFlasherIssues(ctx) {
   }
 
   return issues;
+}
+
+function checkFlasherIssues(ctx) {
+  return [
+    ...checkFlasherIssuesRule1(ctx),
+    ...checkFlasherIssuesRule2(ctx),
+    ...checkFlasherIssuesRule3(ctx),
+    ...checkFlasherIssuesRule4(ctx),
+    ...checkFlasherIssuesRule5(ctx),
+    ...checkFlasherIssuesRule6(ctx),
+    ...checkFlasherIssuesRule7(ctx),
+  ];
 }
 
 /**
@@ -3172,8 +3552,8 @@ function mentionSyntaxBroken(enVal, val) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMqttWifiAndScriptIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+function checkMqttWifiAndScriptIssuesRule1(ctx) {
+  const { locale, flatKey, val } = ctx;
   const issues = [];
   if (isMqttProxyUiKey(flatKey)) {
     for (const { re, hint } of MQTT_PROXY_LEGAL_FALSE_FRIENDS) {
@@ -3191,11 +3571,21 @@ function checkMqttWifiAndScriptIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkMqttWifiAndScriptIssuesRule2(ctx) {
+  const { locale, val } = ctx;
+  const issues = [];
   if (locale !== 'en' && WIFI_SPACED_RE.test(val)) {
     issues.push('use "Wi-Fi" without spaces around the hyphen (not "Wi - Fi")');
   }
+  return issues;
+}
 
+function checkMqttWifiAndScriptIssuesRule3(ctx) {
+  const { locale, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && /\bI2P\b/.test(enVal) && /I\s+2\s+P/.test(val)) {
     issues.push('keep I2P as contiguous token (not "I 2 P")');
   }
@@ -3203,23 +3593,44 @@ function checkMqttWifiAndScriptIssues(ctx) {
   // Users type mentions as shown; the parsers never match "@ [Name]", "@[ Name]" or "@ nick".
   // English prose such as "@ and" must not skip the check for contiguous tokens
   // the same string also demonstrates (@silver, @[Silver Eagle], @@).
+  return issues;
+}
+
+function checkMqttWifiAndScriptIssuesRule4(ctx) {
+  const { locale, val, enVal } = ctx;
+  const issues = [];
   if (locale !== 'en' && mentionSyntaxBroken(enVal, val)) {
     issues.push(
       'keep mention syntax contiguous: "@[Name]" and "@nickname", no space after "@" or "["',
     );
   }
+  return issues;
+}
 
+function checkMqttWifiAndScriptIssuesRule5(ctx) {
+  const { locale, val, enVal } = ctx;
+  const issues = [];
   if (!CJK_LOCALES.has(locale) && CJK_SCRIPT_RE.test(val) && !CJK_SCRIPT_RE.test(enVal)) {
     issues.push('wrong-script contamination (CJK characters in a non-CJK locale)');
   }
   return issues;
 }
 
+function checkMqttWifiAndScriptIssues(ctx) {
+  return [
+    ...checkMqttWifiAndScriptIssuesRule1(ctx),
+    ...checkMqttWifiAndScriptIssuesRule2(ctx),
+    ...checkMqttWifiAndScriptIssuesRule3(ctx),
+    ...checkMqttWifiAndScriptIssuesRule4(ctx),
+    ...checkMqttWifiAndScriptIssuesRule5(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkRoomsPanelTranslationIssues(ctx) {
+function checkRoomsPanelTranslationIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (
@@ -3230,7 +3641,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule2(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3239,7 +3655,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
   ) {
     issues.push('translate readOnlyBadge — do not leave English "(read only)"');
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === `${ROOMS_PANEL_PREFIX}loginHelp` &&
@@ -3254,7 +3675,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule4(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === `${ROOMS_PANEL_PREFIX}emptyGuestLoginHint` &&
@@ -3264,7 +3690,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
       'emptyGuestLoginHint still quotes English "Continue read-only" — use the locale continueReadOnly button label',
     );
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule5(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3280,7 +3711,12 @@ function checkRoomsPanelTranslationIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelTranslationIssuesRule6(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale === 'pl' &&
     flatKey === `${ROOMS_PANEL_PREFIX}unreadPosts` &&
@@ -3291,11 +3727,22 @@ function checkRoomsPanelTranslationIssues(ctx) {
   return issues;
 }
 
+function checkRoomsPanelTranslationIssues(ctx) {
+  return [
+    ...checkRoomsPanelTranslationIssuesRule1(ctx),
+    ...checkRoomsPanelTranslationIssuesRule2(ctx),
+    ...checkRoomsPanelTranslationIssuesRule3(ctx),
+    ...checkRoomsPanelTranslationIssuesRule4(ctx),
+    ...checkRoomsPanelTranslationIssuesRule5(ctx),
+    ...checkRoomsPanelTranslationIssuesRule6(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkChatPanelIssues(ctx) {
+function checkChatPanelIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (
@@ -3306,7 +3753,12 @@ function checkChatPanelIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkChatPanelIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('chatPanel.') &&
@@ -3315,7 +3767,12 @@ function checkChatPanelIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkChatPanelIssuesRule3(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('chatPanel.') &&
@@ -3327,7 +3784,12 @@ function checkChatPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkChatPanelIssuesRule4(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (locale !== 'en' && flatKey === 'chatPanel.replyRequiresPacketId') {
     if (REPLY_REQUIRES_EN_LEADING_RE.test(val)) {
       issues.push('replyRequiresPacketId still starts with English "Reply requires/richiede"');
@@ -3341,7 +3803,12 @@ function checkChatPanelIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkChatPanelIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     (flatKey === 'chatPanel.emptySelectDm' || flatKey === 'chatPanel.noDmConversationsReticulum')
@@ -3355,11 +3822,21 @@ function checkChatPanelIssues(ctx) {
   return issues;
 }
 
+function checkChatPanelIssues(ctx) {
+  return [
+    ...checkChatPanelIssuesRule1(ctx),
+    ...checkChatPanelIssuesRule2(ctx),
+    ...checkChatPanelIssuesRule3(ctx),
+    ...checkChatPanelIssuesRule4(ctx),
+    ...checkChatPanelIssuesRule5(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkRoomsPanelMembersIssues(ctx) {
+function checkRoomsPanelMembersIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (
@@ -3370,7 +3847,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule2(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3379,7 +3861,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule3(ctx) {
+  const { locale, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'pl' &&
     leafKey === 'savedPasswordsHeading' &&
@@ -3389,7 +3876,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       'savedPasswordsHeading confuses saved passwords with browser autofill — use "Zapisane hasła"',
     );
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule4(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'zh' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3398,7 +3890,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push('use 登录 for sign-in, not 登陆 (boarding a ship)');
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule5(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'cs' &&
     (leafKey === 'legendLoggedIn' || leafKey === 'statusLoggedInSession') &&
@@ -3407,7 +3904,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push(`${leafKey} must be "Přihlášen" (logged in), not noun "Přihlášení" (login)`);
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3424,7 +3926,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule7(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}legendLoggedInTooltip` && enVal.includes('leave room')) {
     for (const re of LEGEND_LEAVE_SPACE_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -3435,7 +3942,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule8(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'fr' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3445,7 +3957,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push('roomsPanel false friend: use "salle" for MeshCore Room, not hotel "pièce"');
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule9(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale === 'tr' &&
     flatKey === `${ROOMS_PANEL_PREFIX}statusLoggedInSessionTooltip` &&
@@ -3453,7 +3970,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push('statusLoggedInSessionTooltip uses "danışan" — use "istemci" for software client');
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule10(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === ROOMS_STATUS_PASSWORD_SAVED_KEY &&
     enVal.includes('(sky marker') &&
@@ -3469,7 +3991,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule11(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === ROOMS_SIDEBAR_LEGEND_TITLE_KEY &&
     enVal.includes('marker') &&
@@ -3478,7 +4005,12 @@ function checkRoomsPanelMembersIssues(ctx) {
   ) {
     issues.push('sidebarLegendTitle must mention sidebar markers, not only room status');
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule12(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}membersHeading`) {
     for (const re of MEMBERS_HEADING_GARBAGE_RES) {
       if (re.test(val)) {
@@ -3487,7 +4019,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule13(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === `${ROOMS_PANEL_PREFIX}membersRecognizedHeading` ||
       flatKey === `${ROOMS_PANEL_PREFIX}membersRecognizedEmpty`) &&
@@ -3502,7 +4039,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule14(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === `${ROOMS_PANEL_PREFIX}membersAclFetchFailed` &&
@@ -3513,7 +4055,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       'membersAclFetchFailed must mention ACL — do not truncate to generic "could not fetch"',
     );
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule15(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}membersAclEmpty` && enVal.includes('Remote')) {
     for (const re of REMOTE_TV_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -3524,7 +4071,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule16(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}membersAclRemoteHint`) {
     for (const re of ACL_LISTING_AD_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -3535,7 +4087,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule17(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === `${ROOMS_PANEL_PREFIX}upgradeAccess`) {
     for (const { re, hint } of UPGRADE_ACCESS_FALSE_FRIENDS) {
       if (re.test(val)) {
@@ -3543,7 +4100,12 @@ function checkRoomsPanelMembersIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkRoomsPanelMembersIssuesRule18(ctx) {
+  const { flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
     ROOMS_PANEL_PASSWORD_PLACEHOLDER_KEYS.has(leafKey)
@@ -3561,11 +4123,34 @@ function checkRoomsPanelMembersIssues(ctx) {
   return issues;
 }
 
+function checkRoomsPanelMembersIssues(ctx) {
+  return [
+    ...checkRoomsPanelMembersIssuesRule1(ctx),
+    ...checkRoomsPanelMembersIssuesRule2(ctx),
+    ...checkRoomsPanelMembersIssuesRule3(ctx),
+    ...checkRoomsPanelMembersIssuesRule4(ctx),
+    ...checkRoomsPanelMembersIssuesRule5(ctx),
+    ...checkRoomsPanelMembersIssuesRule6(ctx),
+    ...checkRoomsPanelMembersIssuesRule7(ctx),
+    ...checkRoomsPanelMembersIssuesRule8(ctx),
+    ...checkRoomsPanelMembersIssuesRule9(ctx),
+    ...checkRoomsPanelMembersIssuesRule10(ctx),
+    ...checkRoomsPanelMembersIssuesRule11(ctx),
+    ...checkRoomsPanelMembersIssuesRule12(ctx),
+    ...checkRoomsPanelMembersIssuesRule13(ctx),
+    ...checkRoomsPanelMembersIssuesRule14(ctx),
+    ...checkRoomsPanelMembersIssuesRule15(ctx),
+    ...checkRoomsPanelMembersIssuesRule16(ctx),
+    ...checkRoomsPanelMembersIssuesRule17(ctx),
+    ...checkRoomsPanelMembersIssuesRule18(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkAppPanelReduceMotionAndBrandIssues(ctx) {
+function checkAppPanelReduceMotionAndBrandIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
   if (flatKey === REDUCE_MOTION_DESC_KEY && enVal.includes('Loading spinners')) {
@@ -3580,13 +4165,23 @@ function checkAppPanelReduceMotionAndBrandIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkAppPanelReduceMotionAndBrandIssuesRule2(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (locale === 'pt-BR' && flatKey === REDUCE_MOTION_KEY && /\bReduzam\b/.test(val)) {
     issues.push(
       'reduceMotion uses plural imperative "Reduzam" — use infinitive "Reduzir movimento"',
     );
   }
+  return issues;
+}
 
+function checkAppPanelReduceMotionAndBrandIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale === 'zh' &&
     flatKey === REDUCE_MOTION_KEY &&
@@ -3595,23 +4190,43 @@ function checkAppPanelReduceMotionAndBrandIssues(ctx) {
   ) {
     issues.push('reduceMotion uses 运动 (exercise) — use 动态效果 or 动画 for UI motion');
   }
+  return issues;
+}
 
+function checkAppPanelReduceMotionAndBrandIssuesRule4(ctx) {
+  const { val, enVal } = ctx;
+  const issues = [];
   if (enVal.includes('Mesh-Client') && MESH_CLIENT_SPACED_RE.test(val)) {
     issues.push('use "Mesh-Client" without spaces around the hyphen (not "Mesh - Client")');
   }
+  return issues;
+}
 
+function checkAppPanelReduceMotionAndBrandIssuesRule5(ctx) {
+  const { val, enVal } = ctx;
+  const issues = [];
   if (enVal.includes('mesh-client') && MESH_CLIENT_LOWERCASE_SPACED_RE.test(val)) {
     issues.push('use "mesh-client" without spaces around the hyphen (not "mesh - client")');
   }
   return issues;
 }
 
+function checkAppPanelReduceMotionAndBrandIssues(ctx) {
+  return [
+    ...checkAppPanelReduceMotionAndBrandIssuesRule1(ctx),
+    ...checkAppPanelReduceMotionAndBrandIssuesRule2(ctx),
+    ...checkAppPanelReduceMotionAndBrandIssuesRule3(ctx),
+    ...checkAppPanelReduceMotionAndBrandIssuesRule4(ctx),
+    ...checkAppPanelReduceMotionAndBrandIssuesRule5(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMeshcoreOpenWireIssues(ctx) {
-  const { locale, flatKey, val, enVal, leafKey } = ctx;
+function checkMeshcoreOpenWireIssuesRule1(ctx) {
+  const { locale, flatKey, val } = ctx;
   const issues = [];
   if (locale !== 'en' && flatKey === MESHCORE_CLI_INVALID_PRESET_KEY && typeof val === 'string') {
     for (const token of INVALID_PRESET_WIRE_TOKENS) {
@@ -3625,43 +4240,57 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkMeshcoreOpenWireIssuesRule2(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (locale !== 'en' && isMeshcoreOpenWireUiLeafKey(leafKey) && val === enVal) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule3(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (isMeshcoreOpenWireUiLeafKey(leafKey)) {
     for (const issue of meshcoreOpenWireProtocolTokenIssues(enVal, val)) {
       issues.push(`meshcoreOpenWire protocol token: ${issue}`);
     }
   }
+  return issues;
+}
 
+function openWireCompanionFalseFriends(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
-    leafKey === 'meshcoreOpenWireCompatHint' &&
-    enVal.includes('companion wire') &&
-    locale !== 'en'
+    leafKey !== 'meshcoreOpenWireCompatHint' ||
+    !enVal.includes('companion wire') ||
+    locale === 'en'
   ) {
-    for (const { re, hint } of COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES) {
-      if (re.test(val)) {
-        issues.push(`companion wire false friend: ${hint}`);
-      }
-    }
-    if (OPEN_AWARE_ENGLISH_RE.test(val)) {
-      issues.push(
-        'translate "Open-aware" — use locale wording for MeshCore Open-compatible clients',
-      );
-    }
-    if (/\br:\s*reactions\b/i.test(val)) {
-      issues.push(
-        'translate "r: reactions" — do not leave English "reactions" after wire prefix r:',
-      );
-    }
-    for (const { re, hint } of KEYED_REPLY_FALSE_FRIENDS[locale] ?? []) {
-      if (re.test(val)) {
-        issues.push(`keyed reply false friend: ${hint}`);
-      }
-    }
+    return issues;
   }
+  for (const { re, hint } of COMPANION_WIRE_PHYSICAL_FALSE_FRIEND_RES) {
+    if (re.test(val)) issues.push(`companion wire false friend: ${hint}`);
+  }
+  if (OPEN_AWARE_ENGLISH_RE.test(val)) {
+    issues.push('translate "Open-aware" — use locale wording for MeshCore Open-compatible clients');
+  }
+  if (/\br:\s*reactions\b/i.test(val)) {
+    issues.push('translate "r: reactions" — do not leave English "reactions" after wire prefix r:');
+  }
+  for (const { re, hint } of KEYED_REPLY_FALSE_FRIENDS[locale] ?? []) {
+    if (re.test(val)) issues.push(`keyed reply false friend: ${hint}`);
+  }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule5(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     leafKey === 'meshcoreOpenWireExperimentalTitle' &&
     enVal.includes('Open wire') &&
@@ -3673,7 +4302,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule6(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (leafKey === 'meshcoreGifHint' && enVal.includes('bare GIF id')) {
     if (/\bBARE GIF\b/i.test(val)) {
       issues.push('translate "bare GIF id" — do not leave English "BARE GIF"');
@@ -3684,7 +4318,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule7(ctx) {
+  const { val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     leafKey === 'meshcoreGifButtonHint' &&
     enVal.includes('MeshCore Open g: wire') &&
@@ -3692,7 +4331,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
   ) {
     issues.push('meshcoreGifButtonHint broke "MeshCore Open" — do not translate Open as a verb');
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule8(ctx) {
+  const { locale, flatKey, val, enVal, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('appPanel.') &&
@@ -3701,7 +4345,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule9(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === DEBUG_SNAPSHOT_COPIED_KEY) {
     for (const { re, hint } of DEBUG_SNAPSHOT_COPIED_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -3709,7 +4358,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule10(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (flatKey.startsWith('appPanel.') && APP_PANEL_DEBUG_SNAPSHOT_LEAF_KEYS.has(leafKey)) {
     for (const { re, hint } of DEBUG_SNAPSHOT_MIXED_EN_SNAPSHOT_RES[locale] ?? []) {
       if (re.test(val)) {
@@ -3717,7 +4371,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule11(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     locale === 'de' &&
     flatKey === 'appPanel.debugSnapshotFailed' &&
@@ -3727,7 +4386,12 @@ function checkMeshcoreOpenWireIssues(ctx) {
       'debugSnapshotFailed must use "Debug-Snapshot" consistently, not "Fehlerbehebungs-Snapshot"',
     );
   }
+  return issues;
+}
 
+function checkMeshcoreOpenWireIssuesRule12(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale === 'id' &&
     flatKey === DEBUG_SNAPSHOT_COPIED_KEY &&
@@ -3737,6 +4401,23 @@ function checkMeshcoreOpenWireIssues(ctx) {
     issues.push('debugSnapshotCopied uses English "clipboard" — use "papan klip"');
   }
   return issues;
+}
+
+function checkMeshcoreOpenWireIssues(ctx) {
+  return [
+    ...checkMeshcoreOpenWireIssuesRule1(ctx),
+    ...checkMeshcoreOpenWireIssuesRule2(ctx),
+    ...checkMeshcoreOpenWireIssuesRule3(ctx),
+    ...openWireCompanionFalseFriends(ctx),
+    ...checkMeshcoreOpenWireIssuesRule5(ctx),
+    ...checkMeshcoreOpenWireIssuesRule6(ctx),
+    ...checkMeshcoreOpenWireIssuesRule7(ctx),
+    ...checkMeshcoreOpenWireIssuesRule8(ctx),
+    ...checkMeshcoreOpenWireIssuesRule9(ctx),
+    ...checkMeshcoreOpenWireIssuesRule10(ctx),
+    ...checkMeshcoreOpenWireIssuesRule11(ctx),
+    ...checkMeshcoreOpenWireIssuesRule12(ctx),
+  ];
 }
 
 /** Pluralized hop-count leaf keys where MT/CAT frequently swaps the routing noun
@@ -3833,7 +4514,7 @@ function checkUkrainianApostropheIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMeshcoreReactionAndConnectionIssues(ctx) {
+function checkMeshcoreReactionAndConnectionIssuesRule1(ctx) {
   const { locale, flatKey, val, enVal, leafKey } = ctx;
   const issues = [];
   if (
@@ -3844,7 +4525,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
   ) {
     issues.push(`"${leafKey}" is still identical to English — translate the UI text`);
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule2(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey.startsWith('chatPanel.') &&
@@ -3856,7 +4542,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule3(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     locale !== 'en' &&
     flatKey === CONNECTION_BANNER_SERIAL_RESELECT_ACTION_KEY &&
@@ -3864,7 +4555,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
   ) {
     issues.push('"serialReselectAction" is still identical to English — translate the UI text');
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule4(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === CONNECTION_BANNER_SERIAL_RESELECT_ACTION_KEY) {
     for (const { re, hint } of SERIAL_RESELECT_ACTION_FALSE_FRIEND_RES) {
       if (re.test(val)) {
@@ -3872,7 +4568,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule5(ctx) {
+  const { locale, flatKey, val, leafKey } = ctx;
+  const issues = [];
   if (
     locale === 'it' &&
     flatKey.startsWith(ROOMS_PANEL_PREFIX) &&
@@ -3881,7 +4582,12 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
   ) {
     issues.push('roomsPanel false friend: use "sale" for MeshCore Room list, not hotel "stanze"');
   }
+  return issues;
+}
 
+function checkMeshcoreReactionAndConnectionIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === MESHCORE_DISTANCE_FILTER_HINT_KEY && enVal.includes('App → Appearance')) {
     if (locale !== 'en' && UNTRANSLATED_APP_APPEARANCE_NAV_RE.test(val)) {
       issues.push(
@@ -3901,12 +4607,23 @@ function checkMeshcoreReactionAndConnectionIssues(ctx) {
   return issues;
 }
 
+function checkMeshcoreReactionAndConnectionIssues(ctx) {
+  return [
+    ...checkMeshcoreReactionAndConnectionIssuesRule1(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule2(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule3(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule4(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule5(ctx),
+    ...checkMeshcoreReactionAndConnectionIssuesRule6(ctx),
+  ];
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkMeshcorePathHashIssues(ctx) {
-  const { locale, flatKey, val, enVal, leafKey } = ctx;
+function checkMeshcorePathHashIssuesRule1(ctx) {
+  const { val, leafKey } = ctx;
   const issues = [];
 
   if (MESHCORE_PATH_HASH_MODE_BYTE_LEAF_KEYS.has(leafKey)) {
@@ -3919,6 +4636,12 @@ function checkMeshcorePathHashIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkMeshcorePathHashIssuesRule2(ctx) {
+  const { locale, val, enVal, leafKey } = ctx;
+  const issues = [];
 
   if (MESHCORE_PATH_HASH_MODE_SHORT_LEAF_KEYS.has(leafKey)) {
     if (MESHCORE_PATH_HASH_SHORT_PAREN_ONLY_RE.test(val)) {
@@ -3930,6 +4653,12 @@ function checkMeshcorePathHashIssues(ctx) {
       );
     }
   }
+  return issues;
+}
+
+function checkMeshcorePathHashIssuesRule3(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
 
   if (flatKey === MESHCORE_PATH_HASH_HINT_KEY && enVal.includes(MESHCORE_PATH_HASH_CLI_LITERAL)) {
     if (!val.includes(MESHCORE_PATH_HASH_CLI_LITERAL)) {
@@ -3940,6 +4669,14 @@ function checkMeshcorePathHashIssues(ctx) {
   }
 
   return issues;
+}
+
+function checkMeshcorePathHashIssues(ctx) {
+  return [
+    ...checkMeshcorePathHashIssuesRule1(ctx),
+    ...checkMeshcorePathHashIssuesRule2(ctx),
+    ...checkMeshcorePathHashIssuesRule3(ctx),
+  ];
 }
 
 /**
@@ -3962,7 +4699,7 @@ function checkReticulumDefaultHubKeyIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkRepeatersCliIssues(ctx) {
+function checkRepeatersCliIssuesRule1(ctx) {
   const { locale, flatKey, val } = ctx;
   const issues = [];
   if (flatKey === REPEATERS_CLI_MULTI_HOP_HINT_KEY && locale !== 'en') {
@@ -3975,6 +4712,12 @@ function checkRepeatersCliIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkRepeatersCliIssuesRule2(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === REPEATERS_CLI_AUTO_PING_FAILED_KEY && locale !== 'en') {
     for (const { re, hint } of REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS[locale] ?? []) {
       if (re.test(val)) {
@@ -3982,6 +4725,12 @@ function checkRepeatersCliIssues(ctx) {
       }
     }
   }
+  return issues;
+}
+
+function checkRepeatersCliIssuesRule3(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY) {
     if (locale !== 'en' && val.trim() === REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN) {
       issues.push('cliDangerConfirmAction must be translated, not left as English');
@@ -3993,6 +4742,14 @@ function checkRepeatersCliIssues(ctx) {
     }
   }
   return issues;
+}
+
+function checkRepeatersCliIssues(ctx) {
+  return [
+    ...checkRepeatersCliIssuesRule1(ctx),
+    ...checkRepeatersCliIssuesRule2(ctx),
+    ...checkRepeatersCliIssuesRule3(ctx),
+  ];
 }
 
 const RETICULUM_MAP_REACHABLE_KEY = 'reticulumMap.reachable';
@@ -4019,17 +4776,18 @@ const RETICULUM_MAP_BACKBONE_FALSE_FRIENDS = [
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkReticulumMapIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+function checkReticulumMapIssuesRule1(ctx) {
+  const { flatKey, val } = ctx;
   const issues = [];
-  if (!flatKey.startsWith('reticulumMap.') && !flatKey.startsWith('reticulumRmapDiscovery.')) {
-    return issues;
-  }
-
   if (flatKey === RETICULUM_MAP_OPEN_GLOBAL_KEY && /^\[.*\?]$/.test(val)) {
     issues.push('reticulumMap.openGlobalMap must not use CAT […?] placeholder');
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule2(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     (flatKey === RETICULUM_MAP_OPEN_GLOBAL_KEY ||
       flatKey === 'connectionPanel.reticulumRmap.openGlobalMap' ||
@@ -4040,14 +4798,24 @@ function checkReticulumMapIssues(ctx) {
       issues.push('openGlobalMap must name the global map, not a yes/no attribute question');
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule3(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (
     (flatKey === 'reticulumRmapDiscovery.hint' || flatKey === 'reticulumMap.empty.hint') &&
     /(?:discoverable|detectable)\s*=\s*yes|descobr[ií]vel\s*=\s*sim/i.test(val)
   ) {
     issues.push('RMAP hint must describe publishing in plain language, not raw discoverable=yes');
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule4(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === 'connectionPanel.reticulumIdentity.importLabel' &&
     enVal.includes('BIP-39') &&
@@ -4056,13 +4824,23 @@ function checkReticulumMapIssues(ctx) {
   ) {
     issues.push('reticulumIdentity.importLabel must retain BIP-39 when English does');
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === 'connectionPanel.reticulumIdentity.invalidMnemonic' && locale === 'ja') {
     if (/12\s*文字/.test(val)) {
       issues.push('invalidMnemonic in ja must use 12 words (語), not 12 characters (文字)');
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule6(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === RETICULUM_MAP_REACHABLE_KEY && locale !== 'en') {
     if (val === enVal) {
       issues.push('reticulumMap.reachable must be translated');
@@ -4073,11 +4851,21 @@ function checkReticulumMapIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule7(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (flatKey === RETICULUM_MAP_HEARD_ONLY_KEY && locale !== 'en' && val === enVal) {
     issues.push('reticulumMap.heardOnly must be translated');
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule8(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     flatKey === RETICULUM_MAP_OPEN_NODE_ARIA_KEY &&
     enVal.includes('{{name}}') &&
@@ -4093,7 +4881,12 @@ function checkReticulumMapIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule9(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === RETICULUM_MAP_FILTER_BACKBONE_KEY) {
     for (const { re, hint } of RETICULUM_MAP_BACKBONE_FALSE_FRIENDS) {
       if (re.test(val)) {
@@ -4101,7 +4894,12 @@ function checkReticulumMapIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkReticulumMapIssuesRule10(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     flatKey === 'reticulumRmapDiscovery.gpsRequiredTitle' &&
     locale === 'ru' &&
@@ -4113,6 +4911,24 @@ function checkReticulumMapIssues(ctx) {
   return issues;
 }
 
+function checkReticulumMapIssues(ctx) {
+  const { flatKey } = ctx;
+  if (!flatKey.startsWith('reticulumMap.') && !flatKey.startsWith('reticulumRmapDiscovery.'))
+    return [];
+  return [
+    ...checkReticulumMapIssuesRule1(ctx),
+    ...checkReticulumMapIssuesRule2(ctx),
+    ...checkReticulumMapIssuesRule3(ctx),
+    ...checkReticulumMapIssuesRule4(ctx),
+    ...checkReticulumMapIssuesRule5(ctx),
+    ...checkReticulumMapIssuesRule6(ctx),
+    ...checkReticulumMapIssuesRule7(ctx),
+    ...checkReticulumMapIssuesRule8(ctx),
+    ...checkReticulumMapIssuesRule9(ctx),
+    ...checkReticulumMapIssuesRule10(ctx),
+  ];
+}
+
 /**
  * Post-v5.25.0 false friends: backbone anatomy, Nomad “left”, hub→backbone picker,
  * zh recipes tabAll, ja spaced I2P.
@@ -4120,18 +4936,23 @@ function checkReticulumMapIssues(ctx) {
  * @returns {string[]}
  */
 /** English "backbone" (network) — not spine/anatomy. */
-export const BACKBONE_ANATOMY_FALSE_FRIENDS = [
+const BACKBONE_ANATOMY_FALSE_FRIENDS = [
   { re: /colonne vertébrale/i, hint: 'use network backbone, not spine/anatomy' },
   { re: /spina dorsale/i, hint: 'use network backbone (dorsale), not spine anatomy' },
   { re: /tulang punggung/i, hint: 'use backbone (network), not spine anatomy' },
   { re: /\bkręgosłup/i, hint: 'use magistrala/sieć szkieletowa, not kręgosłup' },
 ];
 
-function checkPreReleaseLocaleAccuracyIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
+function checkPreReleaseLocaleAccuracyIssuesRule1(ctx) {
+  const { locale } = ctx;
   const issues = [];
   if (locale === 'en') return issues;
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule2(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (/\bbackbone/i.test(enVal) || /\bbackbone/i.test(flatKey)) {
     for (const { re, hint } of BACKBONE_ANATOMY_FALSE_FRIENDS) {
       if (re.test(val)) {
@@ -4139,7 +4960,12 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
       }
     }
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule3(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
   if (
     flatKey === 'connectionPanel.reticulumInterfaces.defaultHubsPickerTitle' &&
     /network hub|netzwerk-hub|concentrator|集线器|ネットワークハブ|hub jaringan|ağ hub/i.test(val)
@@ -4148,7 +4974,12 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
       'defaultHubsPickerTitle must use backbone wording aligned with addDefaultHubs, not network hubs',
     );
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule4(ctx) {
+  const { flatKey, val, enVal } = ctx;
+  const issues = [];
   if (
     (flatKey === 'nomadNetwork.pageLoadingCountdown' ||
       flatKey === 'nomadNetwork.pageLoadingRetryCountdown' ||
@@ -4165,11 +4996,21 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
       );
     }
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule5(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (flatKey === 'nodeListPanel.tabAll' && locale === 'zh' && /食谱/.test(val)) {
     issues.push('nodeListPanel.tabAll must mean all nodes, not recipes (食谱)');
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule6(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     (flatKey === 'connectionPanel.reticulumInterfaces.purpose.i2p' ||
       flatKey === 'connectionPanel.reticulumInterfaces.backboneEnableGuidanceBody' ||
@@ -4179,7 +5020,12 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
   ) {
     issues.push(`${flatKey}: keep I2P as contiguous token (not "I 2 P")`);
   }
+  return issues;
+}
 
+function checkPreReleaseLocaleAccuracyIssuesRule7(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
   if (
     flatKey === 'networkPanel.reticulumStackSettings.pathMediumPreference' &&
     locale === 'es' &&
@@ -4191,11 +5037,23 @@ function checkPreReleaseLocaleAccuracyIssues(ctx) {
   return issues;
 }
 
+function checkPreReleaseLocaleAccuracyIssues(ctx) {
+  return [
+    ...checkPreReleaseLocaleAccuracyIssuesRule1(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule2(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule3(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule4(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule5(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule6(ctx),
+    ...checkPreReleaseLocaleAccuracyIssuesRule7(ctx),
+  ];
+}
+
 /** RRC chat rooms — not hotel rooms; slash commands must stay wire tokens. */
-export const RRC_PREFIX = 'rrc.';
+const RRC_PREFIX = 'rrc.';
 
 /** Reuse MeshCore room false-friend patterns for RRC chat-room wording. */
-export const RRC_ROOM_FALSE_FRIENDS = {
+const RRC_ROOM_FALSE_FRIENDS = {
   ...ROOMS_PANEL_FALSE_FRIENDS,
   de: [
     ...(ROOMS_PANEL_FALSE_FRIENDS.de ?? []),
@@ -4212,7 +5070,7 @@ export const RRC_ROOM_FALSE_FRIENDS = {
 };
 
 /** Known MT garbage for specific RRC leaves. */
-export const RRC_LEAF_FORBIDDEN = {
+const RRC_LEAF_FORBIDDEN = {
   'rrc.listedRooms': [
     { re: /^Anuncio$/i, hint: 'use "Listed"/sala pública list label, not "Anuncio"' },
     { re: /Veröffentlicht/i, hint: 'use "Listed"/listed rooms, not "Veröffentlicht am"' },
@@ -4227,7 +5085,7 @@ export const RRC_LEAF_FORBIDDEN = {
 };
 
 /** IRC-style RRC commands that must stay verbatim in help/UI copy. */
-export const RRC_SLASH_COMMAND_TOKENS = new Set([
+const RRC_SLASH_COMMAND_TOKENS = new Set([
   '/nick',
   '/join',
   '/part',
@@ -4246,7 +5104,7 @@ export const RRC_SLASH_COMMAND_TOKENS = new Set([
  * @param {string} enVal
  * @returns {string[]}
  */
-export function extractSlashCommandTokens(enVal) {
+function extractSlashCommandTokens(enVal) {
   const tokens = enVal.match(/\/[a-z][a-z0-9_-]*/gi) ?? [];
   return [
     ...new Set(tokens.map((t) => t.toLowerCase()).filter((t) => RRC_SLASH_COMMAND_TOKENS.has(t))),
@@ -4258,7 +5116,7 @@ export function extractSlashCommandTokens(enVal) {
  * @param {string} haystack
  * @param {string} token lowercase slash token like "/list"
  */
-export function localeContainsSlashToken(haystack, token) {
+function localeContainsSlashToken(haystack, token) {
   const lower = haystack.toLowerCase();
   let from = 0;
   while (from <= lower.length) {
@@ -4388,7 +5246,7 @@ function checkMeshcoreNodeHealthAndPubkeyIssues(ctx) {
 }
 
 /** High-visibility RRC error/empty-state leaves that must not stay English. */
-export const RRC_MUST_TRANSLATE_LEAF_KEYS = new Set([
+const RRC_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'connectManual',
   'connectFailed',
   'disconnectFailed',
@@ -4402,7 +5260,7 @@ export const RRC_MUST_TRANSLATE_LEAF_KEYS = new Set([
 ]);
 
 /** gamesPanel leaves that must be translated (not left identical to English). */
-export const GAMES_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
+const GAMES_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'resign',
   'resignAria',
   'resignConfirmTitle',
@@ -4419,13 +5277,13 @@ export const GAMES_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
   'idleExpiryNotice',
 ]);
 
-export const GAMES_PANEL_RESIGN_LEAF_KEYS = new Set([
+const GAMES_PANEL_RESIGN_LEAF_KEYS = new Set([
   'resign',
   'resignAria',
   'resignConfirmTitle',
   'resignConfirmMessage',
 ]);
-export const GAMES_PANEL_DRAW_LEAF_KEYS = new Set([
+const GAMES_PANEL_DRAW_LEAF_KEYS = new Set([
   'draw',
   'offerDraw',
   'acceptDraw',
@@ -4434,7 +5292,7 @@ export const GAMES_PANEL_DRAW_LEAF_KEYS = new Set([
   'acceptDrawAria',
   'declineDrawAria',
 ]);
-export const GAMES_PANEL_CHALLENGE_LEAF_KEYS = new Set([
+const GAMES_PANEL_CHALLENGE_LEAF_KEYS = new Set([
   'challenge',
   'challengeAria',
   'challengeAppAria',
@@ -4443,11 +5301,11 @@ export const GAMES_PANEL_CHALLENGE_LEAF_KEYS = new Set([
   'sendChallengeAria',
   'newChallenge',
 ]);
-export const GAMES_PANEL_OPPONENT_LEAF_KEYS = new Set(['opponentLabel']);
-export const GAMES_PANEL_THREEFOLD_LEAF_KEYS = new Set(['claimThreefold', 'claimThreefoldAria']);
+const GAMES_PANEL_OPPONENT_LEAF_KEYS = new Set(['opponentLabel']);
+const GAMES_PANEL_THREEFOLD_LEAF_KEYS = new Set(['claimThreefold', 'claimThreefoldAria']);
 
 /** English concepts that a gamesPanel false-friend regex may apply to. */
-export function gamesPanelEnglishConcepts(leafKey, enVal) {
+function gamesPanelEnglishConcepts(leafKey, enVal) {
   const concepts = new Set();
   if (GAMES_PANEL_RESIGN_LEAF_KEYS.has(leafKey) || /^\s*resign\b/i.test(enVal)) {
     concepts.add('resign');
@@ -4471,7 +5329,7 @@ export function gamesPanelEnglishConcepts(leafKey, enVal) {
 }
 
 /** Game-term false friends: resign≠job, draw≠sketch/lottery, challenge≠difficulty, threefold≠reward. */
-export const GAMES_PANEL_FALSE_FRIENDS = {
+const GAMES_PANEL_FALSE_FRIENDS = {
   de: [
     {
       concept: 'resign',
@@ -4622,7 +5480,7 @@ const AUDIT_MUST_TRANSLATE_KEYS = new Set([
 ]);
 
 /** Device → Telemetry env history / empty-state keys (#1467–#1472 audit). */
-export const ENVIRONMENT_TELEMETRY_MUST_TRANSLATE_KEYS = new Set([
+const ENVIRONMENT_TELEMETRY_MUST_TRANSLATE_KEYS = new Set([
   'appPanel.clearEnvironmentHistory',
   'appPanel.clearEnvironmentHistoryConfirm',
   'appPanel.dangerZoneEnvironmentHistoryHeading',
@@ -4831,8 +5689,8 @@ export function localeStringQualityIssues({ locale, flatKey, val, enVal }) {
 }
 
 /** nodeListPanel MQTT connection tooltips added with hybrid RF+MQTT path icons. */
-export const NODE_LIST_PANEL_MQTT_CONNECTED_KEY = 'nodeListPanel.mqttConnectedTooltip';
-export const NODE_LIST_PANEL_RF_MQTT_CONNECTED_KEY = 'nodeListPanel.connectedViaRfAndMqttTooltip';
+const NODE_LIST_PANEL_MQTT_CONNECTED_KEY = 'nodeListPanel.mqttConnectedTooltip';
+const NODE_LIST_PANEL_RF_MQTT_CONNECTED_KEY = 'nodeListPanel.connectedViaRfAndMqttTooltip';
 
 /**
  * Cross-key checks for nodeListPanel connection tooltips (mqtt-only vs RF+MQTT).

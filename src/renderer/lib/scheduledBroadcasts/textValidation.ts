@@ -7,7 +7,7 @@ import {
 } from '../chatComposerLimits';
 
 /** RRC hub body budget used by ChatComposer / rrcSendBounded (UTF-8 bytes). */
-export const RRC_HUB_BODY_LIMIT = 1800;
+const RRC_HUB_BODY_LIMIT = 1800;
 
 export interface TextLimitFailure {
   kind: ScheduledBroadcastTarget['kind'];

@@ -11,7 +11,7 @@ export const POWER_RESUME_RECOVERY_DELAY_MS = 4_000;
 export const POWER_RESUME_MESHCORE_STAGGER_MS = 8_000;
 
 /** Additional delay after MeshCore before MeshCom wake reconnect (~12s). */
-export const POWER_RESUME_MESHCOM_STAGGER_MS = 12_000;
+const POWER_RESUME_MESHCOM_STAGGER_MS = 12_000;
 
 export interface PowerRecoveryCallbacks {
   onPowerSuspend: () => void;
@@ -49,7 +49,7 @@ export interface UsePowerRecoveryOptions {
   hiddenProtocols?: readonly MeshProtocol[];
 }
 
-interface LegacyPowerRecoveryOptions {
+export interface LegacyPowerRecoveryOptions {
   meshtastic: PowerRecoveryCallbacks;
   meshcore: PowerRecoveryCallbacks;
 }

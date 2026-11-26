@@ -134,6 +134,207 @@ function boolToDisplayOn(dispOff: unknown): 'on' | 'off' | undefined {
   return undefined;
 }
 
+type MeshcomStringAccumKey =
+  | 'country'
+  | 'maxv'
+  | 'fwver'
+  | 'utcoff'
+  | 'txPower'
+  | 'freqMhz'
+  | 'ssid'
+  | 'ownip'
+  | 'owngw'
+  | 'ownms'
+  | 'extudpip'
+  | 'lat'
+  | 'lon'
+  | 'alt'
+  | 'postime'
+  | 'symid'
+  | 'symcd'
+  | 'buildDate';
+
+type MeshcomNumberAccumKey =
+  | 'battPercent'
+  | 'battVoltage'
+  | 'temperatureC'
+  | 'temperatureOutC'
+  | 'humidityPct'
+  | 'pressureHpa'
+  | 'gasResistance'
+  | 'co2Ppm';
+
+function setStringField(
+  accum: MeshcomDeviceSettingsAccum,
+  key: MeshcomStringAccumKey,
+  raw: unknown,
+): void {
+  const value = asString(raw);
+  if (value) accum[key] = value;
+}
+
+function setOnOffField(
+  accum: MeshcomDeviceSettingsAccum,
+  key: MeshcomOnOffField,
+  raw: unknown,
+): void {
+  const value = onOff(raw);
+  if (value) accum[key] = value;
+}
+
+function setNumberField(
+  accum: MeshcomDeviceSettingsAccum,
+  key: MeshcomNumberAccumKey,
+  raw: unknown,
+): void {
+  const value = asFiniteNumber(raw);
+  if (value != null) accum[key] = value;
+}
+
+function mergeMeshcomBleInfo(
+  accum: MeshcomDeviceSettingsAccum,
+  doc: Record<string, unknown>,
+): void {
+  const call = asString(doc.CALL);
+  if (call) accum.call = normalizeMeshcomCallsign(call) || call;
+  setStringField(accum, 'country', doc.CTRY);
+  const bpin = asString(doc.BPIN);
+  if (bpin != null) accum.btCode = bpin.padStart(6, '0').slice(-6);
+  const ble = asString(doc.BLE);
+  if (ble === 'long' || ble === 'short') accum.ble = ble;
+  setStringField(accum, 'maxv', doc.MAXV);
+  setOnOffField(accum, 'boost', doc.BOOST);
+  setStringField(accum, 'fwver', doc.FWVER);
+  setNumberField(accum, 'battPercent', doc.BATP);
+  setNumberField(accum, 'battVoltage', doc.BATV);
+  const groups: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const g = asString(doc[`GCB${i}`]);
+    if (g && g !== '0') groups.push(g);
+  }
+  if (groups.length > 0) accum.groups = groups.join(';');
+}
+
+const BLE_WEATHER_NUMBER_FIELDS: readonly (readonly [MeshcomNumberAccumKey, string])[] = [
+  ['temperatureC', 'TEMP'],
+  ['temperatureOutC', 'TOUT'],
+  ['humidityPct', 'HUM'],
+  ['gasResistance', 'GAS'],
+  ['co2Ppm', 'CO2'],
+];
+
+function mergeMeshcomBleWeather(
+  accum: MeshcomDeviceSettingsAccum,
+  doc: Record<string, unknown>,
+): void {
+  for (const [field, key] of BLE_WEATHER_NUMBER_FIELDS) {
+    setNumberField(accum, field, doc[key]);
+  }
+  const press = asFiniteNumber(doc.PRES) ?? asFiniteNumber(doc.QNH);
+  if (press != null) accum.pressureHpa = press;
+}
+
+const BLE_NODE_ON_OFF_FIELDS: readonly (readonly [MeshcomOnOffField, string])[] = [
+  ['gateway', 'GW'],
+  ['webserver', 'WS'],
+  ['button', 'BTN'],
+  ['mesh', 'MSH'],
+  ['gps', 'GPS'],
+  ['track', 'TRACK'],
+  ['nomsgall', 'NOALL'],
+];
+
+const BLE_NODE_STRING_FIELDS: readonly (readonly [MeshcomStringAccumKey, string])[] = [
+  ['utcoff', 'UTCOF'],
+  ['txPower', 'TXP'],
+  ['freqMhz', 'MQRG'],
+];
+
+function mergeMeshcomBleNodeSettings(
+  accum: MeshcomDeviceSettingsAccum,
+  doc: Record<string, unknown>,
+): void {
+  for (const [field, key] of BLE_NODE_ON_OFF_FIELDS) setOnOffField(accum, field, doc[key]);
+  for (const [field, key] of BLE_NODE_STRING_FIELDS) setStringField(accum, field, doc[key]);
+  const disp = boolToDisplayOn(doc.DISP);
+  if (disp) accum.display = disp;
+}
+
+function mergeMeshcomBleWifiSettings(
+  accum: MeshcomDeviceSettingsAccum,
+  doc: Record<string, unknown>,
+): void {
+  setStringField(accum, 'ssid', doc.SSID);
+  setOnOffField(accum, 'wifiap', doc.AP);
+}
+
+function mergeMeshcomBleIpSettings(
+  accum: MeshcomDeviceSettingsAccum,
+  doc: Record<string, unknown>,
+): void {
+  setStringField(accum, 'ownip', doc.OWNIP);
+  setStringField(accum, 'owngw', doc.OWNGW);
+  setStringField(accum, 'ownms', doc.OWNMS);
+  setOnOffField(accum, 'extudp', doc.EUDP);
+  setStringField(accum, 'extudpip', doc.EUDPIP);
+}
+
+function mergeMeshcomBleGpsSettings(
+  accum: MeshcomDeviceSettingsAccum,
+  doc: Record<string, unknown>,
+): void {
+  setStringField(accum, 'lat', doc.LAT);
+  setStringField(accum, 'lon', doc.LON);
+  setStringField(accum, 'alt', doc.ALT);
+  setStringField(accum, 'postime', doc.RATE);
+}
+
+function mergeMeshcomBleAprsSettings(
+  accum: MeshcomDeviceSettingsAccum,
+  doc: Record<string, unknown>,
+): void {
+  const atxt = asString(doc.ATXT);
+  if (atxt && atxt !== 'none') accum.aprscomment = atxt;
+  const name = asString(doc.NAME);
+  if (name) accum.operatorName = name.slice(0, 19);
+  setStringField(accum, 'symid', doc.SYMID);
+  setStringField(accum, 'symcd', doc.SYMCD);
+}
+
+function mergeMeshcomBleSensorSettings(
+  accum: MeshcomDeviceSettingsAccum,
+  doc: Record<string, unknown>,
+): void {
+  setOnOffField(accum, 'bme', doc.BME);
+  setOnOffField(accum, 'bmp', doc.BMP);
+  setOnOffField(accum, 'onewire', doc.OW);
+}
+
+function mergeMeshcomBleBuildDate(
+  accum: MeshcomDeviceSettingsAccum,
+  doc: Record<string, unknown>,
+): void {
+  // Firmware companion JSON: `{"TYP":"IS1","BDATE":"YYYYMMDD-HHMMSS"}` (sendInfo).
+  setStringField(accum, 'buildDate', doc.BDATE);
+}
+
+const MESHCOM_BLE_HANDLERS: Readonly<
+  Partial<Record<string, (accum: MeshcomDeviceSettingsAccum, doc: Record<string, unknown>) => void>>
+> = {
+  I: mergeMeshcomBleInfo,
+  W: mergeMeshcomBleWeather,
+  SN: mergeMeshcomBleNodeSettings,
+  SN1: (accum, doc) => {
+    setOnOffField(accum, 'volt', doc.VOLT);
+  },
+  SW: mergeMeshcomBleWifiSettings,
+  S2: mergeMeshcomBleIpSettings,
+  G: mergeMeshcomBleGpsSettings,
+  SA: mergeMeshcomBleAprsSettings,
+  SE: mergeMeshcomBleSensorSettings,
+  IS1: mergeMeshcomBleBuildDate,
+};
+
 /** Merge one BLE companion JSON object (`{"TYP":"I",...}`) into the accumulator. */
 export function mergeMeshcomBleSettingsJson(
   accum: MeshcomDeviceSettingsAccum,
@@ -146,195 +347,84 @@ export function mergeMeshcomBleSettingsJson(
     accum.complete = true;
     return { confFin: true };
   }
-
-  switch (typ) {
-    case 'I': {
-      const call = asString(doc.CALL);
-      if (call) accum.call = normalizeMeshcomCallsign(call) || call;
-      const ctry = asString(doc.CTRY);
-      if (ctry) accum.country = ctry;
-      const bpin = asString(doc.BPIN);
-      if (bpin != null) accum.btCode = bpin.padStart(6, '0').slice(-6);
-      const ble = asString(doc.BLE);
-      if (ble === 'long' || ble === 'short') accum.ble = ble;
-      const maxv = asString(doc.MAXV);
-      if (maxv) accum.maxv = maxv;
-      const boost = onOff(doc.BOOST);
-      if (boost) accum.boost = boost;
-      const fw = asString(doc.FWVER);
-      if (fw) accum.fwver = fw;
-      const batp = asFiniteNumber(doc.BATP);
-      if (batp != null) accum.battPercent = batp;
-      const batv = asFiniteNumber(doc.BATV);
-      if (batv != null) accum.battVoltage = batv;
-      const groups: string[] = [];
-      for (let i = 0; i < 6; i++) {
-        const g = asString(doc[`GCB${i}`]);
-        if (g && g !== '0') groups.push(g);
-      }
-      if (groups.length > 0) accum.groups = groups.join(';');
-      break;
-    }
-    case 'W': {
-      const temp = asFiniteNumber(doc.TEMP);
-      if (temp != null) accum.temperatureC = temp;
-      const tout = asFiniteNumber(doc.TOUT);
-      if (tout != null) accum.temperatureOutC = tout;
-      const hum = asFiniteNumber(doc.HUM);
-      if (hum != null) accum.humidityPct = hum;
-      const press = asFiniteNumber(doc.PRES) ?? asFiniteNumber(doc.QNH);
-      if (press != null) accum.pressureHpa = press;
-      const gas = asFiniteNumber(doc.GAS);
-      if (gas != null) accum.gasResistance = gas;
-      const co2 = asFiniteNumber(doc.CO2);
-      if (co2 != null) accum.co2Ppm = co2;
-      break;
-    }
-    case 'SN': {
-      const gw = onOff(doc.GW);
-      if (gw) accum.gateway = gw;
-      const ws = onOff(doc.WS);
-      if (ws) accum.webserver = ws;
-      const disp = boolToDisplayOn(doc.DISP);
-      if (disp) accum.display = disp;
-      const btn = onOff(doc.BTN);
-      if (btn) accum.button = btn;
-      const msh = onOff(doc.MSH);
-      if (msh) accum.mesh = msh;
-      const gps = onOff(doc.GPS);
-      if (gps) accum.gps = gps;
-      const track = onOff(doc.TRACK);
-      if (track) accum.track = track;
-      const utc = asString(doc.UTCOF);
-      if (utc) accum.utcoff = utc;
-      const txp = asString(doc.TXP);
-      if (txp) accum.txPower = txp;
-      const qrg = asString(doc.MQRG);
-      if (qrg) accum.freqMhz = qrg;
-      const noall = onOff(doc.NOALL);
-      if (noall) accum.nomsgall = noall;
-      break;
-    }
-    case 'SN1': {
-      const volt = onOff(doc.VOLT);
-      if (volt) accum.volt = volt;
-      break;
-    }
-    case 'SW': {
-      const ssid = asString(doc.SSID);
-      if (ssid) accum.ssid = ssid;
-      const ap = onOff(doc.AP);
-      if (ap) accum.wifiap = ap;
-      break;
-    }
-    case 'S2': {
-      const ownip = asString(doc.OWNIP);
-      if (ownip) accum.ownip = ownip;
-      const owngw = asString(doc.OWNGW);
-      if (owngw) accum.owngw = owngw;
-      const ownms = asString(doc.OWNMS);
-      if (ownms) accum.ownms = ownms;
-      const eudp = onOff(doc.EUDP);
-      if (eudp) accum.extudp = eudp;
-      const eudpip = asString(doc.EUDPIP);
-      if (eudpip) accum.extudpip = eudpip;
-      break;
-    }
-    case 'G': {
-      const lat = asString(doc.LAT);
-      if (lat) accum.lat = lat;
-      const lon = asString(doc.LON);
-      if (lon) accum.lon = lon;
-      const alt = asString(doc.ALT);
-      if (alt) accum.alt = alt;
-      const rate = asString(doc.RATE);
-      if (rate) accum.postime = rate;
-      break;
-    }
-    case 'SA': {
-      const atxt = asString(doc.ATXT);
-      if (atxt && atxt !== 'none') accum.aprscomment = atxt;
-      const name = asString(doc.NAME);
-      if (name) accum.operatorName = name.slice(0, 19);
-      const symid = asString(doc.SYMID);
-      if (symid) accum.symid = symid;
-      const symcd = asString(doc.SYMCD);
-      if (symcd) accum.symcd = symcd;
-      break;
-    }
-    case 'SE': {
-      const bme = onOff(doc.BME);
-      if (bme) accum.bme = bme;
-      const bmp = onOff(doc.BMP);
-      if (bmp) accum.bmp = bmp;
-      const ow = onOff(doc.OW);
-      if (ow) accum.onewire = ow;
-      break;
-    }
-    case 'IS1': {
-      // Firmware companion JSON: `{"TYP":"IS1","BDATE":"YYYYMMDD-HHMMSS"}` (sendInfo).
-      const bdate = asString(doc.BDATE);
-      if (bdate) accum.buildDate = bdate;
-      break;
-    }
-    default:
-      break;
-  }
+  const handler = MESHCOM_BLE_HANDLERS[typ];
+  if (handler) handler(accum, doc);
   return { confFin: false };
 }
 
-/** Parse concatenated Serial `--info` console text into the accumulator. */
-export function mergeMeshcomSerialInfoText(accum: MeshcomDeviceSettingsAccum, text: string): void {
+type MeshcomOnOffField =
+  | 'boost'
+  | 'volt'
+  | 'wifiap'
+  | 'display'
+  | 'button'
+  | 'gps'
+  | 'track'
+  | 'gateway'
+  | 'webserver'
+  | 'mesh'
+  | 'nomsgall'
+  | 'extudp'
+  | 'bme'
+  | 'bmp'
+  | 'onewire';
+
+type MeshcomStringField =
+  'country' | 'maxv' | 'utcoff' | 'lat' | 'lon' | 'alt' | 'postime' | 'symid' | 'symcd' | 'ownip';
+
+const SERIAL_ON_OFF_PATTERNS: readonly (readonly [MeshcomOnOffField, RegExp])[] = [
+  ['display', /\.\.\.DISPLAY\s+(on|off)/i],
+  ['mesh', /\.\.\.MESH\s+(on|off)/i],
+  ['nomsgall', /\.\.\.NOMSGALL\s+(on|off)/i],
+  ['button', /\.\.\.BUTTON\s+\(\d+\)\s+(on|off)/i],
+  ['extudp', /\.\.\.EXTUDP\s+(on|off)/i],
+  ['boost', /RXBOOST\s+(on|off)/i],
+  ['gps', /\.\.\.GPS\s+(on|off)/i],
+  ['track', /\.\.\.TRACK\s+(on|off)/i],
+  ['gateway', /\.\.\.GATEWAY\s+(on|off)/i],
+  ['webserver', /\.\.\.Webserver\s+(on|off)/i],
+  ['bme', /\.\.\.BME\s+(on|off)/i],
+  ['bmp', /\.\.\.BMP\s+(on|off)/i],
+  ['onewire', /\.\.\.(?:ONEWIRE|OW)\s+(on|off)/i],
+];
+
+const SERIAL_STRING_PATTERNS: readonly (readonly [MeshcomStringField, readonly RegExp[]])[] = [
+  ['country', [/\.\.\.CTRY\s+(\S+)/i]],
+  ['maxv', [/MAXV\s+([\d.]+)/i]],
+  ['utcoff', [/UTC-OFF\s+([+-]?\d+\.?\d*)/i]],
+  ['lat', [/LAT\s+([+-]?\d+\.?\d*)/i, /\.\.\.LAT\s+([+-]?\d+\.?\d*)/i]],
+  ['lon', [/LON\s+([+-]?\d+\.?\d*)/i, /\.\.\.LON\s+([+-]?\d+\.?\d*)/i]],
+  ['alt', [/ALT\s+([+-]?\d+)/i, /\.\.\.ALT\s+([+-]?\d+)/i]],
+  ['postime', [/POSTIME\s+(\d+)/i, /POS.?TIME\s+(\d+)/i]],
+  ['symid', [/SYMID\s+([/\\])/i, /SYM.?ID\s+([/\\])/i]],
+  ['symcd', [/SYMCD\s+(\S)/i, /SYM.?CD\s+(\S)/i]],
+  ['ownip', [/OWNIP\s+(\d+\.\d+\.\d+\.\d+)/i, /IP:\s*(\d+\.\d+\.\d+\.\d+)/i]],
+];
+
+function firstCapture(text: string, patterns: readonly RegExp[]): string | undefined {
+  for (const pattern of patterns) {
+    const value = pattern.exec(text)?.[1];
+    if (value) return value;
+  }
+  return undefined;
+}
+
+function mergeMeshcomSerialIdentityText(accum: MeshcomDeviceSettingsAccum, text: string): void {
   const call = /\.\.\.Call:\s*<([^>]+)>/i.exec(text) ?? /Call:\s*<([^>]+)>/i.exec(text);
   if (call?.[1]) {
     const n = normalizeMeshcomCallsign(call[1]);
     if (n) accum.call = n;
   }
-  const ctry = /\.\.\.CTRY\s+(\S+)/i.exec(text);
-  if (ctry?.[1]) accum.country = ctry[1];
   const bt = /\.\.\.BTCODE\s+(\d+)/i.exec(text);
   if (bt?.[1]) accum.btCode = bt[1].padStart(6, '0').slice(-6);
   const ble = /\.\.\.BLE\s*:\s*(long|short)/i.exec(text);
   if (ble?.[1] === 'long' || ble?.[1] === 'short') accum.ble = ble[1];
-  const display = /\.\.\.DISPLAY\s+(on|off)/i.exec(text);
-  if (display?.[1] === 'on' || display?.[1] === 'off') accum.display = display[1];
-  const mesh = /\.\.\.MESH\s+(on|off)/i.exec(text);
-  if (mesh?.[1] === 'on' || mesh?.[1] === 'off') accum.mesh = mesh[1];
-  const nomsg = /\.\.\.NOMSGALL\s+(on|off)/i.exec(text);
-  if (nomsg?.[1] === 'on' || nomsg?.[1] === 'off') accum.nomsgall = nomsg[1];
-  const button = /\.\.\.BUTTON\s+\(\d+\)\s+(on|off)/i.exec(text);
-  if (button?.[1] === 'on' || button?.[1] === 'off') accum.button = button[1];
-  const extudp = /\.\.\.EXTUDP\s+(on|off)/i.exec(text);
-  if (extudp?.[1] === 'on' || extudp?.[1] === 'off') accum.extudp = extudp[1];
-  const extip = /\.\.\.EXT IP\s+(\S+)/i.exec(text);
-  if (extip?.[1] && extip[1] !== '...') accum.extudpip = extip[1];
-  const utc = /UTC-OFF\s+([+-]?\d+\.?\d*)/i.exec(text);
-  if (utc?.[1]) accum.utcoff = utc[1];
-  const atxt = /\.\.\.ATXT:\s*(.+)/i.exec(text);
-  if (atxt?.[1]) {
-    const v = atxt[1].trim();
-    if (v && v !== 'none') accum.aprscomment = v;
-  }
-  const name = /\.\.\.NAME:\s*(.+)/i.exec(text);
-  if (name?.[1]) {
-    const v = name[1].trim();
-    if (v) accum.operatorName = v.slice(0, 19);
-  }
+}
+
+function mergeMeshcomSerialRadioText(accum: MeshcomDeviceSettingsAccum, text: string): void {
   const freq = /FREQ\s+([\d.]+)\s*MHz\s+TXPWR\s+(-?\d+)/i.exec(text);
   if (freq?.[1]) accum.freqMhz = freq[1];
   if (freq?.[2]) accum.txPower = freq[2];
-  const boost = /RXBOOST\s+(on|off)/i.exec(text);
-  if (boost?.[1] === 'on' || boost?.[1] === 'off') accum.boost = boost[1];
-  const gps = /\.\.\.GPS\s+(on|off)/i.exec(text);
-  if (gps?.[1] === 'on' || gps?.[1] === 'off') accum.gps = gps[1];
-  const track = /\.\.\.TRACK\s+(on|off)/i.exec(text);
-  if (track?.[1] === 'on' || track?.[1] === 'off') accum.track = track[1];
-  const gateway = /\.\.\.GATEWAY\s+(on|off)/i.exec(text);
-  if (gateway?.[1] === 'on' || gateway?.[1] === 'off') accum.gateway = gateway[1];
-  const web = /\.\.\.Webserver\s+(on|off)/i.exec(text);
-  if (web?.[1] === 'on' || web?.[1] === 'off') accum.webserver = web[1];
-  const maxv = /MAXV\s+([\d.]+)/i.exec(text);
-  if (maxv?.[1]) accum.maxv = maxv[1];
   // Full revision line: `4.40a (build: Nov 22 2026 / 14:30:00)` — not only the `\S+` token.
   const fw = /--MeshCom\s+([^\r\n]+)/i.exec(text);
   if (fw?.[1]) accum.fwver = fw[1].trim();
@@ -348,80 +438,86 @@ export function mergeMeshcomSerialInfoText(accum: MeshcomDeviceSettingsAccum, te
     const n = Number.parseInt(battPct[1], 10);
     if (Number.isFinite(n)) accum.battPercent = n;
   }
+}
 
-  const ssid = /\.\.\.SSID:\s*(\S+)/i.exec(text) ?? /SSID:\s*<([^>]+)>/i.exec(text);
-  if (ssid?.[1] && ssid[1] !== 'none') accum.ssid = ssid[1];
-  const ownip =
-    /OWNIP\s+(\d+\.\d+\.\d+\.\d+)/i.exec(text) ?? /IP:\s*(\d+\.\d+\.\d+\.\d+)/i.exec(text);
-  if (ownip?.[1]) accum.ownip = ownip[1];
-  const lat = /LAT\s+([+-]?\d+\.?\d*)/i.exec(text) ?? /\.\.\.LAT\s+([+-]?\d+\.?\d*)/i.exec(text);
-  if (lat?.[1]) accum.lat = lat[1];
-  const lon = /LON\s+([+-]?\d+\.?\d*)/i.exec(text) ?? /\.\.\.LON\s+([+-]?\d+\.?\d*)/i.exec(text);
-  if (lon?.[1]) accum.lon = lon[1];
-  const alt = /ALT\s+([+-]?\d+)/i.exec(text) ?? /\.\.\.ALT\s+([+-]?\d+)/i.exec(text);
-  if (alt?.[1]) accum.alt = alt[1];
-  const postime = /POSTIME\s+(\d+)/i.exec(text) ?? /POS.?TIME\s+(\d+)/i.exec(text);
-  if (postime?.[1]) accum.postime = postime[1];
-  const bme = /\.\.\.BME\s+(on|off)/i.exec(text);
-  if (bme?.[1] === 'on' || bme?.[1] === 'off') accum.bme = bme[1];
-  const bmp = /\.\.\.BMP\s+(on|off)/i.exec(text);
-  if (bmp?.[1] === 'on' || bmp?.[1] === 'off') accum.bmp = bmp[1];
-  const ow = /\.\.\.ONEWIRE\s+(on|off)/i.exec(text) ?? /\.\.\.OW\s+(on|off)/i.exec(text);
-  if (ow?.[1] === 'on' || ow?.[1] === 'off') accum.onewire = ow[1];
-  const symid = /SYMID\s+([/\\])/i.exec(text) ?? /SYM.?ID\s+([/\\])/i.exec(text);
-  if (symid?.[1]) accum.symid = symid[1];
-  const symcd = /SYMCD\s+(\S)/i.exec(text) ?? /SYM.?CD\s+(\S)/i.exec(text);
-  if (symcd?.[1]) accum.symcd = symcd[1];
-
+function collectMeshcomSerialGroups(text: string): string {
   const groups: string[] = [];
   for (const m of text.matchAll(/GC-(\d+):(\d+)/gi)) {
     if (m[2] && m[2] !== '0') groups.push(m[2]);
   }
-  if (groups.length > 0) accum.groups = groups.join(';');
+  return groups.join(';');
+}
+
+function mergeMeshcomSerialAprsText(accum: MeshcomDeviceSettingsAccum, text: string): void {
+  const extip = /\.\.\.EXT IP\s+(\S+)/i.exec(text);
+  if (extip?.[1] && extip[1] !== '...') accum.extudpip = extip[1];
+  const atxt = /\.\.\.ATXT:\s*(.+)/i.exec(text)?.at(1)?.trim();
+  if (atxt && atxt !== 'none') accum.aprscomment = atxt;
+  const name = /\.\.\.NAME:\s*(.+)/i.exec(text)?.at(1)?.trim();
+  if (name) accum.operatorName = name.slice(0, 19);
+  const ssid = /\.\.\.SSID:\s*(\S+)/i.exec(text) ?? /SSID:\s*<([^>]+)>/i.exec(text);
+  if (ssid?.[1] && ssid[1] !== 'none') accum.ssid = ssid[1];
+  const groups = collectMeshcomSerialGroups(text);
+  if (groups) accum.groups = groups;
+}
+
+/** Parse concatenated Serial `--info` console text into the accumulator. */
+export function mergeMeshcomSerialInfoText(accum: MeshcomDeviceSettingsAccum, text: string): void {
+  mergeMeshcomSerialIdentityText(accum, text);
+  for (const [field, pattern] of SERIAL_ON_OFF_PATTERNS) {
+    const value = pattern.exec(text)?.[1];
+    if (value === 'on' || value === 'off') accum[field] = value;
+  }
+  for (const [field, patterns] of SERIAL_STRING_PATTERNS) {
+    const value = firstCapture(text, patterns);
+    if (value) accum[field] = value;
+  }
+  mergeMeshcomSerialRadioText(accum, text);
+  mergeMeshcomSerialAprsText(accum, text);
 }
 
 /**
  * Parse Serial `--wx` console weather dump into the accumulator.
  * Format (ICSSW firmware): `TEMP: … °C`, `HUM: … %rH`, `QFE`/`QNH`, `GAS`, `eCO2`, `TOUT`.
  */
-export function mergeMeshcomSerialWxText(accum: MeshcomDeviceSettingsAccum, text: string): void {
-  const temp = /TEMP:\s*([+-]?\d+\.?\d*)/i.exec(text);
-  if (temp?.[1]) {
-    const n = Number.parseFloat(temp[1]);
-    if (Number.isFinite(n)) accum.temperatureC = n;
-  }
-  const tout = /TOUT:\s*([+-]?\d+\.?\d*)/i.exec(text);
-  if (tout?.[1]) {
-    const n = Number.parseFloat(tout[1]);
-    if (Number.isFinite(n)) accum.temperatureOutC = n;
-  }
-  const hum = /HUM:\s*([+-]?\d+\.?\d*)/i.exec(text);
-  if (hum?.[1]) {
-    const n = Number.parseFloat(hum[1]);
-    if (Number.isFinite(n)) accum.humidityPct = n;
-  }
-  const qfe = /QFE:\s*([+-]?\d+\.?\d*)/i.exec(text);
-  const qnh = /QNH:\s*([+-]?\d+\.?\d*)/i.exec(text);
-  if (qfe?.[1]) {
-    const n = Number.parseFloat(qfe[1]);
-    if (Number.isFinite(n)) accum.pressureHpa = n;
-  } else if (qnh?.[1]) {
-    const n = Number.parseFloat(qnh[1]);
-    if (Number.isFinite(n)) accum.pressureHpa = n;
-  }
+type MeshcomWxNumberField =
+  'temperatureC' | 'temperatureOutC' | 'humidityPct' | 'pressureHpa' | 'gasResistance' | 'co2Ppm';
+
+function assignFiniteNumber(
+  accum: MeshcomDeviceSettingsAccum,
+  field: MeshcomWxNumberField,
+  raw: string | undefined,
+): void {
+  if (!raw) return;
+  const n = Number.parseFloat(raw);
+  if (Number.isFinite(n)) accum[field] = n;
+}
+
+function parseMeshcomWxPressure(text: string): string | undefined {
+  return /QFE:\s*([+-]?\d+\.?\d*)/i.exec(text)?.[1] ?? /QNH:\s*([+-]?\d+\.?\d*)/i.exec(text)?.[1];
+}
+
+function parseMeshcomWxGasOhms(text: string): number | undefined {
   const gas = /GAS:\s*([+-]?\d+\.?\d*)\s*(kOhm|kohm|kΩ|Ohm|ohm|Ω)?/i.exec(text);
-  if (gas?.[1]) {
-    let n = Number.parseFloat(gas[1]);
-    if (Number.isFinite(n)) {
-      if (gas[2] && /^k/i.test(gas[2])) n *= 1000;
-      accum.gasResistance = n;
-    }
+  if (!gas?.[1]) return undefined;
+  const n = Number.parseFloat(gas[1]);
+  if (!Number.isFinite(n)) return undefined;
+  return gas[2] && /^k/i.test(gas[2]) ? n * 1000 : n;
+}
+
+export function mergeMeshcomSerialWxText(accum: MeshcomDeviceSettingsAccum, text: string): void {
+  const fields: readonly (readonly [MeshcomWxNumberField, RegExp])[] = [
+    ['temperatureC', /TEMP:\s*([+-]?\d+\.?\d*)/i],
+    ['temperatureOutC', /TOUT:\s*([+-]?\d+\.?\d*)/i],
+    ['humidityPct', /HUM:\s*([+-]?\d+\.?\d*)/i],
+    ['co2Ppm', /e?CO2:\s*([+-]?\d+\.?\d*)/i],
+  ];
+  for (const [field, pattern] of fields) {
+    assignFiniteNumber(accum, field, pattern.exec(text)?.[1]);
   }
-  const co2 = /e?CO2:\s*([+-]?\d+\.?\d*)/i.exec(text);
-  if (co2?.[1]) {
-    const n = Number.parseFloat(co2[1]);
-    if (Number.isFinite(n)) accum.co2Ppm = n;
-  }
+  assignFiniteNumber(accum, 'pressureHpa', parseMeshcomWxPressure(text));
+  const gas = parseMeshcomWxGasOhms(text);
+  if (gas != null) accum.gasResistance = gas;
 }
 
 /** Map accumulator fields onto MeshCom Radio command ids. */
