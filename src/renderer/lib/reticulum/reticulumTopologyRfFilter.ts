@@ -1,5 +1,5 @@
 import { classifyReticulumInterfaceRow } from './classifyReticulumVia';
-import { pathMediumFromInterfaceNameOrType } from './reticulumPathMedium';
+import { pathMediumFromInterfaceNameOrType } from './reticulumPathSlots';
 
 /** Configured topology interface fields needed to classify RF vs network. */
 export interface ReticulumTopologyRfInterface {
