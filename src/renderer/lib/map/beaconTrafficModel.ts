@@ -231,23 +231,175 @@ export function normalizeBeaconMessage(value: unknown): BeaconTrafficMessage | n
 }
 
 /** Normalize one Beacon v2 observation; callers retain the server's per-observer timestamp. */
+function parseBeaconPathBytes(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  if (value.length > 378 || value.length % 2 !== 0) return null;
+  if (!/^[a-f\d]*$/i.test(value)) return null;
+  return value.toLowerCase();
+}
+
+function isValidBeaconPath(
+  hopCount: number | null,
+  hashSize: number | null,
+  pathBytes: string | null,
+  resolvedPathLength: number,
+): boolean {
+  return (
+    hopCount != null &&
+    Number.isInteger(hopCount) &&
+    hopCount >= 0 &&
+    hopCount <= 63 &&
+    hashSize != null &&
+    [1, 2, 3].includes(hashSize) &&
+    pathBytes?.length === hopCount * hashSize * 2 &&
+    resolvedPathLength === hopCount
+  );
+}
+
+function buildBeaconRoute({
+  flood,
+  validPath,
+  source,
+  resolvedPath,
+  pathBytes,
+  hashSize,
+  receiver,
+}: {
+  flood: boolean;
+  validPath: boolean;
+  source: BeaconTrafficPoint | null;
+  resolvedPath: readonly unknown[];
+  pathBytes: string | null;
+  hashSize: number | null;
+  receiver: BeaconTrafficPoint | null;
+}): {
+  points: BeaconTrafficPoint[];
+  segments: LiveTrafficSegment[];
+  route: (BeaconTrafficPoint | null)[];
+} {
+  const route: (BeaconTrafficPoint | null)[] = [source];
+  if (flood && validPath && pathBytes != null && hashSize != null) {
+    for (let i = 0; i < resolvedPath.length; i++) {
+      route.push(
+        resolvedPoint(resolvedPath[i], pathBytes.slice(i * hashSize * 2, (i + 1) * hashSize * 2)),
+      );
+    }
+  } else if (flood) {
+    route.push(null);
+  }
+  route.push(receiver);
+  const points = uniquePoints(route);
+  const segments = flood && validPath ? consecutiveSegments(route) : [];
+  return { points, segments, route };
+}
+
+function resolveBeaconRouteStatus({
+  type,
+  direct,
+  points,
+  validPath,
+  route,
+}: {
+  type: number | null;
+  direct: boolean;
+  points: readonly BeaconTrafficPoint[];
+  validPath: boolean;
+  route: readonly (BeaconTrafficPoint | null)[];
+}): LiveTrafficEvent['routeStatus'] {
+  if (type == null) return 'unparsed';
+  if (direct) return 'direct';
+  if (points.length === 0) return 'unlocated';
+  return validPath && route.every((point) => point !== null) ? 'resolved' : 'partial';
+}
+
+function beaconContentFields({
+  message,
+  isTextPacket,
+}: {
+  message: BeaconTrafficMessage | undefined;
+  isTextPacket: boolean;
+}): { messageText?: string; contentStatus?: 'decoded' | 'unavailable' } {
+  if (message) return { messageText: message.messageText, contentStatus: 'decoded' };
+  return isTextPacket ? { contentStatus: 'unavailable' } : {};
+}
+
+function resolveBeaconPayloadKind(
+  observation: Record<string, unknown>,
+  header: Record<string, unknown> | null,
+): string {
+  return (
+    text(header?.payloadTypeName, 48) ??
+    text(observation.payloadTypeName, 48) ??
+    'UNKNOWN'
+  ).toUpperCase();
+}
+
+function beaconSignalFields(observation: Record<string, unknown>): {
+  rssi: number;
+  snr: number;
+  scopeCode: ReturnType<typeof scopeCode>;
+  returnScopeCode: ReturnType<typeof scopeCode>;
+} {
+  return {
+    rssi: finiteNumber(observation.rssi) ?? Number.NaN,
+    snr: finiteNumber(observation.snr) ?? Number.NaN,
+    scopeCode: scopeCode(observation.transportScopeCode),
+    returnScopeCode: scopeCode(observation.transportReturnCode),
+  };
+}
+
+function parseBeaconObservationEnvelope(
+  value: unknown,
+  now: number,
+): { observation: Record<string, unknown>; packetHash: string; ts: number } | null {
+  const observation = observationRecord(value);
+  if (!observation) return null;
+  const packetHash = text(observation.packetHash, 128)?.toLowerCase();
+  const ts = finiteNumber(observation.heardAt);
+  if (!packetHash || ts == null || ts > now || now - ts > LIVE_TRAFFIC_MAX_AGE_MS) return null;
+  return { observation, packetHash, ts };
+}
+
+/** Stable observation identity; distinct routes/receivers/rewrites keep separate identities. */
+function beaconObservationIdentity({
+  observation,
+  packetHash,
+  observer,
+  pathBytes,
+  ts,
+}: {
+  observation: Record<string, unknown>;
+  packetHash: string;
+  observer: string;
+  pathBytes: string | null;
+  ts: number;
+}): { id: string; reportedObservationCount?: number } {
+  const observationId =
+    typeof observation.id === 'number' && Number.isSafeInteger(observation.id)
+      ? observation.id.toString()
+      : (text(observation.id) ?? '');
+  const reportedObservationCount = finiteNumber(observation.observationCount);
+  return {
+    id: `beacon:${packetHash}:${observer}:${pathBytes ?? 'unknown'}:${ts}:${observationId}`,
+    ...(reportedObservationCount != null &&
+    Number.isSafeInteger(reportedObservationCount) &&
+    reportedObservationCount > 0
+      ? { reportedObservationCount }
+      : {}),
+  };
+}
+
 export function normalizeBeaconObservation(
   value: unknown,
   index: BeaconTrafficNodeIndex,
   now: number,
   messages?: ReadonlyMap<string, BeaconTrafficMessage>,
 ): LiveTrafficEvent | null {
-  const observation = observationRecord(value);
-  if (!observation) return null;
-  const packetHash = text(observation.packetHash, 128)?.toLowerCase();
-  const ts = finiteNumber(observation.heardAt);
-  if (!packetHash || ts == null || ts > now || now - ts > LIVE_TRAFFIC_MAX_AGE_MS) return null;
+  const envelope = parseBeaconObservationEnvelope(value, now);
+  if (!envelope) return null;
+  const { observation, packetHash, ts } = envelope;
   const header = record(observation.header);
-  const kind = (
-    text(header?.payloadTypeName, 48) ??
-    text(observation.payloadTypeName, 48) ??
-    'UNKNOWN'
-  ).toUpperCase();
+  const kind = resolveBeaconPayloadKind(observation, header);
   const parsedPayload = record(observation.parsedPayload);
   const controlSubtype = liveTrafficControlSubtype(
     kind,
@@ -262,67 +414,37 @@ export function normalizeBeaconObservation(
   const pathLength = record(observation.pathLength);
   const hopCount = finiteNumber(pathLength?.hopCount);
   const hashSize = finiteNumber(pathLength?.hashSize);
-  const pathBytes =
-    typeof observation.pathBytes === 'string' &&
-    observation.pathBytes.length <= 378 &&
-    observation.pathBytes.length % 2 === 0 &&
-    /^[a-f\d]*$/i.test(observation.pathBytes)
-      ? observation.pathBytes.toLowerCase()
-      : null;
+  const pathBytes = parseBeaconPathBytes(observation.pathBytes);
   const resolvedPath = Array.isArray(observation.resolvedPath) ? observation.resolvedPath : [];
-  const validPath =
-    hopCount != null &&
-    Number.isInteger(hopCount) &&
-    hopCount >= 0 &&
-    hopCount <= 63 &&
-    hashSize != null &&
-    [1, 2, 3].includes(hashSize) &&
-    pathBytes?.length === hopCount * hashSize * 2 &&
-    resolvedPath.length === hopCount;
-  const route: (BeaconTrafficPoint | null)[] = [source];
-  if (flood && validPath) {
-    for (let i = 0; i < resolvedPath.length; i++) {
-      route.push(
-        resolvedPoint(resolvedPath[i], pathBytes.slice(i * hashSize * 2, (i + 1) * hashSize * 2)),
-      );
-    }
-  } else if (flood) route.push(null);
-  route.push(receiver);
-  // A destination address is not evidence that an overheard packet reached that destination.
-  // DIRECT hashes are remaining routing instructions, never a traversed geographic path.
-  const points = uniquePoints(route);
-  const segments = flood && validPath ? consecutiveSegments(route) : [];
-  const status: LiveTrafficEvent['routeStatus'] =
-    type == null
-      ? 'unparsed'
-      : direct
-        ? 'direct'
-        : points.length === 0
-          ? 'unlocated'
-          : validPath && route.every((point) => point !== null)
-            ? 'resolved'
-            : 'partial';
+  const validPath = isValidBeaconPath(hopCount, hashSize, pathBytes, resolvedPath.length);
+  const { points, segments, route } = buildBeaconRoute({
+    flood,
+    validPath,
+    source,
+    resolvedPath,
+    pathBytes,
+    hashSize,
+    receiver,
+  });
+  const status = resolveBeaconRouteStatus({ type, direct, points, validPath, route });
   const observer =
     text(observation.observerId) ?? publicKey(observation.observerPublicKey) ?? 'unknown';
-  const observationId =
-    typeof observation.id === 'number' && Number.isSafeInteger(observation.id)
-      ? observation.id.toString()
-      : (text(observation.id) ?? '');
   // Retain different routes, receivers, and repeat observations of the same payload.
-  const id = `beacon:${packetHash}:${observer}:${pathBytes ?? 'unknown'}:${ts}:${observationId}`;
+  const { id, reportedObservationCount } = beaconObservationIdentity({
+    observation,
+    packetHash,
+    observer,
+    pathBytes,
+    ts,
+  });
   const message = messages?.get(packetHash);
   const senderLabel = message?.senderLabel ?? originLabel(observation, kind);
   const isTextPacket = kind === 'GRP_TXT' || kind === 'TXT_MSG';
-  const reportedObservationCount = finiteNumber(observation.observationCount);
   return {
     id,
     packetHash,
     ...(observer !== 'unknown' ? { observerId: observer } : {}),
-    ...(reportedObservationCount != null &&
-    Number.isSafeInteger(reportedObservationCount) &&
-    reportedObservationCount > 0
-      ? { reportedObservationCount }
-      : {}),
+    ...(reportedObservationCount != null ? { reportedObservationCount } : {}),
     ts,
     kind,
     controlSubtype,
@@ -330,20 +452,10 @@ export function normalizeBeaconObservation(
     segments,
     points,
     routeStatus: status,
-    scopeCode: scopeCode(observation.transportScopeCode),
-    returnScopeCode: scopeCode(observation.transportReturnCode),
-    rssi: finiteNumber(observation.rssi) ?? Number.NaN,
-    snr: finiteNumber(observation.snr) ?? Number.NaN,
+    ...beaconSignalFields(observation),
     hopCount: validPath ? hopCount : null,
     ...(senderLabel ? { senderLabel } : {}),
-    ...(message
-      ? {
-          messageText: message.messageText,
-          contentStatus: 'decoded' as const,
-        }
-      : isTextPacket
-        ? { contentStatus: 'unavailable' as const }
-        : {}),
+    ...beaconContentFields({ message, isTextPacket }),
   };
 }
 

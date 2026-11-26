@@ -63,6 +63,138 @@ export function chatViewKeyForMessage(
   return `ch:${msg.channel}`;
 }
 
+function isOwnChatNodeId(
+  id: number,
+  ownNodeIds: ReadonlySet<number>,
+  protocol: MeshProtocol,
+): boolean {
+  if (protocol === 'reticulum') {
+    const normalized = normalizeReticulumNodeId(id);
+    for (const own of ownNodeIds) {
+      if (normalizeReticulumNodeId(own) === normalized) return true;
+    }
+    return false;
+  }
+  return ownNodeIds.has(id);
+}
+
+/** Final peer id normalization: u32, Reticulum canonicalization, DM exclusion. */
+function finalizeChatDmPeer(
+  peer: number,
+  protocol: MeshProtocol,
+  options?: ChatUnreadDmOptions,
+): number | undefined {
+  let peerU32 = peer >>> 0;
+  if (protocol === 'reticulum') peerU32 = canonicalizeReticulumChatDmNodeId(peerU32);
+  if (options?.excludeDmPeer?.(peerU32)) return undefined;
+  return peerU32;
+}
+
+/** Inbound Reticulum DM addressed with an unset `to`: the peer is the hash-backed sender. */
+function resolveReticulumUnsetDmPeer({
+  msg,
+  isOwn,
+  options,
+}: {
+  msg: ChatMessage;
+  isOwn: (id: number) => boolean;
+  options?: ChatUnreadDmOptions;
+}): number | undefined {
+  const senderFromHash = Number.parseInt(
+    msg.reticulum_sender_hash?.replace(/[^0-9a-f]/gi, '').slice(0, 12) || '0',
+    16,
+  );
+  const senderId = (Number.isFinite(senderFromHash) ? senderFromHash : 0) >>> 0;
+  if (senderId <= 0 || isOwn(senderId) || isOwn(msg.sender_id)) return undefined;
+  return finalizeChatDmPeer(senderId, 'reticulum', options);
+}
+
+/** Inbound MeshCore DMs can be stored with channel -1 and `to` unset when our node was unknown. */
+function isUnsetMeshcoreInboundDm(msg: ChatMessage, isOwn: (id: number) => boolean): boolean {
+  return msg.channel === -1 && msg.sender_id > 0 && !isOwn(msg.sender_id);
+}
+
+/**
+ * Reticulum peer direction fallback: prefer the hash-backed sender so an unknown own identity at
+ * hydrate time cannot open a sticky self-DM.
+ */
+function resolveReticulumDirectionPeer({
+  msg,
+  effectiveTo,
+  ownNodeIds,
+}: {
+  msg: ChatMessage;
+  effectiveTo: number;
+  ownNodeIds: ReadonlySet<number>;
+}): number | undefined {
+  const isOwnU32 = (id: number) => {
+    for (const own of ownNodeIds) {
+      if (normalizeReticulumNodeId(own) === normalizeReticulumNodeId(id)) return true;
+    }
+    return false;
+  };
+  const fromU = msg.sender_id >>> 0;
+  const toU = effectiveTo >>> 0;
+  if (!msg.reticulum_sender_hash || fromU === toU) {
+    if (fromU > 0 && !isOwnU32(fromU)) return fromU;
+    if (toU > 0 && !isOwnU32(toU)) return toU;
+    return undefined;
+  }
+  const senderFromHash = reticulumHashToNodeId(msg.reticulum_sender_hash) >>> 0;
+  if (senderFromHash === fromU) {
+    if (!isOwnU32(fromU)) return fromU;
+    return isOwnU32(toU) ? undefined : toU;
+  }
+  return isOwnU32(fromU) ? undefined : fromU;
+}
+
+/** Messages with no usable `to`: the peer is the sender (Reticulum `to: 0`, MeshCore channel -1). */
+function resolveUnsetToDmPeer({
+  msg,
+  protocol,
+  isOwn,
+  options,
+}: {
+  msg: ChatMessage;
+  protocol: MeshProtocol;
+  isOwn: (id: number) => boolean;
+  options?: ChatUnreadDmOptions;
+}): number | undefined {
+  if (protocol === 'reticulum' && msg.to === 0 && msg.sender_id > 0 && !isOwn(msg.sender_id)) {
+    return finalizeChatDmPeer(msg.sender_id, protocol, options);
+  }
+  if (protocol === 'meshcore' && isUnsetMeshcoreInboundDm(msg, isOwn)) {
+    return finalizeChatDmPeer(msg.sender_id, protocol, options);
+  }
+  return undefined;
+}
+
+/** Directional DM peer selection once `to` is known. */
+function selectChatDmPeer({
+  msg,
+  effectiveTo,
+  protocol,
+  isOwn,
+  ownNodeIds,
+}: {
+  msg: ChatMessage;
+  effectiveTo: number;
+  protocol: MeshProtocol;
+  isOwn: (id: number) => boolean;
+  ownNodeIds: ReadonlySet<number>;
+}): number | undefined {
+  let peer: number | undefined;
+  if (isOwn(msg.sender_id) && !isOwn(effectiveTo)) peer = effectiveTo;
+  else if (isOwn(effectiveTo) && !isOwn(msg.sender_id)) peer = msg.sender_id;
+  if (peer === undefined && protocol === 'meshcore' && isUnsetMeshcoreInboundDm(msg, isOwn)) {
+    peer = msg.sender_id;
+  }
+  if (peer === undefined && protocol === 'reticulum') {
+    peer = resolveReticulumDirectionPeer({ msg, effectiveTo, ownNodeIds });
+  }
+  return peer;
+}
+
 export function resolveChatDmPeer(
   msg: ChatMessage,
   ownNodeIds: ReadonlySet<number>,
@@ -70,104 +202,21 @@ export function resolveChatDmPeer(
   options?: ChatUnreadDmOptions,
 ): number | undefined {
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
+  const isOwn = (id: number) => isOwnChatNodeId(id, ownNodeIds, protocol);
+
   if (protocol === 'reticulum' && reticulumUnsetDmTo(msg.to) && msg.reticulum_sender_hash) {
-    const isOwn = (id: number) => {
-      const normalized = normalizeReticulumNodeId(id);
-      for (const own of ownNodeIds) {
-        if (normalizeReticulumNodeId(own) === normalized) return true;
-      }
-      return false;
-    };
-    const senderFromHash = Number.parseInt(
-      msg.reticulum_sender_hash.replace(/[^0-9a-f]/gi, '').slice(0, 12) || '0',
-      16,
-    );
-    const senderId = (Number.isFinite(senderFromHash) ? senderFromHash : 0) >>> 0;
-    if (senderId > 0 && !isOwn(senderId) && !isOwn(msg.sender_id)) {
-      const peerU32 = canonicalizeReticulumChatDmNodeId(senderId);
-      if (options?.excludeDmPeer?.(peerU32)) return undefined;
-      return peerU32;
-    }
+    return resolveReticulumUnsetDmPeer({ msg, isOwn, options });
   }
+
   const effectiveTo = protocol === 'reticulum' && msg.to === 0 ? undefined : msg.to;
-  const isOwn = (id: number) => {
-    if (protocol === 'reticulum') {
-      const normalized = normalizeReticulumNodeId(id);
-      for (const own of ownNodeIds) {
-        if (normalizeReticulumNodeId(own) === normalized) return true;
-      }
-      return false;
-    }
-    return ownNodeIds.has(id);
-  };
   if (effectiveTo == null) {
-    if (protocol === 'reticulum' && msg.to === 0 && msg.sender_id > 0 && !isOwn(msg.sender_id)) {
-      const peerU32 = canonicalizeReticulumChatDmNodeId(msg.sender_id >>> 0);
-      if (options?.excludeDmPeer?.(peerU32)) return undefined;
-      return peerU32;
-    }
-    // Inbound MeshCore DMs can be stored with channel -1 and `to` unset when our
-    // node number was not known yet. The peer is the sender, same as `to: 0`.
-    if (
-      protocol === 'meshcore' &&
-      msg.channel === -1 &&
-      msg.sender_id > 0 &&
-      !isOwn(msg.sender_id)
-    ) {
-      const peerU32 = msg.sender_id >>> 0;
-      if (options?.excludeDmPeer?.(peerU32)) return undefined;
-      return peerU32;
-    }
-    return undefined;
+    return resolveUnsetToDmPeer({ msg, protocol, isOwn, options });
   }
-  let peer: number | undefined;
-  if (isOwn(msg.sender_id) && !isOwn(effectiveTo)) peer = effectiveTo;
-  else if (isOwn(effectiveTo) && !isOwn(msg.sender_id)) peer = msg.sender_id;
-  if (
-    peer === undefined &&
-    protocol === 'meshcore' &&
-    msg.channel === -1 &&
-    msg.sender_id > 0 &&
-    !isOwn(msg.sender_id)
-  ) {
-    peer = msg.sender_id;
-  }
-  if (peer === undefined && protocol === 'reticulum') {
-    const fromU = msg.sender_id >>> 0;
-    const toU = effectiveTo >>> 0;
-    const isOwnU32 = (id: number) => {
-      for (const own of ownNodeIds) {
-        if (normalizeReticulumNodeId(own) === normalizeReticulumNodeId(id)) return true;
-      }
-      return false;
-    };
-    if (msg.reticulum_sender_hash && fromU !== toU) {
-      const senderFromHash = reticulumHashToNodeId(msg.reticulum_sender_hash) >>> 0;
-      // Prefer the hash-backed sender as the peer. When own is still unknown, treating `to`
-      // as the peer opens a sticky self-DM on launch (inbound hydrate before identity).
-      if (senderFromHash === fromU) {
-        if (!isOwnU32(fromU)) {
-          peer = fromU;
-        } else if (!isOwnU32(toU)) {
-          peer = toU;
-        }
-      } else if (!isOwnU32(fromU)) {
-        peer = fromU;
-      }
-    } else if (fromU > 0 && !isOwnU32(fromU)) {
-      peer = fromU;
-    } else if (toU > 0 && !isOwnU32(toU)) {
-      peer = toU;
-    }
-  }
+
+  const peer = selectChatDmPeer({ msg, effectiveTo, protocol, isOwn, ownNodeIds });
   if (peer === undefined) return undefined;
   if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
-  let peerU32 = peer >>> 0;
-  if (protocol === 'reticulum') {
-    peerU32 = canonicalizeReticulumChatDmNodeId(peerU32);
-  }
-  if (options?.excludeDmPeer?.(peerU32)) return undefined;
-  return peerU32;
+  return finalizeChatDmPeer(peer, protocol, options);
 }
 
 /** Channel index when `msg` counts as unread broadcast traffic, else undefined. */
