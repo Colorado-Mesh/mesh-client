@@ -201,6 +201,132 @@ const SEVERITY_ICON: Record<RFDiagnosis['severity'], typeof Info> = {
   info: Info,
 };
 
+function hasEnvironmentFields(node: MeshNode): boolean {
+  return (
+    node.env_temperature !== undefined ||
+    node.env_mcu_temperature !== undefined ||
+    node.env_humidity !== undefined ||
+    node.env_pressure !== undefined ||
+    node.env_iaq !== undefined ||
+    node.env_gas_resistance !== undefined ||
+    node.env_lux !== undefined ||
+    node.env_wind_speed !== undefined ||
+    node.env_pm10 !== undefined ||
+    node.env_pm25 !== undefined ||
+    node.env_co2 !== undefined ||
+    node.env_voc_idx !== undefined ||
+    node.env_nox_idx !== undefined
+  );
+}
+
+function NodeEnvironmentClimateSection({
+  node,
+  useFahrenheit,
+}: {
+  node: MeshNode;
+  useFahrenheit?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {node.env_temperature !== undefined && (
+        <InfoRow
+          label={t('nodeInfoBody.temperature')}
+          value={
+            useFahrenheit
+              ? `${((node.env_temperature * 9) / 5 + 32).toFixed(1)}°F`
+              : `${node.env_temperature.toFixed(1)}°C`
+          }
+        />
+      )}
+      {node.env_mcu_temperature !== undefined && (
+        <InfoRow
+          label={t('nodeInfoBody.mcuTemperature')}
+          value={
+            useFahrenheit
+              ? `${((node.env_mcu_temperature * 9) / 5 + 32).toFixed(1)}°F`
+              : `${node.env_mcu_temperature.toFixed(1)}°C`
+          }
+        />
+      )}
+      {node.env_humidity !== undefined && (
+        <InfoRow label={t('nodeInfoBody.humidity')} value={`${node.env_humidity.toFixed(1)}%`} />
+      )}
+      {node.env_pressure !== undefined && (
+        <InfoRow label={t('nodeInfoBody.pressure')} value={`${node.env_pressure.toFixed(1)} hPa`} />
+      )}
+    </>
+  );
+}
+
+function NodeEnvironmentAirSection({ node }: { node: MeshNode }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {node.env_iaq !== undefined && (
+        <InfoRow
+          label={t('nodeInfoBody.airQuality')}
+          value={`${node.env_iaq} – ${iaqLabel(node.env_iaq, t)}`}
+        />
+      )}
+      {node.env_gas_resistance !== undefined && (
+        <InfoRow label={t('nodeInfoBody.gasResistance')} value={`${node.env_gas_resistance}`} />
+      )}
+      {node.env_lux !== undefined && (
+        <InfoRow label={t('nodeInfoBody.light')} value={`${node.env_lux.toFixed(0)} lux`} />
+      )}
+      {node.env_wind_speed !== undefined && (
+        <InfoRow
+          label={t('nodeInfoBody.wind')}
+          value={
+            node.env_wind_direction !== undefined
+              ? `${node.env_wind_speed.toFixed(1)} m/s @ ${node.env_wind_direction}°`
+              : `${node.env_wind_speed.toFixed(1)} m/s`
+          }
+        />
+      )}
+      {node.env_pm25 !== undefined && (
+        <InfoRow label={t('nodeInfoBody.pm25')} value={`${node.env_pm25} µg/m³`} />
+      )}
+      {node.env_pm10 !== undefined && (
+        <InfoRow label={t('nodeInfoBody.pm10')} value={`${node.env_pm10} µg/m³`} />
+      )}
+      {node.env_co2 !== undefined && (
+        <InfoRow label={t('nodeInfoBody.co2')} value={`${node.env_co2} ppm`} />
+      )}
+      {node.env_voc_idx !== undefined && (
+        <InfoRow label={t('nodeInfoBody.voc')} value={`${node.env_voc_idx}`} />
+      )}
+      {node.env_nox_idx !== undefined && (
+        <InfoRow label={t('nodeInfoBody.nox')} value={`${node.env_nox_idx}`} />
+      )}
+    </>
+  );
+}
+
+function NodeEnvironmentSection({
+  node,
+  useFahrenheit,
+  protocol,
+}: {
+  node: MeshNode;
+  useFahrenheit?: boolean;
+  protocol: MeshProtocol;
+}) {
+  const { t } = useTranslation();
+  if (!hasEnvironmentFields(node)) return null;
+  return (
+    <div className="border-ink-700 mt-3 border-t pt-3">
+      <div className="text-ink-400 mb-1 text-xs font-semibold uppercase">
+        {t('nodeInfoBody.environment')}
+      </div>
+      <NodeEnvironmentClimateSection node={node} useFahrenheit={useFahrenheit} />
+      <NodeEnvironmentAirSection node={node} />
+      <EnvironmentSparklines protocol={protocol} nodeId={node.node_id} />
+    </div>
+  );
+}
+
 export default function NodeInfoBody({
   node,
   homeNode,
@@ -957,96 +1083,7 @@ export default function NodeInfoBody({
         </div>
       )}
 
-      {/* Environment */}
-      {(node.env_temperature !== undefined ||
-        node.env_mcu_temperature !== undefined ||
-        node.env_humidity !== undefined ||
-        node.env_pressure !== undefined ||
-        node.env_iaq !== undefined ||
-        node.env_gas_resistance !== undefined ||
-        node.env_lux !== undefined ||
-        node.env_wind_speed !== undefined ||
-        node.env_pm10 !== undefined ||
-        node.env_pm25 !== undefined ||
-        node.env_co2 !== undefined ||
-        node.env_voc_idx !== undefined ||
-        node.env_nox_idx !== undefined) && (
-        <div className="border-ink-700 mt-3 border-t pt-3">
-          <div className="text-ink-400 mb-1 text-xs font-semibold uppercase">
-            {t('nodeInfoBody.environment')}
-          </div>
-          {node.env_temperature !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.temperature')}
-              value={
-                useFahrenheit
-                  ? `${((node.env_temperature * 9) / 5 + 32).toFixed(1)}°F`
-                  : `${node.env_temperature.toFixed(1)}°C`
-              }
-            />
-          )}
-          {node.env_mcu_temperature !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.mcuTemperature')}
-              value={
-                useFahrenheit
-                  ? `${((node.env_mcu_temperature * 9) / 5 + 32).toFixed(1)}°F`
-                  : `${node.env_mcu_temperature.toFixed(1)}°C`
-              }
-            />
-          )}
-          {node.env_humidity !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.humidity')}
-              value={`${node.env_humidity.toFixed(1)}%`}
-            />
-          )}
-          {node.env_pressure !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.pressure')}
-              value={`${node.env_pressure.toFixed(1)} hPa`}
-            />
-          )}
-          {node.env_iaq !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.airQuality')}
-              value={`${node.env_iaq} – ${iaqLabel(node.env_iaq, t)}`}
-            />
-          )}
-          {node.env_gas_resistance !== undefined && (
-            <InfoRow label={t('nodeInfoBody.gasResistance')} value={`${node.env_gas_resistance}`} />
-          )}
-          {node.env_lux !== undefined && (
-            <InfoRow label={t('nodeInfoBody.light')} value={`${node.env_lux.toFixed(0)} lux`} />
-          )}
-          {node.env_wind_speed !== undefined && (
-            <InfoRow
-              label={t('nodeInfoBody.wind')}
-              value={
-                node.env_wind_direction !== undefined
-                  ? `${node.env_wind_speed.toFixed(1)} m/s @ ${node.env_wind_direction}°`
-                  : `${node.env_wind_speed.toFixed(1)} m/s`
-              }
-            />
-          )}
-          {node.env_pm25 !== undefined && (
-            <InfoRow label={t('nodeInfoBody.pm25')} value={`${node.env_pm25} µg/m³`} />
-          )}
-          {node.env_pm10 !== undefined && (
-            <InfoRow label={t('nodeInfoBody.pm10')} value={`${node.env_pm10} µg/m³`} />
-          )}
-          {node.env_co2 !== undefined && (
-            <InfoRow label={t('nodeInfoBody.co2')} value={`${node.env_co2} ppm`} />
-          )}
-          {node.env_voc_idx !== undefined && (
-            <InfoRow label={t('nodeInfoBody.voc')} value={`${node.env_voc_idx}`} />
-          )}
-          {node.env_nox_idx !== undefined && (
-            <InfoRow label={t('nodeInfoBody.nox')} value={`${node.env_nox_idx}`} />
-          )}
-          <EnvironmentSparklines protocol={protocol} nodeId={node.node_id} />
-        </div>
-      )}
+      <NodeEnvironmentSection node={node} useFahrenheit={useFahrenheit} protocol={protocol} />
 
       {/* RF Diagnostics */}
       <RFDiagnosticsSection
