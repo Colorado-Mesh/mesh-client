@@ -1382,49 +1382,10 @@ export default function NodeInfoBody({
         />
       </div>
 
-      {/* Trace route result */}
-      {onShowTraceRouteOnMap && traceRouteHops && traceRouteHops.length > 0 && (
-        <button
-          type="button"
-          className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-600 mb-2 rounded-lg border px-2.5 py-1 text-xs font-medium"
-          aria-label={t('mapPanel.showTraceRouteOnMap')}
-          onClick={() => {
-            onShowTraceRouteOnMap();
-          }}
-        >
-          {t('mapPanel.showTraceRouteOnMap')}
-        </button>
-      )}
-      {traceRouteHops && (
-        <div className="bg-primary-dark mt-3 rounded-lg p-2">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <span className="text-ink-400 text-xs">{t('nodeInfoBody.routePath')}</span>
-            {traceRouteHops.length > 0 && (
-              <CopyButton
-                size="sm"
-                label={t('common.copyRoute')}
-                text={() => formatTraceRouteHops(traceRouteHops)}
-              />
-            )}
-          </div>
-          <div className="text-ink-200 flex flex-wrap items-center gap-1 text-sm">
-            {traceRouteHops.map((hop, i) => (
-              <span key={i} className="flex items-center gap-1">
-                {i > 0 && <span className="text-muted">→</span>}
-                <span
-                  className={
-                    i === 0 || i === traceRouteHops.length - 1
-                      ? 'font-medium text-green-400'
-                      : 'text-ink-200'
-                  }
-                >
-                  {hop}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <NodeTraceRouteSection
+        traceRouteHops={traceRouteHops}
+        onShowTraceRouteOnMap={onShowTraceRouteOnMap}
+      />
 
       <NodeEnvironmentSection node={node} useFahrenheit={useFahrenheit} protocol={protocol} />
 
@@ -1513,6 +1474,62 @@ function computeMeshCongestionDetails(args: {
       ? summarizeRfDuplicateOriginators(args.packetCache)
       : [];
   return { meshCongestionFinding, meshCongestionLines, rfOriginators };
+}
+
+function NodeTraceRouteSection({
+  traceRouteHops,
+  onShowTraceRouteOnMap,
+}: {
+  traceRouteHops?: string[];
+  onShowTraceRouteOnMap?: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {onShowTraceRouteOnMap && traceRouteHops && traceRouteHops.length > 0 && (
+        <button
+          type="button"
+          className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-600 mb-2 rounded-lg border px-2.5 py-1 text-xs font-medium"
+          aria-label={t('mapPanel.showTraceRouteOnMap')}
+          onClick={() => {
+            onShowTraceRouteOnMap();
+          }}
+        >
+          {t('mapPanel.showTraceRouteOnMap')}
+        </button>
+      )}
+      {traceRouteHops && (
+        <div className="bg-primary-dark mt-3 rounded-lg p-2">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span className="text-ink-400 text-xs">{t('nodeInfoBody.routePath')}</span>
+            {traceRouteHops.length > 0 && (
+              <CopyButton
+                size="sm"
+                label={t('common.copyRoute')}
+                text={() => formatTraceRouteHops(traceRouteHops)}
+              />
+            )}
+          </div>
+          <div className="text-ink-200 flex flex-wrap items-center gap-1 text-sm">
+            {traceRouteHops.map((hop, i) => (
+              <span key={i} className="flex items-center gap-1">
+                {i > 0 && <span className="text-muted">→</span>}
+                <span
+                  className={
+                    i === 0 || i === traceRouteHops.length - 1
+                      ? 'font-medium text-green-400'
+                      : 'text-ink-200'
+                  }
+                >
+                  {hop}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 function RfFlaggedBadge({
