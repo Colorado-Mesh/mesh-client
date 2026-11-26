@@ -17,6 +17,9 @@
     "scripts/consolidate-github-release-duplicates.mjs",
     "scripts/translation-smoke.mjs",
     "scripts/backfill-log-ids.mjs",
+    // Loaded by path from electron-builder.yml (beforeBuild / beforePack); default export is the hook.
+    "scripts/electron-builder-before-build.mjs",
+    "scripts/electron-builder-before-pack.mjs",
   ],
   "ignorePatterns": [
     // MkDocs theme asset, not part of the app bundle.
