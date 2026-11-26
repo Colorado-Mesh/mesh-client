@@ -50,26 +50,65 @@ describe('sendChatOnIdentity MeshCom', () => {
     const provisionalId = sendChatOnIdentity(ID, { text: 'hello cm', channelIndex: 0 });
     expect(provisionalId).toBeDefined();
 
-    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        identity_id: OFFLINE_MESHCOM_IDENTITY_ID,
-        text: 'hello cm',
-        channel_idx: 0,
-        to_call_or_group: '*',
-        status: 'sending',
-        received_via: 'rf',
-      }),
-    );
+    // No provisional DB row: the store/wire id is only known after the send resolves.
+    expect(window.electronAPI.db.saveMeshcomMessage).not.toHaveBeenCalled();
 
     await vi.waitFor(() => {
       expect(useMessageStore.getState().messages[ID]?.['42']?.status).toBe('acked');
     });
+    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
       expect.objectContaining({
+        identity_id: OFFLINE_MESHCOM_IDENTITY_ID,
         msg_id: '42',
+        channel_idx: 0,
+        to_call_or_group: '*',
         status: 'acked',
+        received_via: 'rf',
         text: 'hello cm',
       }),
+    );
+  });
+
+  it('keeps a new ALL bubble when the wire id collides with hydrated history', async () => {
+    addIdentity({
+      id: ID,
+      protocol: meshcomProtocol,
+      signature: 'sig-cm',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    setConnection(ID, { status: 'configured', connectionType: 'ble', myNodeNum: SELF_NODE });
+    upsertNode(ID, { nodeId: SELF_NODE, longName: SELF_CALL });
+    // MeshCom firmwareMsgSeq restarts at 1 per connection; hydration restores the previous
+    // session's send under the same numeric id.
+    upsertMessage(ID, {
+      id: '1',
+      from: SELF_NODE,
+      senderName: SELF_CALL,
+      to: 0xffffffff,
+      payload: 'previous session',
+      channelIndex: 0,
+      timestamp: 1,
+      status: 'acked',
+    });
+    vi.spyOn(meshcomProtocol, 'sendMessage').mockResolvedValue({ packetId: 1 });
+    vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+
+    const provisionalId = sendChatOnIdentity(ID, { text: 'new all', channelIndex: 0 });
+    expect(provisionalId).toBeDefined();
+
+    await vi.waitFor(() => {
+      expect(useMessageStore.getState().messages[ID]?.['1-2']?.status).toBe('acked');
+    });
+    const bucket = useMessageStore.getState().messages[ID] ?? {};
+    expect(bucket['1-2']?.payload).toBe('new all');
+    expect(bucket['1-2']?.channelIndex).toBe(0);
+    expect(bucket['1']?.payload).toBe('previous session');
+    expect(bucket[provisionalId!]).toBeUndefined();
+    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ msg_id: '1-2', status: 'acked', text: 'new all' }),
     );
   });
 
@@ -145,7 +184,7 @@ describe('sendChatOnIdentity MeshCom', () => {
     expect(useMessageStore.getState().messages[ID]?.['77']?.channelIndex).toBe(-1);
   });
 
-  it('stamps early outbound from device callsign when myNodeNum is still 0', () => {
+  it('stamps early outbound from device callsign when myNodeNum is still 0', async () => {
     addIdentity({
       id: ID,
       protocol: meshcomProtocol,
@@ -169,14 +208,18 @@ describe('sendChatOnIdentity MeshCom', () => {
     expect(row?.from).toBe(SELF_NODE);
     expect(row?.senderName).toBe(SELF_CALL);
     expect(getConnection(ID)?.myNodeNum).toBe(SELF_NODE);
-    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        identity_id: OFFLINE_MESHCOM_IDENTITY_ID,
-        from_call: SELF_CALL,
-        channel_idx: 312,
-        text: 'early',
-      }),
-    );
+    await vi.waitFor(() => {
+      expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          identity_id: OFFLINE_MESHCOM_IDENTITY_ID,
+          msg_id: '55',
+          from_call: SELF_CALL,
+          channel_idx: 312,
+          status: 'acked',
+          text: 'early',
+        }),
+      );
+    });
   });
 
   it('remaps from:0 outbound rows when self callsign arrives after send', async () => {

@@ -15,6 +15,7 @@ import { mockConsoleWarn } from '../lib/vitestConsoleMock';
 import { addIdentity, removeIdentity } from './identityStore';
 import {
   addMessage,
+  claimOutboundMessageId,
   mergeMessageRecordsFromDbForIdentity,
   type MessageRecord,
   type MessageStoreEvent,
@@ -202,6 +203,73 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
     expect(coverage?.predictedRelayHops).toBe(2);
     expect(coverage?.predictedFirstHop).toBeUndefined();
     expect(useRelayCoverageStore.getState().coverageFor(ID_A, pending)).toBeUndefined();
+  });
+
+  it('claimOutboundMessageId keeps an unrelated occupant and suffixes the new send', () => {
+    addMessage(ID_A, { ...sampleRecord('1'), payload: 'previous session', status: 'acked' });
+
+    const id = claimOutboundMessageId(ID_A, '1', {
+      from: 1,
+      payload: 'new all',
+      timestamp: 1_700_000_001_000,
+    });
+
+    expect(id).toBe('1-2');
+    const bucket = useMessageStore.getState().messages[ID_A] ?? {};
+    expect(bucket['1']?.payload).toBe('previous session');
+    // Suffixed ids still parse back to the wire id for routing-ACK matching.
+    expect(Number.parseInt(id, 10)).toBe(1);
+  });
+
+  it('claimOutboundMessageId reuses the id for the same logical message', () => {
+    addMessage(ID_A, sampleRecord('7'));
+
+    expect(
+      claimOutboundMessageId(ID_A, '7', {
+        from: 1,
+        payload: 'hello',
+        timestamp: 1_700_000_000_000,
+      }),
+    ).toBe('7');
+  });
+
+  it('claimOutboundMessageId finds the next free suffix', () => {
+    addMessage(ID_A, { ...sampleRecord('1'), payload: 'old one' });
+    addMessage(ID_A, { ...sampleRecord('1-2'), payload: 'old two' });
+
+    expect(
+      claimOutboundMessageId(ID_A, '1', {
+        from: 1,
+        payload: 'new all',
+        timestamp: 1_700_000_002_000,
+      }),
+    ).toBe('1-3');
+  });
+
+  it('claimOutboundMessageId keeps the base id when it is free', () => {
+    expect(
+      claimOutboundMessageId(ID_A, '9', {
+        from: 1,
+        payload: 'first send',
+        timestamp: 1_700_000_003_000,
+      }),
+    ).toBe('9');
+  });
+
+  it('claimOutboundMessageId never returns an occupied suffix', () => {
+    addMessage(ID_A, { ...sampleRecord('1'), payload: 'occupant' });
+    for (let n = 2; n <= 10; n++) {
+      addMessage(ID_A, { ...sampleRecord(`1-${n}`), payload: `old ${n}` });
+    }
+
+    const id = claimOutboundMessageId(ID_A, '1', {
+      from: 1,
+      payload: 'new all',
+      timestamp: 1_700_000_002_000,
+    });
+
+    expect(id).toBe('1-11');
+    expect(useMessageStore.getState().messages[ID_A]?.[id]).toBeUndefined();
   });
 
   it('renameMessageId does not clobber an acked Completes target', () => {

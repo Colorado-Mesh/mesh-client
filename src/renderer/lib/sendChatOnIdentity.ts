@@ -5,6 +5,7 @@ import { getConnection } from '../stores/connectionStore';
 import { type IdentityRecord, useIdentityStore } from '../stores/identityStore';
 import {
   addMessage,
+  claimOutboundMessageId,
   type MessageRecord,
   renameMessageId,
   updateMessageStatus,
@@ -429,9 +430,8 @@ export function sendChatOnIdentity(
         console.debug('[useSendMessage] saveMessage failed ' + errLikeToLogString(e));
       });
   }
-  if (isMeshcom) {
-    persistMeshcomOutboundRow(identityId, record, myNodeNum, 'sending');
-  }
+  // MeshCom deliberately persists only the outcome (below): the provisional id cannot be the
+  // wire id, so saving it first would leave a second, permanently-`sending` SQLite row behind.
 
   let destinationPubKey: Uint8Array | undefined;
   if (isMeshcoreDm) {
@@ -602,7 +602,13 @@ export function sendChatOnIdentity(
           });
     void sendPromise.then(
       (res) => {
-        const resolvedId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
+        const wireId = res.packetId != null ? String(res.packetId >>> 0) : provisionalId;
+        // MeshCom wire ids restart at 1 per connection and wrap at 1000, so they can collide
+        // with rows hydrated from an earlier session; suffix instead of merging into those.
+        const resolvedId =
+          isMeshcom && res.packetId != null
+            ? claimOutboundMessageId(identityId, wireId, record)
+            : wireId;
         if (res.packetId != null && resolvedId !== provisionalId) {
           renameMessageId(identityId, provisionalId, resolvedId);
           if (isMeshtastic && meshtasticTempPacketId != null) {

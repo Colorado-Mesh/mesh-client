@@ -86,10 +86,13 @@ function resolveOutboundRowForRoutingAck(
   identityId: IdentityId,
   requestId: number,
   payload: MeshtasticRoutingAckEvent,
-): { messageId: string; row: { status?: string; to?: number; channelIndex?: number } } | null {
+): {
+  messageId: string;
+  row: { status?: string; to?: number; channelIndex?: number; timestamp?: number };
+} | null {
   const candidates: {
     messageId: string;
-    row: { status?: string; to?: number; channelIndex?: number };
+    row: { status?: string; to?: number; channelIndex?: number; timestamp?: number };
     exactStorageId: boolean;
   }[] = [];
 
@@ -111,12 +114,25 @@ function resolveOutboundRowForRoutingAck(
   }
 
   if (candidates.length === 0) return null;
+  if (candidates.length === 1) {
+    return { messageId: candidates[0].messageId, row: candidates[0].row };
+  }
+
+  // A suffix-shared wire id (`42` failed, `42-2` in flight) must settle the live send: an ACK
+  // from the peer only arrives once, and it cannot belong to the older failed row.
+  const pending = candidates.filter((c) => c.row.status === 'sending');
+  if (pending.length > 0) {
+    let newest = pending[0];
+    for (const candidate of pending) {
+      if ((candidate.row.timestamp ?? 0) > (newest.row.timestamp ?? 0)) newest = candidate;
+    }
+    return { messageId: newest.messageId, row: newest.row };
+  }
 
   const exact = candidates.find((c) => c.exactStorageId);
   if (exact) return { messageId: exact.messageId, row: exact.row };
 
-  const pending = candidates.find((c) => c.row.status === 'sending');
-  return pending ?? candidates[0];
+  return { messageId: candidates[0].messageId, row: candidates[0].row };
 }
 
 /**
