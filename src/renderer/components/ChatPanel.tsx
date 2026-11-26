@@ -1728,6 +1728,10 @@ function ChatPanel({
 
   const getDmLabel = useCallback(
     (nodeNum: number) => {
+      if (protocol === 'meshcom') {
+        const fromRegistry = meshcomCallForNodeId(nodeNum);
+        if (fromRegistry) return fromRegistry;
+      }
       const node = nodes.get(nodeNum);
       const label = nodeDisplayName(node, protocol);
       if (label) return label;
@@ -1977,6 +1981,10 @@ function ChatPanel({
         );
         return filtered;
       }
+      // MeshCom: console `{CALL}text` attributes peer as both from and to — use resolveDmPeer.
+      if (protocol === 'meshcom') {
+        return regularMessages.filter((m) => resolveDmPeer(m) === dmPeer);
+      }
       return regularMessages.filter(
         (m) =>
           (m.to === dmPeer && isOwnNode(m.sender_id)) ||
@@ -1991,16 +1999,21 @@ function ChatPanel({
     }
 
     if (viewMode === 'weather') {
-      return regularMessages.filter(
-        (m) => !m.to && m.channel === channel && isWeatherPost(m, weatherConfig),
-      );
+      // Same channel-membership rule as the channel selector (MeshCom tolerates stray `to`).
+      return regularMessages.filter((m) => {
+        if (m.channel !== channel || !isWeatherPost(m, weatherConfig)) return false;
+        if (protocol === 'meshcom') return resolveDmPeer(m) == null;
+        return !m.to;
+      });
     }
-    return regularMessages.filter(
-      (m) =>
-        !m.to &&
-        m.channel === channel &&
-        !(weatherHideInChannels && isWeatherPost(m, weatherConfig)),
-    );
+    // MeshCom: legacy rows may still carry a stray `to` after hydrate; channel membership is
+    // `channel` + not a DM peer (resolveChatDmPeer requires channel === -1 for MeshCom).
+    return regularMessages.filter((m) => {
+      if (m.channel !== channel) return false;
+      if (weatherHideInChannels && isWeatherPost(m, weatherConfig)) return false;
+      if (protocol === 'meshcom') return resolveDmPeer(m) == null;
+      return !m.to;
+    });
   }, [
     activeDmNode,
     channel,
@@ -2008,6 +2021,7 @@ function ChatPanel({
     isOwnNode,
     protocol,
     regularMessages,
+    resolveDmPeer,
     viewMode,
     ownNodeIdSet,
     weatherConfig,
@@ -2018,10 +2032,15 @@ function ChatPanel({
     if (dmOnlyChat) return 0;
     let n = 0;
     for (const m of regularMessages) {
-      if (!m.to && m.channel === channel && isWeatherPost(m, weatherConfig)) n++;
+      if (m.channel !== channel || !isWeatherPost(m, weatherConfig)) continue;
+      if (protocol === 'meshcom') {
+        if (resolveDmPeer(m) == null) n++;
+      } else if (!m.to) {
+        n++;
+      }
     }
     return n;
-  }, [channel, dmOnlyChat, regularMessages, weatherConfig]);
+  }, [channel, dmOnlyChat, protocol, regularMessages, resolveDmPeer, weatherConfig]);
 
   // Word-filter conversation key follows the open channel/DM (not weather/starred watermarks).
   const wordFilterConversationKey = useMemo(() => {
@@ -4675,7 +4694,8 @@ function ChatPanel({
                 const msg = filteredMessages[i];
                 if (!msg) return null;
                 const isOwn = isOwnNode(msg.sender_id);
-                const isDm = !!msg.to;
+                // MeshCom: stray `to` on channel rows is not a DM (resolveDmPeer requires channel -1).
+                const isDm = protocol === 'meshcom' ? resolveDmPeer(msg) != null : !!msg.to;
                 const reactionRows = getReactionRows(msg);
                 const messageRowKey = msg.packetId ?? msg.timestamp;
                 const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
