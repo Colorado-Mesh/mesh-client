@@ -48,6 +48,17 @@ fn discovery_timeout() -> Duration {
     }
 }
 
+/// First `discover_services` on Windows must fail fast (#1571): btleplug's Cached
+/// characteristic fallback can hang for minutes, which would burn the whole connect
+/// deadline and skip rediscover/uuid_probe recovery. Align with recovery rediscover.
+fn first_discovery_timeout() -> Duration {
+    if cfg!(target_os = "windows") {
+        Duration::from_secs(10)
+    } else {
+        discovery_timeout()
+    }
+}
+
 fn characteristic_write_type(properties: CharPropFlags) -> Result<WriteType, GattError> {
     if properties.contains(CharPropFlags::WRITE) {
         Ok(WriteType::WithResponse)
@@ -903,7 +914,7 @@ impl BleBackend for BtleplugBackend {
             .map_err(|e| classify_setup_error(e.to_string(), GattErrorCode::ConnectTimeout))?;
 
             // OS-specific: open MaintainConnection before discover so WinRT discovery
-            // does not race an idle link (btleplug#325 / mesh-client#1528).
+            // does not race an idle link (btleplug#325 / mesh-client#1528 / #1571).
             #[cfg(target_os = "windows")]
             let mut keep_alive = open_windows_keep_alive(&peripheral, profile).await;
             #[cfg(not(target_os = "windows"))]
@@ -961,10 +972,64 @@ impl BleBackend for BtleplugBackend {
                 }
             };
 
+            // #1571: warm WinRT cache before the first btleplug discover_services. On some
+            // adapters (e.g. Killer AX1675 + MeshCore T1000E) Uncached char discovery times
+            // out and the Cached fallback hangs for minutes, so post-failure recovery never
+            // runs. UUID probe is spawn_blocking-bounded; on Found, reconnect so btleplug
+            // clears empty ble_services entries before discover.
+            #[cfg(target_os = "windows")]
+            if wants_windows_keep_alive(profile)
+                && remaining_until(deadline)
+                    >= super::windows_gatt_uuid_probe::UUID_PROBE_TIMEOUT
+                        + WINDOWS_RECOVERY_CONNECT_TIMEOUT
+                        + WINDOWS_REDISCOVER_SETTLE
+                        + WINDOWS_RECOVERY_DISCOVERY_TIMEOUT
+            {
+                stage("uuid_probe_pre");
+                if let Some(addr) = windows_peripheral_address_u64(&peripheral).await {
+                    match super::windows_gatt_uuid_probe::UuidProbeRequest::for_profile(
+                        addr, profile,
+                    ) {
+                        Ok(req) => {
+                            match super::windows_gatt_uuid_probe::probe_profile_characteristics(req)
+                                .await
+                            {
+                                super::windows_gatt_uuid_probe::UuidProbeOutcome::Found => {
+                                    tracing::info!(
+                                        target: "gatt",
+                                        profile = %profile,
+                                        "gatt: windows pre-discover UUID probe found characteristics — reconnecting to refresh btleplug cache"
+                                    );
+                                    keep_alive = None;
+                                    keep_alive = windows_recovery_reconnect(
+                                        &peripheral,
+                                        profile,
+                                        deadline,
+                                        &ignore_recovery_disconnect,
+                                    )
+                                    .await?;
+                                }
+                                outcome => {
+                                    tracing::info!(
+                                        target: "gatt",
+                                        ?outcome,
+                                        profile = %profile,
+                                        "gatt: windows pre-discover UUID probe did not warm cache — continuing to discover"
+                                    );
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            tracing::debug!(target: "gatt", "gatt: skip pre-discover UUID probe: {e}");
+                        }
+                    }
+                }
+            }
+
             #[cfg_attr(not(target_os = "windows"), allow(unused_mut))]
             let mut chars_result = discover_once(clamp_timeout(
                 remaining_until(deadline),
-                discovery_timeout(),
+                first_discovery_timeout(),
             ))
             .await;
 
@@ -1428,6 +1493,17 @@ mod tests {
             clamp_timeout(Duration::from_secs(60), Duration::from_secs(10)),
             Duration::from_secs(10)
         );
+    }
+
+    #[test]
+    fn first_discovery_timeout_is_short_on_windows() {
+        let first = first_discovery_timeout();
+        if cfg!(target_os = "windows") {
+            // Keep in sync with WINDOWS_RECOVERY_DISCOVERY_TIMEOUT (10s).
+            assert_eq!(first, Duration::from_secs(10));
+        } else {
+            assert_eq!(first, discovery_timeout());
+        }
     }
 
     #[test]

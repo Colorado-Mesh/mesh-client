@@ -717,6 +717,39 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
   renameHeardRepeatWindowMessageId(identityId, fromId, toId);
 }
 
+/**
+ * Store id for a just-sent message: `preferredId` when free, otherwise a unique
+ * `preferredId-<n>` suffix.
+ *
+ * MeshCom reuses its firmware packet id as the store id, but `firmwareMsgSeq` restarts at 1 on
+ * every connection and wraps at 1000; hydration restores earlier sessions under those same
+ * numeric ids. Renaming straight onto an occupied id would hit {@link renameMessageId}'s
+ * acked-target path, which keeps the occupant's text and silently drops the new bubble.
+ */
+export function claimOutboundMessageId(
+  identityId: IdentityId,
+  preferredId: string,
+  message: Pick<MessageRecord, 'from' | 'payload' | 'timestamp'>,
+): string {
+  const bucket = useMessageStore.getState().messages[identityId];
+  const occupant = bucket?.[preferredId];
+  if (
+    !occupant ||
+    (occupant.from === message.from &&
+      occupant.payload === message.payload &&
+      occupant.timestamp === message.timestamp)
+  ) {
+    return preferredId;
+  }
+  // At most `taken.size` ids exist, so probing `size + 1` distinct suffixes always finds one.
+  const taken = new Set(Object.keys(bucket ?? {}));
+  for (let n = 2; n <= taken.size + 2; n++) {
+    const candidate = `${preferredId}-${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  return `${preferredId}-${taken.size + 2}`;
+}
+
 export function updateMessageStatus(
   identityId: IdentityId,
   messageId: string,

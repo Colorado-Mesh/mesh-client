@@ -92,7 +92,9 @@ describe('MeshComProtocol serial/BLE', () => {
     expect(texts[0]?.payload.payload).toBe('hello udp');
     expect(texts[1]?.payload.payload).toBe('brace text');
     expect(texts[1]?.payload.from).toBeGreaterThan(0);
-    expect(texts[1]?.payload.to).toBe(0xffffffff);
+    expect(texts[1]?.payload.channelIndex).toBe(-1);
+    // Inbound `{CALL}text` attributes the peer as both from and DM `to`.
+    expect(texts[1]?.payload.to).toBe(texts[1]?.payload.from);
 
     unsub();
   });

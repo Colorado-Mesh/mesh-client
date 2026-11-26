@@ -204,6 +204,19 @@ export function resolveChatDmPeer(
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
   const isOwn = (id: number) => isOwnChatNodeId(id, ownNodeIds, protocol);
 
+  // MeshCom: only channel -1 is a DM. Stray `to` on ALL/group (legacy NFFFFFFFF hydrate) must not
+  // open hex DM tabs. Inbound console DMs may set to===from (peer attribution).
+  if (protocol === 'meshcom') {
+    if (msg.channel !== -1) return undefined;
+    if (msg.sender_id > 0 && !isOwn(msg.sender_id)) {
+      return finalizeChatDmPeer(msg.sender_id, protocol, options);
+    }
+    if (msg.to != null && msg.to > 0 && !isOwn(msg.to) && !isMeshtasticBroadcastNodeNum(msg.to)) {
+      return finalizeChatDmPeer(msg.to, protocol, options);
+    }
+    return undefined;
+  }
+
   if (protocol === 'reticulum' && reticulumUnsetDmTo(msg.to) && msg.reticulum_sender_hash) {
     return resolveReticulumUnsetDmPeer({ msg, isOwn, options });
   }

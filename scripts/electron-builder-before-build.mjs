@@ -107,3 +107,6 @@ export async function runBeforeBuild(nodeModulesRoot = joinUnderRoot(projectRoot
 /**
  * @type {(context: import('app-builder-lib').BeforeBuildContext) => Promise<boolean>}
  */
+export default async function beforeBuild() {
+  return runBeforeBuild();
+}

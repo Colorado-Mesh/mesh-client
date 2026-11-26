@@ -8,6 +8,38 @@ export const MESHCOM_EXTUDP_DST_MAX_LEN = 9;
 const MESHCOM_CALLSIGN_SOFT_PATTERN = /^[A-Z0-9]{1,7}-[0-9]{1,2}$/;
 
 /**
+ * Invented when a node has no callsign: `N` + uppercase hex of `nodeId`
+ * (e.g. `NFFFFFFFF` for broadcast `0xffffffff`). Not a ham callsign.
+ */
+export function meshcomNodeIdPlaceholderCallsign(nodeId: number): string {
+  return `N${(nodeId >>> 0).toString(16).toUpperCase()}`;
+}
+
+/**
+ * True when `callsign` is the generated placeholder for this `nodeId` (provenance).
+ * Real callsigns such as `N0ABC` are preserved — they do not equal `N{hex(nodeId)}`
+ * for their hashed node id.
+ */
+export function isMeshcomNodeIdPlaceholderCallsign(callsign: string, nodeId: number): boolean {
+  const call = normalizeMeshcomCallsign(callsign);
+  if (!call) return true;
+  if (nodeId === 0 || nodeId === 0xffffffff) return true;
+  return call === meshcomNodeIdPlaceholderCallsign(nodeId);
+}
+
+/**
+ * Legacy broadcast destination strings written before channel-aware persist
+ * (`to_call_or_group` from `callsignFromNode(0xffffffff)`).
+ */
+export function isMeshcomLegacyBroadcastPlaceholder(callsign: string): boolean {
+  const call = normalizeMeshcomCallsign(callsign);
+  return (
+    call === meshcomNodeIdPlaceholderCallsign(0xffffffff) ||
+    call === meshcomNodeIdPlaceholderCallsign(0)
+  );
+}
+
+/**
  * Uppercase, trim, collapse leading SSID zero (`OE1KFR-02` → `OE1KFR-2`),
  * and clamp to wire length. Empty input stays empty.
  */

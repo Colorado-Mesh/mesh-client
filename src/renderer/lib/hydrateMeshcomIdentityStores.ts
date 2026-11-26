@@ -11,7 +11,14 @@ import {
 import { replaceNodeRecordsForIdentity, upsertNodeRecordsForIdentity } from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
-import { callsignToNodeId } from './meshcom/meshcomCallsign';
+import { registerMeshcomCallsign } from './meshcom/meshcomCallRegistry';
+import {
+  callsignToNodeId,
+  isMeshcomLegacyBroadcastPlaceholder,
+  isMeshcomNodeIdPlaceholderCallsign,
+  normalizeMeshcomCallsign,
+} from './meshcom/meshcomCallsign';
+import { isMeshcomGroupDest, resolveMeshcomDestination } from './meshcom/meshcomChannel';
 import { meshcomHwLabel } from './meshcom/meshcomHwIds';
 import { meshcomPersistIdentityId } from './meshcom/meshcomPersistIdentity';
 import {
@@ -20,6 +27,36 @@ import {
 } from './meshcom/meshcomSelfCallsign';
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
 import type { ChatMessage, IdentityId, MeshNode } from './types';
+
+/**
+ * Map SQLite `to_call_or_group` + `channel_idx` → store channel / optional DM peer.
+ * ALL/group never get a `to` peer (Chat channel view requires `!m.to`).
+ */
+function hydrateMeshcomDest(
+  toCallOrGroup: string,
+  channelIdx: number | undefined,
+): { channel: number; to: number | undefined } {
+  const raw = toCallOrGroup.trim().replace(/^#/, '');
+  if (!raw || raw === '*' || isMeshcomLegacyBroadcastPlaceholder(raw)) {
+    return { channel: channelIdx ?? 0, to: undefined };
+  }
+  if (isMeshcomGroupDest(raw)) {
+    const groupId = Number.parseInt(raw, 10);
+    return {
+      channel: channelIdx != null && channelIdx > 0 ? channelIdx : groupId,
+      to: undefined,
+    };
+  }
+  const dest = resolveMeshcomDestination(raw);
+  if (dest.channelIndex !== -1 || dest.toNodeId <= 0) {
+    return { channel: channelIdx ?? dest.channelIndex, to: undefined };
+  }
+  // Callsign dest: only a DM peer when channel_idx is missing or already -1.
+  if (channelIdx != null && channelIdx >= 0) {
+    return { channel: channelIdx, to: undefined };
+  }
+  return { channel: channelIdx ?? -1, to: dest.toNodeId };
+}
 
 export interface HydrateMeshcomIdentityOptions {
   nodes?: boolean;
@@ -76,8 +113,22 @@ export function rowsToMessageRecords(rows: MeshcomDbMessageRow[]): MessageRecord
   return rows.map((row) => {
     const fromCall = optionalString(row.from_call) ?? '';
     const senderId = fromCall ? callsignToNodeId(fromCall) : 0;
+    // Register real callsigns (incl. N0ABC); skip only legacy broadcast placeholders.
+    if (fromCall && !isMeshcomLegacyBroadcastPlaceholder(fromCall)) {
+      registerMeshcomCallsign(fromCall);
+    }
     const toCall = optionalString(row.to_call_or_group) ?? '';
-    const channel = optionalNumber(row.channel_idx) ?? 0;
+    const { channel, to } = hydrateMeshcomDest(toCall, optionalNumber(row.channel_idx));
+    if (to != null && channel === -1) {
+      const peerCall = normalizeMeshcomCallsign(toCall.replace(/^#/, ''));
+      if (
+        peerCall &&
+        !isMeshcomLegacyBroadcastPlaceholder(peerCall) &&
+        !isMeshcomGroupDest(peerCall)
+      ) {
+        registerMeshcomCallsign(peerCall);
+      }
+    }
     const ts = optionalNumber(row.timestamp) ?? Date.now();
     return chatMessageToMessageRecord({
       storeId: meshcomRowStoreId(row, senderId, ts),
@@ -88,7 +139,7 @@ export function rowsToMessageRecords(rows: MeshcomDbMessageRow[]): MessageRecord
       channel,
       timestamp: ts,
       receivedAt: optionalNumber(row.received_at),
-      to: toCall && toCall !== '*' ? callsignToNodeId(toCall) : undefined,
+      to,
       status: meshcomRowStatus(row.status),
       receivedVia: meshcomRowReceivedVia(row.received_via),
       rxRssi: optionalNumber(row.rssi),
@@ -150,14 +201,17 @@ interface MeshcomContactRow {
 function meshcomContactNode(c: MeshcomContactRow): MeshNode | null {
   const callsign = typeof c.callsign === 'string' ? c.callsign.trim() : '';
   if (!callsign) return null;
-  const nodeId =
-    typeof c.node_id === 'number' && Number.isFinite(c.node_id) && c.node_id > 0
-      ? c.node_id >>> 0
-      : callsignToNodeId(callsign);
+  const normalized = normalizeMeshcomCallsign(callsign);
+  if (!normalized || isMeshcomLegacyBroadcastPlaceholder(normalized)) return null;
+  const rowNodeId = typeof c.node_id === 'number' ? c.node_id >>> 0 : 0;
+  // Drop contacts whose stored callsign is only the generated placeholder for that node id.
+  if (rowNodeId > 0 && isMeshcomNodeIdPlaceholderCallsign(normalized, rowNodeId)) return null;
+  // Prefer callsign hash (wire identity); register so DM labels/send survive restart.
+  const nodeId = registerMeshcomCallsign(normalized);
   return {
     node_id: nodeId,
-    long_name: callsign,
-    short_name: callsign.slice(0, 4),
+    long_name: normalized,
+    short_name: normalized.slice(0, 4),
     hw_model: meshcomHwLabel(c.hw_id) || '',
     snr: 0,
     rssi: 0,
