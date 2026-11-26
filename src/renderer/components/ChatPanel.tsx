@@ -4694,7 +4694,8 @@ function ChatPanel({
                 const msg = filteredMessages[i];
                 if (!msg) return null;
                 const isOwn = isOwnNode(msg.sender_id);
-                const isDm = !!msg.to;
+                // MeshCom: stray `to` on channel rows is not a DM (resolveDmPeer requires channel -1).
+                const isDm = protocol === 'meshcom' ? resolveDmPeer(msg) != null : !!msg.to;
                 const reactionRows = getReactionRows(msg);
                 const messageRowKey = msg.packetId ?? msg.timestamp;
                 const showPicker = pickerOpenFor === (msg.packetId ?? msg.timestamp);
