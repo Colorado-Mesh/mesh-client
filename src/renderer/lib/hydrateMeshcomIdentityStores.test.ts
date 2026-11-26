@@ -10,8 +10,10 @@ import {
   mergeMeshcomHydrateMessageRecords,
   rowsToMessageRecords,
 } from './hydrateMeshcomIdentityStores';
+import { clearMeshcomCallRegistry, meshcomCallForNodeId } from './meshcom/meshcomCallRegistry';
 import { callsignToNodeId } from './meshcom/meshcomCallsign';
 import { OFFLINE_MESHCOM_IDENTITY_ID } from './offlineProtocolIdentities';
+import { messageRecordToChatMessage } from './storeRecordAdapters';
 
 describe('hydrateMeshcomIdentity', () => {
   beforeEach(() => {
@@ -167,6 +169,58 @@ describe('hydrateMeshcomIdentity', () => {
     expect(bucket.shared.payload).toBe('offline body');
     expect(bucket['meshcom-db:99'].payload).toBe('legacy body');
     expect(bucket['meshcom-db:99'].channelIndex).toBe(312);
+  });
+
+  it('rowsToMessageRecords clears peer to for ALL/group and legacy NFFFFFFFF', () => {
+    const allRows = rowsToMessageRecords([
+      {
+        msg_id: 'all-1',
+        from_call: 'SP2ONG-1',
+        to_call_or_group: 'NFFFFFFFF',
+        text: 'cq',
+        channel_idx: 0,
+        timestamp: 1,
+      },
+      {
+        msg_id: 'grc-1',
+        from_call: 'SP2ONG-1',
+        to_call_or_group: '#312',
+        text: 'siema',
+        channel_idx: 312,
+        timestamp: 2,
+      },
+      {
+        msg_id: 'dm-1',
+        from_call: 'SP2ONG-1',
+        to_call_or_group: 'OE1ABC-2',
+        text: 'private',
+        channel_idx: -1,
+        timestamp: 3,
+      },
+    ]);
+    expect(allRows[0].channelIndex).toBe(0);
+    expect(messageRecordToChatMessage(allRows[0]).to).toBeUndefined();
+    expect(allRows[1].channelIndex).toBe(312);
+    expect(messageRecordToChatMessage(allRows[1]).to).toBeUndefined();
+    expect(allRows[2].channelIndex).toBe(-1);
+    expect(allRows[2].to).toBe(callsignToNodeId('OE1ABC-2'));
+    expect(messageRecordToChatMessage(allRows[2]).to).toBe(callsignToNodeId('OE1ABC-2'));
+  });
+
+  it('hydrate registers contact callsigns in the MeshCom registry', async () => {
+    clearMeshcomCallRegistry();
+    const call = 'OE1REG-1';
+    const nodeId = callsignToNodeId(call);
+    vi.mocked(window.electronAPI.db.getMeshcomMessages).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getMeshcomContacts).mockResolvedValue([
+      { callsign: call, node_id: nodeId, last_heard: 100 },
+    ]);
+
+    await hydrateMeshcomIdentity(OFFLINE_MESHCOM_IDENTITY_ID, { messages: false }, () => true);
+
+    expect(meshcomCallForNodeId(nodeId)).toBe(call);
+    const nodes = useNodeStore.getState().nodes[OFFLINE_MESHCOM_IDENTITY_ID];
+    expect(nodes[nodeId].longName).toBe(call);
   });
 
   it('mergeMeshcomHydrateMessageRecords collapses true duplicates and remints collisions', () => {

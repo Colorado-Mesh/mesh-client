@@ -1,5 +1,4 @@
 import {
-  formatMeshtasticNodeId,
   isMeshtasticBroadcastNodeNum,
   MESHTASTIC_BROADCAST_NODE_NUM,
 } from '@/shared/nodeNameUtils';
@@ -119,12 +118,13 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     : undefined;
   const reticulumReplyHash = record.reticulumReplyToHash;
   const rxHops = record.rxHops ?? record.hopCount;
+  // Bare hex (no Meshtastic `!`) — MessageRecord has no protocol; MeshCom/MeshCore must not show `!xxxxxxxx`.
+  const trimmedSender = record.senderName?.trim();
   return {
     ...(packetId != null ? { id: packetId } : {}),
     ...(packetId == null ? { storeId: record.id } : {}),
     sender_id: record.from,
-    sender_name:
-      record.senderName?.trim() || (record.from > 0 ? formatMeshtasticNodeId(record.from) : ''),
+    sender_name: trimmedSender || (record.from > 0 ? record.from.toString(16) : ''),
     payload: record.payload,
     channel: record.channelIndex,
     timestamp: record.timestamp,

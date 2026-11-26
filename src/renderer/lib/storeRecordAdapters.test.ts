@@ -36,7 +36,7 @@ describe('store record adapters (merge precedence)', () => {
     expect(msgs[0].to).toBeUndefined();
   });
 
-  it('messageRecordToChatMessage falls back to hex node id when senderName is missing', () => {
+  it('messageRecordToChatMessage falls back to bare hex when senderName is missing', () => {
     const record: MessageRecord = {
       id: '99',
       from: 0x51f1662,
@@ -45,7 +45,8 @@ describe('store record adapters (merge precedence)', () => {
       channelIndex: 0,
       timestamp: 100,
     };
-    expect(messageRecordToChatMessage(record).sender_name).toBe('!051f1662');
+    // No Meshtastic `!` prefix — MessageRecord has no protocol (MeshCom/MeshCore must not show `!xxxxxxxx`).
+    expect(messageRecordToChatMessage(record).sender_name).toBe((0x51f1662).toString(16));
   });
 
   it('round-trips tapback reactions via tapback flag and payload glyph', () => {

@@ -608,6 +608,26 @@ describe('chatViewKeyForMessage', () => {
       'dm:2',
     );
   });
+
+  it('MeshCom channel traffic with stray to is not a DM peer', () => {
+    const own = new Set([10]);
+    expect(
+      resolveChatDmPeer(msg({ channel: 0, sender_id: 10, to: 0xcd5305e1 }), own, 'meshcom'),
+    ).toBeUndefined();
+    expect(
+      resolveChatDmPeer(msg({ channel: 312, sender_id: 2, to: 0x62b42631 }), own, 'meshcom'),
+    ).toBeUndefined();
+    expect(chatViewKeyForMessage(msg({ channel: 0, sender_id: 2, to: 99 }), 'meshcom', own)).toBe(
+      'ch:0',
+    );
+  });
+
+  it('MeshCom channel -1 resolves DM peer from sender or destination', () => {
+    const own = new Set([10]);
+    expect(resolveChatDmPeer(msg({ channel: -1, sender_id: 2, to: 10 }), own, 'meshcom')).toBe(2);
+    expect(resolveChatDmPeer(msg({ channel: -1, sender_id: 10, to: 3 }), own, 'meshcom')).toBe(3);
+    expect(resolveChatDmPeer(msg({ channel: -1, sender_id: 2 }), own, 'meshcom')).toBe(2);
+  });
 });
 
 describe('hasAudibleBackgroundMessages', () => {

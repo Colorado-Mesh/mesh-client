@@ -750,12 +750,13 @@ function emitConsoleTextLine(
           : dest.wireDest;
     if (shouldDropLocalMeshcomText(handle, fromCall, echoDst, text, emit)) return;
     const from = rememberCallsign(handle, fromCall);
+    // DM: peer is the braced callsign (inbound attribution). ALL/group use broadcast `to`.
     const { to, channelIndex } =
       dest.channelIndex > 0
         ? { to: 0xffffffff, channelIndex: dest.channelIndex }
         : dest.channelIndex === 0
           ? { to: 0xffffffff, channelIndex: 0 }
-          : { to: 0xffffffff, channelIndex: 0 };
+          : { to: from > 0 ? from : 0xffffffff, channelIndex: -1 };
     emit({
       type: 'node_info',
       payload: {

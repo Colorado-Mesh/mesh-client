@@ -48,6 +48,8 @@ function nodeRecordFor(
 }
 
 function callsignFromNode(identityId: IdentityId, nodeId: number): string {
+  // Match meshcomSelfCallsign.meshcomCallForNode — broadcast is never a callsign.
+  if (nodeId === 0 || nodeId === 0xffffffff) return '';
   const fromRegistry = meshcomCallForNodeId(nodeId);
   if (fromRegistry) return fromRegistry;
   const record = nodeRecordFor(identityId, nodeId);
@@ -55,6 +57,27 @@ function callsignFromNode(identityId: IdentityId, nodeId: number): string {
   if (name) return normalizeMeshcomCallsign(name);
   // Last resort only — prefer registry / node_info so hydrate does not remint nodeIds.
   return nodeId > 0 ? `N${nodeId.toString(16).toUpperCase()}` : '';
+}
+
+/** Synthetic `N{HEX}` placeholder — not a real ham callsign; do not register as a peer. */
+function isMeshcomSyntheticCallsign(callsign: string): boolean {
+  return /^N[0-9A-F]+$/i.test(callsign.trim());
+}
+
+/**
+ * Persist destination for SQLite: ALL=`*`, GRC=digits, DM=peer callsign.
+ * Never invent `NFFFFFFFF` from broadcast `to`.
+ */
+function toCallOrGroupForPersist(
+  channelIdx: number,
+  identityId: IdentityId,
+  toNodeId: number,
+): string | null {
+  if (channelIdx > 0) return String(channelIdx);
+  if (channelIdx === 0) return '*';
+  const peer = callsignFromNode(identityId, toNodeId);
+  if (!peer || isMeshcomSyntheticCallsign(peer)) return null;
+  return peer;
 }
 
 function persistContact(
@@ -114,33 +137,42 @@ function handleTextMessage(
 
   const incoming = messageRecordToChatMessage(record);
   const myNodeNum = options.getMyNodeNum?.() ?? 0;
-  const fromCall = callsignFromNode(identityId, event.payload.from) || incoming.sender_name;
-  const toCall = callsignFromNode(identityId, event.payload.to);
-  if (fromCall) registerMeshcomCallsign(fromCall);
-  if (toCall && toCall !== '*') registerMeshcomCallsign(toCall);
+  const fromCallRaw = callsignFromNode(identityId, event.payload.from) || incoming.sender_name;
+  const fromCall = normalizeMeshcomCallsign(fromCallRaw);
+  if (fromCall && !isMeshcomSyntheticCallsign(fromCall)) {
+    registerMeshcomCallsign(fromCall);
+  }
 
   // Gateway/network clock beacon (~5 min) — mesh liveness, not a chat line.
   if (noteMeshcomNetworkTimeFromText(incoming.payload)) {
     deleteMessage(identityId, event.payload.id);
     return;
   }
-  if (fromCall) maybeAlertMeshcomWatchlistCallsign(fromCall);
+  if (fromCall && !isMeshcomSyntheticCallsign(fromCall)) {
+    maybeAlertMeshcomWatchlistCallsign(fromCall);
+  }
 
   const channelIdx = channelIdxForEvent(event.payload.channelIndex, event.payload.to, myNodeNum);
+  const toCallOrGroup = toCallOrGroupForPersist(channelIdx, identityId, event.payload.to);
+  if (channelIdx === -1 && toCallOrGroup) {
+    registerMeshcomCallsign(toCallOrGroup);
+  }
   const path = event.payload.hopCount != null ? String(event.payload.hopCount) : null;
 
-  persistContact(identityId, {
-    callsign: fromCall,
-    nodeId: event.payload.from,
-    lastHeard: Math.floor(event.payload.timestamp / 1000),
-  });
+  if (fromCall && !isMeshcomSyntheticCallsign(fromCall)) {
+    persistContact(identityId, {
+      callsign: fromCall,
+      nodeId: event.payload.from,
+      lastHeard: Math.floor(event.payload.timestamp / 1000),
+    });
+  }
 
   persistDbWrite('meshcom ingest message', () =>
     window.electronAPI.db.saveMeshcomMessage({
       identity_id: meshcomPersistIdentityId(),
       msg_id: event.payload.id,
       from_call: fromCall || null,
-      to_call_or_group: toCall || null,
+      to_call_or_group: toCallOrGroup,
       text: incoming.payload,
       channel_idx: channelIdx,
       path,
@@ -217,8 +249,13 @@ function handleTelemetry(
 ): void {
   const t = event.payload;
   const existing = nodeRecordFor(identityId, t.nodeId);
+  const existingCall = normalizeMeshcomCallsign(existing?.longName ?? existing?.shortName ?? '');
+  const fromRegistry = meshcomCallForNodeId(t.nodeId);
+  // Prefer a real callsign; never overwrite one with a synthetic N{hex} placeholder.
   const callsign =
-    normalizeMeshcomCallsign(existing?.longName ?? existing?.shortName ?? '') ||
+    (fromRegistry && !isMeshcomSyntheticCallsign(fromRegistry) ? fromRegistry : '') ||
+    (existingCall && !isMeshcomSyntheticCallsign(existingCall) ? existingCall : '') ||
+    existingCall ||
     `N${t.nodeId.toString(16).toUpperCase()}`;
   if (!shouldApplyMeshcomContact(callsign)) {
     removeNode(identityId, t.nodeId);
@@ -227,7 +264,13 @@ function handleTelemetry(
 
   upsertNodeRecord(identityId, {
     nodeId: t.nodeId,
-    longName: callsign,
+    // Keep a prior real longName when telemetry only knows the hash id.
+    longName:
+      existingCall && !isMeshcomSyntheticCallsign(existingCall)
+        ? existingCall
+        : fromRegistry && !isMeshcomSyntheticCallsign(fromRegistry)
+          ? fromRegistry
+          : callsign,
     batteryLevel: t.batteryLevel ?? existing?.batteryLevel,
     voltage: t.voltage ?? existing?.voltage,
     lastHeardAt: Math.floor(t.timestamp / 1000),
@@ -256,7 +299,7 @@ function handleTelemetry(
     );
   }
 
-  if (t.batteryLevel != null) {
+  if (t.batteryLevel != null && !isMeshcomSyntheticCallsign(callsign)) {
     persistContact(identityId, {
       callsign,
       nodeId: t.nodeId,
@@ -273,8 +316,12 @@ function handlePosition(
 ): void {
   const { nodeId, latitude, longitude, timestamp } = event.payload;
   const existing = nodeRecordFor(identityId, nodeId);
+  const existingCall = normalizeMeshcomCallsign(existing?.longName ?? existing?.shortName ?? '');
+  const fromRegistry = meshcomCallForNodeId(nodeId);
   const callsign =
-    normalizeMeshcomCallsign(existing?.longName ?? existing?.shortName ?? '') ||
+    (fromRegistry && !isMeshcomSyntheticCallsign(fromRegistry) ? fromRegistry : '') ||
+    (existingCall && !isMeshcomSyntheticCallsign(existingCall) ? existingCall : '') ||
+    existingCall ||
     `N${nodeId.toString(16).toUpperCase()}`;
 
   const myNodeNum = options.getMyNodeNum?.() ?? 0;
@@ -291,21 +338,30 @@ function handlePosition(
 
   upsertNodeRecord(identityId, {
     nodeId,
-    longName: callsign,
+    longName:
+      existingCall && !isMeshcomSyntheticCallsign(existingCall)
+        ? existingCall
+        : fromRegistry && !isMeshcomSyntheticCallsign(fromRegistry)
+          ? fromRegistry
+          : callsign,
     latitude,
     longitude,
     lastHeardAt: Math.floor(timestamp / 1000),
   });
 
-  if (callsign) maybeAlertMeshcomWatchlistCallsign(callsign);
+  if (callsign && !isMeshcomSyntheticCallsign(callsign)) {
+    maybeAlertMeshcomWatchlistCallsign(callsign);
+  }
 
-  persistContact(identityId, {
-    callsign,
-    nodeId,
-    lat: latitude,
-    lon: longitude,
-    lastHeard: Math.floor(timestamp / 1000),
-  });
+  if (!isMeshcomSyntheticCallsign(callsign)) {
+    persistContact(identityId, {
+      callsign,
+      nodeId,
+      lat: latitude,
+      lon: longitude,
+      lastHeard: Math.floor(timestamp / 1000),
+    });
+  }
 }
 
 function createListener(

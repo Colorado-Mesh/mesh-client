@@ -145,10 +145,124 @@ describe('meshcomIngest', () => {
       expect.objectContaining({
         from_call: 'OE1NEW-1',
         msg_id: msgId,
+        to_call_or_group: '*',
       }),
     );
     expect(window.electronAPI.db.saveMeshcomContact).toHaveBeenCalledWith(
       expect.objectContaining({ callsign: 'OE1NEW-1', node_id: from }),
+    );
+  });
+
+  it('persists ALL broadcast as to_call_or_group=* not NFFFFFFFF', () => {
+    const from = registerMeshcomCallsign('SP2ONG-1');
+    const msgId = 'meshcom-all-broadcast';
+    upsertMessage(
+      ID,
+      chatMessageToMessageRecord({
+        storeId: msgId,
+        sender_id: from,
+        sender_name: 'SP2ONG-1',
+        payload: 'cq',
+        channel: 0,
+        timestamp: 1_700_000_000_000,
+      }),
+    );
+
+    meshcomIngestHandleTextMessage(
+      ID,
+      {
+        type: 'text_message',
+        payload: {
+          id: msgId,
+          from,
+          to: 0xffffffff,
+          payload: 'cq',
+          channelIndex: 0,
+          timestamp: 1_700_000_000_000,
+        },
+      },
+      { getMyNodeNum: () => callsignToNodeId('ME-1') },
+    );
+
+    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to_call_or_group: '*',
+        channel_idx: 0,
+      }),
+    );
+    expect(window.electronAPI.db.saveMeshcomContact).not.toHaveBeenCalledWith(
+      expect.objectContaining({ callsign: expect.stringMatching(/^N/i) }),
+    );
+  });
+
+  it('persists GRC group as digit to_call_or_group and DM as peer callsign', () => {
+    const from = registerMeshcomCallsign('SP2ONG-1');
+    const me = registerMeshcomCallsign('ME-9');
+    const groupId = 'meshcom-grc-312';
+    const dmId = 'meshcom-dm-1';
+
+    upsertMessage(
+      ID,
+      chatMessageToMessageRecord({
+        storeId: groupId,
+        sender_id: from,
+        sender_name: 'SP2ONG-1',
+        payload: 'group hi',
+        channel: 312,
+        timestamp: 1,
+      }),
+    );
+    meshcomIngestHandleTextMessage(
+      ID,
+      {
+        type: 'text_message',
+        payload: {
+          id: groupId,
+          from,
+          to: 0xffffffff,
+          payload: 'group hi',
+          channelIndex: 312,
+          timestamp: 1,
+        },
+      },
+      { getMyNodeNum: () => me },
+    );
+    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ to_call_or_group: '312', channel_idx: 312 }),
+    );
+
+    upsertMessage(
+      ID,
+      chatMessageToMessageRecord({
+        storeId: dmId,
+        sender_id: from,
+        sender_name: 'SP2ONG-1',
+        payload: 'dm hi',
+        channel: -1,
+        to: me,
+        timestamp: 2,
+      }),
+    );
+    meshcomIngestHandleTextMessage(
+      ID,
+      {
+        type: 'text_message',
+        payload: {
+          id: dmId,
+          from,
+          to: me,
+          payload: 'dm hi',
+          channelIndex: -1,
+          timestamp: 2,
+        },
+      },
+      { getMyNodeNum: () => me },
+    );
+    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to_call_or_group: 'ME-9',
+        channel_idx: -1,
+      }),
     );
   });
 
