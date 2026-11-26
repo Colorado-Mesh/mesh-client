@@ -7188,6 +7188,36 @@ app.on('child-process-gone', (_event, details) => {
   );
 });
 
+async function registerMeshcomDbIpcWithFallback(): Promise<void> {
+  // Production ships `meshcom-db-handlers.js` beside index.js (out of measured budget).
+  try {
+    const meshcomDbMod = (
+      process.env.VITEST
+        ? await import('./ipc/meshcom-db-handlers')
+        : await import(pathToFileURL(path.join(__dirname, 'meshcom-db-handlers.js')).href)
+    ) as {
+      registerMeshcomDbIpcHandlers: (deps: { ipcMain: typeof ipcMain }) => void;
+    };
+    meshcomDbMod.registerMeshcomDbIpcHandlers({ ipcMain });
+  } catch (err: unknown) {
+    console.error(
+      'mcL0143 [main] meshcom-db IPC registration failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    const meshcomDbFallbackMod = (
+      process.env.VITEST
+        ? await import('./ipc/meshcom-db-handlers-fallback')
+        : await import(pathToFileURL(path.join(__dirname, 'meshcom-db-handlers-fallback.js')).href)
+    ) as {
+      registerMeshcomDbIpcFallbackHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+      }) => void;
+    };
+    meshcomDbFallbackMod.registerMeshcomDbIpcFallbackHandlers({ ipcMain, assertIpcSender });
+  }
+}
+
 async function registerTeamRosterIpcWithFallback(): Promise<void> {
   // Production ships `team-roster-handlers.js` beside index.js (out of measured budget).
   try {
@@ -7313,39 +7343,11 @@ void app
       loadVerboseLoggingSetting();
       await registerTeamRosterIpcWithFallback();
       await registerEnvironmentTelemetryIpcWithFallback();
+      await registerMeshcomDbIpcWithFallback();
       const coldStartUrl = registerLxmProtocolClient();
       if (coldStartUrl) pendingOpenUrl = coldStartUrl;
       registerIncidentIpcHandlers();
       registerScheduledBroadcastIpcHandlers();
-      // Production ships `meshcom-db-handlers.js` beside index.js (out of measured budget).
-      try {
-        const meshcomDbMod = (
-          process.env.VITEST
-            ? await import('./ipc/meshcom-db-handlers')
-            : await import(pathToFileURL(path.join(__dirname, 'meshcom-db-handlers.js')).href)
-        ) as {
-          registerMeshcomDbIpcHandlers: (deps: { ipcMain: typeof ipcMain }) => void;
-        };
-        meshcomDbMod.registerMeshcomDbIpcHandlers({ ipcMain });
-      } catch (err: unknown) {
-        console.error(
-          'mcL0143 [main] meshcom-db IPC registration failed:',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-        const meshcomDbFallbackMod = (
-          process.env.VITEST
-            ? await import('./ipc/meshcom-db-handlers-fallback')
-            : await import(
-                pathToFileURL(path.join(__dirname, 'meshcom-db-handlers-fallback.js')).href
-              )
-        ) as {
-          registerMeshcomDbIpcFallbackHandlers: (deps: {
-            ipcMain: typeof ipcMain;
-            assertIpcSender: typeof assertIpcSender;
-          }) => void;
-        };
-        meshcomDbFallbackMod.registerMeshcomDbIpcFallbackHandlers({ ipcMain, assertIpcSender });
-      }
       const loadUdpBridgeMod = (
         process.env.VITEST
           ? await import('./ipc/loadMeshcomUdpBridge')
