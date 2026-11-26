@@ -7649,9 +7649,9 @@ export function useMeshcoreRuntime() {
         identity: meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null,
         connection: connRef.current,
       }),
-      // Only the live connection gates the flood retry. Identity can be rewritten after
-      // configure (driver slot → pubkey id) while the same TCP/BLE handle stays up; treating
-      // that as stale left the radio at 0xFF with no flood resend (macOS E2E flake).
+      // Pre-reset / same-route retries: require the captured handle to still be connRef.
+      // Auto flood after a successful resetPath skips this check in route escalation — configure
+      // can rewrite connRef mid-await on macOS while the closed-over request handle stays up.
       isEscalationContextCurrent: (ctx) => ctx.connection === connRef.current,
     }),
     [

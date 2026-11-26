@@ -42,9 +42,10 @@ export interface MeshcoreRepeaterRouteEscalationDeps {
   /** Snapshot the active identity and connection when the request starts. */
   captureEscalationContext?: () => MeshcoreRepeaterEscalationContext;
   /**
-   * Returns false when the request should not flood-retry (typically the live connection
-   * handle changed). Identity alone may change after configure; callers should not treat that
-   * as stale after a successful path reset.
+   * Returns false when the request should not continue (typically no live connection).
+   * Identity alone may change after configure. After a successful `resetContactPath`, Auto
+   * mode always floods without re-checking this — the reset already spoke to the radio, and
+   * `connRef` can be rewritten mid-await on slow runners while the closed-over handle stays up.
    */
   isEscalationContextCurrent?: (ctx: MeshcoreRepeaterEscalationContext) => boolean;
   /** Per-repeater choice of what a timeout does; read once per call. Missing means `auto`. */
@@ -288,17 +289,15 @@ export async function withMeshcoreRepeaterRouteEscalation<T>(
       );
       throw firstErr;
     }
-    try {
-      abortIfStale();
-    } catch {
-      throw firstErr;
-    }
     if (!resetOk) {
       console.warn(
         `mcL0921 [meshcoreRepeaterRouteEscalation] resetContactPath returned false node=${normalizedId}; not retrying`,
       );
       throw firstErr;
     }
+    // Do not abortIfStale after a successful reset: the radio already accepted CMD_RESET_PATH.
+    // On macOS E2E, configure can rewrite connRef during the reset await; treating that as
+    // stale left the contact at 0xFF with no status:flood resend.
     lastEscalationByNode.set(cooldownKey, now());
     return fn({ escalated: true, sameRouteRetry: false });
   }
