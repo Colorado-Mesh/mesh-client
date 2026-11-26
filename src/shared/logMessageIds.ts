@@ -1516,6 +1516,7 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1505: 'src/renderer/lib/hydrateMeshcomIdentityStores.ts:rebindMeshcomIdentity',
   mcL1506: 'src/renderer/lib/meshcoreRepeaterRouteEscalation.ts:sameRouteRetry',
   mcL1507: 'src/renderer/lib/meshcom/meshcomGrcHiddenChannels.ts:persistFailed',
+  mcL1508: 'src/main/offline-maps/tile-cache.ts:evictionNoProgress',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

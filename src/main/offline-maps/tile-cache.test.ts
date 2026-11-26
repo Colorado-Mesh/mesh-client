@@ -1,16 +1,30 @@
 // @vitest-environment node
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'fs';
+import fsPromises from 'fs/promises';
 import { tmpdir } from 'os';
 import path from 'path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { TileCache } from './tile-cache';
 import { createTileCache, parseTileCoords } from './tile-cache';
+
+/** Resolve to `'done'`/`'timeout'` so a regressed eviction loop cannot hang the test run. */
+async function settleWithin<T>(work: Promise<T>, ms = 2_000): Promise<'done' | 'timeout'> {
+  return Promise.race([
+    work.then(() => 'done' as const),
+    new Promise<'timeout'>((resolve) => {
+      setTimeout(() => {
+        resolve('timeout');
+      }, ms);
+    }),
+  ]);
+}
 
 describe('tile-cache', () => {
   const roots: string[] = [];
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     const { rmSync } = await import('fs');
     for (const root of roots.splice(0)) {
       rmSync(root, { recursive: true, force: true });
@@ -132,5 +146,46 @@ describe('tile-cache', () => {
     expect(await cache.getCachedTile({ basemapId: 'dark', z: 1, x: 0, y: 0 })).not.toBeNull();
     await cache.clearCache();
     expect(await cache.getCachedTile({ basemapId: 'dark', z: 1, x: 0, y: 0 })).toBeNull();
+  });
+
+  it('reconciles stale manifest stats instead of evicting forever over an empty cache', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'mesh-tile-cache-'));
+    roots.push(root);
+    const cacheDir = path.join(root, 'tile-cache');
+    mkdirSync(cacheDir, { recursive: true });
+    // Manifest left behind after tile files were removed outside the app (OS cleanup, restore).
+    writeFileSync(
+      path.join(cacheDir, 'manifest.json'),
+      JSON.stringify({
+        version: 1,
+        lastUpdated: 1,
+        sources: { osm: { tileCount: 500, diskBytes: 500_000 } },
+        regions: [],
+      }),
+    );
+    const cache = createTileCache(root, 1000);
+    const result = await settleWithin(
+      cache.putCachedTile({ basemapId: 'osm', z: 1, x: 0, y: 0 }, Buffer.alloc(64)),
+    );
+    expect(result).toBe('done');
+    expect((await cache.listCachedStats()).diskBytes).toBeLessThanOrEqual(1000);
+    expect((await cache.readManifest()).sources).toEqual({});
+  });
+
+  it('stops after one no-progress eviction pass when unlink keeps failing', async () => {
+    const cache = makeCache(30);
+    await cache.putCachedTile({ basemapId: 'osm', z: 2, x: 0, y: 0 }, Buffer.alloc(20));
+    const unlink = vi
+      .spyOn(fsPromises, 'unlink')
+      .mockRejectedValue(
+        Object.assign(new Error('EPERM: operation not permitted'), { code: 'EPERM' }),
+      );
+    const result = await settleWithin(
+      cache.putCachedTile({ basemapId: 'osm', z: 2, x: 0, y: 1 }, Buffer.alloc(20)),
+    );
+    expect(result).toBe('done');
+    // Two tiles were attempted once each; the old loop retried them without bound.
+    expect(unlink.mock.calls.length).toBe(2);
+    expect((await cache.listCachedStats()).diskBytes).toBe(40);
   });
 });

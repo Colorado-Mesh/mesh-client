@@ -392,12 +392,46 @@ export class TileCache {
 
   private async evictIfNeeded(): Promise<void> {
     await this.ensureStats();
-    while (this.totalBytes > this.maxBytes) {
-      this.evictionInFlight ??= this.runEviction().finally(() => {
-        this.evictionInFlight = null;
-      });
-      await this.evictionInFlight;
+    if (this.totalBytes <= this.maxBytes) return;
+    this.evictionInFlight ??= this.runEvictionToBudget().finally(() => {
+      this.evictionInFlight = null;
+    });
+    await this.evictionInFlight;
+  }
+
+  /**
+   * Evict until the cache fits, then stop. A pass that removes nothing means the in-memory
+   * totals no longer match the disk (tiles deleted outside the app, an unreadable directory, or
+   * a persistent unlink failure). Rescan so stale bytes stop blocking new writes instead of
+   * walking the cache directory forever.
+   */
+  private async runEvictionToBudget(): Promise<void> {
+    for (;;) {
+      if (this.totalBytes <= this.maxBytes) return;
+      if ((await this.runEviction()) > 0) continue;
+      console.warn(
+        `mcL1508 [offline-maps] tile eviction removed nothing while ${this.totalBytes} B > ${this.maxBytes} B; reconciling cache stats`,
+      );
+      try {
+        await this.reconcileStatsFromDisk();
+      } catch (e: unknown) {
+        console.debug(
+          '[main/offline-maps/tile-cache] catch:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+      return;
     }
+  }
+
+  /** Rebuild `sourceStats` / `totalBytes` from the files actually on disk. */
+  private async reconcileStatsFromDisk(): Promise<void> {
+    const scanned = await this.scanAllTiles();
+    let diskBytes = 0;
+    for (const src of scanned.values()) diskBytes += src.diskBytes;
+    this.sourceStats = new Map(scanned);
+    this.totalBytes = diskBytes;
+    await this.persistSourceStatsNow();
   }
 
   /**
@@ -471,9 +505,9 @@ export class TileCache {
   }
 
   /** Evict oldest tiles down to ~90% of maxBytes (hysteresis / low-water mark). */
-  private async runEviction(): Promise<void> {
+  private async runEviction(): Promise<number> {
     const lowWater = Math.floor(this.maxBytes * 0.9);
-    if (this.totalBytes <= lowWater) return;
+    if (this.totalBytes <= lowWater) return 0;
 
     interface Entry {
       file: string;
@@ -521,12 +555,14 @@ export class TileCache {
     await walk(this.rootDir, null);
     entries.sort((a, b) => a.mtimeMs - b.mtimeMs);
     let removed = 0;
+    let removedBytes = 0;
     for (const e of entries) {
       if (this.totalBytes <= lowWater) break;
       try {
         await fs.unlink(e.file);
         this.applySourceDelta(e.basemapId, -1, -e.size);
         removed += 1;
+        removedBytes += e.size;
       } catch (e: unknown) {
         console.debug(
           '[main/offline-maps/tile-cache] catch:',
@@ -537,6 +573,7 @@ export class TileCache {
     if (removed > 0) {
       this.schedulePersistSourceStats();
     }
+    return removedBytes;
   }
 }
 
