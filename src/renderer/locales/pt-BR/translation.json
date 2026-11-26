@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "Falha ao enviar a mensagem",
     "pathHashSizeTooltip": "Largura do hash do caminho de transmissão para este pacote ({{bytes}} bytes por salto), e não o modo TX configurado do seu rádio",
     "pathHashSizeAria": "Tamanho do hash do caminho {{label}}",
-    "pathHashSizeLabel": "{{bytes}} byte"
+    "pathHashSizeLabel": "{{bytes}} byte",
+    "receivedViaGateway": "Recebido via gateway"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -9205,7 +9206,13 @@
         "dach": "Alemanha, Áustria, Suíça",
         "dl26251": "Distrito de Rheinisch-Bergischer"
       },
-      "slotsFullLocalOnly": "Os slots de escuta do nó estão cheios (6). Aberto apenas localmente — substitua um slot em Rádio → Identidade para reservar no nó."
+      "slotsFullLocalOnly": "Os slots de escuta do nó estão cheios (6). Aberto apenas localmente — substitua um slot em Rádio → Identidade para reservar no nó.",
+      "removeGroup": "Remover grupo",
+      "removeGroupTitle": "Remover {{name}}?",
+      "removeGroupMessage": "Ocultar este grupo da barra de chat. Se estiver reservado no nó, também será removido do filtro de escuta (--setgrc). As mensagens já salvas permanecem no histórico; abra o grupo novamente com + para exibi-lo.",
+      "removeGroupFailed": "Não foi possível remover {{name}}: {{message}}",
+      "removeGroupListenNotUpdated": "{{name}} estava oculto aqui, mas o filtro de escuta do nó não foi atualizado (comandos de rádio indisponíveis).",
+      "removeGroupListenRadioChanged": "{{name}} estava oculto aqui, mas o filtro de escuta do nó não foi atualizado (o rádio conectado foi alterado)."
     },
     "netConsoleHint": "O NET Console é TCP porta 2323 (LAN de texto simples). Ative --netconsole no nó; --passwd opcional para login HMAC."
   },

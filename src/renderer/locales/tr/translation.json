@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "Mesajınız gönderilemedi.",
     "pathHashSizeTooltip": "Bu paket için havadaki yol karma genişliği ({{bytes}} bayt/atlama), telsizinizin yapılandırılmış TX modu değil",
     "pathHashSizeAria": "Yol karma boyutu {{label}}",
-    "pathHashSizeLabel": "{{bytes}} bayt"
+    "pathHashSizeLabel": "{{bytes}} bayt",
+    "receivedViaGateway": "Ağ geçidi üzerinden alındı"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -9205,7 +9206,13 @@
         "dach": "DACH (Almanya, Avusturya, İsviçre):",
         "dl26251": "Rheinisch-Bergischer Bölgesi"
       },
-      "slotsFullLocalOnly": "Düğüm dinleme yuvaları dolu (6). Yalnızca yerel olarak açıldı — düğümde yer ayırtmak için Radyo → Kimlik bölümündeki bir yuvanın yerini değiştirin."
+      "slotsFullLocalOnly": "Düğüm dinleme yuvaları dolu (6). Yalnızca yerel olarak açıldı — düğümde yer ayırtmak için Radyo → Kimlik bölümündeki bir yuvanın yerini değiştirin.",
+      "removeGroup": "Grubu kaldır",
+      "removeGroupTitle": "{{name}} kaldırılsın mı?",
+      "removeGroupMessage": "Bu grubu sohbet şeridinde gizleyin. Düğümde kayıtlıysa dinleme filtresinden de kaldırılır (--setgrc). Daha önce kaydedilmiş olan mesajlar geçmişte kalır; göstermek için grubu + ile tekrar açın.",
+      "removeGroupFailed": "{{name}} kaldırılamadı: {{message}}",
+      "removeGroupListenNotUpdated": "{{name}} burada gizlendi, ancak düğüm dinleme filtresi güncellenmedi (radyo komutları kullanılamıyor).",
+      "removeGroupListenRadioChanged": "{{name}} burada gizlendi, ancak düğüm dinleme filtresi güncellenmedi (bağlı radyo değişti)."
     },
     "netConsoleHint": "NET Konsolu TCP bağlantı noktası 2323'tür (düz metin LAN). Düğümde --netconsole'u etkinleştirin; HMAC oturum açması için isteğe bağlı --passwd."
   },

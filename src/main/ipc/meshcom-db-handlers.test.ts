@@ -41,6 +41,16 @@ describe('validateSaveMeshcomMessage', () => {
     }).toThrow(/received_via/);
   });
 
+  it('accepts received_via network (gateway)', () => {
+    expect(() => {
+      validateSaveMeshcomMessage({
+        text: 'x',
+        timestamp: 1,
+        received_via: 'network',
+      });
+    }).not.toThrow();
+  });
+
   it('accepts GRC group channel_idx above 255 (e.g. SP 260)', () => {
     expect(() => {
       validateSaveMeshcomMessage({

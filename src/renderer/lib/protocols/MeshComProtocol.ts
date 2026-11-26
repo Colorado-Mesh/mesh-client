@@ -549,6 +549,7 @@ function emitPhoneAprsEvents(
         channelIndex,
         timestamp: now,
         hopCount: parsed.hopCount,
+        receivedVia: parsed.viaServer ? 'network' : 'rf',
       },
     });
     return;
@@ -902,6 +903,7 @@ function emitKissEvents(
           rxSnr: frame.meta?.snr,
           rxRssi: frame.meta?.rssi,
           hopCount,
+          receivedVia: frame.meta?.gatewayRelay ? 'network' : 'rf',
         },
       });
       continue;

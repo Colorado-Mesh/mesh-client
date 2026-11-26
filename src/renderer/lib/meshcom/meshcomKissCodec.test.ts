@@ -93,6 +93,24 @@ describe('meshcomKissCodec', () => {
     });
   });
 
+  it('marks gatewayRelay when RX meta is snr=0 rssi=99', () => {
+    const session = new MeshcomKissSession();
+    const ax25 = buildAx25UiFrame({
+      dest: 'APRSMC',
+      src: 'OE1XYZ-15',
+      info: ':ALL      :gw',
+    });
+    expect(session.pushBytes(wrapKiss(MESHCOM_KISS_TYPE_DATA, ax25))).toEqual([]);
+    // rssi 99 little-endian: 0x63, 0x00
+    const events = session.pushBytes(
+      wrapKiss(MESHCOM_KISS_TYPE_RX_META, new Uint8Array([0, 0x63, 0x00])),
+    );
+    expect(events[0]).toMatchObject({
+      type: 'data',
+      frame: { meta: { snr: 0, rssi: 99, gatewayRelay: true } },
+    });
+  });
+
   it('parses TX result accepted with msg_id', () => {
     const session = new MeshcomKissSession();
     const body = new Uint8Array([0x01, 0x78, 0x56, 0x34, 0x12]);

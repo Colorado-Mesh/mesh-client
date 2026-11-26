@@ -183,7 +183,7 @@ function handleTextMessage(
       path,
       rssi: event.payload.rxRssi ?? null,
       snr: event.payload.rxSnr ?? null,
-      received_via: 'rf',
+      received_via: incoming.receivedVia === 'network' ? 'network' : 'rf',
       timestamp: event.payload.timestamp,
       status: incoming.status ?? 'acked',
       received_at: incoming.receivedAt ?? Date.now(),

@@ -234,7 +234,9 @@ describe('meshcoreRepeaterRouteEscalation', () => {
     expect(resetContactPath).not.toHaveBeenCalled();
   });
 
-  it('skips flood retry when the live connection changed after reset', async () => {
+  it('still floods when the live connection handle was rewritten during reset', async () => {
+    // macOS E2E: configure can replace connRef while CMD_RESET_PATH is in flight; the
+    // request callback still closes over the original handle and must send status:flood.
     const connection = { id: 'conn-1' };
     const ctx = { identity: 'identity-a', connection };
     let liveConnection: unknown = connection;
@@ -243,14 +245,36 @@ describe('meshcoreRepeaterRouteEscalation', () => {
       return Promise.resolve(true);
     });
     let calls = 0;
+    const result = await withMeshcoreRepeaterRouteEscalation(
+      42,
+      {
+        resetContactPath,
+        resolveRouteKind: () => 'direct',
+        captureEscalationContext: () => ctx,
+        isEscalationContextCurrent: (c) => c.connection === liveConnection,
+        nowMs: () => 2_000,
+      },
+      ({ escalated }) => {
+        calls += 1;
+        if (!escalated) return Promise.reject(new Error('timeout'));
+        expect(liveConnection).toEqual({ id: 'conn-2' });
+        return Promise.resolve('flooded');
+      },
+    );
+    expect(result).toBe('flooded');
+    expect(calls).toBe(2);
+    expect(resetContactPath).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips flood retry when resetContactPath returns false', async () => {
+    const resetContactPath = vi.fn(() => Promise.resolve(false));
+    let calls = 0;
     await expect(
       withMeshcoreRepeaterRouteEscalation(
         42,
         {
           resetContactPath,
           resolveRouteKind: () => 'direct',
-          captureEscalationContext: () => ctx,
-          isEscalationContextCurrent: (c) => c.connection === liveConnection,
           nowMs: () => 2_000,
         },
         () => {

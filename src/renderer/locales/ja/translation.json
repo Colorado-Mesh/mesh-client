@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "メッセージを送信できませんでした。",
     "pathHashSizeTooltip": "このパケットのオンエアパスハッシュ幅（{{bytes}}バイト/ホップ）。無線機の構成済みTXモードではありません。",
     "pathHashSizeAria": "パスハッシュサイズ{{label}}",
-    "pathHashSizeLabel": "{{bytes}}バイト"
+    "pathHashSizeLabel": "{{bytes}}バイト",
+    "receivedViaGateway": "ゲートウェイ経由で受信"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -9205,7 +9206,13 @@
         "dach": "ドイツ、オーストリア、スイス",
         "dl26251": "ライン＝ベルギッシュ郡"
       },
-      "slotsFullLocalOnly": "ノードのリスニングスロットがいっぱいです（6）。ローカルでのみ開いています — ノードを予約するには、[無線] → [ID]のスロットを置き換えてください。"
+      "slotsFullLocalOnly": "ノードのリスニングスロットがいっぱいです（6）。ローカルでのみ開いています — ノードを予約するには、[無線] → [ID]のスロットを置き換えてください。",
+      "removeGroup": "グループを削除",
+      "removeGroupTitle": "{{name}}を削除しますか？",
+      "removeGroupMessage": "このグループをチャットストリップに表示しないようにします。ノードに登録されている場合、リスンフィルター（--setgrc）からも削除されます。すでに保存されているメッセージは履歴に残ります。グループを+で再度開き、表示します。",
+      "removeGroupFailed": "{{name}}を削除できませんでした：{{message}}",
+      "removeGroupListenNotUpdated": "{{name}}はここに非表示にされていましたが、ノードリスンフィルターは更新されていませんでした（無線コマンドは利用できません）。",
+      "removeGroupListenRadioChanged": "{{name}}はここに非表示になっていましたが、ノードリスンフィルターは更新されていませんでした（接続された無線が変更されました）。"
     },
     "netConsoleHint": "NETコンソールはTCPポート2323（プレーンテキストLAN）です。ノードで--netconsoleを有効にします。HMACログインにはオプションの--passwdを使用します。"
   },

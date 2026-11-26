@@ -4,6 +4,7 @@
  */
 
 import { parseMeshcomGrcIdList } from './meshcomGrcGroups';
+import { unhideMeshcomGrcChannel } from './meshcomGrcHiddenChannels';
 
 const STORAGE_KEY = 'mesh-client:meshcomGrcLocalChannels';
 
@@ -51,15 +52,23 @@ export function getMeshcomGrcLocalChannels(): readonly number[] {
   return readRaw();
 }
 
-/** Add a GRC id to the local chat pill list (no-op if already present). */
+/** Add a GRC id to the local chat pill list (no-op if already present). Clears hide tombstone. */
 export function addMeshcomGrcLocalChannel(id: number): void {
   if (!Number.isInteger(id) || id < 1 || id > 99999) return;
+  unhideMeshcomGrcChannel(id);
   const cur = readRaw();
   if (cur.includes(id)) return;
   write([...cur, id]);
 }
 
 /** Remove a GRC id from the local chat pill list. */
+export function removeMeshcomGrcLocalChannel(id: number): void {
+  if (!Number.isInteger(id) || id < 1 || id > 99999) return;
+  const cur = readRaw();
+  if (!cur.includes(id)) return;
+  write(cur.filter((x) => x !== id));
+}
+
 /** Replace the entire local list (tests / clear). Uncapped (not device `--setgrc`). */
 export function setMeshcomGrcLocalChannels(ids: readonly number[]): void {
   write(parseMeshcomGrcIdList(ids.join(';')));

@@ -492,10 +492,13 @@ class PacketRouter {
     const existingReceivedVia = existingRecord?.receivedVia;
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent before first receipt.
     const existingLocalOrder = existingRecord?.localOrder;
+    const meshcomVia = event.payload.receivedVia;
     const receivedVia =
-      existingReceivedVia === 'mqtt' || existingReceivedVia === 'both'
-        ? ('both' as const)
-        : ('rf' as const);
+      protocolType === 'meshcom' && (meshcomVia === 'rf' || meshcomVia === 'network')
+        ? meshcomVia
+        : existingReceivedVia === 'mqtt' || existingReceivedVia === 'both'
+          ? ('both' as const)
+          : ('rf' as const);
     // A room post's `from` is the room server and its text still carries the author prefix.
     // When the same post arrives again (the waiting-queue drain and the protocol both dispatch
     // it, and rooms resend history), keep the author and body meshcoreIngest already stored;

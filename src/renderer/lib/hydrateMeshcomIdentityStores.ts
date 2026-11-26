@@ -97,7 +97,7 @@ function meshcomRowStatus(value: unknown): ChatMessage['status'] {
 }
 
 function meshcomRowReceivedVia(value: unknown): ChatMessage['receivedVia'] {
-  if (value === 'mqtt' || value === 'both' || value === 'rf') return value;
+  if (value === 'mqtt' || value === 'both' || value === 'rf' || value === 'network') return value;
   return 'rf';
 }
 

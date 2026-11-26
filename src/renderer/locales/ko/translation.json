@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "메시지를 보내지 못했습니다.",
     "pathHashSizeTooltip": "이 패킷의 온에어 경로 해시 폭({{bytes}}바이트/홉)이며, 무전기의 구성된 TX 모드가 아닙니다.",
     "pathHashSizeAria": "경로 해시 크기 {{label}}",
-    "pathHashSizeLabel": "{{bytes}}바이트"
+    "pathHashSizeLabel": "{{bytes}}바이트",
+    "receivedViaGateway": "게이트웨이를 통해 수신됨"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -9205,7 +9206,13 @@
         "dach": "독일, 오스트리아, 스위스",
         "dl26251": "라인-베르기셔크라이스"
       },
-      "slotsFullLocalOnly": "노드 수신 슬롯이 가득 찼습니다(6). 로컬에서만 열림 — 노드에 예약하려면 라디오 → ID에서 슬롯을 교체하세요."
+      "slotsFullLocalOnly": "노드 수신 슬롯이 가득 찼습니다(6). 로컬에서만 열림 — 노드에 예약하려면 라디오 → ID에서 슬롯을 교체하세요.",
+      "removeGroup": "그룹 제거",
+      "removeGroupTitle": "{{name}}을(를) 삭제하시겠어요?",
+      "removeGroupMessage": "채팅 스트립에서 이 그룹을 숨깁니다. 노드에 예약된 경우, 수신 필터(--setgrc)에서도 제거됩니다. 이미 저장된 메시지는 기록에 남아 있습니다. +로 그룹을 다시 열어 표시하세요.",
+      "removeGroupFailed": "{{name}}을(를) 제거할 수 없습니다. {{message}}",
+      "removeGroupListenNotUpdated": "{{name}}이(가) 여기에 숨겨졌지만 노드 수신 필터가 업데이트되지 않았습니다(무선 명령 사용 불가).",
+      "removeGroupListenRadioChanged": "{{name}}이(가) 여기에 숨겨졌지만 노드 수신 필터가 업데이트되지 않았습니다(연결된 라디오 변경됨)."
     },
     "netConsoleHint": "NET 콘솔은 TCP 포트 2323(일반 텍스트 LAN)입니다. 노드에서 --netconsole을 활성화합니다. HMAC 로그인을 위한 --passwd는 선택 사항입니다."
   },

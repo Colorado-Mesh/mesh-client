@@ -183,18 +183,23 @@ export interface MeshcomChatChannelPill {
 /**
  * Merge ALL (*) + listen groups + locally opened + history-discovered GRC ids.
  * Order: ALL, then listen (device order), then remaining local/history ascending.
+ * `hiddenGroupIds` are skipped from every source (user removed the pill).
  */
 export function buildMeshcomChatChannels(opts: {
   listenGroupIds: readonly number[];
   localGroupIds?: readonly number[];
   historyGroupIds: readonly number[];
+  hiddenGroupIds?: readonly number[];
   labelAll: string;
   labelGroup: (id: number) => string;
 }): MeshcomChatChannelPill[] {
+  const hidden = new Set(
+    (opts.hiddenGroupIds ?? []).filter((id) => Number.isInteger(id) && id > 0 && id <= 99999),
+  );
   const pills: MeshcomChatChannelPill[] = [{ index: 0, name: opts.labelAll }];
   const seen = new Set<number>([0]);
   const push = (id: number): void => {
-    if (!Number.isInteger(id) || id <= 0 || id > 99999 || seen.has(id)) return;
+    if (!Number.isInteger(id) || id <= 0 || id > 99999 || seen.has(id) || hidden.has(id)) return;
     seen.add(id);
     pills.push({ index: id, name: meshcomGrcChannelLabel(id, opts.labelGroup) });
   };

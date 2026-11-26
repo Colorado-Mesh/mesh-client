@@ -171,6 +171,21 @@ describe('hydrateMeshcomIdentity', () => {
     expect(bucket['meshcom-db:99'].channelIndex).toBe(312);
   });
 
+  it('rowsToMessageRecords maps received_via network to ChatMessage.receivedVia', () => {
+    const [row] = rowsToMessageRecords([
+      {
+        msg_id: 'gw-1',
+        from_call: 'OE1GW-1',
+        to_call_or_group: '*',
+        text: 'via gw',
+        channel_idx: 0,
+        timestamp: 1,
+        received_via: 'network',
+      },
+    ]);
+    expect(messageRecordToChatMessage(row).receivedVia).toBe('network');
+  });
+
   it('rowsToMessageRecords clears peer to for ALL/group and legacy NFFFFFFFF', () => {
     const allRows = rowsToMessageRecords([
       {

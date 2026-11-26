@@ -16,6 +16,7 @@ import {
   clearMeshtasticConfigIngressGuardsForTests,
   setMeshtasticRemoteConfigTarget,
 } from '../meshtastic/meshtasticConfigIngressGuard';
+import { meshcomProtocol } from '../protocols/MeshComProtocol';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { DomainEvent } from '../protocols/Protocol';
 import { attachTypedPacketListener } from './attachTypedPacketListener';
@@ -23,6 +24,7 @@ import { packetRouter } from './PacketRouter';
 
 const ID = 'packet-router-test';
 const ID_MT = 'packet-router-meshtastic';
+const ID_MC = 'packet-router-meshcom';
 
 describe('PacketRouter', () => {
   beforeEach(() => {
@@ -192,6 +194,50 @@ describe('PacketRouter', () => {
       ID,
     );
     expect(useMessageStore.getState().messages[ID].msg1.receivedVia).toBe('both');
+  });
+
+  it('honors MeshCom text_message receivedVia network vs rf', () => {
+    addIdentity({
+      id: ID_MC,
+      protocol: meshcomProtocol,
+      signature: 'sig-meshcom-pr',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: 'cm-gw',
+          from: 1,
+          to: 0xffffffff,
+          payload: 'via gw',
+          channelIndex: 0,
+          timestamp: 1000,
+          receivedVia: 'network',
+        },
+      },
+      ID_MC,
+    );
+    expect(useMessageStore.getState().messages[ID_MC]['cm-gw'].receivedVia).toBe('network');
+
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: 'cm-rf',
+          from: 2,
+          to: 0xffffffff,
+          payload: 'via rf',
+          channelIndex: 0,
+          timestamp: 1001,
+          receivedVia: 'rf',
+        },
+      },
+      ID_MC,
+    );
+    expect(useMessageStore.getState().messages[ID_MC]['cm-rf'].receivedVia).toBe('rf');
   });
 
   it('renames a repeated non-room message after its sender becomes known', () => {

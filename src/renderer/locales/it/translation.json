@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "Impossibile inviare il messaggio.",
     "pathHashSizeTooltip": "Larghezza dell'hash del percorso di trasmissione per questo pacchetto ({{bytes}} byte per hop), non la modalità TX configurata della tua radio",
     "pathHashSizeAria": "Dimensione hash del percorso {{label}}",
-    "pathHashSizeLabel": "{{bytes}} byte"
+    "pathHashSizeLabel": "{{bytes}} byte",
+    "receivedViaGateway": "Ricevuto tramite gateway"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -9205,7 +9206,13 @@
         "dach": "Germania, Austria, Svizzera",
         "dl26251": "- Rheinisch-Bergischer Kreis (distretto di Rhein-Berg)"
       },
-      "slotsFullLocalOnly": "Gli slot di ascolto del nodo sono pieni (6). Aperto solo localmente — sostituisci uno slot in Radio → Identità per prenotare sul nodo."
+      "slotsFullLocalOnly": "Gli slot di ascolto del nodo sono pieni (6). Aperto solo localmente — sostituisci uno slot in Radio → Identità per prenotare sul nodo.",
+      "removeGroup": "Rimuovi Gruppo",
+      "removeGroupTitle": "Rimuovere {{name}}?",
+      "removeGroupMessage": "Nascondi questo gruppo dalla barra della chat. Se è registrato sul nodo, viene rimosso anche dal filtro di ascolto (--setgrc). I messaggi già salvati rimangono nella cronologia; apri di nuovo il gruppo con + per visualizzarli.",
+      "removeGroupFailed": "Impossibile rimuovere {{name}}: {{message}}",
+      "removeGroupListenNotUpdated": "{{name}} era nascosto qui, ma il filtro di ascolto del nodo non è stato aggiornato (comandi radio non disponibili).",
+      "removeGroupListenRadioChanged": "{{name}} era nascosto qui, ma il filtro di ascolto del nodo non è stato aggiornato (radio collegata modificata)."
     },
     "netConsoleHint": "La console NET è TCP porta 2323 (LAN in chiaro). Abilita --netconsole sul nodo; --passwd facoltativo per l'accesso HMAC."
   },

@@ -1072,7 +1072,8 @@
     "outboxAnnounceFailed": "Nie udało się wysłać wiadomości.",
     "pathHashSizeTooltip": "Szerokość hasza ścieżki transmisji dla tego pakietu ({{bytes}} bajtów na przeskok), a nie skonfigurowany tryb TX radia",
     "pathHashSizeAria": "Rozmiar skrótu ścieżki {{label}}",
-    "pathHashSizeLabel": "{{bytes}} bajta(-ów)"
+    "pathHashSizeLabel": "{{bytes}} bajta(-ów)",
+    "receivedViaGateway": "Otrzymano przez bramkę"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -9349,7 +9350,13 @@
         "dach": "Hiszpania",
         "dl26251": "Powiat Ren-Berg"
       },
-      "slotsFullLocalOnly": "Gniazda nasłuchu węzła są zajęte (6). Otwarty tylko lokalnie – zastąp gniazdo w sekcji Radio → Tożsamość, aby zarezerwować je na węźle."
+      "slotsFullLocalOnly": "Gniazda nasłuchu węzła są zajęte (6). Otwarty tylko lokalnie – zastąp gniazdo w sekcji Radio → Tożsamość, aby zarezerwować je na węźle.",
+      "removeGroup": "Usuń grupę",
+      "removeGroupTitle": "Usunąć {{name}}?",
+      "removeGroupMessage": "Ukryj tę grupę na pasku czatu. Jeśli jest zarezerwowana na węźle, jest również usuwana z filtra nasłuchu (--setgrc). Wiadomości już zapisane pozostają w historii; otwórz ponownie grupę za pomocą przycisku +, aby je wyświetlić.",
+      "removeGroupFailed": "Nie udało się usunąć elementu {{name}}: {{message}}",
+      "removeGroupListenNotUpdated": "Element {{name}} był tutaj ukryty, ale filtr nasłuchu węzła nie został zaktualizowany (polecenia radiowe są niedostępne).",
+      "removeGroupListenRadioChanged": "{{name}} był tutaj ukryty, ale filtr nasłuchu węzła nie został zaktualizowany (zmieniono podłączone radio)."
     },
     "netConsoleHint": "Konsola sieciowa to TCP port 2323 (sieć LAN w formie zwykłego tekstu). Włącz --netconsole na węźle; opcjonalnie --passwd do logowania HMAC."
   },

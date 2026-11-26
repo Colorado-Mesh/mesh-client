@@ -53,6 +53,18 @@ describe('meshcomGrcGroups', () => {
     expect(pills.find((p) => p.index === 232)?.name).toBe('OE (232)');
   });
 
+  it('skips hidden GRC ids from listen, local, and history', () => {
+    const pills = buildMeshcomChatChannels({
+      listenGroupIds: [232, 999],
+      localGroupIds: [9, 999],
+      historyGroupIds: [262, 999],
+      hiddenGroupIds: [999],
+      labelAll: 'ALL (*)',
+      labelGroup: (id) => `Group ${id}`,
+    });
+    expect(pills.map((p) => p.index)).toEqual([0, 232, 9, 262]);
+  });
+
   it('searches registry by prefix and id', () => {
     expect(searchMeshcomGrcGroups('LOC').some((g) => g.id === 9)).toBe(true);
     expect(searchMeshcomGrcGroups('262').some((g) => g.prefix === 'DL')).toBe(true);

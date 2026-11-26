@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "Pesan gagal dikirim.",
     "pathHashSizeTooltip": "Lebar hash jalur on-air untuk paket ini ({{bytes}} byte per hop), bukan mode TX yang dikonfigurasi pada radio Anda",
     "pathHashSizeAria": "Ukuran hash jalur {{label}}",
-    "pathHashSizeLabel": "{{bytes}} byte"
+    "pathHashSizeLabel": "{{bytes}} byte",
+    "receivedViaGateway": "Diterima melalui gateway"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -9205,7 +9206,13 @@
         "dach": "Jerman, Austria, Swiss",
         "dl26251": "Distrik Rheinisch-Bergischer"
       },
-      "slotsFullLocalOnly": "Slot dengar node penuh (6). Hanya dibuka secara lokal — ganti slot di Radio → Identitas untuk memesan di node."
+      "slotsFullLocalOnly": "Slot dengar node penuh (6). Hanya dibuka secara lokal — ganti slot di Radio → Identitas untuk memesan di node.",
+      "removeGroup": "Hapus Grup",
+      "removeGroupTitle": "Hapus {{name}}?",
+      "removeGroupMessage": "Sembunyikan grup ini dari bilah obrolan. Jika grup ini dipesan di node, grup ini juga dihapus dari filter dengar (--setgrc). Pesan yang sudah disimpan tetap ada di riwayat; buka grup lagi dengan + untuk menampilkannya.",
+      "removeGroupFailed": "Tidak dapat menghapus {{name}}: {{message}}",
+      "removeGroupListenNotUpdated": "{{name}} disembunyikan di sini, tetapi filter pendengar node tidak diperbarui (perintah radio tidak tersedia).",
+      "removeGroupListenRadioChanged": "{{name}} disembunyikan di sini, tetapi filter pemantauan node tidak diperbarui (radio yang terhubung berubah)."
     },
     "netConsoleHint": "Konsol NET adalah TCP port 2323 (LAN teks biasa). Aktifkan --netconsole pada node; --passwd opsional untuk login HMAC."
   },
