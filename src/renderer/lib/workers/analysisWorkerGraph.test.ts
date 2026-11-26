@@ -115,13 +115,17 @@ function resolveSpecifier(fromFile: string, specifier: string, srcRoot: string):
   } else return null;
 
   // Only files are modules; a directory base must fall through to its index candidates.
-  const candidates = [
-    base,
+  const candidates = [base];
+  if (/\.jsx?$/.test(base)) {
+    // ESM-style TS sources import `./ui.js` for a `ui.ts` / `ui.tsx` module.
+    candidates.push(base.replace(/\.jsx?$/, '.ts'), base.replace(/\.jsx?$/, '.tsx'));
+  }
+  candidates.push(
     `${base}.ts`,
     `${base}.tsx`,
     path.join(base, 'index.ts'),
     path.join(base, 'index.tsx'),
-  ];
+  );
   return candidates.find(isExistingFile) ?? null;
 }
 
@@ -265,6 +269,35 @@ describe('analysis worker import graph', () => {
         expect(offenders).toHaveLength(1);
         expect(offenders[0]).toContain('ui.tsx');
         expect(offenders[0]).toContain('side-effect.ts');
+      },
+    );
+  });
+
+  it('maps .js specifiers onto .ts / .tsx sources and follows their dependencies', () => {
+    withFixture(
+      {
+        'entry.ts': "import './ui.js';\n",
+        'ui.tsx': "import './dep.js';\nexport const Ui = 1;\n",
+        'dep.ts': 'export const dep = 1;\n',
+      },
+      (graphWithTs) => {
+        expect(graphWithTs.files.map((file) => path.basename(file))).toEqual([
+          'dep.ts',
+          'entry.ts',
+          'ui.tsx',
+        ]);
+      },
+    );
+
+    withFixture(
+      {
+        'entry.ts': "import './ui.js';\n",
+        'ui.js': 'export const direct = 1;\n',
+        'ui.ts': 'export const source = 1;\n',
+      },
+      (graphWithJs) => {
+        // A real .js file still wins over a same-named TS source.
+        expect(graphWithJs.files.map((file) => path.basename(file))).toEqual(['entry.ts', 'ui.js']);
       },
     );
   });
