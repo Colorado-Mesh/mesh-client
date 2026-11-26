@@ -627,6 +627,8 @@ describe('chatViewKeyForMessage', () => {
     expect(resolveChatDmPeer(msg({ channel: -1, sender_id: 2, to: 10 }), own, 'meshcom')).toBe(2);
     expect(resolveChatDmPeer(msg({ channel: -1, sender_id: 10, to: 3 }), own, 'meshcom')).toBe(3);
     expect(resolveChatDmPeer(msg({ channel: -1, sender_id: 2 }), own, 'meshcom')).toBe(2);
+    // Console `{CALL}text` attributes peer as both from and to — still a DM peer.
+    expect(resolveChatDmPeer(msg({ channel: -1, sender_id: 2, to: 2 }), own, 'meshcom')).toBe(2);
   });
 });
 

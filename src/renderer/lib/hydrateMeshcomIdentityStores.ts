@@ -12,7 +12,12 @@ import { replaceNodeRecordsForIdentity, upsertNodeRecordsForIdentity } from '../
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
 import { registerMeshcomCallsign } from './meshcom/meshcomCallRegistry';
-import { callsignToNodeId, normalizeMeshcomCallsign } from './meshcom/meshcomCallsign';
+import {
+  callsignToNodeId,
+  isMeshcomLegacyBroadcastPlaceholder,
+  isMeshcomNodeIdPlaceholderCallsign,
+  normalizeMeshcomCallsign,
+} from './meshcom/meshcomCallsign';
 import { isMeshcomGroupDest, resolveMeshcomDestination } from './meshcom/meshcomChannel';
 import { meshcomHwLabel } from './meshcom/meshcomHwIds';
 import { meshcomPersistIdentityId } from './meshcom/meshcomPersistIdentity';
@@ -23,11 +28,6 @@ import {
 import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
 import type { ChatMessage, IdentityId, MeshNode } from './types';
 
-/** Old ingest wrote `NFFFFFFFF` for broadcast `to` — never a real DM peer. */
-function isMeshcomSyntheticCallsign(callsign: string): boolean {
-  return /^N[0-9A-F]+$/i.test(callsign.trim());
-}
-
 /**
  * Map SQLite `to_call_or_group` + `channel_idx` → store channel / optional DM peer.
  * ALL/group never get a `to` peer (Chat channel view requires `!m.to`).
@@ -37,7 +37,7 @@ function hydrateMeshcomDest(
   channelIdx: number | undefined,
 ): { channel: number; to: number | undefined } {
   const raw = toCallOrGroup.trim().replace(/^#/, '');
-  if (!raw || raw === '*' || isMeshcomSyntheticCallsign(raw)) {
+  if (!raw || raw === '*' || isMeshcomLegacyBroadcastPlaceholder(raw)) {
     return { channel: channelIdx ?? 0, to: undefined };
   }
   if (isMeshcomGroupDest(raw)) {
@@ -113,14 +113,19 @@ export function rowsToMessageRecords(rows: MeshcomDbMessageRow[]): MessageRecord
   return rows.map((row) => {
     const fromCall = optionalString(row.from_call) ?? '';
     const senderId = fromCall ? callsignToNodeId(fromCall) : 0;
-    if (fromCall && !isMeshcomSyntheticCallsign(fromCall)) {
+    // Register real callsigns (incl. N0ABC); skip only legacy broadcast placeholders.
+    if (fromCall && !isMeshcomLegacyBroadcastPlaceholder(fromCall)) {
       registerMeshcomCallsign(fromCall);
     }
     const toCall = optionalString(row.to_call_or_group) ?? '';
     const { channel, to } = hydrateMeshcomDest(toCall, optionalNumber(row.channel_idx));
     if (to != null && channel === -1) {
       const peerCall = normalizeMeshcomCallsign(toCall.replace(/^#/, ''));
-      if (peerCall && !isMeshcomSyntheticCallsign(peerCall) && !isMeshcomGroupDest(peerCall)) {
+      if (
+        peerCall &&
+        !isMeshcomLegacyBroadcastPlaceholder(peerCall) &&
+        !isMeshcomGroupDest(peerCall)
+      ) {
         registerMeshcomCallsign(peerCall);
       }
     }
@@ -197,7 +202,10 @@ function meshcomContactNode(c: MeshcomContactRow): MeshNode | null {
   const callsign = typeof c.callsign === 'string' ? c.callsign.trim() : '';
   if (!callsign) return null;
   const normalized = normalizeMeshcomCallsign(callsign);
-  if (!normalized || isMeshcomSyntheticCallsign(normalized)) return null;
+  if (!normalized || isMeshcomLegacyBroadcastPlaceholder(normalized)) return null;
+  const rowNodeId = typeof c.node_id === 'number' ? c.node_id >>> 0 : 0;
+  // Drop contacts whose stored callsign is only the generated placeholder for that node id.
+  if (rowNodeId > 0 && isMeshcomNodeIdPlaceholderCallsign(normalized, rowNodeId)) return null;
   // Prefer callsign hash (wire identity); register so DM labels/send survive restart.
   const nodeId = registerMeshcomCallsign(normalized);
   return {

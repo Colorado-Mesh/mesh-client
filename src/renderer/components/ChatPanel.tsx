@@ -1981,6 +1981,10 @@ function ChatPanel({
         );
         return filtered;
       }
+      // MeshCom: console `{CALL}text` attributes peer as both from and to — use resolveDmPeer.
+      if (protocol === 'meshcom') {
+        return regularMessages.filter((m) => resolveDmPeer(m) === dmPeer);
+      }
       return regularMessages.filter(
         (m) =>
           (m.to === dmPeer && isOwnNode(m.sender_id)) ||
@@ -1995,9 +1999,12 @@ function ChatPanel({
     }
 
     if (viewMode === 'weather') {
-      return regularMessages.filter(
-        (m) => !m.to && m.channel === channel && isWeatherPost(m, weatherConfig),
-      );
+      // Same channel-membership rule as the channel selector (MeshCom tolerates stray `to`).
+      return regularMessages.filter((m) => {
+        if (m.channel !== channel || !isWeatherPost(m, weatherConfig)) return false;
+        if (protocol === 'meshcom') return resolveDmPeer(m) == null;
+        return !m.to;
+      });
     }
     // MeshCom: legacy rows may still carry a stray `to` after hydrate; channel membership is
     // `channel` + not a DM peer (resolveChatDmPeer requires channel === -1 for MeshCom).
@@ -2025,10 +2032,15 @@ function ChatPanel({
     if (dmOnlyChat) return 0;
     let n = 0;
     for (const m of regularMessages) {
-      if (!m.to && m.channel === channel && isWeatherPost(m, weatherConfig)) n++;
+      if (m.channel !== channel || !isWeatherPost(m, weatherConfig)) continue;
+      if (protocol === 'meshcom') {
+        if (resolveDmPeer(m) == null) n++;
+      } else if (!m.to) {
+        n++;
+      }
     }
     return n;
-  }, [channel, dmOnlyChat, regularMessages, weatherConfig]);
+  }, [channel, dmOnlyChat, protocol, regularMessages, resolveDmPeer, weatherConfig]);
 
   // Word-filter conversation key follows the open channel/DM (not weather/starred watermarks).
   const wordFilterConversationKey = useMemo(() => {

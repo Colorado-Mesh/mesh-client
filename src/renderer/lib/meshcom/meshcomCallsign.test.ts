@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   callsignToNodeId,
+  isMeshcomLegacyBroadcastPlaceholder,
+  isMeshcomNodeIdPlaceholderCallsign,
   meshcomCallsignSoftWarn,
+  meshcomNodeIdPlaceholderCallsign,
   normalizeMeshcomCallsign,
   parseMeshcomSrcPath,
 } from './meshcomCallsign';
@@ -26,6 +29,18 @@ describe('meshcomCallsign', () => {
     expect(a).toBe(b);
     expect(a).toBeGreaterThan(0);
     expect(callsignToNodeId('')).toBe(0);
+  });
+
+  it('treats N{hex(nodeId)} as placeholder provenance without rejecting N0ABC', () => {
+    expect(meshcomNodeIdPlaceholderCallsign(0xffffffff)).toBe('NFFFFFFFF');
+    expect(isMeshcomLegacyBroadcastPlaceholder('NFFFFFFFF')).toBe(true);
+    expect(isMeshcomLegacyBroadcastPlaceholder('N0ABC')).toBe(false);
+
+    const n0abcId = callsignToNodeId('N0ABC');
+    expect(isMeshcomNodeIdPlaceholderCallsign('N0ABC', n0abcId)).toBe(false);
+    expect(
+      isMeshcomNodeIdPlaceholderCallsign(meshcomNodeIdPlaceholderCallsign(0xcd5305e1), 0xcd5305e1),
+    ).toBe(true);
   });
 
   it('parses digipeater paths into origin and hop count', () => {

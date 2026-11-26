@@ -266,6 +266,49 @@ describe('meshcomIngest', () => {
     );
   });
 
+  it('persists and registers real callsign N0ABC (not a node-id placeholder)', () => {
+    const from = registerMeshcomCallsign('N0ABC');
+    const me = registerMeshcomCallsign('ME-1');
+    const msgId = 'meshcom-n0abc-dm';
+    upsertMessage(
+      ID,
+      chatMessageToMessageRecord({
+        storeId: msgId,
+        sender_id: from,
+        sender_name: 'N0ABC',
+        payload: 'hello',
+        channel: -1,
+        to: me,
+        timestamp: 3,
+      }),
+    );
+    meshcomIngestHandleTextMessage(
+      ID,
+      {
+        type: 'text_message',
+        payload: {
+          id: msgId,
+          from,
+          to: me,
+          payload: 'hello',
+          channelIndex: -1,
+          timestamp: 3,
+        },
+      },
+      { getMyNodeNum: () => me },
+    );
+    expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from_call: 'N0ABC',
+        to_call_or_group: 'ME-1',
+        channel_idx: -1,
+      }),
+    );
+    expect(window.electronAPI.db.saveMeshcomContact).toHaveBeenCalledWith(
+      expect.objectContaining({ callsign: 'N0ABC', node_id: from }),
+    );
+  });
+
   it('keeps chat lines that mention {CET} but are not beacons', () => {
     const from = callsignToNodeId('OE3BEF-1');
     const msgId = 'meshcom-cet-negative';

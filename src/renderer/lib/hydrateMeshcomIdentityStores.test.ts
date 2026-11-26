@@ -223,6 +223,64 @@ describe('hydrateMeshcomIdentity', () => {
     expect(nodes[nodeId].longName).toBe(call);
   });
 
+  it('hydrate keeps real callsign N0ABC and DM peer; drops NFFFFFFFF broadcast dest', async () => {
+    clearMeshcomCallRegistry();
+    const call = 'N0ABC';
+    const nodeId = callsignToNodeId(call);
+    const peer = 'ME-2';
+    const peerId = callsignToNodeId(peer);
+    vi.mocked(window.electronAPI.db.getMeshcomMessages).mockResolvedValue([
+      {
+        msg_id: 'n0abc-dm',
+        from_call: call,
+        to_call_or_group: peer,
+        text: 'private',
+        channel_idx: -1,
+        timestamp: 1,
+      },
+      {
+        msg_id: 'legacy-all',
+        from_call: call,
+        to_call_or_group: 'NFFFFFFFF',
+        text: 'cq',
+        channel_idx: 0,
+        timestamp: 2,
+      },
+    ]);
+    vi.mocked(window.electronAPI.db.getMeshcomContacts).mockResolvedValue([
+      { callsign: call, node_id: nodeId, last_heard: 100 },
+    ]);
+
+    await hydrateMeshcomIdentity(OFFLINE_MESHCOM_IDENTITY_ID, {}, () => true);
+
+    expect(meshcomCallForNodeId(nodeId)).toBe(call);
+    const nodes = useNodeStore.getState().nodes[OFFLINE_MESHCOM_IDENTITY_ID];
+    expect(nodes[nodeId].longName).toBe(call);
+
+    const rows = rowsToMessageRecords([
+      {
+        msg_id: 'n0abc-dm',
+        from_call: call,
+        to_call_or_group: peer,
+        text: 'private',
+        channel_idx: -1,
+        timestamp: 1,
+      },
+      {
+        msg_id: 'legacy-all',
+        from_call: call,
+        to_call_or_group: 'NFFFFFFFF',
+        text: 'cq',
+        channel_idx: 0,
+        timestamp: 2,
+      },
+    ]);
+    expect(rows[0].to).toBe(peerId);
+    expect(rows[0].channelIndex).toBe(-1);
+    expect(messageRecordToChatMessage(rows[1]).to).toBeUndefined();
+    expect(rows[1].channelIndex).toBe(0);
+  });
+
   it('mergeMeshcomHydrateMessageRecords collapses true duplicates and remints collisions', () => {
     const primary = rowsToMessageRecords([
       {
