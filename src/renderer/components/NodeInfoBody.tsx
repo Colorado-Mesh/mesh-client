@@ -618,6 +618,76 @@ function NodeTimingSection({
   );
 }
 
+function NodeLocationSection({
+  node,
+  protocol,
+  latestTrackedPosition,
+  coordinateFormat,
+  onShowOnMap,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  latestTrackedPosition: { lat: number; lon: number } | null;
+  coordinateFormat: Parameters<typeof formatCoordPair>[2];
+  onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {(() => {
+        const mapPosition = resolveNodeMapPosition(node, latestTrackedPosition);
+        if (!mapPosition) return null;
+        const hasNodeDbPosition =
+          node.latitude != null &&
+          node.longitude != null &&
+          (node.latitude !== 0 || node.longitude !== 0);
+        const label = hasNodeDbPosition
+          ? t('nodeInfoBody.position')
+          : t('nodeInfoBody.lastTrackedPosition');
+        return (
+          <div className="border-ink-700/50 flex items-center justify-between gap-2 border-b py-2 last:border-b-0">
+            <span className="text-muted shrink-0 text-sm">{label}</span>
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+              <span className="text-ink-300 font-mono text-xs">
+                {formatCoordPair(mapPosition.lat, mapPosition.lon, coordinateFormat)}
+              </span>
+              {onShowOnMap && (
+                <button
+                  type="button"
+                  aria-label={t('nodeDetailModal.showOnMap')}
+                  className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-600 shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors"
+                  onClick={() => {
+                    onShowOnMap(node.node_id, mapPosition.lat, mapPosition.lon);
+                  }}
+                >
+                  {t('nodeDetailModal.showOnMap')}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+      {protocol === 'meshcom' &&
+        node.altitude != null &&
+        Number.isFinite(node.altitude) &&
+        node.altitude !== 0 && (
+          <InfoRow label={t('nodeInfoBody.altitude')} value={`${node.altitude} m`} />
+        )}
+
+      {/* GPS warning */}
+      {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (
+        <div className="mt-1 flex items-start gap-1.5 rounded border border-orange-500/30 bg-orange-500/10 px-2 py-1.5 text-xs text-orange-400">
+          <TriangleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0" />
+          <span>
+            {t('nodeInfoBody.gpsWarningPrefix')}
+            {node.lastPositionWarning}
+          </span>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function NodeInfoBody({
   node,
   homeNode,
@@ -813,57 +883,13 @@ export default function NodeInfoBody({
         radioConnected={radioConnected}
       />
 
-      {/* Location */}
-      {(() => {
-        const mapPosition = resolveNodeMapPosition(node, latestTrackedPosition);
-        if (!mapPosition) return null;
-        const hasNodeDbPosition =
-          node.latitude != null &&
-          node.longitude != null &&
-          (node.latitude !== 0 || node.longitude !== 0);
-        const label = hasNodeDbPosition
-          ? t('nodeInfoBody.position')
-          : t('nodeInfoBody.lastTrackedPosition');
-        return (
-          <div className="border-ink-700/50 flex items-center justify-between gap-2 border-b py-2 last:border-b-0">
-            <span className="text-muted shrink-0 text-sm">{label}</span>
-            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-              <span className="text-ink-300 font-mono text-xs">
-                {formatCoordPair(mapPosition.lat, mapPosition.lon, coordinateFormat)}
-              </span>
-              {onShowOnMap && (
-                <button
-                  type="button"
-                  aria-label={t('nodeDetailModal.showOnMap')}
-                  className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-600 shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors"
-                  onClick={() => {
-                    onShowOnMap(node.node_id, mapPosition.lat, mapPosition.lon);
-                  }}
-                >
-                  {t('nodeDetailModal.showOnMap')}
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-      {protocol === 'meshcom' &&
-        node.altitude != null &&
-        Number.isFinite(node.altitude) &&
-        node.altitude !== 0 && (
-          <InfoRow label={t('nodeInfoBody.altitude')} value={`${node.altitude} m`} />
-        )}
-
-      {/* GPS warning */}
-      {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (
-        <div className="mt-1 flex items-start gap-1.5 rounded border border-orange-500/30 bg-orange-500/10 px-2 py-1.5 text-xs text-orange-400">
-          <TriangleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0" />
-          <span>
-            {t('nodeInfoBody.gpsWarningPrefix')}
-            {node.lastPositionWarning}
-          </span>
-        </div>
-      )}
+      <NodeLocationSection
+        node={node}
+        protocol={protocol}
+        latestTrackedPosition={latestTrackedPosition}
+        coordinateFormat={coordinateFormat}
+        onShowOnMap={onShowOnMap}
+      />
 
       {/* Routing Health */}
       <div className="bg-primary-dark mt-3 rounded-lg py-3">
