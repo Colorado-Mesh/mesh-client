@@ -70,8 +70,10 @@ impl IsolatedExecutor {
 
     /// Run `fut` on `handle`, bounded by `budget` measured on the caller's runtime.
     /// `on_late` receives the value if the call succeeds after the budget expired
-    /// (e.g. to tear down a connection nobody is waiting for anymore). The executor
-    /// stays latched until the future it returns completes.
+    /// (e.g. to tear down a connection nobody is waiting for anymore). On budget
+    /// expiry the task is **aborted** so cancellable WinRT hangs (#1571) clear the
+    /// stuck latch in seconds instead of minutes; `on_late` still runs if the task
+    /// completed with `Ok` before abort took effect.
     pub async fn run<T, F, L, LF>(
         &self,
         handle: &Handle,
@@ -103,10 +105,43 @@ impl IsolatedExecutor {
                     budget_ms,
                     "gatt: backend call exceeded budget — Bluetooth stack unresponsive"
                 );
+                // Abort cancellable async work (WinRT IAsyncOperation awaits). Truly
+                // blocking thread sleeps still hold a worker until they return; abort
+                // still marks the JoinHandle cancelled once they do.
+                join.abort();
                 let stuck = Arc::clone(&self.stuck);
                 tokio::spawn(async move {
                     let late = join.await;
-                    tracing::warn!(target: "gatt", op, "gatt: stuck backend call finished late");
+                    match &late {
+                        Ok(Ok(_)) => {
+                            tracing::warn!(
+                                target: "gatt",
+                                op,
+                                "gatt: stuck backend call finished late"
+                            );
+                        }
+                        Ok(Err(_)) => {
+                            tracing::warn!(
+                                target: "gatt",
+                                op,
+                                "gatt: stuck backend call finished late with backend error"
+                            );
+                        }
+                        Err(e) if e.is_cancelled() => {
+                            tracing::warn!(
+                                target: "gatt",
+                                op,
+                                "gatt: stuck backend call aborted after budget"
+                            );
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                target: "gatt",
+                                op,
+                                "gatt: stuck backend call finished late with join error: {e}"
+                            );
+                        }
+                    }
                     if let Ok(Ok(value)) = late {
                         on_late(value).await;
                     }
@@ -175,8 +210,10 @@ mod tests {
         rt.shutdown_background();
     }
 
+    /// Cancellable async hang (#1571 WinRT await): abort clears the stuck latch quickly
+    /// instead of waiting out the full sleep.
     #[tokio::test(flavor = "current_thread")]
-    async fn late_success_clears_stuck_and_hands_value_to_on_late() {
+    async fn budget_expiry_aborts_cancellable_task_and_clears_stuck() {
         let rt = test_runtime();
         let exec = IsolatedExecutor::default();
         let late_seen = Arc::new(AtomicBool::new(false));
@@ -189,6 +226,56 @@ mod tests {
                 Duration::from_millis(50),
                 GattErrorCode::ConnectTimeout,
                 async {
+                    tokio::time::sleep(Duration::from_secs(30)).await;
+                    Ok(7u8)
+                },
+                move |_v| {
+                    late_flag.store(true, Ordering::SeqCst);
+                    async {}
+                },
+            )
+            .await;
+        assert!(result.is_err());
+
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while exec.stuck_count() != 0 && Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert_eq!(
+            exec.stuck_count(),
+            0,
+            "abort must clear stuck without waiting 30s"
+        );
+        assert!(
+            !late_seen.load(Ordering::SeqCst),
+            "aborted task must not hand a value to on_late"
+        );
+        assert!(
+            exec.ensure_responsive("connect", GattErrorCode::ConnectTimeout)
+                .is_ok()
+        );
+
+        rt.shutdown_background();
+    }
+
+    /// Truly blocking work cannot be interrupted by abort; on_late still runs if the
+    /// task returns Ok after the budget (abort loses the race once the sleep finishes).
+    #[tokio::test(flavor = "current_thread")]
+    async fn blocking_late_ok_still_runs_on_late_after_abort_race() {
+        let rt = test_runtime();
+        let exec = IsolatedExecutor::default();
+        let late_seen = Arc::new(AtomicBool::new(false));
+        let late_flag = Arc::clone(&late_seen);
+
+        let result = exec
+            .run(
+                rt.handle(),
+                "connect",
+                Duration::from_millis(50),
+                GattErrorCode::ConnectTimeout,
+                async {
+                    // Block the BLE worker so abort cannot cancel mid-sleep; when the
+                    // sleep ends the task completes Ok before the abort is observed.
                     std::thread::sleep(Duration::from_millis(200));
                     Ok(7u8)
                 },
@@ -206,7 +293,12 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
         assert_eq!(exec.stuck_count(), 0);
-        assert!(late_seen.load(Ordering::SeqCst));
+        // No `.await` after the blocking sleep, so the task can complete Ok(7)
+        // despite abort having been requested; on_late should then run.
+        assert!(
+            late_seen.load(Ordering::SeqCst),
+            "blocking Ok completion should still reach on_late"
+        );
         assert!(
             exec.ensure_responsive("connect", GattErrorCode::ConnectTimeout)
                 .is_ok()
@@ -230,6 +322,7 @@ mod tests {
                 Duration::from_millis(50),
                 GattErrorCode::ConnectTimeout,
                 async {
+                    // Complete Ok after budget so on_late runs; hold cleanup open.
                     std::thread::sleep(Duration::from_millis(150));
                     Ok(())
                 },
@@ -245,7 +338,10 @@ mod tests {
         while !cleanup_started.load(Ordering::SeqCst) && Instant::now() < deadline {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
-        assert!(cleanup_started.load(Ordering::SeqCst));
+        assert!(
+            cleanup_started.load(Ordering::SeqCst),
+            "blocking Ok after budget should still reach on_late"
+        );
         assert_eq!(exec.stuck_count(), 1, "latched while cleanup is in flight");
 
         release_tx.send(()).expect("release cleanup");
