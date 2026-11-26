@@ -63,9 +63,8 @@
   "health": {
     // CRAP-only findings are dominated by uncovered small functions and drown out the complexity
     // gate. `0` is fallow's documented "disable CRAP enforcement" value: no CRAP findings and
-    // nothing counts above threshold, while cyclomatic/cognitive thresholds still report and gate.
-    // Review coverage debt with the coverage-backed health command in
-    // docs/development/fallow-health-cleanup.md.
+    // nothing counts above threshold; the complexity rules are disabled below.
+    // Review coverage debt with `fallow health --max-crap 30 --coverage <coverage-final.json>`.
     "maxCrap": 0,
   },
   "rules": {
