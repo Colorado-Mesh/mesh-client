@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "无法发送邮件。",
     "pathHashSizeTooltip": "此数据包的空中路径哈希宽度（每跳{{bytes}}字节），而非您无线电的已配置TX模式",
     "pathHashSizeAria": "路径哈希大小 {{label}}",
-    "pathHashSizeLabel": "{{bytes}}字节"
+    "pathHashSizeLabel": "{{bytes}}字节",
+    "receivedViaGateway": "通过网关接收"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -9205,7 +9206,12 @@
         "dach": "德国、奥地利、瑞士",
         "dl26251": "莱茵-贝格县"
       },
-      "slotsFullLocalOnly": "节点监听插槽已满（6个）。仅在本地打开 — 更换“无线电”→“身份”中的一个插槽，以便在节点上预订。"
+      "slotsFullLocalOnly": "节点监听插槽已满（6个）。仅在本地打开 — 更换“无线电”→“身份”中的一个插槽，以便在节点上预订。",
+      "removeGroup": "删除群组",
+      "removeGroupTitle": "是否移除{{name}}？",
+      "removeGroupMessage": "在聊天栏中隐藏此群组。如果它在节点上被预订，它也会从监听过滤器（--setgrc）中移除。已保存的消息将保留在历史记录中；使用“+”再次打开群组即可显示。",
+      "removeGroupFailed": "无法移除{{name}}：{{message}}",
+      "removeGroupListenNotUpdated": "{{name}}曾被隐藏在此处，但节点监听过滤器未更新（无线电命令不可用）。"
     },
     "netConsoleHint": "NET Console 是 TCP 端口 2323（明文 LAN）。在节点上启用 --netconsole；可选 --passwd 用于 HMAC 登录。"
   },

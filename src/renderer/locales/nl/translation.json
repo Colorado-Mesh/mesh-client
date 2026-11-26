@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "Bericht kon niet worden verzonden.",
     "pathHashSizeTooltip": "Hashbreedte van het on-air-pad voor dit pakket ({{bytes}} bytes per hop), niet de geconfigureerde TX-modus van je radio",
     "pathHashSizeAria": "Hashgrootte van pad {{label}}",
-    "pathHashSizeLabel": "{{bytes}} byte"
+    "pathHashSizeLabel": "{{bytes}} byte",
+    "receivedViaGateway": "Ontvangen via gateway"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -9205,7 +9206,12 @@
         "dach": "België, Nederland, Luxemburg",
         "dl26251": "Rheinisch-Bergischer Kreis"
       },
-      "slotsFullLocalOnly": "Luisterplaatsen van knooppunt zijn vol (6). Alleen lokaal geopend — vervang een sleuf in Radio → Identiteit om op het knooppunt te boeken."
+      "slotsFullLocalOnly": "Luisterplaatsen van knooppunt zijn vol (6). Alleen lokaal geopend — vervang een sleuf in Radio → Identiteit om op het knooppunt te boeken.",
+      "removeGroup": "Verwijder groep",
+      "removeGroupTitle": "{{name}} verwijderen?",
+      "removeGroupMessage": "Verberg deze groep in de chatbalk. Als het op het knooppunt is geboekt, wordt het ook uit het luisterfilter verwijderd (--setgrc). Reeds opgeslagen berichten blijven in de geschiedenis staan; open de groep opnieuw met + om deze weer te geven.",
+      "removeGroupFailed": "Kon {{name}} niet verwijderen: {{message}}",
+      "removeGroupListenNotUpdated": "{{name}} was hier verborgen, maar het luisterfilter van het knooppunt is niet bijgewerkt (radiocommando's niet beschikbaar)."
     },
     "netConsoleHint": "NET Console is TCP poort 2323 (LAN in platte tekst). Schakel --netconsole in op het knooppunt; optioneel --passwd voor HMAC-login."
   },

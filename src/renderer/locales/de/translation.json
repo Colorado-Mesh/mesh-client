@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "Nachrichtenübermittlung fehlgeschlagen",
     "pathHashSizeTooltip": "Hash-Breite des Übertragungswegs für dieses Paket ({{bytes}} Bytes pro Hop), nicht der konfigurierte TX-Modus Ihres Funkgeräts",
     "pathHashSizeAria": "Pfad-Hash-Größe {{label}}",
-    "pathHashSizeLabel": "{{bytes}} Byte"
+    "pathHashSizeLabel": "{{bytes}} Byte",
+    "receivedViaGateway": "Über Gateway erhalten"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -9205,7 +9206,12 @@
         "dach": "Albanien, Österreich, Bosnien-Herzegowina, Bulgarien, Kroatien, Tschechien, Estland, Griechenland, Ungarn, Lettland, Litauen, Mazedonien, Montenegro, Polen, Rumänien, Serbien, Slowakei, Slowenien",
         "dl26251": "Rheinisch-Bergischer Kreis, 6]"
       },
-      "slotsFullLocalOnly": "Die Abhör-Slots des Knotens sind voll (6). Nur lokal geöffnet – ersetzen Sie einen Slot unter Funk → Identität, um ihn auf dem Knoten zu buchen."
+      "slotsFullLocalOnly": "Die Abhör-Slots des Knotens sind voll (6). Nur lokal geöffnet – ersetzen Sie einen Slot unter Funk → Identität, um ihn auf dem Knoten zu buchen.",
+      "removeGroup": "Gruppe entfernen",
+      "removeGroupTitle": "{{name}} entfernen?",
+      "removeGroupMessage": "Diese Gruppe im Chat-Bereich ausblenden. Wenn sie auf dem Knoten gebucht ist, wird sie auch aus dem Abhörfilter entfernt (--setgrc). Bereits gespeicherte Nachrichten bleiben im Verlauf; öffne die Gruppe erneut mit +, um sie anzuzeigen.",
+      "removeGroupFailed": "{{name}} konnte nicht entfernt werden: {{message}}",
+      "removeGroupListenNotUpdated": "{{name}} wurde hier ausgeblendet, aber der Knoten-Abhörfilter wurde nicht aktualisiert (Funkbefehle nicht verfügbar)."
     },
     "netConsoleHint": "NET-Konsole ist TCP Port 2323 (LAN im Klartext). Aktivieren Sie --netconsole auf dem Knoten; optional --passwd für die HMAC-Anmeldung."
   },

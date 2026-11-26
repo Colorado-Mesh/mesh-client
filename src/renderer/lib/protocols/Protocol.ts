@@ -21,6 +21,11 @@ export interface TextMessageEvent {
   txtType?: number;
   /** MeshCore room server infrastructure node id for BBS posts. */
   roomServerId?: number;
+  /**
+   * MeshCom: `'rf'` vs `'network'` (gateway). Other protocols usually leave this unset;
+   * PacketRouter fills Meshtastic/MeshCore RF/MQTT itself.
+   */
+  receivedVia?: 'rf' | 'network';
 }
 
 export interface NodeInfoEvent {

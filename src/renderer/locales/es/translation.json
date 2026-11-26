@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "Error al enviar el mensaje",
     "pathHashSizeTooltip": "Ancho de hash de la ruta en el aire para este paquete ({{bytes}} bytes por salto), no el modo TX configurado de su radio",
     "pathHashSizeAria": "Tamaño del hash de la ruta {{label}}",
-    "pathHashSizeLabel": "{{bytes}} byte"
+    "pathHashSizeLabel": "{{bytes}} byte",
+    "receivedViaGateway": "Recibido a través de la pasarela"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -9205,7 +9206,12 @@
         "dach": "Alemania, Austria, Suiza",
         "dl26251": "la circunscripción de Rheinisch-Bergischer"
       },
-      "slotsFullLocalOnly": "Las ranuras de escucha del nodo están llenas (6). Abierto solo localmente: sustituye un espacio en Radio → Identidad para reservar en el nodo."
+      "slotsFullLocalOnly": "Las ranuras de escucha del nodo están llenas (6). Abierto solo localmente: sustituye un espacio en Radio → Identidad para reservar en el nodo.",
+      "removeGroup": "Eliminar Puesto",
+      "removeGroupTitle": "¿Eliminar {{name}}?",
+      "removeGroupMessage": "Ocultar este grupo de la barra de chat. Si está registrado en el nodo, también se elimina del filtro de escucha (--setgrc). Los mensajes ya guardados permanecen en el historial; vuelve a abrir el grupo con + para mostrarlos.",
+      "removeGroupFailed": "No se ha podido eliminar {{name}}: {{message}}",
+      "removeGroupListenNotUpdated": "{{name}} estaba oculto aquí, pero el filtro de escucha de nodos no se actualizó (comandos de radio no disponibles)."
     },
     "netConsoleHint": "La consola NET es TCP puerto 2323 (LAN de texto sin cifrar). Habilite --netconsole en el nodo; --passwd es opcional para el inicio de sesión HMAC."
   },

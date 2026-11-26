@@ -101,10 +101,17 @@ import {
   buildMeshcomChatChannels,
   formatMeshcomGrcListenList,
   MESHCOM_GRC_MAX_SLOTS,
+  meshcomGrcChannelLabel,
   parseMeshcomGrcIdList,
 } from '@/renderer/lib/meshcom/meshcomGrcGroups';
 import {
+  getMeshcomGrcHiddenChannels,
+  hideMeshcomGrcChannel,
+  subscribeMeshcomGrcHiddenChannels,
+} from '@/renderer/lib/meshcom/meshcomGrcHiddenChannels';
+import {
   getMeshcomGrcLocalChannels,
+  removeMeshcomGrcLocalChannel,
   subscribeMeshcomGrcLocalChannels,
 } from '@/renderer/lib/meshcom/meshcomGrcLocalChannels';
 import {
@@ -3687,6 +3694,12 @@ function AppContent() {
     () => '',
   );
 
+  const meshcomGrcHiddenEpoch = useSyncExternalStore(
+    subscribeMeshcomGrcHiddenChannels,
+    () => getMeshcomGrcHiddenChannels().join(';'),
+    () => '',
+  );
+
   /** MeshCom chat: ALL (*) + device listen + local opens + history-discovered GRC ids. */
   const meshcomChatChannels = useMemo(() => {
     const historyIds: number[] = [];
@@ -3705,10 +3718,17 @@ function AppContent() {
       // meshcomGrcLocalEpoch is the subscribe snapshot (semicolon-joined ids).
       localGroupIds: parseMeshcomGrcIdList(meshcomGrcLocalEpoch),
       historyGroupIds: historyIds,
+      hiddenGroupIds: parseMeshcomGrcIdList(meshcomGrcHiddenEpoch),
       labelAll: t('meshcom.channelAll'),
       labelGroup: (id) => t('meshcom.channelGroup', { id }),
     });
-  }, [meshcomGrcLocalEpoch, meshcomPanelActions.deviceCommands.settings, meshcomUiMessages, t]);
+  }, [
+    meshcomGrcHiddenEpoch,
+    meshcomGrcLocalEpoch,
+    meshcomPanelActions.deviceCommands.settings,
+    meshcomUiMessages,
+    t,
+  ]);
 
   /** MeshCore chat: only show configured channels (key !== all zeros). */
   const chatChannelsByProtocol = useMemo(
@@ -5933,6 +5953,39 @@ function AppContent() {
                                         ? async (ids) => {
                                             const arg = formatMeshcomGrcListenList(
                                               ids.slice(0, MESHCOM_GRC_MAX_SLOTS),
+                                            );
+                                            const line = arg ? `--setgrc ${arg}` : '--setgrc';
+                                            await meshcomPanelActions.deviceCommands.run(line);
+                                            await meshcomPanelActions.deviceCommands.refreshSettings();
+                                          }
+                                        : undefined
+                                    }
+                                    onRemoveMeshcomGrc={
+                                      chatProtocol === 'meshcom'
+                                        ? async (id) => {
+                                            const listenGroupIds =
+                                              meshcomListenGroupIdsFromSnapshot(
+                                                meshcomPanelActions.deviceCommands.settings,
+                                              );
+                                            const wasBooked = listenGroupIds.includes(id);
+                                            removeMeshcomGrcLocalChannel(id);
+                                            hideMeshcomGrcChannel(id);
+                                            if (!wasBooked) return;
+                                            if (!meshcomPanelActions.deviceCommands.available) {
+                                              const name = meshcomGrcChannelLabel(id, (gid) =>
+                                                t('meshcom.channelGroup', { id: gid }),
+                                              );
+                                              addToast(
+                                                t('meshcom.grc.removeGroupListenNotUpdated', {
+                                                  name,
+                                                }),
+                                                'warning',
+                                              );
+                                              return;
+                                            }
+                                            const next = listenGroupIds.filter((x) => x !== id);
+                                            const arg = formatMeshcomGrcListenList(
+                                              next.slice(0, MESHCOM_GRC_MAX_SLOTS),
                                             );
                                             const line = arg ? `--setgrc ${arg}` : '--setgrc';
                                             await meshcomPanelActions.deviceCommands.run(line);

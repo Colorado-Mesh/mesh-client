@@ -1036,7 +1036,8 @@
     "outboxAnnounceFailed": "Échec de l'envoi du message.",
     "pathHashSizeTooltip": "Largeur de hachage du chemin de transmission pour ce paquet ({{bytes}} octets par saut), et non le mode TX configuré de votre radio",
     "pathHashSizeAria": "Taille du hachage du chemin {{label}}",
-    "pathHashSizeLabel": "{{bytes}} octet"
+    "pathHashSizeLabel": "{{bytes}} octet",
+    "receivedViaGateway": "Reçu via la passerelle"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -9205,7 +9206,12 @@
         "dach": "Allemagne, Autriche et Suisse",
         "dl26251": "- Rheinisch-Bergischer Kreis"
       },
-      "slotsFullLocalOnly": "Les emplacements d’écoute du nœud sont complets (6). Ouvert uniquement localement — remplacez un emplacement dans Radio → Identité pour réserver sur le nœud."
+      "slotsFullLocalOnly": "Les emplacements d’écoute du nœud sont complets (6). Ouvert uniquement localement — remplacez un emplacement dans Radio → Identité pour réserver sur le nœud.",
+      "removeGroup": "Supprimer le groupe",
+      "removeGroupTitle": "Supprimer {{name}} ?",
+      "removeGroupMessage": "Masquer ce groupe de la barre de chat. Si elle est réservée sur le nœud, elle est également supprimée du filtre d’écoute (--setgrc). Les messages déjà enregistrés restent dans l’historique ; ouvrez à nouveau le groupe avec + pour l’afficher.",
+      "removeGroupFailed": "Impossible de supprimer {{name}} : {{message}}",
+      "removeGroupListenNotUpdated": "{{name}} était masqué ici, mais le filtre d’écoute des nœuds n’a pas été mis à jour (commandes radio indisponibles)."
     },
     "netConsoleHint": "La console NET est TCP port 2323 (LAN en texte brut). Activez --netconsole sur le nœud ; --passwd est facultatif pour la connexion HMAC."
   },

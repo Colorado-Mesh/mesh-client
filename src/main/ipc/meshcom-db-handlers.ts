@@ -98,7 +98,7 @@ function clampMeshcomContactCap(maxCount: unknown): number | null {
   return Math.min(MESHCOM_MESSAGE_RETENTION_MAX, Math.floor(maxCount));
 }
 
-const VALID_RECEIVED_VIA = new Set(['rf', 'mqtt', 'both']);
+const VALID_RECEIVED_VIA = new Set(['rf', 'mqtt', 'both', 'network']);
 
 export interface MeshcomMessageInput {
   identity_id?: string | null;
@@ -185,7 +185,7 @@ export function validateSaveMeshcomMessage(msg: unknown): asserts msg is Meshcom
   }
   if (m.received_via != null) {
     if (typeof m.received_via !== 'string' || !VALID_RECEIVED_VIA.has(m.received_via)) {
-      throw new Error('db:saveMeshcomMessage: received_via must be rf, mqtt, or both');
+      throw new Error('db:saveMeshcomMessage: received_via must be rf, mqtt, both, or network');
     }
   }
   if (m.channel_idx != null) {

@@ -8,11 +8,12 @@ function buildTextFrame(opts: {
   sourcePath: string;
   dest: string;
   text: string;
+  viaServer?: boolean;
 }): Uint8Array {
   const parts: number[] = [0x3a]; // ':'
   const id = opts.msgId >>> 0;
   parts.push(id & 0xff, (id >>> 8) & 0xff, (id >>> 16) & 0xff, (id >>> 24) & 0xff);
-  parts.push(opts.hop & 0x0f);
+  parts.push((opts.hop & 0x0f) | (opts.viaServer ? 0x80 : 0));
   for (const c of opts.sourcePath) parts.push(c.charCodeAt(0));
   parts.push(0x3e); // >
   for (const c of opts.dest) parts.push(c.charCodeAt(0));
@@ -60,7 +61,21 @@ describe('parseMeshcomAprsPhoneFrame', () => {
       channelIndex: 232,
       destCall: '232',
       text: 'group hi',
+      viaServer: false,
     });
+  });
+
+  it('sets viaServer from hop byte 0x80', () => {
+    const frame = buildTextFrame({
+      msgId: 7,
+      hop: 2,
+      sourcePath: 'OE1GW-1',
+      dest: '*',
+      text: 'via gw',
+      viaServer: true,
+    });
+    const parsed = parseMeshcomAprsPhoneFrame(frame);
+    expect(parsed).toMatchObject({ kind: 'text', viaServer: true, text: 'via gw' });
   });
 
   it('parses LoRa wire relay ACK frames (12 B)', () => {

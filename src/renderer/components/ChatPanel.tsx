@@ -103,6 +103,7 @@ import { formatRetryCountdown } from '@/renderer/lib/formatRetryCountdown';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { meshcomCallForNodeId } from '@/renderer/lib/meshcom/meshcomCallRegistry';
+import { meshcomTransportBadgeText } from '@/renderer/lib/meshcom/meshcomTransportBadge';
 import { meshcomBodyBudgetForChat } from '@/renderer/lib/meshcom/meshcomWireLimits';
 import { hasMeshcoreDestinationPubKey } from '@/renderer/lib/meshcore/meshcoreDestinationPubKey';
 import type { MeshcoreQrImportResult } from '@/renderer/lib/meshcore/meshcoreQrIngest';
@@ -670,6 +671,7 @@ function TransportBadge({
 }) {
   const { t } = useTranslation();
   const rfLabel = t('chatPanel.receivedViaRf');
+  const gatewayLabel = t('chatPanel.receivedViaGateway');
   const mqttLabel = t('chatPanel.receivedViaMqtt');
   const tcpLabel = t('chatPanel.receivedViaTcp');
   const networkLabel = t('chatPanel.receivedViaNetwork');
@@ -684,6 +686,17 @@ function TransportBadge({
       <MeshtasticMqttPathIcon />
     </span>
   );
+
+  // MeshCom: RF vs gateway as text labels (not Meshtastic Wifi/Globe icons).
+  if (protocol === 'meshcom') {
+    const badge = meshcomTransportBadgeText(via);
+    const label = badge === 'GW' ? gatewayLabel : rfLabel;
+    return (
+      <span className="text-2xs text-sky-400" title={label} aria-label={label}>
+        {badge}
+      </span>
+    );
+  }
 
   // Reticulum: explicit atom / multi-egress text labels (never Meshtastic RF+MQTT "both").
   if (protocol === 'reticulum' && via !== 'mqtt' && via !== 'both') {
@@ -832,6 +845,8 @@ export interface ChatPanelProps {
   meshcomGrcCanApplyToDevice?: boolean;
   /** MeshCom: book GRC ids on the node via `--setgrc`. */
   onMeshcomBookGrc?: (ids: readonly number[]) => Promise<void>;
+  /** MeshCom: hide a GRC pill and unbook from the node listen filter when possible. */
+  onRemoveMeshcomGrc?: (id: number) => Promise<void>;
   /** MeshCore: import a scanned contact QR from the channel manager. */
   onImportContactFromQr?: (text: string) => Promise<MeshcoreQrImportResult>;
   /** Clear one channel's saved messages (chat asks first). `channelKey` is snapshotted at dialog open. */
@@ -952,6 +967,7 @@ function ChatPanel({
   meshcomGrcListenIds,
   meshcomGrcCanApplyToDevice = false,
   onMeshcomBookGrc,
+  onRemoveMeshcomGrc,
   onImportContactFromQr,
   onClearChannelMessages,
   meshcoreChannelManagementDisabled = false,
@@ -1295,8 +1311,12 @@ function ChatPanel({
     nodeNum: number;
   } | null>(null);
   const [removingChannel, setRemovingChannel] = useState(false);
-  const canRemoveChannel = (index: number) =>
+  const canRemoveMeshcoreChannel = (index: number) =>
     onDeleteMeshcoreChannel != null && index !== MESHCORE_PUBLIC_CHANNEL_INDEX;
+  const canRemoveMeshcomGrc = (index: number) =>
+    protocol === 'meshcom' && onRemoveMeshcomGrc != null && index > 0;
+  const canRemoveChannel = (index: number) =>
+    canRemoveMeshcoreChannel(index) || canRemoveMeshcomGrc(index);
   // Clearing messages works on every channel, Public included: the channel itself stays.
   const hasChannelMenu = (index: number) =>
     canRemoveChannel(index) || onClearChannelMessages != null;
@@ -1359,10 +1379,11 @@ function ChatPanel({
     setChannelToRemove({ index: target.index, name: target.name, nodeNum: myNodeNum });
   };
   const removeChannel = async (target: { index: number; name: string; nodeNum: number }) => {
-    if (!onDeleteMeshcoreChannel) return;
+    const removingMeshcom = canRemoveMeshcomGrc(target.index);
+    if (!removingMeshcom && !onDeleteMeshcoreChannel) return;
     // The delete goes by slot on whichever radio is connected now. If another radio connected
     // while the dialog was open, its slot is not the channel the user saw: remove nothing.
-    if (target.nodeNum !== myNodeNum) {
+    if (!removingMeshcom && target.nodeNum !== myNodeNum) {
       setChannelToRemove(null);
       addToast(t('chatPanel.removeChannelRadioChanged', { name: target.name }), 'warning');
       return;
@@ -1375,12 +1396,16 @@ function ChatPanel({
     }
     setRemovingChannel(true);
     try {
-      const scopeKey = meshcoreChannelScopeKey(
-        identityId ? useIdentityStore.getState().identities[identityId]?.signature : undefined,
-        meshcoreChannelSources?.find((ch) => ch.index === target.index),
-      );
-      await onDeleteMeshcoreChannel(target.index);
-      if (scopeKey) clearFloodScopeOverride('meshcore', scopeKey);
+      if (removingMeshcom) {
+        await onRemoveMeshcomGrc?.(target.index);
+      } else {
+        const scopeKey = meshcoreChannelScopeKey(
+          identityId ? useIdentityStore.getState().identities[identityId]?.signature : undefined,
+          meshcoreChannelSources?.find((ch) => ch.index === target.index),
+        );
+        await onDeleteMeshcoreChannel?.(target.index);
+        if (scopeKey) clearFloodScopeOverride('meshcore', scopeKey);
+      }
       setChannelToRemove(null);
       if (channel === target.index) {
         const next = channels.find((ch) => ch.index !== target.index);
@@ -1390,7 +1415,15 @@ function ChatPanel({
       console.warn('mcL0387 [ChatPanel] remove channel failed ' + errLikeToLogString(e));
       setChannelToRemove(null);
       addToast(
-        t('chatPanel.removeChannelFailed', { name: target.name, message: errLikeToLogString(e) }),
+        removingMeshcom
+          ? t('meshcom.grc.removeGroupFailed', {
+              name: target.name,
+              message: errLikeToLogString(e),
+            })
+          : t('chatPanel.removeChannelFailed', {
+              name: target.name,
+              message: errLikeToLogString(e),
+            }),
         'error',
       );
     } finally {
@@ -3891,12 +3924,18 @@ function ChatPanel({
                     ? [
                         {
                           id: 'remove-channel',
-                          label: t('chatPanel.removeChannel'),
+                          label: canRemoveMeshcomGrc(channelMenu.index)
+                            ? t('meshcom.grc.removeGroup')
+                            : t('chatPanel.removeChannel'),
                           tone: 'danger' as const,
-                          disabled: meshcoreChannelManagementDisabled,
-                          description: meshcoreChannelManagementDisabled
-                            ? t('chatPanel.removeChannelNeedsRadio')
-                            : undefined,
+                          disabled:
+                            canRemoveMeshcoreChannel(channelMenu.index) &&
+                            meshcoreChannelManagementDisabled,
+                          description:
+                            canRemoveMeshcoreChannel(channelMenu.index) &&
+                            meshcoreChannelManagementDisabled
+                              ? t('chatPanel.removeChannelNeedsRadio')
+                              : undefined,
                           onSelect: () => {
                             askToRemoveChannel(channelMenu);
                           },
@@ -4228,9 +4267,21 @@ function ChatPanel({
           these dialogs and let the message list paint over them. */}
       {channelToRemove ? (
         <ConfirmModal
-          title={t('chatPanel.removeChannelTitle', { name: channelToRemove.name })}
-          message={t('chatPanel.removeChannelMessage', { name: channelToRemove.name })}
-          confirmLabel={t('chatPanel.removeChannel')}
+          title={
+            canRemoveMeshcomGrc(channelToRemove.index)
+              ? t('meshcom.grc.removeGroupTitle', { name: channelToRemove.name })
+              : t('chatPanel.removeChannelTitle', { name: channelToRemove.name })
+          }
+          message={
+            canRemoveMeshcomGrc(channelToRemove.index)
+              ? t('meshcom.grc.removeGroupMessage', { name: channelToRemove.name })
+              : t('chatPanel.removeChannelMessage', { name: channelToRemove.name })
+          }
+          confirmLabel={
+            canRemoveMeshcomGrc(channelToRemove.index)
+              ? t('meshcom.grc.removeGroup')
+              : t('chatPanel.removeChannel')
+          }
           danger
           confirmDisabled={removingChannel}
           onConfirm={() => {

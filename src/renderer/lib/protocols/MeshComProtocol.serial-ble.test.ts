@@ -17,10 +17,16 @@ vi.mock('@/shared/meshcomConstants', async (importOriginal) => {
 import { MESHCOM_MAX_TEXT_LEN } from '@/shared/meshcomConstants';
 
 import { kissSlipEncode } from '../meshcom/kissSlip';
+import { buildAx25UiFrame } from '../meshcom/meshcomAx25';
 import { encodeMeshcomBleCommand } from '../meshcom/meshcomBleFrame';
 import { emptyMeshcomDeviceSettingsAccum } from '../meshcom/meshcomDeviceSettings';
 import { composeMeshcomFirmwareMsgId } from '../meshcom/meshcomFwMsgId';
-import { MESHCOM_KISS_TYPE_TX_RESULT, MeshcomKissSession } from '../meshcom/meshcomKissCodec';
+import {
+  MESHCOM_KISS_TYPE_DATA,
+  MESHCOM_KISS_TYPE_RX_META,
+  MESHCOM_KISS_TYPE_TX_RESULT,
+  MeshcomKissSession,
+} from '../meshcom/meshcomKissCodec';
 import type { MeshComConnection } from './meshcom/MeshComTransport';
 import { type MeshComDeviceHandle, meshcomProtocol } from './MeshComProtocol';
 import type { DomainEvent } from './Protocol';
@@ -301,6 +307,28 @@ describe('MeshComProtocol serial/BLE', () => {
     unsub();
   });
 
+  it('KISS gatewayRelay RX meta sets text_message receivedVia network', () => {
+    const { conn } = mockConnection('tcp');
+    const handle = makeHandle('tcp', conn);
+    handle.kissSession = new MeshcomKissSession();
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    const ax25 = buildAx25UiFrame({
+      dest: 'APRSMC',
+      src: 'OE1GW-1',
+      info: ':ALL      :via gateway',
+    });
+    conn.onData?.(wrapKiss(MESHCOM_KISS_TYPE_DATA, ax25));
+    conn.onData?.(wrapKiss(MESHCOM_KISS_TYPE_RX_META, new Uint8Array([0, 0x63, 0x00])));
+
+    const texts = events.filter((e) => e.type === 'text_message');
+    expect(texts).toHaveLength(1);
+    expect(texts[0]?.payload.payload).toBe('via gateway');
+    expect(texts[0]?.payload.receivedVia).toBe('network');
+    unsub();
+  });
+
   it('KISS TX_RESULT does not emit peer routing_ack (local TX only)', () => {
     const { conn } = mockConnection('tcp');
     const handle = makeHandle('tcp', conn);
@@ -407,6 +435,42 @@ describe('MeshComProtocol serial/BLE', () => {
     expect(texts).toHaveLength(1);
     expect(texts[0]?.payload.payload).toBe('hi ble');
     expect(texts[0]?.payload.channelIndex).toBe(0);
+    expect(texts[0]?.payload.receivedVia).toBe('rf');
+    unsub();
+  });
+
+  it('BLE @ phone APRS viaServer sets receivedVia network', () => {
+    const { conn } = mockConnection('ble');
+    const handle = makeHandle('ble', conn);
+    const events: DomainEvent[] = [];
+    const unsub = meshcomProtocol.subscribe(handle, (e) => events.push(e));
+
+    const body = new Uint8Array([
+      0x3a,
+      0x11,
+      0x22,
+      0x33,
+      0x44,
+      0x85, // viaServer | hops
+      ...'OE1GW-1'.split('').map((c) => c.charCodeAt(0)),
+      0x3e,
+      0x2a,
+      0x3a,
+      ...'hi gw'.split('').map((c) => c.charCodeAt(0)),
+      0x00,
+      0x01,
+      0x00,
+      0x00,
+      0x00,
+    ]);
+    const framed = new Uint8Array(1 + body.length);
+    framed[0] = 0x40;
+    framed.set(body, 1);
+    conn.onData?.(framed);
+
+    const texts = events.filter((e) => e.type === 'text_message');
+    expect(texts).toHaveLength(1);
+    expect(texts[0]?.payload.receivedVia).toBe('network');
     unsub();
   });
 
