@@ -9433,31 +9433,38 @@ export function useMeshcoreRuntime() {
       return;
     }
 
-    const roomNodes: RoomSyncSchedulerNode[] = listMeshcoreRoomSyncEnabledNodeIds()
-      .filter((id) => getIdentityNode(meshcoreIdentityIdRef.current, id)?.hw_model === 'Room')
-      .filter((id) =>
-        isMeshcoreRoomSyncSelectable({
-          hasSavedGuestCredential: meshcoreRoomHasSavedGuestCredential(id),
-          hasActiveSession: meshcoreIsRoomLoggedIn(id),
-        }),
-      )
-      .map((id) => {
-        const cfg = getMeshcoreRoomSyncConfig(id);
-        return {
-          nodeId: id,
-          roomSyncEnabled: cfg.enabled,
-          roomSyncIntervalMinutes: cfg.intervalMinutes,
-          lastRoomSyncAt: cfg.lastSyncAt,
-        };
-      });
+    const resolveRoomSyncTarget = (): RoomSyncSchedulerNode | undefined => {
+      const roomNodes: RoomSyncSchedulerNode[] = listMeshcoreRoomSyncEnabledNodeIds()
+        .filter((id) => getIdentityNode(meshcoreIdentityIdRef.current, id)?.hw_model === 'Room')
+        .filter((id) =>
+          isMeshcoreRoomSyncSelectable({
+            hasSavedGuestCredential: meshcoreRoomHasSavedGuestCredential(id),
+            hasActiveSession: meshcoreIsRoomLoggedIn(id),
+          }),
+        )
+        .map((id) => {
+          const cfg = getMeshcoreRoomSyncConfig(id);
+          return {
+            nodeId: id,
+            roomSyncEnabled: cfg.enabled,
+            roomSyncIntervalMinutes: cfg.intervalMinutes,
+            lastRoomSyncAt: cfg.lastSyncAt,
+          };
+        });
+      return pickMostOverdueRoom(roomNodes, now);
+    };
 
-    const target = pickMostOverdueRoom(roomNodes, now);
+    const target = resolveRoomSyncTarget();
     if (!target) return;
 
-    if (meshcoreIsRoomLoggedIn(target.nodeId)) {
+    const markSynced = async (): Promise<void> => {
       lastMeshcoreRoomSyncTxAtRef.current = Date.now();
       await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
       roomSyncSchedulerWarnedNodesRef.current.delete(target.nodeId);
+    };
+
+    if (meshcoreIsRoomLoggedIn(target.nodeId)) {
+      await markSynced();
       return;
     }
 
@@ -9471,18 +9478,7 @@ export function useMeshcoreRuntime() {
       return;
     }
 
-    try {
-      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
-      if (!connRef.current) return;
-      await loginRoom(target.nodeId, password, {
-        guestPassword: password,
-        adminPassword: cred.adminPassword ?? '',
-        schedulerFastPath: true,
-      });
-      lastMeshcoreRoomSyncTxAtRef.current = Date.now();
-      await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
-      roomSyncSchedulerWarnedNodesRef.current.delete(target.nodeId);
-    } catch (e: unknown) {
+    const handleRoomSyncLoginError = async (e: unknown): Promise<void> => {
       if (meshcoreRoomLoginErrorIsNoRoute(e)) {
         await touchMeshcoreRoomLastSyncAt(target.nodeId, Date.now());
         return;
@@ -9498,10 +9494,24 @@ export function useMeshcoreRuntime() {
         '[useMeshcoreRuntime] room sync scheduler login failed ' + errLikeToLogString(e);
       if (roomSyncSchedulerWarnedNodesRef.current.has(target.nodeId)) {
         console.debug(logLine);
-      } else {
-        roomSyncSchedulerWarnedNodesRef.current.add(target.nodeId);
-        console.warn(`mcL1288 ${logLine}`);
+        return;
       }
+      roomSyncSchedulerWarnedNodesRef.current.add(target.nodeId);
+      console.warn(`mcL1288 ${logLine}`);
+    };
+
+    try {
+      const password = meshcoreRoomEffectiveGuestPassword(cred.guestPassword ?? '');
+      if (!connRef.current) return;
+      await loginRoom(target.nodeId, password, {
+        guestPassword: password,
+        adminPassword: cred.adminPassword ?? '',
+        schedulerFastPath: true,
+      });
+      await markSynced();
+    } catch (e: unknown) {
+      // catch-no-log-ok routed to handleRoomSyncLoginError (warn/debug there).
+      await handleRoomSyncLoginError(e);
     }
   }, [loginRoom]);
 
