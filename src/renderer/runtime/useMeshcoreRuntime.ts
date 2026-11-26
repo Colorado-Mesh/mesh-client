@@ -1278,6 +1278,59 @@ function buildMeshcoreLocalStats(input: MeshcoreLocalStatsInput): MeshCoreLocalS
   };
 }
 
+/** Persists offloaded contact rows, reporting progress and rethrowing save failures. */
+async function saveOffloadedContactRows(
+  rows: ReturnType<typeof contactToDbRow>[],
+  onProgress: MeshcoreOffloadFromRadioOptions['onProgress'],
+): Promise<void> {
+  onProgress?.({ phase: 'saving', current: 0, total: rows.length });
+  if (rows.length === 0) return;
+  try {
+    await window.electronAPI.db.saveMeshcoreContactsBatch(rows);
+  } catch (e: unknown) {
+    console.warn(
+      'mcL1258 [useMeshcoreRuntime] offloadContactsFromRadio saveMeshcoreContactsBatch error ' +
+        errLikeToLogString(e),
+    );
+    throw e;
+  }
+}
+
+/** Merge an offloaded radio contact with live advert/nickname state into a DB row. */
+function buildOffloadedContactRow(args: {
+  contact: ReturnType<typeof meshcoreContactRawFromDevice>;
+  now: string;
+  prevNode: MeshNode | undefined;
+  nickname: string | undefined;
+  prevHops: number | undefined;
+}): ReturnType<typeof contactToDbRow> {
+  const id = pubkeyToNodeId(args.contact.publicKey);
+  const base = meshcoreContactToMeshNode(args.contact);
+  const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(base.hops_away, args.prevHops, 0);
+  const mergedAdvName = meshcoreMergeContactAdvNameFromPrevious(
+    base.long_name,
+    meshcorePreviousAdvertNameForRebuild(
+      args.prevNode?.long_name,
+      args.nickname,
+      rememberedMeshcoreLiveAdvertName(id),
+      id,
+    ),
+    id,
+    {
+      prevLastHeard: args.prevNode?.last_heard,
+      radioLastAdvert: args.contact.lastAdvert,
+    },
+  );
+  rememberMeshcoreLiveAdvertName(id, mergedAdvName);
+  return contactToDbRow(
+    { ...args.contact, advName: mergedAdvName },
+    args.nickname ?? null,
+    1,
+    args.now,
+    mergedHops,
+  );
+}
+
 /** 12-hex prefix used for MeshCore pubkey-prefix routing maps. */
 function meshcorePubKeyPrefixHex(publicKey: Uint8Array): string {
   return Array.from(publicKey.slice(0, 6))
@@ -6312,52 +6365,24 @@ export function useMeshcoreRuntime() {
       const contacts = raw.map(meshcoreContactRawFromDevice);
       const now = new Date().toISOString();
       const pendingDbRows: ReturnType<typeof contactToDbRow>[] = [];
+      const liveNodes = readMeshcoreNodes();
+      const nicknameMap = nicknameMapRef.current;
+      const identityId = meshcoreIdentityIdRef.current;
       for (const contact of contacts) {
         const id = pubkeyToNodeId(contact.publicKey);
         if (id === myId) continue;
-        const prevNode = readMeshcoreNodes().get(id);
-        const nickname = nicknameMapRef.current.get(id);
-        const prevHops = getIdentityNode(meshcoreIdentityIdRef.current, id)?.hops_away;
-        const base = meshcoreContactToMeshNode(contact);
-        const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(base.hops_away, prevHops, 0);
-        const mergedAdvName = meshcoreMergeContactAdvNameFromPrevious(
-          base.long_name,
-          meshcorePreviousAdvertNameForRebuild(
-            prevNode?.long_name,
-            nickname,
-            rememberedMeshcoreLiveAdvertName(id),
-            id,
-          ),
-          id,
-          {
-            prevLastHeard: prevNode?.last_heard,
-            radioLastAdvert: contact.lastAdvert,
-          },
-        );
-        rememberMeshcoreLiveAdvertName(id, mergedAdvName);
         pendingDbRows.push(
-          contactToDbRow(
-            { ...contact, advName: mergedAdvName },
-            nickname ?? null,
-            1,
+          buildOffloadedContactRow({
+            contact,
             now,
-            mergedHops,
-          ),
+            prevNode: liveNodes.get(id),
+            nickname: nicknameMap.get(id),
+            prevHops: getIdentityNode(identityId, id)?.hops_away,
+          }),
         );
       }
       const toRemove = pendingDbRows.length;
-      onProgress?.({ phase: 'saving', current: 0, total: toRemove });
-      if (pendingDbRows.length > 0) {
-        try {
-          await window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows);
-        } catch (e: unknown) {
-          console.warn(
-            'mcL1258 [useMeshcoreRuntime] offloadContactsFromRadio saveMeshcoreContactsBatch error ' +
-              errLikeToLogString(e),
-          );
-          throw e;
-        }
-      }
+      await saveOffloadedContactRows(pendingDbRows, onProgress);
       throwIfMeshcoreOffloadAborted(signal);
       // Offloaded contacts leave the radio but stay in SQLite (on_radio=1) — keep their pubkey
       // hex in the map so the Contacts list / node detail can still show/copy the real key.
