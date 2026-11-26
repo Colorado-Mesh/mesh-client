@@ -545,6 +545,79 @@ function NodeBatterySection({
   return <PercentBatteryRow node={node} batteryColor={batteryColor} />;
 }
 
+function NodeTimingSection({
+  node,
+  protocol,
+  isOurNode,
+  mqttConnected,
+  radioConnected,
+}: {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  isOurNode: boolean;
+  mqttConnected: boolean;
+  radioConnected: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <InfoRow label={t('nodeInfoBody.lastHeard')} value={formatTime(node.last_heard, t)} />
+
+      {/* Hop count */}
+      <InfoRow
+        label={t('nodeInfoBody.hops')}
+        value={isOurNode ? 0 : (node.hops_away ?? '—')}
+        className={(isOurNode ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-ink-300'}
+      />
+
+      {/* Channel Utilization — Meshtastic only */}
+      {protocol === 'meshtastic' &&
+        (node.channel_utilization != null || node.air_util_tx != null) && (
+          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+            <span className="text-muted text-sm">{t('nodeInfoBody.channelUtil')}</span>
+            <div className="text-ink-200 flex items-center gap-2 font-mono text-sm">
+              {node.channel_utilization != null && (
+                <span>
+                  RX:{' '}
+                  <span
+                    className={node.channel_utilization > 50 ? 'text-orange-400' : 'text-ink-200'}
+                  >
+                    {node.channel_utilization.toFixed(1)}%
+                  </span>
+                </span>
+              )}
+              {node.channel_utilization != null && node.air_util_tx != null && (
+                <span className="text-ink-600">|</span>
+              )}
+              {node.air_util_tx != null && (
+                <span>
+                  TX:{' '}
+                  <span className={node.air_util_tx > 50 ? 'text-orange-400' : 'text-ink-200'}>
+                    {node.air_util_tx.toFixed(1)}%
+                  </span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+      {/* Source (RF / MQTT) — Meshtastic only; MeshCore/MeshCom are RF (or EXTUDP) */}
+      {protocol === 'meshtastic' && (
+        <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
+          <span className="text-muted text-sm">{t('nodeInfoBody.source')}</span>
+          <NodeSourceBadge
+            node={node}
+            protocol={protocol}
+            isSelf={isOurNode}
+            mqttConnected={mqttConnected}
+            radioConnected={radioConnected}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function NodeInfoBody({
   node,
   homeNode,
@@ -732,60 +805,13 @@ export default function NodeInfoBody({
 
       <NodeBatterySection node={node} protocol={protocol} batteryColor={batteryColor} />
 
-      {/* Timing */}
-      <InfoRow label={t('nodeInfoBody.lastHeard')} value={formatTime(node.last_heard, t)} />
-
-      {/* Hop count */}
-      <InfoRow
-        label={t('nodeInfoBody.hops')}
-        value={isOurNode ? 0 : (node.hops_away ?? '—')}
-        className={(isOurNode ? 0 : node.hops_away) === 0 ? 'text-bright-green' : 'text-ink-300'}
+      <NodeTimingSection
+        node={node}
+        protocol={protocol}
+        isOurNode={isOurNode}
+        mqttConnected={mqttConnected}
+        radioConnected={radioConnected}
       />
-
-      {/* Channel Utilization — Meshtastic only */}
-      {protocol === 'meshtastic' &&
-        (node.channel_utilization != null || node.air_util_tx != null) && (
-          <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-            <span className="text-muted text-sm">{t('nodeInfoBody.channelUtil')}</span>
-            <div className="text-ink-200 flex items-center gap-2 font-mono text-sm">
-              {node.channel_utilization != null && (
-                <span>
-                  RX:{' '}
-                  <span
-                    className={node.channel_utilization > 50 ? 'text-orange-400' : 'text-ink-200'}
-                  >
-                    {node.channel_utilization.toFixed(1)}%
-                  </span>
-                </span>
-              )}
-              {node.channel_utilization != null && node.air_util_tx != null && (
-                <span className="text-ink-600">|</span>
-              )}
-              {node.air_util_tx != null && (
-                <span>
-                  TX:{' '}
-                  <span className={node.air_util_tx > 50 ? 'text-orange-400' : 'text-ink-200'}>
-                    {node.air_util_tx.toFixed(1)}%
-                  </span>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-      {/* Source (RF / MQTT) — Meshtastic only; MeshCore/MeshCom are RF (or EXTUDP) */}
-      {protocol === 'meshtastic' && (
-        <div className="border-ink-700/50 flex items-center justify-between border-b py-2">
-          <span className="text-muted text-sm">{t('nodeInfoBody.source')}</span>
-          <NodeSourceBadge
-            node={node}
-            protocol={protocol}
-            isSelf={isOurNode}
-            mqttConnected={mqttConnected}
-            radioConnected={radioConnected}
-          />
-        </div>
-      )}
 
       {/* Location */}
       {(() => {
