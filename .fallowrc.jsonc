@@ -69,10 +69,14 @@
     "maxCrap": 0,
   },
   "rules": {
-    // Cognitive complexity is dominated by JSX-heavy React components, where nesting depth is
-    // structural rather than avoidable branching. Cyclomatic complexity stays gated as the
-    // branch-count signal; cognitive scores are still visible with an explicit `--max-cognitive`.
+    // All three complexity metrics are advisory by policy (2026-11). Cognitive is dominated by
+    // JSX nesting depth; cyclomatic in this codebase is dominated by component prop conditionals
+    // and event dispatch, which the refactor backlog tracks separately. Synthesis checks
+    // (dead code, cycles, type leaks, duplicates) still gate both `fallow audit` and CI.
+    // Review complexity locally with:
+    //   pnpm exec fallow health --max-cyclomatic 20 --max-cognitive 15
     "complexity-cognitive": "off",
+    "complexity-cyclomatic": "off",
     "private-type-leaks": "error",
     // Renderer libraries are bundled by Vite from devDependencies; no production install is needed.
     "dev-dependencies-in-production": "off",
