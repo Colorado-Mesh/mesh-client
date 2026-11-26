@@ -55,7 +55,7 @@ import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { EXPORT_FORMAT_VERSION, nodesToCsv, TOPOLOGY_EXPORT_FORMAT } from '../lib/exportFormats';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
-import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
+import { homeCoordsForDistanceFilter, type OurPositionReference } from '../lib/locationTrust';
 import { meshcomCallForNodeId } from '../lib/meshcom/meshcomCallRegistry';
 import type { MeshcoreQrImportResult } from '../lib/meshcore/meshcoreQrIngest';
 import {
@@ -280,6 +280,120 @@ function compareNodeListRows(a: MeshNode, b: MeshNode, ctx: NodeListCompareConte
   if (aFav !== bFav) return bFav - aFav;
   const cmp = compareNodeField(a, b, ctx);
   return ctx.sortAsc ? cmp : -cmp;
+}
+
+function buildNodeListBase({
+  nodes,
+  dmPeerIndex,
+  mode,
+  listTab,
+}: {
+  nodes: Map<number, MeshNode>;
+  dmPeerIndex: ReadonlyMap<number, ChatDmPeerIndexEntry>;
+  mode: MeshProtocol;
+  listTab: NodeListTab;
+}): { list: MeshNode[]; historyActivity: Map<number, ChatDmPeerIndexEntry> } {
+  const historyActivity = new Map<number, ChatDmPeerIndexEntry>();
+  if (listTab !== 'history') return { list: Array.from(nodes.values()), historyActivity };
+  const list: MeshNode[] = [];
+  for (const [peerId, entry] of dmPeerIndex) {
+    historyActivity.set(peerId, entry);
+    const existing = nodes.get(peerId);
+    list.push(
+      existing
+        ? { ...existing, last_heard: Math.max(existing.last_heard ?? 0, entry.lastMessageAt) }
+        : stubDmHistoryNode(peerId, entry.lastMessageAt, mode),
+    );
+  }
+  return { list, historyActivity };
+}
+
+function filterNodeListBySearch(
+  list: MeshNode[],
+  searchQuery: string,
+  mode: MeshProtocol,
+): MeshNode[] {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return list;
+  return list.filter(
+    (n) =>
+      n.long_name.toLowerCase().includes(q) ||
+      n.short_name.toLowerCase().includes(q) ||
+      n.hw_model?.toLowerCase().includes(q) ||
+      (mode === 'meshtastic'
+        ? meshtasticNodeIdMatchesHexQuery(n.node_id, q)
+        : n.node_id.toString(16).includes(q.replace(/^!/, ''))),
+  );
+}
+
+function filterNodeListByGroup({
+  list,
+  listTab,
+  selectedGroupId,
+  groupMemberIds,
+  mode,
+  myNodeNum,
+}: {
+  list: MeshNode[];
+  listTab: NodeListTab;
+  selectedGroupId: number | null | undefined;
+  groupMemberIds: ReadonlySet<number> | undefined;
+  mode: MeshProtocol;
+  myNodeNum: number;
+}): MeshNode[] {
+  if (listTab !== 'all' || selectedGroupId == null) return list;
+  if (mode === 'meshcore') {
+    if (selectedGroupId < 0) {
+      const typeFilter = BUILTIN_TYPE_FILTERS.find((f) => f.group_id === selectedGroupId);
+      return typeFilter ? list.filter((n) => n.hw_model === typeFilter.hw_model) : list;
+    }
+    return groupMemberIds ? list.filter((n) => groupMemberIds.has(n.node_id)) : list;
+  }
+  if (mode !== 'meshtastic') return list;
+  if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS) {
+    return list.filter((n) => meshtasticContactGroupMatchesBuiltinGps(n, myNodeNum));
+  }
+  if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT) {
+    return list.filter((n) => meshtasticContactGroupMatchesBuiltinRfMqtt(n, myNodeNum));
+  }
+  if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_ROUTER) {
+    return list.filter((n) => meshtasticContactGroupMatchesBuiltinRouter(n, myNodeNum));
+  }
+  return selectedGroupId > 0 && groupMemberIds
+    ? list.filter((n) => groupMemberIds.has(n.node_id))
+    : list;
+}
+
+function filterNodeListByLocation({
+  list,
+  listTab,
+  locationFilter,
+  nodes,
+  myNodeNum,
+  ourPositionReference,
+}: {
+  list: MeshNode[];
+  listTab: NodeListTab;
+  locationFilter: LocationFilter;
+  nodes: Map<number, MeshNode>;
+  myNodeNum: number;
+  ourPositionReference: OurPositionReference | null | undefined;
+}): MeshNode[] {
+  if (listTab !== 'all' || !locationFilter.enabled) return list;
+  const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
+  const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference);
+  if (!homeCoords) return list;
+  const maxKm =
+    locationFilter.unit === 'miles'
+      ? locationFilter.maxDistance * 1.60934
+      : locationFilter.maxDistance;
+  return list.filter((n) => {
+    if (n.node_id === myNodeNum) return true;
+    // Nodes without GPS can't be distance-filtered — keep them visible
+    if (n.latitude == null || n.longitude == null) return true;
+    const d = haversineDistanceKm(homeCoords.lat, homeCoords.lon, n.latitude, n.longitude);
+    return d <= maxKm;
+  });
 }
 
 export interface NodeListPanelProps {
@@ -586,88 +700,27 @@ function NodeListPanel({
   };
 
   const baseNodeList = useMemo(() => {
-    let list: MeshNode[];
-    const historyActivity = new Map<number, ChatDmPeerIndexEntry>();
-
-    if (listTab === 'history') {
-      list = [];
-      for (const [peerId, entry] of dmPeerIndex) {
-        historyActivity.set(peerId, entry);
-        const existing = nodes.get(peerId);
-        if (existing) {
-          list.push({
-            ...existing,
-            last_heard: Math.max(existing.last_heard ?? 0, entry.lastMessageAt),
-          });
-        } else {
-          list.push(stubDmHistoryNode(peerId, entry.lastMessageAt, mode));
-        }
-      }
-    } else {
-      list = Array.from(nodes.values());
-    }
-
-    // Filter by search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (n) =>
-          n.long_name.toLowerCase().includes(q) ||
-          n.short_name.toLowerCase().includes(q) ||
-          n.hw_model?.toLowerCase().includes(q) ||
-          (mode === 'meshtastic'
-            ? meshtasticNodeIdMatchesHexQuery(n.node_id, q)
-            : n.node_id.toString(16).includes(q.replace(/^!/, ''))),
-      );
-    }
-
-    // Filter by group membership or built-in filters (MeshCore: contact type; Meshtastic: GPS / RF+MQTT)
-    if (listTab === 'all' && selectedGroupId != null) {
-      if (mode === 'meshcore') {
-        if (selectedGroupId < 0) {
-          const typeFilter = BUILTIN_TYPE_FILTERS.find((f) => f.group_id === selectedGroupId);
-          if (typeFilter) list = list.filter((n) => n.hw_model === typeFilter.hw_model);
-        } else if (groupMemberIds) {
-          list = list.filter((n) => groupMemberIds.has(n.node_id));
-        }
-      } else if (mode === 'meshtastic') {
-        if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_GPS) {
-          list = list.filter((n) => meshtasticContactGroupMatchesBuiltinGps(n, myNodeNum));
-        } else if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT) {
-          list = list.filter((n) => meshtasticContactGroupMatchesBuiltinRfMqtt(n, myNodeNum));
-        } else if (selectedGroupId === MESHTASTIC_CONTACT_GROUP_BUILTIN_ROUTER) {
-          list = list.filter((n) => meshtasticContactGroupMatchesBuiltinRouter(n, myNodeNum));
-        } else if (selectedGroupId > 0 && groupMemberIds) {
-          list = list.filter((n) => groupMemberIds.has(n.node_id));
-        }
-      }
-    }
-
-    // Filter MQTT-only nodes
+    const { list, historyActivity } = buildNodeListBase({ nodes, dmPeerIndex, mode, listTab });
+    let filtered = filterNodeListBySearch(list, searchQuery, mode);
+    filtered = filterNodeListByGroup({
+      list: filtered,
+      listTab,
+      selectedGroupId,
+      groupMemberIds,
+      mode,
+      myNodeNum,
+    });
     if (listTab === 'all' && locationFilter.hideMqttOnly) {
-      list = list.filter((n) => !n.heard_via_mqtt_only);
+      filtered = filtered.filter((n) => !n.heard_via_mqtt_only);
     }
-
-    // Filter by distance
-    if (listTab === 'all' && locationFilter.enabled) {
-      const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
-      const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference);
-      if (homeCoords) {
-        const maxKm =
-          locationFilter.unit === 'miles'
-            ? locationFilter.maxDistance * 1.60934
-            : locationFilter.maxDistance;
-        list = list.filter((n) => {
-          if (n.node_id === myNodeNum) return true;
-          // Nodes without GPS can't be distance-filtered — keep them visible
-          if (n.latitude == null || n.longitude == null) return true;
-          const d = haversineDistanceKm(homeCoords.lat, homeCoords.lon, n.latitude, n.longitude);
-          return d <= maxKm;
-        });
-      }
-    }
-
-    // Sort
+    filtered = filterNodeListByLocation({
+      list: filtered,
+      listTab,
+      locationFilter,
+      nodes,
+      myNodeNum,
+      ourPositionReference,
+    });
     const sortCtx: NodeListCompareContext = {
       listTab,
       historyActivity,
@@ -676,9 +729,8 @@ function NodeListPanel({
       sortAsc,
       nodeRedundancy,
     };
-    list.sort((a, b) => compareNodeListRows(a, b, sortCtx));
-
-    return list;
+    filtered.sort((a, b) => compareNodeListRows(a, b, sortCtx));
+    return filtered;
   }, [
     dmPeerIndex,
     listTab,
