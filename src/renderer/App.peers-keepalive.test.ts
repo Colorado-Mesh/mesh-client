@@ -26,6 +26,6 @@ describe('App Peers tab keep-alive (regression)', () => {
     expect(SOURCE).toContain('setPeersTabVisited(flags.peers)');
     expect(SOURCE).not.toContain('setChatTabVisited(flags.chat)');
     expect(COMMIT).toMatch(/peers:\s*false/);
-    expect(COMMIT).toContain('protocolChanged ? { ...CLEARED_VISIT_FLAGS }');
+    expect(COMMIT).toMatch(/protocolChanged\s*\?\s*\{ \.\.\.CLEARED_VISIT_FLAGS/);
   });
 });

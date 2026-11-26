@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
@@ -124,6 +125,7 @@ const {
   mapPanelPropsByProtocol,
   lastNodeDetailModalProps,
   lastNodeListPanelProps,
+  lastRoomsPanelProps,
   reticulumRefreshMessagesFromDb,
   reticulumRefreshNodesFromDb,
   tryAutoLaunchMqttMock,
@@ -334,6 +336,7 @@ const {
   mapPanelPropsByProtocol: new Map<string, Record<string, unknown>>(),
   lastNodeDetailModalProps: { current: null as null | Record<string, unknown> },
   lastNodeListPanelProps: { current: null as null | Record<string, unknown> },
+  lastRoomsPanelProps: { current: null as null | Record<string, unknown> },
   reticulumRefreshMessagesFromDb: vi.fn().mockResolvedValue(undefined),
   reticulumRefreshNodesFromDb: vi.fn().mockResolvedValue(undefined),
   tryAutoLaunchMqttMock: vi.fn().mockResolvedValue(undefined),
@@ -357,6 +360,7 @@ beforeEach(() => {
   mapPanelPropsByProtocol.clear();
   lastNodeDetailModalProps.current = null;
   lastNodeListPanelProps.current = null;
+  lastRoomsPanelProps.current = null;
   reticulumRefreshNodesFromDb.mockClear();
   reticulumRefreshMessagesFromDb.mockClear();
   tryAutoLaunchMqttMock.mockClear();
@@ -537,6 +541,28 @@ vi.mock('./hooks/useReticulumPanelActions', async (importOriginal) => {
   };
 });
 
+/** Test-only stand-in: holds local room state so Rooms keep-alive is observable across switches. */
+function RoomsPanelProbe() {
+  const [openRoom, setOpenRoom] = useState<number | null>(null);
+  return (
+    <div data-testid="rooms-panel-mock">
+      {openRoom == null ? (
+        <button
+          type="button"
+          aria-label="test-open-room"
+          onClick={() => {
+            setOpenRoom(0x51);
+          }}
+        >
+          open room
+        </button>
+      ) : (
+        <span data-testid="rooms-open-room">{openRoom.toString(16)}</span>
+      )}
+    </div>
+  );
+}
+
 vi.mock('./lazyTabPanels', () => ({
   AppPanel: (props: Record<string, unknown>) => {
     lastAppPanelProps.current = props;
@@ -563,6 +589,11 @@ vi.mock('./lazyTabPanels', () => ({
   RadioPanel: () => null,
   RawPacketLogPanel: () => null,
   RepeatersPanel: () => null,
+  RoomsPanel: (props: Record<string, unknown>) => {
+    lastRoomsPanelProps.current = props;
+    return <RoomsPanelProbe />;
+  },
+  RoomServersPanel: () => null,
   RFHistogramsPanel: () => null,
   RrcPanel: () => null,
   SecurityPanel: () => null,
@@ -896,6 +927,52 @@ describe('map navigation sessions', () => {
         node: expect.objectContaining({ node_id: 0x33, long_name: 'Peak Relay' }),
       });
     });
+  });
+});
+
+describe('Rooms tab keep-alive', () => {
+  it('keeps the MeshCore Rooms panel mounted across protocol switches', async () => {
+    useMeshCoreMock.mockReturnValue({ ...createMeshCoreMock(), selfNodeId: 22 });
+    renderApp();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Switch to MeshCore' }));
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: 'Switch to MeshCore' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+    });
+    openPanel(/^Chat/, /^Rooms/);
+    const rooms = await screen.findByTestId('rooms-panel-mock');
+    expect(lastRoomsPanelProps.current).toMatchObject({ isActive: true });
+    fireEvent.click(screen.getByRole('button', { name: 'test-open-room' }));
+    expect(screen.getByTestId('rooms-open-room')).toHaveTextContent('51');
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Switch to Meshtastic' }));
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+    });
+    // Protocol switch must not tear down the Rooms panel: the open room list, selected
+    // room and scroll state are component-local (see RoomsPanel.tsx).
+    expect(screen.getByTestId('rooms-panel-mock')).toBe(rooms);
+    expect(screen.getByTestId('rooms-open-room')).toHaveTextContent('51');
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Switch to MeshCore' }));
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: 'Switch to MeshCore' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+    });
+    openPanel(/^Chat/, /^Rooms/);
+    await waitFor(() => {
+      expect(lastRoomsPanelProps.current).toMatchObject({ isActive: true });
+    });
+    expect(screen.getByTestId('rooms-panel-mock')).toBe(rooms);
+    expect(screen.getByTestId('rooms-open-room')).toHaveTextContent('51');
   });
 });
 

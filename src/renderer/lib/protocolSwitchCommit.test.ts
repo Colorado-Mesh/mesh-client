@@ -48,12 +48,19 @@ describe('protocol switch commit', () => {
   it('clears keep-alive flags on a protocol change and arms only the destination', () => {
     expect(visitFlagsForProtocolCommit(ALL_ON, GAMES_PANEL_INDEX, true, false)).toEqual({
       ...ALL_OFF,
+      rooms: true,
       games: true,
     });
     expect(visitFlagsForProtocolCommit(ALL_ON, APP_PANEL_INDEX, true, true)).toEqual({
       ...ALL_OFF,
+      rooms: true,
       app: true,
     });
+  });
+
+  it('keeps the MeshCore Rooms panel visited across a protocol switch', () => {
+    expect(visitFlagsForProtocolCommit(ALL_ON, CHAT_PANEL_INDEX, true, false).rooms).toBe(true);
+    expect(visitFlagsForProtocolCommit(ALL_OFF, CHAT_PANEL_INDEX, true, false).rooms).toBe(false);
   });
 
   it('arms the peers list only when the destination protocol has one', () => {
@@ -71,7 +78,10 @@ describe('protocol switch commit', () => {
   });
 
   it('does not track chat keep-alive (Chat uses per-protocol visited set in App)', () => {
-    expect(visitFlagsForProtocolCommit(ALL_ON, CHAT_PANEL_INDEX, true, false)).toEqual(ALL_OFF);
+    expect(visitFlagsForProtocolCommit(ALL_ON, CHAT_PANEL_INDEX, true, false)).toEqual({
+      ...ALL_OFF,
+      rooms: true,
+    });
     expect(visitFlagsForProtocolCommit(ALL_OFF, CHAT_PANEL_INDEX, false, false)).toEqual(ALL_OFF);
   });
 });

@@ -7166,7 +7166,8 @@ function AppContent() {
                         className="h-full w-full min-w-0"
                       >
                         {(activePanelIndex === ROOMS_PANEL_INDEX || roomsTabVisited) &&
-                        capabilities.hasRoomServersPanel ? (
+                        enabledProtocols.includes('meshcore') &&
+                        meshcoreCapabilities.hasRoomServersPanel ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
                               <div
