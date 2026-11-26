@@ -1439,6 +1439,102 @@ export default function NodeInfoBody({
   );
 }
 
+type DiagnosticsStoreState = ReturnType<typeof useDiagnosticsStore.getState>;
+
+function computeRfDiagnosisResults(args: {
+  node: MeshNode;
+  isOurNode: boolean;
+  capabilities: ReturnType<typeof useRadioProvider>;
+  getCuStats24h: DiagnosticsStoreState['getCuStats24h'];
+  getForeignLoraDetectionsList: DiagnosticsStoreState['getForeignLoraDetectionsList'];
+}): {
+  findingsToShow: RFDiagnosis[] | null;
+  totalChecks: number | null;
+  noTelemetry: boolean;
+  hasForeignLora: boolean;
+} {
+  let findings: RFDiagnosis[] | null;
+  let totalChecks: number | null = null;
+  let noTelemetry = false;
+
+  if (args.isOurNode) {
+    const cuStats24h = args.getCuStats24h(args.node.node_id);
+    findings = diagnoseConnectedNode(args.node, {
+      cuStats24h: cuStats24h ?? undefined,
+      capabilities: args.capabilities,
+    });
+    totalChecks = 9;
+    // If no LocalStats and no channel_utilization, we have no data at all
+    if (!hasLocalStatsData(args.node) && args.node.channel_utilization == null) {
+      noTelemetry = true;
+    }
+  } else {
+    const cuStatsOther = args.getCuStats24h(args.node.node_id);
+    findings = diagnoseOtherNode(args.node, {
+      cuStats24h: cuStatsOther ?? undefined,
+      capabilities: args.capabilities,
+    });
+    if (findings === null) noTelemetry = true;
+  }
+
+  // A specific foreign LoRa detection replaces the generic collision/corruption row.
+  const hasForeignLora = args.getForeignLoraDetectionsList(args.node.node_id).length > 0;
+  const findingsToShow =
+    findings != null && hasForeignLora
+      ? findings.filter((f) => f.condition !== 'LoRa Collision or Corruption')
+      : findings;
+  return { findingsToShow, totalChecks, noTelemetry, hasForeignLora };
+}
+
+function computeMeshCongestionDetails(args: {
+  isOurNode: boolean;
+  findings: RFDiagnosis[] | null;
+  packetCache: DiagnosticsStoreState['packetCache'];
+  anomaliesMap: ReturnType<typeof diagnosticRowsToRoutingMap>;
+}): {
+  meshCongestionFinding: RFDiagnosis | undefined;
+  meshCongestionLines: ReturnType<typeof meshCongestionDetailLines>;
+  rfOriginators: ReturnType<typeof summarizeRfDuplicateOriginators>;
+} {
+  const meshCongestionFinding =
+    args.isOurNode && args.findings
+      ? args.findings.find((f) => f.condition === 'Mesh Congestion')
+      : undefined;
+  const attrForOurNode =
+    args.isOurNode && meshCongestionFinding
+      ? summarizeMeshCongestionAttribution(args.packetCache, args.anomaliesMap)
+      : null;
+  const meshCongestionLines =
+    attrForOurNode && meshCongestionFinding
+      ? meshCongestionDetailLines(attrForOurNode, { alwaysIncludeRoutingAnomalies: true })
+      : [];
+  const rfOriginators =
+    meshCongestionFinding && args.packetCache.size > 0
+      ? summarizeRfDuplicateOriginators(args.packetCache)
+      : [];
+  return { meshCongestionFinding, meshCongestionLines, rfOriginators };
+}
+
+function RfFlaggedBadge({
+  flagged,
+  totalChecks,
+  noTelemetry,
+}: {
+  flagged: number;
+  totalChecks: number | null;
+  noTelemetry: boolean;
+}) {
+  const { t } = useTranslation();
+  if (noTelemetry || totalChecks === null) return null;
+  const tone =
+    flagged === 0 ? 'bg-green-900/40 text-green-400' : 'bg-orange-900/40 text-orange-400';
+  return (
+    <span className={`text-2xs rounded px-1.5 py-0.5 font-medium ${tone}`}>
+      {t('nodeInfoBody.flagged', { flagged, total: totalChecks })}
+    </span>
+  );
+}
+
 function RFDiagnosticsSection({
   node,
   isOurNode,
@@ -1468,54 +1564,20 @@ function RFDiagnosticsSection({
     return null;
   }
 
-  let findings: RFDiagnosis[] | null;
-  let totalChecks: number | null = null;
-  let noTelemetry = false;
-
-  if (isOurNode) {
-    const cuStats24h = getCuStats24h(node.node_id);
-    findings = diagnoseConnectedNode(node, {
-      cuStats24h: cuStats24h ?? undefined,
-      capabilities,
-    });
-    totalChecks = 9;
-    // If no LocalStats and no channel_utilization, we have no data at all
-    if (!hasLocalStatsData(node) && node.channel_utilization == null) {
-      noTelemetry = true;
-    }
-  } else {
-    const cuStatsOther = getCuStats24h(node.node_id);
-    findings = diagnoseOtherNode(node, {
-      cuStats24h: cuStatsOther ?? undefined,
-      capabilities,
-    });
-    if (findings === null) noTelemetry = true;
-  }
-
-  // When we have a specific foreign LoRa detection (MeshCore/Meshtastic), don't show the generic "LoRa Collision or Corruption" in the RF list
-  const hasForeignLora = getForeignLoraDetectionsList(node.node_id).length > 0;
-  const findingsToShow =
-    findings != null && hasForeignLora
-      ? findings.filter((f) => f.condition !== 'LoRa Collision or Corruption')
-      : findings;
-
+  const { findingsToShow, totalChecks, noTelemetry, hasForeignLora } = computeRfDiagnosisResults({
+    node,
+    isOurNode,
+    capabilities,
+    getCuStats24h,
+    getForeignLoraDetectionsList,
+  });
   const flagged = findingsToShow?.length ?? 0;
-  const meshCongestionFinding =
-    isOurNode && findings?.find((f) => f.condition === 'Mesh Congestion');
-  const attrForOurNode =
-    isOurNode && meshCongestionFinding
-      ? summarizeMeshCongestionAttribution(packetCache, anomaliesMap)
-      : null;
-  const meshCongestionLines =
-    attrForOurNode && meshCongestionFinding
-      ? meshCongestionDetailLines(attrForOurNode, {
-          alwaysIncludeRoutingAnomalies: true,
-        })
-      : [];
-  const rfOriginators =
-    meshCongestionFinding && packetCache.size > 0
-      ? summarizeRfDuplicateOriginators(packetCache)
-      : [];
+  const { meshCongestionLines, rfOriginators } = computeMeshCongestionDetails({
+    isOurNode,
+    findings: findingsToShow,
+    packetCache,
+    anomaliesMap,
+  });
 
   return (
     <>
@@ -1531,17 +1593,7 @@ function RFDiagnosticsSection({
       <div className="bg-primary-dark mt-3 rounded-lg py-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-ink-400 text-sm font-medium">{t('nodeInfoBody.rfDiagnostics')}</div>
-          {!noTelemetry && totalChecks !== null && (
-            <span
-              className={`text-2xs rounded px-1.5 py-0.5 font-medium ${
-                flagged === 0
-                  ? 'bg-green-900/40 text-green-400'
-                  : 'bg-orange-900/40 text-orange-400'
-              }`}
-            >
-              {t('nodeInfoBody.flagged', { flagged, total: totalChecks })}
-            </span>
-          )}
+          <RfFlaggedBadge flagged={flagged} totalChecks={totalChecks} noTelemetry={noTelemetry} />
         </div>
 
         {noTelemetry ? (
