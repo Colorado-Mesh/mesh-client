@@ -642,14 +642,204 @@ export function flatpakStepRunCopiesImageRuntimes(run) {
  * @param {string} fileLabel
  * @returns {{ file: string, message: string }[]}
  */
-export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
+/**
+ * Per-step facts for the Flatpak test-build workflow contract.
+ *
+ * @param {unknown} step
+ * @returns {{
+ *   buildInfoWriter: boolean,
+ *   runtimeWritableCopy: boolean,
+ *   dispatchRename: boolean,
+ *   archNamedBundle: boolean,
+ *   deferredUpload: boolean,
+ *   directFlatpakUpload: boolean,
+ * }}
+ */
+/** @param {unknown} step @param {string} run */
+function flatpakStepDispatchRename(step, run) {
+  return (
+    /(?:^|\n)\s*node\s+scripts\/rename-test-build-artifacts\.mjs\b/.test(run) &&
+    /(?:^|\s)--flatpak\b/.test(run) &&
+    typeof step.if === 'string' &&
+    step.if.includes('workflow_dispatch')
+  );
+}
+
+/** @param {unknown} step @param {string} run */
+function flatpakStepArchNamedBundle(step, run) {
+  return (
+    typeof step.name === 'string' &&
+    step.name.includes('Name Flatpak bundle for direct download') &&
+    run.includes('FLATPAK_ARCH')
+  );
+}
+
+/** @param {unknown} step @param {Record<string, unknown> | null} withBlock */
+function flatpakStepDefersUpload(step, withBlock) {
+  return (
+    typeof step.uses === 'string' &&
+    step.uses.includes('flatpak-builder') &&
+    withBlock !== null &&
+    (withBlock['upload-artifact'] === false || withBlock['upload-artifact'] === 'false')
+  );
+}
+
+/** @param {unknown} step @param {Record<string, unknown> | null} withBlock */
+function flatpakStepIsDirectUpload(step, withBlock) {
+  return (
+    typeof step.uses === 'string' &&
+    step.uses.includes('upload-artifact@') &&
+    withBlock !== null &&
+    (withBlock.archive === false || withBlock.archive === 'false') &&
+    typeof withBlock.path === 'string' &&
+    withBlock.path.includes('flatpak_bundle.outputs.bundle')
+  );
+}
+
+/**
+ * Per-step facts for the Flatpak test-build workflow contract.
+ *
+ * @param {unknown} step
+ * @returns {{
+ *   buildInfoWriter: boolean,
+ *   runtimeWritableCopy: boolean,
+ *   dispatchRename: boolean,
+ *   archNamedBundle: boolean,
+ *   deferredUpload: boolean,
+ *   directFlatpakUpload: boolean,
+ * }}
+ */
+function flatpakTestBuildStepFacts(step) {
+  if (!step || typeof step !== 'object' || Array.isArray(step)) {
+    return {
+      buildInfoWriter: false,
+      runtimeWritableCopy: false,
+      dispatchRename: false,
+      archNamedBundle: false,
+      deferredUpload: false,
+      directFlatpakUpload: false,
+    };
+  }
+  const run = typeof step.run === 'string' ? step.run : '';
+  const withBlock =
+    step.with && typeof step.with === 'object' && !Array.isArray(step.with) ? step.with : null;
+  return {
+    buildInfoWriter: /(?:^|\n)\s*node\s+scripts\/write-flatpak-ci-build-info\.mjs\b/.test(run),
+    // Overlayfs EXDEV: require an executable (non-comment) cp -a of the image runtimes.
+    runtimeWritableCopy: flatpakStepRunCopiesImageRuntimes(run),
+    dispatchRename: flatpakStepDispatchRename(step, run),
+    archNamedBundle: flatpakStepArchNamedBundle(step, run),
+    deferredUpload: flatpakStepDefersUpload(step, withBlock),
+    directFlatpakUpload: flatpakStepIsDirectUpload(step, withBlock),
+  };
+}
+
+/**
+ * @param {unknown[]} steps
+ * @returns {{
+ *   sawBuildInfoWriter: boolean,
+ *   sawRuntimeWritableCopy: boolean,
+ *   sawDeferredUpload: boolean,
+ *   sawDispatchRename: boolean,
+ *   sawArchNamedBundle: boolean,
+ *   sawDirectFlatpakUpload: boolean,
+ *   builderStepIndex: number,
+ *   runtimeCopyStepIndex: number,
+ * }}
+ */
+function collectFlatpakTestBuildFacts(steps) {
+  const facts = {
+    sawBuildInfoWriter: false,
+    sawRuntimeWritableCopy: false,
+    sawDeferredUpload: false,
+    sawDispatchRename: false,
+    sawArchNamedBundle: false,
+    sawDirectFlatpakUpload: false,
+    builderStepIndex: -1,
+    runtimeCopyStepIndex: -1,
+  };
+  for (let i = 0; i < steps.length; i += 1) {
+    const stepFacts = flatpakTestBuildStepFacts(steps[i]);
+    facts.sawBuildInfoWriter ||= stepFacts.buildInfoWriter;
+    facts.sawDispatchRename ||= stepFacts.dispatchRename;
+    facts.sawArchNamedBundle ||= stepFacts.archNamedBundle;
+    facts.sawDirectFlatpakUpload ||= stepFacts.directFlatpakUpload;
+    if (stepFacts.runtimeWritableCopy) {
+      facts.sawRuntimeWritableCopy = true;
+      if (facts.runtimeCopyStepIndex === -1) facts.runtimeCopyStepIndex = i;
+    }
+    if (stepFacts.deferredUpload) {
+      facts.sawDeferredUpload = true;
+      facts.builderStepIndex = i;
+    }
+  }
+  return facts;
+}
+
+/** @param {ReturnType<typeof collectFlatpakTestBuildFacts>} facts */
+function flatpakTestBuildViolations(facts, fileLabel) {
   const violations = [];
+  if (!facts.sawBuildInfoWriter) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must write flatpak/ci-build-info.json via write-flatpak-ci-build-info.mjs',
+    });
+  }
+  if (!facts.sawRuntimeWritableCopy) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must copy image Flatpak runtimes into a writable layer before flatpak-builder (overlayfs EXDEV / Invalid cross-device link)',
+    });
+  } else if (
+    facts.builderStepIndex !== -1 &&
+    (facts.runtimeCopyStepIndex === -1 || facts.runtimeCopyStepIndex > facts.builderStepIndex)
+  ) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must copy image Flatpak runtimes into a writable layer before flatpak-builder',
+    });
+  }
+  if (!facts.sawDeferredUpload) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak-builder must set upload-artifact: false so smoke/rename can run before a single upload',
+    });
+  }
+  if (!facts.sawDispatchRename) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must rename dispatch bundles with rename-test-build-artifacts.mjs --flatpak gated on workflow_dispatch',
+    });
+  }
+  if (!facts.sawArchNamedBundle) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must arch-suffix the bundle basename before archive:false upload (unique per matrix arch)',
+    });
+  }
+  if (!facts.sawDirectFlatpakUpload) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak.yaml must upload the named bundle with upload-artifact archive: false for direct UI download',
+    });
+  }
+  return violations;
+}
+
+export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
-    violations.push({ file: fileLabel, message: 'flatpak.yaml must parse to a mapping' });
-    return violations;
+    return [{ file: fileLabel, message: 'flatpak.yaml must parse to a mapping' }];
   }
 
   const runName = typeof doc['run-name'] === 'string' ? doc['run-name'] : '';
+  const violations = [];
   if (!runName.includes('Build Flatpak (no release)')) {
     violations.push({
       file: fileLabel,
@@ -674,117 +864,8 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
     return violations;
   }
 
-  let sawBuildInfoWriter = false;
-  let sawRuntimeWritableCopy = false;
-  let sawDeferredUpload = false;
-  let sawDispatchRename = false;
-  let sawArchNamedBundle = false;
-  let sawDirectFlatpakUpload = false;
-  let builderStepIndex = -1;
-  let runtimeCopyStepIndex = -1;
-
-  for (let i = 0; i < steps.length; i += 1) {
-    const step = steps[i];
-    if (!step || typeof step !== 'object' || Array.isArray(step)) continue;
-    const run = typeof step.run === 'string' ? step.run : '';
-    if (/(?:^|\n)\s*node\s+scripts\/write-flatpak-ci-build-info\.mjs\b/.test(run)) {
-      sawBuildInfoWriter = true;
-    }
-    // Overlayfs EXDEV: require an executable (non-comment) cp -a of the image runtimes.
-    if (flatpakStepRunCopiesImageRuntimes(run)) {
-      sawRuntimeWritableCopy = true;
-      if (runtimeCopyStepIndex === -1) runtimeCopyStepIndex = i;
-    }
-    if (
-      /(?:^|\n)\s*node\s+scripts\/rename-test-build-artifacts\.mjs\b/.test(run) &&
-      /(?:^|\s)--flatpak\b/.test(run) &&
-      typeof step.if === 'string' &&
-      step.if.includes('workflow_dispatch')
-    ) {
-      sawDispatchRename = true;
-    }
-    if (
-      typeof step.name === 'string' &&
-      step.name.includes('Name Flatpak bundle for direct download') &&
-      run.includes('FLATPAK_ARCH')
-    ) {
-      sawArchNamedBundle = true;
-    }
-    const withBlock =
-      step.with && typeof step.with === 'object' && !Array.isArray(step.with) ? step.with : null;
-    if (
-      typeof step.uses === 'string' &&
-      step.uses.includes('flatpak-builder') &&
-      withBlock &&
-      (withBlock['upload-artifact'] === false || withBlock['upload-artifact'] === 'false')
-    ) {
-      sawDeferredUpload = true;
-      builderStepIndex = i;
-    }
-    if (
-      typeof step.uses === 'string' &&
-      step.uses.includes('upload-artifact@') &&
-      withBlock &&
-      (withBlock.archive === false || withBlock.archive === 'false') &&
-      typeof withBlock.path === 'string' &&
-      withBlock.path.includes('flatpak_bundle.outputs.bundle')
-    ) {
-      sawDirectFlatpakUpload = true;
-    }
-  }
-
-  if (!sawBuildInfoWriter) {
-    violations.push({
-      file: fileLabel,
-      message:
-        'flatpak.yaml must write flatpak/ci-build-info.json via write-flatpak-ci-build-info.mjs',
-    });
-  }
-  if (!sawRuntimeWritableCopy) {
-    violations.push({
-      file: fileLabel,
-      message:
-        'flatpak.yaml must copy image Flatpak runtimes into a writable layer before flatpak-builder (overlayfs EXDEV / Invalid cross-device link)',
-    });
-  } else if (
-    builderStepIndex !== -1 &&
-    (runtimeCopyStepIndex === -1 || runtimeCopyStepIndex > builderStepIndex)
-  ) {
-    violations.push({
-      file: fileLabel,
-      message:
-        'flatpak.yaml must copy image Flatpak runtimes into a writable layer before flatpak-builder',
-    });
-  }
-  if (!sawDeferredUpload) {
-    violations.push({
-      file: fileLabel,
-      message:
-        'flatpak-builder must set upload-artifact: false so smoke/rename can run before a single upload',
-    });
-  }
-  if (!sawDispatchRename) {
-    violations.push({
-      file: fileLabel,
-      message:
-        'flatpak.yaml must rename dispatch bundles with rename-test-build-artifacts.mjs --flatpak gated on workflow_dispatch',
-    });
-  }
-  if (!sawArchNamedBundle) {
-    violations.push({
-      file: fileLabel,
-      message:
-        'flatpak.yaml must arch-suffix the bundle basename before archive:false upload (unique per matrix arch)',
-    });
-  }
-  if (!sawDirectFlatpakUpload) {
-    violations.push({
-      file: fileLabel,
-      message:
-        'flatpak.yaml must upload the named bundle with upload-artifact archive: false for direct UI download',
-    });
-  }
-  return violations;
+  const facts = collectFlatpakTestBuildFacts(steps);
+  return [...violations, ...flatpakTestBuildViolations(facts, fileLabel)];
 }
 
 /**
