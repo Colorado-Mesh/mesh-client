@@ -89,6 +89,40 @@ describe('attachMeshcomRoutingAckSideEffects', () => {
     detach();
   });
 
+  it('settles the newer sending row, not an older failed row sharing the wire id', () => {
+    const identityId = 'meshcom:failed-prefix';
+    upsertMessage(identityId, {
+      id: '42',
+      from: 1,
+      to: 2,
+      payload: 'older failed',
+      channelIndex: -1,
+      timestamp: 1,
+      status: 'failed',
+    });
+    upsertMessage(identityId, {
+      id: '42-2',
+      from: 1,
+      to: 2,
+      payload: 'in flight',
+      channelIndex: -1,
+      timestamp: 2,
+      status: 'sending',
+    });
+    const detach = attachMeshcomRoutingAckSideEffects(identityId);
+    packetRouter.dispatch(
+      {
+        type: 'meshtastic_routing_ack',
+        payload: { requestId: 42, ackProofStatus: 0, isAck: true, from: 2 },
+      },
+      identityId,
+    );
+    const bucket = useMessageStore.getState().messages[identityId];
+    expect(bucket['42-2'].status).toBe('acked');
+    expect(bucket['42'].status).toBe('failed');
+    detach();
+  });
+
   it('ignores sender-less BLE ACK for DMs without peer attribution', () => {
     const identityId = 'meshcom:ble-no-src';
     upsertMessage(identityId, {

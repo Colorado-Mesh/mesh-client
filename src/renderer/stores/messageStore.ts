@@ -741,11 +741,13 @@ export function claimOutboundMessageId(
   ) {
     return preferredId;
   }
-  for (let n = 2; n <= 100; n++) {
+  // At most `taken.size` ids exist, so probing `size + 1` distinct suffixes always finds one.
+  const taken = new Set(Object.keys(bucket ?? {}));
+  for (let n = 2; n <= taken.size + 2; n++) {
     const candidate = `${preferredId}-${n}`;
-    if (!bucket?.[candidate]) return candidate;
+    if (!taken.has(candidate)) return candidate;
   }
-  return `${preferredId}-${message.timestamp}`;
+  return `${preferredId}-${taken.size + 2}`;
 }
 
 export function updateMessageStatus(

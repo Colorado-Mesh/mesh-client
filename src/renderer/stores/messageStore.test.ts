@@ -246,6 +246,32 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
     ).toBe('1-3');
   });
 
+  it('claimOutboundMessageId keeps the base id when it is free', () => {
+    expect(
+      claimOutboundMessageId(ID_A, '9', {
+        from: 1,
+        payload: 'first send',
+        timestamp: 1_700_000_003_000,
+      }),
+    ).toBe('9');
+  });
+
+  it('claimOutboundMessageId never returns an occupied suffix', () => {
+    addMessage(ID_A, { ...sampleRecord('1'), payload: 'occupant' });
+    for (let n = 2; n <= 10; n++) {
+      addMessage(ID_A, { ...sampleRecord(`1-${n}`), payload: `old ${n}` });
+    }
+
+    const id = claimOutboundMessageId(ID_A, '1', {
+      from: 1,
+      payload: 'new all',
+      timestamp: 1_700_000_002_000,
+    });
+
+    expect(id).toBe('1-11');
+    expect(useMessageStore.getState().messages[ID_A]?.[id]).toBeUndefined();
+  });
+
   it('renameMessageId does not clobber an acked Completes target', () => {
     const successHash = 'aa'.repeat(32);
     const failedHash = 'bb'.repeat(32);
