@@ -5,6 +5,8 @@
  * slot helpers without a cycle when pathMedium applies routes onto the store.
  */
 
+import { classifyReticulumVia } from './classifyReticulumVia';
+
 export type PathMedium = 'rf' | 'network';
 
 export interface ReticulumPathSlot {
@@ -31,6 +33,12 @@ export function activeReticulumPathSlot(
 export function backupReticulumPathSlots(paths: readonly ReticulumPathSlot[]): ReticulumPathSlot[] {
   const active = activeReticulumPathSlot(paths);
   return paths.filter((s) => !s.expired && s !== active);
+}
+
+/** Map UI/interface classification onto path-medium tokens (ble counts as RF). */
+export function pathMediumFromInterfaceNameOrType(nameOrType: string): PathMedium {
+  const via = classifyReticulumVia(nameOrType);
+  return via === 'rf' || via === 'ble' ? 'rf' : 'network';
 }
 
 /** RRC link establishment uses path-scaled hops; reject stale multi-hop TCP routes. */

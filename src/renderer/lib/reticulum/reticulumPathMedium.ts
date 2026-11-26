@@ -6,7 +6,6 @@
  */
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { classifyReticulumVia } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
   activeReticulumPathSlot,
   backupReticulumPathSlots,
@@ -19,6 +18,11 @@ import { applyReticulumPeerActivePathSlot } from '@/renderer/stores/reticulumPee
 export type PathMediumPreference = 'lowest' | 'network' | 'rf';
 export type { PathMedium, ReticulumPathSlot };
 export { activeReticulumPathSlot, backupReticulumPathSlots };
+/**
+ * Re-exported from the pure slot module so analysis-worker code can classify RF/network
+ * media without pulling this module's store / sidecar HTTP graph into a Web Worker.
+ */
+export { pathMediumFromInterfaceNameOrType } from '@/renderer/lib/reticulum/reticulumPathSlots';
 /** UI pin control: Auto follows the global preference. */
 export type PeerMediumPinChoice = 'auto' | PathMedium;
 
@@ -45,12 +49,6 @@ export function parsePathMedium(raw: unknown): PathMedium | null {
   const token = raw.trim().toLowerCase();
   if (token === 'rf' || token === 'network') return token;
   return null;
-}
-
-/** Map UI/interface classification onto path-medium tokens (ble counts as RF). */
-export function pathMediumFromInterfaceNameOrType(nameOrType: string): PathMedium {
-  const via = classifyReticulumVia(nameOrType);
-  return via === 'rf' || via === 'ble' ? 'rf' : 'network';
 }
 
 function parsePathSlot(raw: unknown): ReticulumPathSlot | null {
