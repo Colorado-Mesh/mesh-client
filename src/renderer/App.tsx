@@ -3353,6 +3353,11 @@ function AppContent() {
 
   const isConfigured = activeConnectionView.state.status === 'configured';
   const isOperational = isConfigured || activeConnectionView.state.status === 'stale';
+  // Rooms is MeshCore-only and kept mounted across protocol switches, so its connection
+  // prop must come from MeshCore's view rather than the active protocol's isOperational.
+  const isMeshcoreOperational =
+    meshcoreConnectionView.state.status === 'configured' ||
+    meshcoreConnectionView.state.status === 'stale';
   const isConnectedOrOperational =
     isOperational || activeConnectionView.state.status === 'connected';
 
@@ -7178,7 +7183,7 @@ function AppContent() {
                                   nodes={meshcoreUiNodes}
                                   messages={meshcoreUiMessages}
                                   myNodeNum={meshcoreRuntime.selfNodeId}
-                                  isConnected={isOperational}
+                                  isConnected={isMeshcoreOperational}
                                   connectionType={meshcoreConnectionView.state.connectionType}
                                   isActive={activePanelIndex === ROOMS_PANEL_INDEX}
                                   initialRoomTarget={pendingRoomTarget}

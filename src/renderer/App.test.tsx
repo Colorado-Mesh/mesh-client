@@ -933,6 +933,20 @@ describe('map navigation sessions', () => {
 describe('Rooms tab keep-alive', () => {
   it('keeps the MeshCore Rooms panel mounted across protocol switches', async () => {
     useMeshCoreMock.mockReturnValue({ ...createMeshCoreMock(), selfNodeId: 22 });
+    ensureOfflineProtocolIdentities();
+    // MeshCore stays operational (stale counts) while the active Meshtastic link is down.
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'stale',
+      myNodeNum: 22,
+      connectionType: 'serial',
+      mqttStatus: 'disconnected',
+    });
+    setConnection(MESHTASTIC_TEST_IDENTITY, {
+      status: 'disconnected',
+      myNodeNum: 0,
+      connectionType: null,
+      mqttStatus: 'disconnected',
+    });
     renderApp();
 
     fireEvent.click(screen.getByRole('radio', { name: 'Switch to MeshCore' }));
@@ -944,7 +958,7 @@ describe('Rooms tab keep-alive', () => {
     });
     openPanel(/^Chat/, /^Rooms/);
     const rooms = await screen.findByTestId('rooms-panel-mock');
-    expect(lastRoomsPanelProps.current).toMatchObject({ isActive: true });
+    expect(lastRoomsPanelProps.current).toMatchObject({ isActive: true, isConnected: true });
     fireEvent.click(screen.getByRole('button', { name: 'test-open-room' }));
     expect(screen.getByTestId('rooms-open-room')).toHaveTextContent('51');
 
@@ -956,7 +970,11 @@ describe('Rooms tab keep-alive', () => {
       );
     });
     // Protocol switch must not tear down the Rooms panel: the open room list, selected
-    // room and scroll state are component-local (see RoomsPanel.tsx).
+    // room and scroll state are component-local (see RoomsPanel.tsx). Its connection prop
+    // stays MeshCore's, not the disconnected active protocol's.
+    await waitFor(() => {
+      expect(lastRoomsPanelProps.current).toMatchObject({ isActive: false, isConnected: true });
+    });
     expect(screen.getByTestId('rooms-panel-mock')).toBe(rooms);
     expect(screen.getByTestId('rooms-open-room')).toHaveTextContent('51');
 
@@ -969,7 +987,7 @@ describe('Rooms tab keep-alive', () => {
     });
     openPanel(/^Chat/, /^Rooms/);
     await waitFor(() => {
-      expect(lastRoomsPanelProps.current).toMatchObject({ isActive: true });
+      expect(lastRoomsPanelProps.current).toMatchObject({ isActive: true, isConnected: true });
     });
     expect(screen.getByTestId('rooms-panel-mock')).toBe(rooms);
     expect(screen.getByTestId('rooms-open-room')).toHaveTextContent('51');
