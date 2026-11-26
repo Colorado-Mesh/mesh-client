@@ -114,44 +114,60 @@ export function losHeightM(
   return startAnt + (endAnt - startAnt) * t;
 }
 
-export function computeTerrainClearance(opts: {
+function buildUnknownTerrainSamples(
+  distancesM: readonly number[],
+  elevationsM: readonly (number | null)[],
+  n: number,
+  dM: number,
+): TerrainClearanceSample[] {
+  const samples: TerrainClearanceSample[] = [];
+  for (let i = 0; i < n; i++) {
+    const elevationM = elevationsM[i] ?? null;
+    const distanceM = distancesM[i] ?? 0;
+    const bulge = elevationM != null ? earthBulgeM(distanceM, dM) : 0;
+    samples.push({
+      distanceM,
+      elevationM,
+      effectiveElevationM: elevationM != null ? elevationM + bulge : null,
+      losHeightM: null,
+      fresnelRadiusM: null,
+      clearanceM: null,
+    });
+  }
+  return samples;
+}
+
+function buildTerrainClearanceSamples(args: {
   distancesM: readonly number[];
   elevationsM: readonly (number | null)[];
   frequencyMhz: TerrainFrequencyMhz;
   antennaHeightStartM: number;
   antennaHeightEndM: number;
-}): TerrainClearanceSummary {
-  const { distancesM, elevationsM, frequencyMhz, antennaHeightStartM, antennaHeightEndM } = opts;
-  const n = Math.min(distancesM.length, elevationsM.length);
-  if (n < 2) {
-    return { clearance: 'unknown', minClearanceM: null, samples: [] };
-  }
-  const dM = distancesM[n - 1] ?? 0;
-  const startElev = elevationsM[0];
-  const endElev = elevationsM[n - 1];
-  if (startElev == null || endElev == null || !(dM > 0)) {
-    const samples: TerrainClearanceSample[] = [];
-    for (let i = 0; i < n; i++) {
-      const elevationM = elevationsM[i] ?? null;
-      const distanceM = distancesM[i] ?? 0;
-      const bulge = elevationM != null ? earthBulgeM(distanceM, dM) : 0;
-      samples.push({
-        distanceM,
-        elevationM,
-        effectiveElevationM: elevationM != null ? elevationM + bulge : null,
-        losHeightM: null,
-        fresnelRadiusM: null,
-        clearanceM: null,
-      });
-    }
-    return { clearance: 'unknown', minClearanceM: null, samples };
-  }
-
-  let minClearance: number | null = null;
+  n: number;
+  dM: number;
+  startElev: number;
+  endElev: number;
+}): {
+  samples: TerrainClearanceSample[];
+  minClearanceM: number | null;
+  anyObstructed: boolean;
+  anyMissingElevation: boolean;
+} {
+  const {
+    distancesM,
+    elevationsM,
+    frequencyMhz,
+    antennaHeightStartM,
+    antennaHeightEndM,
+    n,
+    dM,
+    startElev,
+    endElev,
+  } = args;
+  let minClearanceM: number | null = null;
   let anyObstructed = false;
   let anyMissingElevation = false;
   const samples: TerrainClearanceSample[] = [];
-
   for (let i = 0; i < n; i++) {
     const distanceM = distancesM[i] ?? 0;
     const elevationM = elevationsM[i] ?? null;
@@ -169,7 +185,7 @@ export function computeTerrainClearance(opts: {
     if (elevationM != null) {
       clearanceM = los - elevationM - fresnel - bulge;
       if (clearanceM < 0) anyObstructed = true;
-      if (minClearance == null || clearanceM < minClearance) minClearance = clearanceM;
+      if (minClearanceM == null || clearanceM < minClearanceM) minClearanceM = clearanceM;
     } else {
       anyMissingElevation = true;
     }
@@ -182,12 +198,46 @@ export function computeTerrainClearance(opts: {
       clearanceM,
     });
   }
+  return { samples, minClearanceM, anyObstructed, anyMissingElevation };
+}
 
+export function computeTerrainClearance(opts: {
+  distancesM: readonly number[];
+  elevationsM: readonly (number | null)[];
+  frequencyMhz: TerrainFrequencyMhz;
+  antennaHeightStartM: number;
+  antennaHeightEndM: number;
+}): TerrainClearanceSummary {
+  const { distancesM, elevationsM, frequencyMhz, antennaHeightStartM, antennaHeightEndM } = opts;
+  const n = Math.min(distancesM.length, elevationsM.length);
+  if (n < 2) return { clearance: 'unknown', minClearanceM: null, samples: [] };
+  const dM = distancesM[n - 1] ?? 0;
+  const startElev = elevationsM[0];
+  const endElev = elevationsM[n - 1];
+  if (startElev == null || endElev == null || !(dM > 0)) {
+    return {
+      clearance: 'unknown',
+      minClearanceM: null,
+      samples: buildUnknownTerrainSamples(distancesM, elevationsM, n, dM),
+    };
+  }
+  const { samples, minClearanceM, anyObstructed, anyMissingElevation } =
+    buildTerrainClearanceSamples({
+      distancesM,
+      elevationsM,
+      frequencyMhz,
+      antennaHeightStartM,
+      antennaHeightEndM,
+      n,
+      dM,
+      startElev,
+      endElev,
+    });
   // Obstructed wins; otherwise unknown if any sample lacks elevation; clear only when complete.
   const clearance: TerrainClearanceStatus = anyObstructed
     ? 'obstructed'
     : anyMissingElevation
       ? 'unknown'
       : 'clear';
-  return { clearance, minClearanceM: minClearance, samples };
+  return { clearance, minClearanceM, samples };
 }
