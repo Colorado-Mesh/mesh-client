@@ -105,6 +105,14 @@ describe('Windows packaging (contract)', () => {
     expect(beforeBuild).toContain('usocket');
     // void/undefined is treated as false and skips pack-time native rebuild.
     expect(beforeBuild).toMatch(/return true\s*;/);
+    // electron-builder resolveFunction requires a default-exported callable hook.
+    expect(beforeBuild).toMatch(/export\s+default\s+async\s+function\s+beforeBuild\b/);
+
+    const beforePack = readFileSync(
+      join(REPO_ROOT, 'scripts', 'electron-builder-before-pack.mjs'),
+      'utf-8',
+    );
+    expect(beforePack).toMatch(/export\s+default\s+async\s+function\s+beforePack\b/);
   });
 
   it('disables universal NSIS, includes post-install guard, and verifies split Windows installers', () => {
