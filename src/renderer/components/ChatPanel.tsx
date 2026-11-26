@@ -1083,6 +1083,9 @@ function ChatPanel({
     if (persisted != null && channels.some((c) => c.index === persisted)) return persisted;
     return defaultChannelIndex;
   });
+  // Live selection for post-await remove fallback — do not use the closed-over `channel`.
+  const channelRef = useRef(channel);
+  channelRef.current = channel;
   useEffect(() => {
     if (channels.length > 0 && !channels.some((c) => c.index === channel)) {
       setChannel(defaultChannelIndex);
@@ -1391,7 +1394,8 @@ function ChatPanel({
       try {
         await onRemoveMeshcomGrc(target.index, target.nodeNum);
         setChannelToRemove(null);
-        if (channel === target.index) {
+        // Read live selection after await so a newer navigation is not overwritten.
+        if (channelRef.current === target.index) {
           const next = channels.find((ch) => ch.index !== target.index);
           if (next) selectChannel(next.index);
         }
@@ -1433,7 +1437,8 @@ function ChatPanel({
       await onDeleteMeshcoreChannel(target.index);
       if (scopeKey) clearFloodScopeOverride('meshcore', scopeKey);
       setChannelToRemove(null);
-      if (channel === target.index) {
+      // Read live selection after await so a newer navigation is not overwritten.
+      if (channelRef.current === target.index) {
         const next = channels.find((ch) => ch.index !== target.index);
         if (next) selectChannel(next.index);
       }
