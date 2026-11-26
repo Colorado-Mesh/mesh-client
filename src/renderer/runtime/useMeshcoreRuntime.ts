@@ -275,6 +275,7 @@ import {
   runMeshcoreAnonOwnerRequest,
   runMeshcoreAnonRegionsRequest,
 } from '../lib/meshcoreAnonRequestRpc';
+import { readMeshcoreChannelsWithRetry } from '../lib/meshcoreChannelFetch';
 import {
   buildMeshcoreOutboundTapbackWire,
   MESHCORE_TXT_TYPE_CLI_COMMAND,
@@ -3338,7 +3339,10 @@ export function useMeshcoreRuntime() {
           observeMeshcoreSetupAbort(parallelContactsPromise);
           const channelsPromise = awaitUnlessMeshcoreSetupCancelled(
             setupGen,
-            withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
+            readMeshcoreChannelsWithRetry(
+              () => withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
+              { isCancelled: () => meshcoreSetupGenerationRef.current !== setupGen },
+            ),
           );
           void (async () => {
             try {
@@ -3749,10 +3753,9 @@ export function useMeshcoreRuntime() {
             const getChannelsStart = performance.now();
             try {
               // Race: peer FIN after burst must not hang getChannels until MESHCORE_INIT_TIMEOUT.
-              const channelsWork = withTimeout(
-                conn.getChannels(),
-                MESHCORE_INIT_TIMEOUT_MS,
-                'getChannels',
+              const channelsWork = readMeshcoreChannelsWithRetry(
+                () => withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
+                { isCancelled: () => meshcoreSetupGenerationRef.current !== setupGen },
               );
               const rawChannels = await awaitUnlessMeshcoreSetupCancelled(
                 setupGen,
