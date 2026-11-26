@@ -5409,18 +5409,7 @@ ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
   try {
     const buf = Buffer.from(dataBase64, 'base64');
     if (buf.length > 16 * 1024 * 1024) throw new Error('decoded attachment too large');
-    let targetPath: string;
-    if (promptSave) {
-      if (!mainWindow) return { success: false };
-      const ext = path.extname(fileName) || '';
-      const result = await dialog.showSaveDialog(mainWindow, {
-        title: 'Save attachment',
-        defaultPath: fileName,
-        filters: ext ? [{ name: ext.slice(1), extensions: [ext.slice(1)] }] : undefined,
-      });
-      if (result.canceled || !result.filePath) return { success: false };
-      targetPath = result.filePath;
-    } else {
+    if (!promptSave) {
       // Safe-receive: sanitised name, risky extensions quarantined, mode 0600, no overwrite.
       const written = await writeReticulumAttachmentCacheFile(
         path.join(app.getPath('userData'), 'reticulum', 'attachments'),
@@ -5429,6 +5418,8 @@ ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
       );
       return { success: true, path: written.path };
     }
+    const targetPath = await showAttachmentSaveDialog(fileName);
+    if (!targetPath) return { success: false };
     await fs.promises.writeFile(targetPath, buf);
     return { success: true, path: targetPath };
   } catch (err) {
@@ -5653,6 +5644,51 @@ ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
   }
 });
 
+/** Save dialog for a chat attachment; null when cancelled or no window. */
+async function showAttachmentSaveDialog(fileName: string): Promise<string | null> {
+  if (!mainWindow) return null;
+  const ext = path.extname(fileName) || '';
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save attachment',
+    defaultPath: fileName,
+    filters: ext ? [{ name: ext.slice(1), extensions: [ext.slice(1)] }] : undefined,
+  });
+  return result.canceled || !result.filePath ? null : result.filePath;
+}
+
+interface OutboxStatusUpdate {
+  id: number;
+  status: string;
+  error: string | null;
+  nextRetryAt: number | null;
+  attemptCount: number | undefined;
+}
+
+function parseOutboxStatusUpdate(args: {
+  id: unknown;
+  status: unknown;
+  error: unknown;
+  nextRetryAt: unknown;
+  attemptCount: unknown;
+}): OutboxStatusUpdate {
+  if (typeof args.id !== 'number' || !Number.isInteger(args.id)) {
+    throw new Error('chat:outbox:updateStatus: invalid id');
+  }
+  if (typeof args.status !== 'string' || !OUTBOX_VALID_STATUSES.has(args.status)) {
+    throw new Error('chat:outbox:updateStatus: invalid status');
+  }
+  return {
+    id: args.id,
+    status: args.status,
+    error: typeof args.error === 'string' ? args.error : null,
+    nextRetryAt: typeof args.nextRetryAt === 'number' ? args.nextRetryAt : null,
+    attemptCount:
+      typeof args.attemptCount === 'number' && Number.isInteger(args.attemptCount)
+        ? args.attemptCount
+        : undefined,
+  };
+}
+
 ipcMain.handle(
   'chat:outbox:updateStatus',
   (
@@ -5665,34 +5701,25 @@ ipcMain.handle(
   ) => {
     try {
       assertIpcSender(event, 'chat:outbox:updateStatus');
-      if (typeof id !== 'number' || !Number.isInteger(id))
-        throw new Error('chat:outbox:updateStatus: invalid id');
-      if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
-        throw new Error('chat:outbox:updateStatus: invalid status');
+      const update = parseOutboxStatusUpdate({ id, status, error, nextRetryAt, attemptCount });
       const db = getDbForIpc('chat:outbox:updateStatus');
       if (!db) return;
-      if (typeof attemptCount === 'number' && Number.isInteger(attemptCount)) {
+      if (update.attemptCount !== undefined) {
         db.prepareOnce(
           'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, attempt_count = ?, updated_at = ? WHERE id = ?',
         ).run(
-          status,
-          typeof error === 'string' ? error : null,
-          typeof nextRetryAt === 'number' ? nextRetryAt : null,
-          attemptCount,
+          update.status,
+          update.error,
+          update.nextRetryAt,
+          update.attemptCount,
           Date.now(),
-          id,
+          update.id,
         );
-      } else {
-        db.prepareOnce(
-          'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
-        ).run(
-          status,
-          typeof error === 'string' ? error : null,
-          typeof nextRetryAt === 'number' ? nextRetryAt : null,
-          Date.now(),
-          id,
-        );
+        return;
       }
+      db.prepareOnce(
+        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
+      ).run(update.status, update.error, update.nextRetryAt, Date.now(), update.id);
     } catch (err) {
       finishDbIpcHandler('chat:outbox:updateStatus', err);
     }
