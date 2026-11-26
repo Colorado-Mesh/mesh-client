@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/purity */
 import type { TFunction } from 'i18next';
 import { CircleX, Info, TriangleAlert } from 'lucide-react-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLatestTrackedPosition } from '@/renderer/hooks/useLatestTrackedPosition';
@@ -688,6 +688,463 @@ function NodeLocationSection({
   );
 }
 
+interface MeshcoreTraceEntry {
+  id: number;
+  timestamp: number;
+  pathLen: number | null;
+  pathSnrs: number[];
+  lastSnr: number | null;
+  tag: number | null;
+}
+
+type DiagnosticsState = ReturnType<typeof useDiagnosticsStore.getState>;
+type MeshcoreHopHistoryEntry =
+  DiagnosticsState['meshcoreHopHistory'] extends Map<number, infer V> ? V : never;
+type NodeRedundancyEntry =
+  DiagnosticsState['nodeRedundancy'] extends Map<number, infer V> ? V : never;
+
+function NodeMeshcorePathHistorySection({
+  protocol,
+  meshcoreHopHistory,
+  meshcoreTraceHistory,
+  meshcoreTraceFirst,
+  meshcoreTracePathSnrsSafe,
+  showMeshcoreTraceHistoryBlock,
+  use24HourTime,
+}: {
+  protocol: MeshProtocol;
+  meshcoreHopHistory: MeshcoreHopHistoryEntry | undefined;
+  meshcoreTraceHistory: MeshcoreTraceEntry[] | undefined;
+  meshcoreTraceFirst: MeshcoreTraceEntry | undefined;
+  meshcoreTracePathSnrsSafe: readonly number[];
+  showMeshcoreTraceHistoryBlock: boolean;
+  use24HourTime: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {/* MeshCore trace history from database */}
+      {protocol === 'meshcore' && (meshcoreHopHistory || meshcoreTraceHistory) && (
+        <div className="border-ink-700/50 mt-2 border-t pt-2">
+          <div className="text-2xs text-muted mb-1">{t('nodeInfoBody.meshcorePathHistory')}</div>
+          {meshcoreHopHistory && (
+            <div className="mb-1 text-xs">
+              <span className="text-ink-400">{t('nodeInfoBody.hopsLabel')}</span>
+              <span className="text-ink-200 font-mono">{meshcoreHopHistory.hops ?? '?'}</span>
+              {meshcoreHopHistory.snr != null && (
+                <span className="text-muted ml-2">
+                  SNR {meshcoreHopHistory.snr > 0 ? '+' : ''}
+                  {meshcoreHopHistory.snr.toFixed(1)} dB
+                </span>
+              )}
+              {meshcoreHopHistory.rssi != null && (
+                <span className="text-muted ml-2">{meshcoreHopHistory.rssi} dBm</span>
+              )}
+              <span className="text-2xs text-ink-600 ml-2">
+                {formatDisplayTime(meshcoreHopHistory.timestamp, { use24Hour: use24HourTime })}
+              </span>
+            </div>
+          )}
+          {meshcoreTraceHistory &&
+            meshcoreTraceHistory.length > 0 &&
+            showMeshcoreTraceHistoryBlock &&
+            meshcoreTraceFirst != null && (
+              <div className="bg-deep-black/50 text-2xs rounded p-1.5">
+                <div className="text-ink-400 mb-0.5">
+                  {meshcoreTraceFirst.pathLen != null && (
+                    <>
+                      {t('nodeInfoBody.hopsLabel')}{' '}
+                      <span className="text-ink-200 font-mono">
+                        {meshcoreTracePathLenToHops(meshcoreTraceFirst.pathLen)}
+                      </span>{' '}
+                    </>
+                  )}
+                  <span className="text-ink-600">
+                    {formatDisplayTime(meshcoreTraceFirst.timestamp, {
+                      use24Hour: use24HourTime,
+                    })}
+                    {meshcoreTraceHistory.length > 1 && (
+                      <span className="text-muted ml-1">
+                        {t('nodeInfoBody.olderCount', { count: meshcoreTraceHistory.length - 1 })}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                {meshcoreTracePathSnrsSafe.map((snr, i) => (
+                  <div key={i} className="flex items-center gap-2 pl-1.5">
+                    <span className="text-muted w-8">{t('nodeInfoBody.hopN', { n: i + 1 })}</span>
+                    <SnrIndicator snr={snr} className="text-2xs" />
+                  </div>
+                ))}
+                {meshcoreTraceFirst.lastSnr != null && (
+                  <div className="border-ink-700/30 mt-0.5 flex items-center gap-2 border-t pt-0.5 pl-1.5">
+                    <span className="text-muted w-8">{t('nodeInfoBody.dest')}</span>
+                    <SnrIndicator snr={meshcoreTraceFirst.lastSnr} className="text-2xs" />
+                  </div>
+                )}
+              </div>
+            )}
+        </div>
+      )}
+    </>
+  );
+}
+
+function NodeEchoReliabilityCard({
+  reliabilityProxy,
+}: {
+  reliabilityProxy:
+    | {
+        kind: 'meshcore' | 'meshtastic';
+        pct: number;
+        total?: number;
+        duplicates?: number;
+        attempts?: number;
+      }
+    | null
+    | undefined;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {reliabilityProxy ? (
+        <div
+          className="border-ink-700/50 mt-2 border-t pt-2"
+          title={
+            reliabilityProxy.kind === 'meshcore'
+              ? t('nodeInfoBody.pathReliabilityTooltip')
+              : t('nodeInfoBody.echoReliabilityTooltip')
+          }
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-2xs text-muted">
+              {reliabilityProxy.kind === 'meshcore'
+                ? t('nodeInfoBody.pathReliability')
+                : t('nodeInfoBody.echoReliability')}
+            </span>
+            <span
+              className={`text-xs font-medium ${
+                reliabilityProxy.pct >= 67
+                  ? 'text-lime-400'
+                  : reliabilityProxy.pct >= 33
+                    ? 'text-orange-400'
+                    : 'text-muted'
+              }`}
+            >
+              {reliabilityProxy.pct}%
+            </span>
+          </div>
+          <p className="text-2xs text-muted mt-0.5">
+            {reliabilityProxy.kind === 'meshcore'
+              ? t('nodeInfoBody.pathReliabilityDetail', {
+                  attempts: reliabilityProxy.attempts,
+                })
+              : t('nodeInfoBody.echoReliabilityDetail', {
+                  duplicates: reliabilityProxy.duplicates,
+                  total: reliabilityProxy.total,
+                })}
+          </p>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function NodeConnectionHealthSection({
+  nodeRedundancy,
+  showSnr,
+  pathHistoryOpen,
+  setPathHistoryOpen,
+}: {
+  nodeRedundancy: NodeRedundancyEntry | undefined;
+  showSnr: boolean;
+  pathHistoryOpen: boolean;
+  setPathHistoryOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {/* Connection Health (packet redundancy) — only shown once echoes have been observed */}
+      {nodeRedundancy && nodeRedundancy.maxPaths > 1 && (
+        <div
+          className="border-ink-700/50 mt-2 border-t pt-2"
+          title={t('nodeInfoBody.connectionHealthTooltip')}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-2xs text-muted">{t('nodeInfoBody.connectionHealth')}</span>
+            <span
+              className={`text-xs font-medium ${
+                nodeRedundancy.score >= 67
+                  ? 'text-lime-400'
+                  : nodeRedundancy.score >= 33
+                    ? 'text-orange-400'
+                    : 'text-muted'
+              }`}
+            >
+              {nodeRedundancy.score}%
+              {nodeRedundancy.maxPaths >= 3 && (
+                <span className="text-2xs ml-1 text-lime-400/80">
+                  {t('nodeInfoBody.highlyRedundant')}
+                </span>
+              )}
+            </span>
+          </div>
+
+          {/* Path History toggle — only shown when there are echoes to display */}
+          {(() => {
+            const totalEchoes = nodeRedundancy.recentPackets.reduce(
+              (s, r) => s + r.paths.length - 1,
+              0,
+            );
+            const echoPackets = nodeRedundancy.recentPackets.filter((r) => r.paths.length > 1);
+            if (totalEchoes === 0) return null;
+            return (
+              <div className="mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPathHistoryOpen((o) => !o);
+                  }}
+                  className="text-2xs text-muted hover:text-ink-300 flex items-center gap-1 transition-colors"
+                >
+                  <span>{pathHistoryOpen ? '▾' : '▸'}</span>
+                  {t('nodeInfoBody.pathHistory')} (
+                  {t('nodeInfoBody.echoes', { count: totalEchoes })})
+                </button>
+
+                {pathHistoryOpen && (
+                  <div className="mt-1.5 flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
+                    {echoPackets.map((rec) => (
+                      <div key={rec.packetId} className="bg-deep-black/50 text-2xs rounded p-1.5">
+                        <div className="text-ink-400 mb-0.5 font-mono">
+                          #{rec.packetId.toString(16).toUpperCase()} —{' '}
+                          {t('nodeInfoBody.paths', { count: rec.paths.length })}
+                        </div>
+                        {rec.paths.map((p, i) => (
+                          <div key={i} className="text-muted pl-1.5 leading-tight">
+                            {i === 0
+                              ? t('nodeInfoBody.original')
+                              : t('nodeInfoBody.echoN', { n: i })}
+                            :{' '}
+                            <span
+                              className={
+                                p.transport === 'rf' ? 'text-brand-green/80' : 'text-indigo-400/80'
+                              }
+                            >
+                              {p.transport.toUpperCase()}
+                            </span>
+                            {showSnr && p.snr != null && (
+                              <span className="ml-1">
+                                SNR {p.snr > 0 ? '+' : ''}
+                                {p.snr.toFixed(1)} dB
+                              </span>
+                            )}
+                            {p.rssi != null && <span className="ml-1">{p.rssi} dBm</span>}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+    </>
+  );
+}
+
+function NodeEchoPathSection({
+  protocol,
+  reliabilityProxy,
+  nodeRedundancy,
+  showSnr,
+  use24HourTime,
+  meshcoreHopHistory,
+  meshcoreTraceHistory,
+  meshcoreTraceFirst,
+  meshcoreTracePathSnrsSafe,
+  showMeshcoreTraceHistoryBlock,
+  pathHistoryOpen,
+  setPathHistoryOpen,
+}: {
+  protocol: MeshProtocol;
+  reliabilityProxy:
+    | {
+        kind: 'meshcore' | 'meshtastic';
+        pct: number;
+        total?: number;
+        duplicates?: number;
+        attempts?: number;
+      }
+    | null
+    | undefined;
+  nodeRedundancy: NodeRedundancyEntry | undefined;
+  showSnr: boolean;
+  use24HourTime: boolean;
+  meshcoreHopHistory: MeshcoreHopHistoryEntry | undefined;
+  meshcoreTraceHistory: MeshcoreTraceEntry[] | undefined;
+  meshcoreTraceFirst: MeshcoreTraceEntry | undefined;
+  meshcoreTracePathSnrsSafe: readonly number[];
+  showMeshcoreTraceHistoryBlock: boolean;
+  pathHistoryOpen: boolean;
+  setPathHistoryOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+  return (
+    <>
+      <NodeEchoReliabilityCard reliabilityProxy={reliabilityProxy} />
+      <NodeConnectionHealthSection
+        nodeRedundancy={nodeRedundancy}
+        showSnr={showSnr}
+        pathHistoryOpen={pathHistoryOpen}
+        setPathHistoryOpen={setPathHistoryOpen}
+      />
+      <NodeMeshcorePathHistorySection
+        protocol={protocol}
+        meshcoreHopHistory={meshcoreHopHistory}
+        meshcoreTraceHistory={meshcoreTraceHistory}
+        meshcoreTraceFirst={meshcoreTraceFirst}
+        meshcoreTracePathSnrsSafe={meshcoreTracePathSnrsSafe}
+        showMeshcoreTraceHistoryBlock={showMeshcoreTraceHistoryBlock}
+        use24HourTime={use24HourTime}
+      />
+    </>
+  );
+}
+
+function NodeHopStabilitySparkline({ recentHistory }: { recentHistory: HopHistoryPoint[] }) {
+  const { t } = useTranslation();
+  return (() => {
+    const minH = Math.min(...recentHistory.map((p) => p.h));
+    const maxH = Math.max(...recentHistory.map((p) => p.h));
+    const range = maxH - minH || 1;
+    const minT = recentHistory[0].t;
+    const maxT = recentHistory[recentHistory.length - 1].t;
+    const timeRange = maxT - minT || 1;
+    const points = recentHistory
+      .map((p) => {
+        const x = ((p.t - minT) / timeRange) * 200;
+        const y = 40 - ((p.h - minH) / range) * 36 - 2;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+    return (
+      <div className="mt-2">
+        <div className="text-2xs text-muted mb-0.5">{t('nodeInfoBody.hopCount24h')}</div>
+        <svg viewBox="0 0 200 40" className="text-brand-green/60 h-8 w-full">
+          <polyline
+            points={points}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
+    );
+  })();
+}
+
+function NodeRoutingRemedyBadge({
+  node,
+  homeNode,
+  nodePacketStats,
+}: {
+  node: MeshNode;
+  homeNode?: MeshNode | null;
+  nodePacketStats: NonNullable<Parameters<typeof meshtasticEchoLossProxy>[0]> | null;
+}) {
+  const remedy = getRecommendedAction(node, homeNode ?? null, nodePacketStats ?? undefined);
+  if (!remedy) return null;
+  return (
+    <div
+      className={`mb-2 flex items-start gap-2 rounded-lg border p-2 text-xs ${CATEGORY_STYLES[remedy.category]}`}
+    >
+      <span className="shrink-0 font-semibold">{remedy.category}</span>
+      <span>{remedy.title}</span>
+    </div>
+  );
+}
+
+function NodeAnomalyOffenseRow({
+  anomaly,
+  offenseSummary,
+}: {
+  anomaly: NodeAnomaly | null;
+  offenseSummary: string | null;
+}) {
+  const { t } = useTranslation();
+  const iconTrigger = useIconTrigger();
+  return (
+    <>
+      {anomaly ? (
+        <div
+          className={`flex items-start gap-1.5 text-xs ${
+            anomaly.severity === 'error'
+              ? 'text-red-400'
+              : anomaly.severity === 'info'
+                ? 'text-indigo-400'
+                : 'text-orange-400'
+          }`}
+        >
+          {anomaly.severity === 'info' ? (
+            <Info
+              aria-hidden
+              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+              trigger={iconTrigger}
+              size={14}
+            />
+          ) : (
+            <TriangleAlert
+              aria-hidden
+              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+              trigger={iconTrigger}
+              size={14}
+            />
+          )}
+          <div>
+            <div className="mb-0.5 font-medium">{offenseSummary}</div>
+            <div className="text-ink-400">{anomaly.description}</div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-brand-green text-xs">{t('nodeInfoBody.noRoutingIssues')}</div>
+      )}
+    </>
+  );
+}
+
+function NodeStabilityRow({
+  stabilityColor,
+  stabilityLabel,
+  recentHour,
+  hopChanges,
+}: {
+  stabilityColor: string;
+  stabilityLabel: string;
+  recentHour: HopHistoryPoint[];
+  hopChanges: number;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className="border-ink-700/50 mt-2 flex items-center justify-between border-t pt-2">
+        <span className="text-2xs text-muted">{t('nodeInfoBody.routeStability')}</span>
+        <span className={`text-xs font-medium ${stabilityColor}`}>
+          {stabilityLabel}
+          {recentHour.length >= 2 && hopChanges > 0 && (
+            <span className="text-muted ml-1 font-normal">
+              ({t('nodeInfoBody.changes', { count: hopChanges })})
+            </span>
+          )}
+        </span>
+      </div>
+    </>
+  );
+}
+
 export default function NodeInfoBody({
   node,
   homeNode,
@@ -704,7 +1161,6 @@ export default function NodeInfoBody({
   radioConnected = false,
 }: NodeInfoBodyProps) {
   const { t } = useTranslation();
-  const iconTrigger = useIconTrigger();
   const capabilities = useRadioProvider(protocol);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
@@ -754,12 +1210,12 @@ export default function NodeInfoBody({
   const meshcoreHopHistory = useDiagnosticsStore((s) => s.meshcoreHopHistory.get(node.node_id));
   const meshcoreTraceHistory = useDiagnosticsStore((s) => s.meshcoreTraceHistory.get(node.node_id));
   const loadMeshcorePathHistory = useDiagnosticsStore((s) => s.loadMeshcorePathHistory);
-  const [pathHistoryOpen, setPathHistoryOpen] = useState(false);
   const latestTrackedPositionFromStore = useLatestTrackedPosition(node.node_id);
   const latestTrackedPositionFromProps = latestPositionHistoryPoint(
     positionHistory?.get(node.node_id),
   );
   const latestTrackedPosition = latestTrackedPositionFromProps ?? latestTrackedPositionFromStore;
+  const [pathHistoryOpen, setPathHistoryOpen] = useState(false);
 
   const meshcoreTraceFirst = meshcoreTraceHistory?.[0];
   const meshcoreTracePathSnrsSafe =
@@ -891,299 +1347,39 @@ export default function NodeInfoBody({
         onShowOnMap={onShowOnMap}
       />
 
-      {/* Routing Health */}
       <div className="bg-primary-dark mt-3 rounded-lg py-3">
         <div className="text-ink-400 mb-1.5 text-sm font-medium">
           {t('nodeInfoBody.routingHealth')}
         </div>
 
-        {/* Remedy badge */}
-        {(() => {
-          const remedy = getRecommendedAction(node, homeNode ?? null, nodePacketStats);
-          if (!remedy) return null;
-          return (
-            <div
-              className={`mb-2 flex items-start gap-2 rounded-lg border p-2 text-xs ${CATEGORY_STYLES[remedy.category]}`}
-            >
-              <span className="shrink-0 font-semibold">{remedy.category}</span>
-              <span>{remedy.title}</span>
-            </div>
-          );
-        })()}
+        <NodeRoutingRemedyBadge
+          node={node}
+          homeNode={homeNode}
+          nodePacketStats={nodePacketStats ?? null}
+        />
+        <NodeAnomalyOffenseRow anomaly={anomaly} offenseSummary={offenseSummary} />
+        <NodeStabilityRow
+          stabilityColor={stabilityColor}
+          stabilityLabel={stabilityLabel}
+          recentHour={recentHour}
+          hopChanges={hopChanges}
+        />
 
-        {/* Offense */}
-        {anomaly ? (
-          <div
-            className={`flex items-start gap-1.5 text-xs ${
-              anomaly.severity === 'error'
-                ? 'text-red-400'
-                : anomaly.severity === 'info'
-                  ? 'text-indigo-400'
-                  : 'text-orange-400'
-            }`}
-          >
-            {anomaly.severity === 'info' ? (
-              <Info
-                aria-hidden
-                className="mt-0.5 h-3.5 w-3.5 shrink-0"
-                trigger={iconTrigger}
-                size={14}
-              />
-            ) : (
-              <TriangleAlert
-                aria-hidden
-                className="mt-0.5 h-3.5 w-3.5 shrink-0"
-                trigger={iconTrigger}
-                size={14}
-              />
-            )}
-            <div>
-              <div className="mb-0.5 font-medium">{offenseSummary}</div>
-              <div className="text-ink-400">{anomaly.description}</div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-brand-green text-xs">{t('nodeInfoBody.noRoutingIssues')}</div>
-        )}
-
-        {/* Stability metric */}
-        <div className="border-ink-700/50 mt-2 flex items-center justify-between border-t pt-2">
-          <span className="text-2xs text-muted">{t('nodeInfoBody.routeStability')}</span>
-          <span className={`text-xs font-medium ${stabilityColor}`}>
-            {stabilityLabel}
-            {recentHour.length >= 2 && hopChanges > 0 && (
-              <span className="text-muted ml-1 font-normal">
-                ({t('nodeInfoBody.changes', { count: hopChanges })})
-              </span>
-            )}
-          </span>
-        </div>
-
-        {hasSparkline &&
-          (() => {
-            const minH = Math.min(...recentHistory.map((p) => p.h));
-            const maxH = Math.max(...recentHistory.map((p) => p.h));
-            const range = maxH - minH || 1;
-            const minT = recentHistory[0].t;
-            const maxT = recentHistory[recentHistory.length - 1].t;
-            const timeRange = maxT - minT || 1;
-            const points = recentHistory
-              .map((p) => {
-                const x = ((p.t - minT) / timeRange) * 200;
-                const y = 40 - ((p.h - minH) / range) * 36 - 2;
-                return `${x.toFixed(1)},${y.toFixed(1)}`;
-              })
-              .join(' ');
-            return (
-              <div className="mt-2">
-                <div className="text-2xs text-muted mb-0.5">{t('nodeInfoBody.hopCount24h')}</div>
-                <svg viewBox="0 0 200 40" className="text-brand-green/60 h-8 w-full">
-                  <polyline
-                    points={points}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-            );
-          })()}
-
-        {reliabilityProxy ? (
-          <div
-            className="border-ink-700/50 mt-2 border-t pt-2"
-            title={
-              reliabilityProxy.kind === 'meshcore'
-                ? t('nodeInfoBody.pathReliabilityTooltip')
-                : t('nodeInfoBody.echoReliabilityTooltip')
-            }
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-2xs text-muted">
-                {reliabilityProxy.kind === 'meshcore'
-                  ? t('nodeInfoBody.pathReliability')
-                  : t('nodeInfoBody.echoReliability')}
-              </span>
-              <span
-                className={`text-xs font-medium ${
-                  reliabilityProxy.pct >= 67
-                    ? 'text-lime-400'
-                    : reliabilityProxy.pct >= 33
-                      ? 'text-orange-400'
-                      : 'text-muted'
-                }`}
-              >
-                {reliabilityProxy.pct}%
-              </span>
-            </div>
-            <p className="text-2xs text-muted mt-0.5">
-              {reliabilityProxy.kind === 'meshcore'
-                ? t('nodeInfoBody.pathReliabilityDetail', {
-                    attempts: reliabilityProxy.attempts,
-                  })
-                : t('nodeInfoBody.echoReliabilityDetail', {
-                    duplicates: reliabilityProxy.duplicates,
-                    total: reliabilityProxy.total,
-                  })}
-            </p>
-          </div>
-        ) : null}
-
-        {/* Connection Health (packet redundancy) — only shown once echoes have been observed */}
-        {nodeRedundancy && nodeRedundancy.maxPaths > 1 && (
-          <div
-            className="border-ink-700/50 mt-2 border-t pt-2"
-            title={t('nodeInfoBody.connectionHealthTooltip')}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-2xs text-muted">{t('nodeInfoBody.connectionHealth')}</span>
-              <span
-                className={`text-xs font-medium ${
-                  nodeRedundancy.score >= 67
-                    ? 'text-lime-400'
-                    : nodeRedundancy.score >= 33
-                      ? 'text-orange-400'
-                      : 'text-muted'
-                }`}
-              >
-                {nodeRedundancy.score}%
-                {nodeRedundancy.maxPaths >= 3 && (
-                  <span className="text-2xs ml-1 text-lime-400/80">
-                    {t('nodeInfoBody.highlyRedundant')}
-                  </span>
-                )}
-              </span>
-            </div>
-
-            {/* Path History toggle — only shown when there are echoes to display */}
-            {(() => {
-              const totalEchoes = nodeRedundancy.recentPackets.reduce(
-                (s, r) => s + r.paths.length - 1,
-                0,
-              );
-              const echoPackets = nodeRedundancy.recentPackets.filter((r) => r.paths.length > 1);
-              if (totalEchoes === 0) return null;
-              return (
-                <div className="mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPathHistoryOpen((o) => !o);
-                    }}
-                    className="text-2xs text-muted hover:text-ink-300 flex items-center gap-1 transition-colors"
-                  >
-                    <span>{pathHistoryOpen ? '▾' : '▸'}</span>
-                    {t('nodeInfoBody.pathHistory')} (
-                    {t('nodeInfoBody.echoes', { count: totalEchoes })})
-                  </button>
-
-                  {pathHistoryOpen && (
-                    <div className="mt-1.5 flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
-                      {echoPackets.map((rec) => (
-                        <div key={rec.packetId} className="bg-deep-black/50 text-2xs rounded p-1.5">
-                          <div className="text-ink-400 mb-0.5 font-mono">
-                            #{rec.packetId.toString(16).toUpperCase()} —{' '}
-                            {t('nodeInfoBody.paths', { count: rec.paths.length })}
-                          </div>
-                          {rec.paths.map((p, i) => (
-                            <div key={i} className="text-muted pl-1.5 leading-tight">
-                              {i === 0
-                                ? t('nodeInfoBody.original')
-                                : t('nodeInfoBody.echoN', { n: i })}
-                              :{' '}
-                              <span
-                                className={
-                                  p.transport === 'rf'
-                                    ? 'text-brand-green/80'
-                                    : 'text-indigo-400/80'
-                                }
-                              >
-                                {p.transport.toUpperCase()}
-                              </span>
-                              {showSnr && p.snr != null && (
-                                <span className="ml-1">
-                                  SNR {p.snr > 0 ? '+' : ''}
-                                  {p.snr.toFixed(1)} dB
-                                </span>
-                              )}
-                              {p.rssi != null && <span className="ml-1">{p.rssi} dBm</span>}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        )}
-
-        {/* MeshCore trace history from database */}
-        {protocol === 'meshcore' && (meshcoreHopHistory || meshcoreTraceHistory) && (
-          <div className="border-ink-700/50 mt-2 border-t pt-2">
-            <div className="text-2xs text-muted mb-1">{t('nodeInfoBody.meshcorePathHistory')}</div>
-            {meshcoreHopHistory && (
-              <div className="mb-1 text-xs">
-                <span className="text-ink-400">{t('nodeInfoBody.hopsLabel')}</span>
-                <span className="text-ink-200 font-mono">{meshcoreHopHistory.hops ?? '?'}</span>
-                {meshcoreHopHistory.snr != null && (
-                  <span className="text-muted ml-2">
-                    SNR {meshcoreHopHistory.snr > 0 ? '+' : ''}
-                    {meshcoreHopHistory.snr.toFixed(1)} dB
-                  </span>
-                )}
-                {meshcoreHopHistory.rssi != null && (
-                  <span className="text-muted ml-2">{meshcoreHopHistory.rssi} dBm</span>
-                )}
-                <span className="text-2xs text-ink-600 ml-2">
-                  {formatDisplayTime(meshcoreHopHistory.timestamp, { use24Hour: use24HourTime })}
-                </span>
-              </div>
-            )}
-            {meshcoreTraceHistory &&
-              meshcoreTraceHistory.length > 0 &&
-              showMeshcoreTraceHistoryBlock &&
-              meshcoreTraceFirst != null && (
-                <div className="bg-deep-black/50 text-2xs rounded p-1.5">
-                  <div className="text-ink-400 mb-0.5">
-                    {meshcoreTraceFirst.pathLen != null && (
-                      <>
-                        {t('nodeInfoBody.hopsLabel')}{' '}
-                        <span className="text-ink-200 font-mono">
-                          {meshcoreTracePathLenToHops(meshcoreTraceFirst.pathLen)}
-                        </span>{' '}
-                      </>
-                    )}
-                    <span className="text-ink-600">
-                      {formatDisplayTime(meshcoreTraceFirst.timestamp, {
-                        use24Hour: use24HourTime,
-                      })}
-                      {meshcoreTraceHistory.length > 1 && (
-                        <span className="text-muted ml-1">
-                          {t('nodeInfoBody.olderCount', { count: meshcoreTraceHistory.length - 1 })}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  {meshcoreTracePathSnrsSafe.map((snr, i) => (
-                    <div key={i} className="flex items-center gap-2 pl-1.5">
-                      <span className="text-muted w-8">{t('nodeInfoBody.hopN', { n: i + 1 })}</span>
-                      <SnrIndicator snr={snr} className="text-2xs" />
-                    </div>
-                  ))}
-                  {meshcoreTraceFirst.lastSnr != null && (
-                    <div className="border-ink-700/30 mt-0.5 flex items-center gap-2 border-t pt-0.5 pl-1.5">
-                      <span className="text-muted w-8">{t('nodeInfoBody.dest')}</span>
-                      <SnrIndicator snr={meshcoreTraceFirst.lastSnr} className="text-2xs" />
-                    </div>
-                  )}
-                </div>
-              )}
-          </div>
-        )}
+        {hasSparkline && <NodeHopStabilitySparkline recentHistory={recentHistory} />}
+        <NodeEchoPathSection
+          protocol={protocol}
+          reliabilityProxy={reliabilityProxy}
+          nodeRedundancy={nodeRedundancy}
+          showSnr={showSnr}
+          use24HourTime={use24HourTime}
+          meshcoreHopHistory={meshcoreHopHistory}
+          meshcoreTraceHistory={meshcoreTraceHistory}
+          meshcoreTraceFirst={meshcoreTraceFirst}
+          meshcoreTracePathSnrsSafe={meshcoreTracePathSnrsSafe}
+          showMeshcoreTraceHistoryBlock={showMeshcoreTraceHistoryBlock}
+          pathHistoryOpen={pathHistoryOpen}
+          setPathHistoryOpen={setPathHistoryOpen}
+        />
       </div>
 
       {/* Trace route result */}
