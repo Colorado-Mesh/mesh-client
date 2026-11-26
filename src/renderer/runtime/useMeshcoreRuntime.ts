@@ -4762,29 +4762,33 @@ export function useMeshcoreRuntime() {
   }, [scheduleMeshcoreReconnectAttempt]);
 
   const handleMeshcoreConnectionLost = useCallback((): boolean => {
-    if (meshcoreExplicitDisconnectRef.current) {
-      console.debug('[useMeshcoreRuntime] skip reconnect (user disconnect)');
+    const shouldSkipReconnect = (): boolean => {
+      if (meshcoreExplicitDisconnectRef.current) {
+        console.debug('[useMeshcoreRuntime] skip reconnect (user disconnect)');
+        return true;
+      }
+      const isBle = meshcoreConnectionParamsRef.current?.rfType === 'ble';
+      if (isBle && getReticulumBleBondDesyncActive()) {
+        console.debug(
+          '[useMeshcoreRuntime] skip BLE reconnect — RNode bond recovery holds the adapter',
+        );
+        return true;
+      }
+      if (
+        isBle &&
+        shouldSkipBleReconnectAfterExhaustion({
+          bleExhausted: meshcoreBleReconnectExhaustedRef.current.isExhausted(),
+          isReconnecting: meshcoreIsReconnectingRef.current,
+        })
+      ) {
+        console.debug('[useMeshcoreRuntime] skip reconnect (BLE budget exhausted)');
+        return true;
+      }
       return false;
-    }
-    if (
-      meshcoreConnectionParamsRef.current?.rfType === 'ble' &&
-      getReticulumBleBondDesyncActive()
-    ) {
-      console.debug(
-        '[useMeshcoreRuntime] skip BLE reconnect — RNode bond recovery holds the adapter',
-      );
-      return false;
-    }
-    if (
-      meshcoreConnectionParamsRef.current?.rfType === 'ble' &&
-      shouldSkipBleReconnectAfterExhaustion({
-        bleExhausted: meshcoreBleReconnectExhaustedRef.current.isExhausted(),
-        isReconnecting: meshcoreIsReconnectingRef.current,
-      })
-    ) {
-      console.debug('[useMeshcoreRuntime] skip reconnect (BLE budget exhausted)');
-      return false;
-    }
+    };
+
+    if (shouldSkipReconnect()) return false;
+
     // Abort in-flight initConn immediately (before async driver teardown). Neal TCP: peer FIN
     // after getContacts raced past a gen bump that used to live only inside the async IIFE.
     meshcoreSetupGenerationRef.current += 1;
@@ -4805,11 +4809,15 @@ export function useMeshcoreRuntime() {
     meshcoreAnonBasicInFlightRef.current.clear();
     meshcoreAnonBasicCacheGenRef.current = -1;
     meshcoreAnonBasicCacheIdentityRef.current = null;
-    if (
-      !meshcoreEverConfiguredRef.current &&
-      meshcoreReconnectAttemptRef.current === 0 &&
-      !meshcoreIsReconnectingRef.current
-    ) {
+
+    const resolvePreConfigureReconnect = (): boolean => {
+      if (
+        meshcoreEverConfiguredRef.current ||
+        meshcoreReconnectAttemptRef.current !== 0 ||
+        meshcoreIsReconnectingRef.current
+      ) {
+        return true;
+      }
       const hasStoredSession =
         meshcoreConnectionParamsRef.current != null ||
         rehydrateMeshcoreConnectionParamsFromStorage() != null;
@@ -4823,13 +4831,21 @@ export function useMeshcoreRuntime() {
       console.debug(
         '[useMeshcoreRuntime] Connection lost with stored session before everConfigured — reconnecting',
       );
-    }
-    if (!meshcoreConnectionParamsRef.current) {
+      return true;
+    };
+
+    if (!resolvePreConfigureReconnect()) return false;
+
+    const ensureReconnectParams = (): boolean => {
+      if (meshcoreConnectionParamsRef.current) return true;
       if (meshcoreExplicitDisconnectRef.current) return false;
       const rehydrated = rehydrateMeshcoreConnectionParamsFromStorage();
       if (!rehydrated) return false;
       meshcoreConnectionParamsRef.current = rehydrated;
-    }
+      return true;
+    };
+
+    if (!ensureReconnectParams()) return false;
     // Single-owner: while a cycle is active, onLinkLost only dirties — never schedules after
     // await disconnect (n7eal TCP dual attempt 2+3 / #792–#796).
     const wasReconnecting = meshcoreIsReconnectingRef.current;

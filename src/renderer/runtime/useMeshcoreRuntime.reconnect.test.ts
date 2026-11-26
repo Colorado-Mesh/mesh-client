@@ -247,11 +247,11 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   it('skips reconnect on connection loss before first configure when there is no stored session', () => {
     const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
     expect(lostBody).toMatch(
-      /if \(\s*!meshcoreEverConfiguredRef\.current &&[\s\S]*?!meshcoreIsReconnectingRef\.current\s*\) \{[\s\S]*?if \(!hasStoredSession\) \{[\s\S]*?skip reconnect \(auto-connect owns retry\)[\s\S]*?return;/,
+      /meshcoreEverConfiguredRef\.current \|\|[\s\S]*?meshcoreReconnectAttemptRef\.current !== 0 \|\|[\s\S]*?meshcoreIsReconnectingRef\.current[\s\S]*?if \(!hasStoredSession\) \{[\s\S]*?skip reconnect \(auto-connect owns retry\)[\s\S]*?return false;/,
     );
     // Auto-connect (ConnectionPanel) owns the retry in this case — the reconnect loop must
     // not also kick off attemptMeshcoreReconnect for a session that never configured.
-    const skipBranch = /if \(!hasStoredSession\) \{[\s\S]*?return;\s*\}/.exec(lostBody)?.[0];
+    const skipBranch = /if \(!hasStoredSession\) \{[\s\S]*?return false;\s*\}/.exec(lostBody)?.[0];
     expect(skipBranch).toBeDefined();
     expect(skipBranch).not.toContain('attemptMeshcoreReconnect');
   });
