@@ -310,7 +310,8 @@ describe('runConnectionPanelStorageMigrations', () => {
       port?: number;
     };
     expect(parsed.server).toBe(LETSMESH_HOST_US);
-    expect(parsed.topicPrefix).toBe('meshcore/test');
+    // Presets no longer seed meshcore/test; the IATA picklist owns the prefix.
+    expect(parsed.topicPrefix == null || parsed.topicPrefix === '').toBe(true);
     expect(parsed.port).toBe(443);
     expect(localStorage.getItem(MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY)).toBe('1');
   });
@@ -330,7 +331,7 @@ describe('runConnectionPanelStorageMigrations', () => {
     expect(parsed.server).toBe('mqtt.example.com');
   });
 
-  it('repairs invalid IATA topic shapes on device-signing hosts', () => {
+  it('leaves invalid IATA topic shapes alone so the picklist can prompt', () => {
     localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
     localStorage.setItem(
       MESHCORE_MQTT_SETTINGS_KEY,
@@ -351,7 +352,7 @@ describe('runConnectionPanelStorageMigrations', () => {
     const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
       topicPrefix?: string;
     };
-    expect(parsed.topicPrefix).toBe('meshcore/test');
+    expect(parsed.topicPrefix).toBe('meshcore/xx');
     expect(localStorage.getItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY)).toBe('1');
   });
 
@@ -379,7 +380,7 @@ describe('runConnectionPanelStorageMigrations', () => {
     const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
       topicPrefix?: string;
     };
-    // Preset reconcile stamps DEN; shape migration also uppercases den → DEN.
+    // Shape migration uppercases den → DEN; presets no longer stamp DEN.
     expect(parsed.topicPrefix).toBe('meshcore/DEN');
   });
 

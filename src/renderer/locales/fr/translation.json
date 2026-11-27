@@ -1861,7 +1861,6 @@
       "publishingOf": "RMAP v4 : publication de {{current}} de {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT est destiné aux utilisateurs de maillage de la région du Colorado. Le préréglage est publié sous meshcore/DEN (Denver IATA). Si vous n'êtes pas au Colorado, utilisez LetsMesh ou MeshMapper à la place. Continuer ?",
-    "coloradoServerNote": "Colorado Mesh est destiné aux utilisateurs de maillage de la région du Colorado. Le préfixe du sujet utilise l'IATA de Denver (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT est destiné aux utilisateurs de mailles Colorado-area et publie sous meshcore/DEN. Si vous êtes à l'extérieur du Colorado, passez à LetsMesh (courtier public mondial).",
     "coloradoRegionGateStay": "Je suis au Colorado",
@@ -2009,7 +2008,21 @@
       "done": "Effectué",
       "cancelAria": "Annuler {{name}}",
       "duplicateWarning": "Une autre connexion activée cible le même broker (serveur et port), de sorte que les paquets seraient publiés deux fois."
-    }
+    },
+    "iataPicklist": {
+      "label": "Zone IATA",
+      "placeholder": "Choisissez votre région",
+      "aria": "MeshCore MQTT zone IATA",
+      "searchAria": "Rechercher les codes IATA des aéroports",
+      "searchPlaceholder": "Rechercher un code, une ville ou un nom…",
+      "listAria": "Codes IATA des aéroports",
+      "empty": "Aucun aéroport ne correspond à cette recherche.",
+      "loadFailed": "Impossible de charger la liste des aéroports.",
+      "testOption": "test — analyseur/test uniquement",
+      "nearestBadge": "Plus proche",
+      "nearestOption": "{{label}} (le plus proche)"
+    },
+    "coloradoServerNote": "Colorado Mesh est destiné aux utilisateurs du réseau maillé de la région du Colorado. Choisissez ci-dessous le code IATA de votre aéroport local pour le préfixe du sujet MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

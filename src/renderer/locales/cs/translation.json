@@ -1885,7 +1885,6 @@
       "publishingOf": "RMAP v4: publikování {{current}} z {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT je určen pro uživatele síťoviny v oblasti Colorada. Přednastavení publikuje pod meshcore/DEN (Denver IATA). Pokud nejste v Coloradu, použijte LetsMesh nebo MeshMapper. Pokračovat?",
-    "coloradoServerNote": "Colorado Mesh je určen pro uživatele mesh v oblasti Colorada. Předpona tématu používá Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT je určen pro uživatele sítí v oblasti Colorada a publikuje pod meshcore/DEN. Pokud se nacházíte mimo Colorado, přepněte na LetsMesh (globální veřejný makléř).",
     "coloradoRegionGateStay": "Jsem v Coloradu",
@@ -2033,7 +2032,21 @@
       "done": "Hotovo",
       "cancelAria": "Zrušit {{name}}",
       "duplicateWarning": "Další povolené připojení směřuje na stejného brokera (server a port), takže by byly pakety publikovány dvakrát."
-    }
+    },
+    "iataPicklist": {
+      "label": "Oblast IATA",
+      "placeholder": "Vyberte svou oblast IATA…",
+      "aria": "MeshCore MQTT oblast IATA",
+      "searchAria": "Hledat kódy IATA letišť",
+      "searchPlaceholder": "Hledat kód, město nebo název…",
+      "listAria": "Kódy letišť IATA",
+      "empty": "Hledání neodpovídá žádné letiště.",
+      "loadFailed": "Seznam letišť se nepodařilo načíst.",
+      "testOption": "test – analyzátor / pouze testování",
+      "nearestBadge": "Nejbližší",
+      "nearestOption": "{{label}} (nejbližší)"
+    },
+    "coloradoServerNote": "Colorado Mesh je určeno pro uživatele sítě v oblasti Colorada. Níže vyberte kód IATA místního letiště pro předponu tématu MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

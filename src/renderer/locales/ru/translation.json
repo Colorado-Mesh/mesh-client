@@ -1902,7 +1902,6 @@
       "publishingOf": "RMAP v4: публикация {{current}} из {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT предназначен для пользователей mesh-сети в регионе Колорадо. Предустановка публикуется в meshcore/DEN (Denver IATA). Если вы не в Колорадо, используйте вместо этого LetsMesh или MeshMapper. Продолжить?",
-    "coloradoServerNote": "Colorado Mesh предназначен для пользователей mesh-сети в регионе Колорадо. В префиксе темы используется Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT предназначен для пользователей сети Колорадо и публикуется под meshcore/DEN. Если вы находитесь за пределами Колорадо, переключитесь на LetsMesh (глобальный публичный брокер).",
     "coloradoRegionGateStay": "Я в Колорадо",
@@ -2049,7 +2048,21 @@
       "done": "Готово",
       "cancelAria": "Отменить {{name}}",
       "duplicateWarning": "Другое активное соединение направлено на тот же брокер (сервер и порт), поэтому пакеты будут опубликованы дважды."
-    }
+    },
+    "iataPicklist": {
+      "label": "Регион IATA",
+      "placeholder": "Выберите область",
+      "aria": "MeshCore MQTT регион IATA",
+      "searchAria": "Поиск кодов IATA аэропортов",
+      "searchPlaceholder": "Поиск по коду, городу или названию…",
+      "listAria": "Коды IATA аэропортов",
+      "empty": "По этому запросу аэропорты не найдены.",
+      "loadFailed": "Не удалось загрузить список аэропортов.",
+      "testOption": "тест — только анализатор/тестирование",
+      "nearestBadge": "Отключить",
+      "nearestOption": "{{label}} (ближайший)"
+    },
+    "coloradoServerNote": "Colorado Mesh предназначена для пользователей сети Mesh в районе Колорадо. Выберите код IATA вашего местного аэропорта ниже для префикса темы MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

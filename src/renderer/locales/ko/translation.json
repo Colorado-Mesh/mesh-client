@@ -1862,7 +1862,6 @@
       "publishingOf": "RMAP v4: {{total}} 중 {{current}} 게시"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것입니다. 사전 설정은 meshcore/DEN(덴버 IATA) 아래에 게시됩니다. 콜로라도에 있지 않은 경우 LetsMesh 또는 MeshMapper를 대신 사용하십시오. 계속하시겠습니까?",
-    "coloradoServerNote": "Colorado Mesh는 콜로라도 지역의 메쉬 사용자를 위한 것입니다. 주제 접두사는 덴버 IATA(meshcore/DEN)를 사용합니다.",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것이며 meshcore/DEN 아래에 게시됩니다. 콜로라도 외부에 있는 경우 LetsMesh(글로벌 공개 브로커)로 전환하십시오.",
     "coloradoRegionGateStay": "콜로라도에 있습니다",
@@ -2009,7 +2008,21 @@
       "done": "완료",
       "cancelAria": "{{name}} 취소",
       "duplicateWarning": "다른 활성화된 연결이 동일한 브로커(서버 및 포트)를 대상으로 하므로 패킷이 두 번 게시됩니다."
-    }
+    },
+    "iataPicklist": {
+      "label": "지역 IATA",
+      "placeholder": "해당 지역선택",
+      "aria": "MeshCore MQTT 지역 IATA",
+      "searchAria": "공항 IATA 코드 검색",
+      "searchPlaceholder": "코드, 도시 또는 이름 검색…",
+      "listAria": "공항 IATA 코드",
+      "empty": "검색 결과와 일치하는 공항이 없습니다.",
+      "loadFailed": "공항 목록을 불러올 수 없습니다.",
+      "testOption": "검사 — 분석기/검사 전용",
+      "nearestBadge": "가장 가까운",
+      "nearestOption": "{{label}} (가장 가까움)"
+    },
+    "coloradoServerNote": "Colorado Mesh은 콜로라도 지역 메쉬 사용자용입니다. 아래에서 MQTT 주제 접두사를 위한 현지 공항 IATA 코드를 선택하세요."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

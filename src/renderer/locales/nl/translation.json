@@ -1861,7 +1861,6 @@
       "publishingOf": "RMAP v4: publicatie van {{current}} van {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT is voor gebruikers van Colorado-zone mesh. De preset publiceert onder meshcore/DEN (Denver IATA). Als je niet in Colorado bent, gebruik dan LetsMesh of MeshMapper. Doorgaan?",
-    "coloradoServerNote": "Colorado Mesh is voor meshgebruikers in de regio Colorado. Onderwerpvoorvoegsel gebruikt de Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT is voor Colorado-area mesh-gebruikers en publiceert onder meshcore/DEN. Als je buiten Colorado bent, schakel dan over naar LetsMesh (global public broker).",
     "coloradoRegionGateStay": "Ik ben in Colorado",
@@ -2009,7 +2008,21 @@
       "done": "Klaar",
       "cancelAria": "Annuleren {{name}}",
       "duplicateWarning": "Een andere ingeschakelde verbinding richt zich op dezelfde broker (server en poort), dus pakketten zouden twee keer worden gepubliceerd."
-    }
+    },
+    "iataPicklist": {
+      "label": "Regio IATA",
+      "placeholder": "Selecteer je regio IATA…",
+      "aria": "MeshCore MQTT gebied IATA",
+      "searchAria": "Luchthaven-IATA-codes zoeken",
+      "searchPlaceholder": "Zoek op code, plaats of naam...",
+      "listAria": "IATA-luchthavencodes",
+      "empty": "Geen luchthavens komen overeen met die zoekopdracht.",
+      "loadFailed": "Kan de lijst met luchthavens niet laden.",
+      "testOption": "test — alleen voor analyse/testen",
+      "nearestBadge": "Dichtbijzijnd",
+      "nearestOption": "{{label}} (dichtstbijzijnd)"
+    },
+    "coloradoServerNote": "Colorado Mesh is voor mesh-gebruikers in de regio Colorado. Kies hieronder de IATA-code van je lokale luchthaven voor het onderwerpvoorvoegsel MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

@@ -1862,7 +1862,6 @@
       "publishingOf": "RMAP v4: menerbitkan {{current}} dari {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT ditujukan bagi pengguna mesh di wilayah Colorado. Prasetel diterbitkan di bawah meshcore/DEN (Denver IATA). Jika Anda tidak berada di Colorado, gunakan LetsMesh atau MeshMapper sebagai gantinya. Lanjutkan?",
-    "coloradoServerNote": "Colorado Mesh ditujukan bagi pengguna mesh di wilayah Colorado. Awalan topik menggunakan IATA Denver (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT adalah untuk pengguna mesh area Colorado dan dipublikasikan di bawah meshcore/DEN. Jika Anda berada di luar Colorado, beralihlah ke LetsMesh (broker publik global).",
     "coloradoRegionGateStay": "Saya di Colorado",
@@ -2009,7 +2008,21 @@
       "done": "Selesai",
       "cancelAria": "Batalkan {{name}}",
       "duplicateWarning": "Koneksi aktif lainnya menargetkan broker yang sama (server dan port), sehingga paket akan dipublikasikan dua kali."
-    }
+    },
+    "iataPicklist": {
+      "label": "Area IATA",
+      "placeholder": "Pilih kode IATA area Anda…",
+      "aria": "MeshCore MQTT area IATA",
+      "searchAria": "Cari kode IATA bandara",
+      "searchPlaceholder": "Cari kode, kota, atau nama…",
+      "listAria": "Kode IATA bandara",
+      "empty": "Tidak ada bandara yang cocok dengan pencarian tersebut.",
+      "loadFailed": "Tidak dapat memuat daftar bandara.",
+      "testOption": "tes — penganalisis/pengujian saja",
+      "nearestBadge": "Terdekat",
+      "nearestOption": "{{label}} (terdekat)"
+    },
+    "coloradoServerNote": "Colorado Mesh diperuntukkan bagi pengguna mesh di wilayah Colorado. Pilih kode IATA bandara lokal Anda di bawah ini untuk awalan topik MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

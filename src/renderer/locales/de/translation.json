@@ -1860,7 +1860,6 @@
       "publishingOf": "RMAP v4: {{current}} von {{total}} veröffentlichen"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT ist für Mesh-Nutzer im Raum Colorado. Die Voreinstellung wird unter meshcore/DEN (Denver IATA) veröffentlicht. Wenn Sie nicht in Colorado sind, verwenden Sie stattdessen LetsMesh oder MeshMapper. Fortfahren?",
-    "coloradoServerNote": "Colorado Mesh ist für Mesh-Nutzer im Raum Colorado. Das Themenpräfix verwendet die Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT ist für Colorado-area Mesh-Benutzer und veröffentlicht unter meshcore/DEN. Wenn Sie sich außerhalb von Colorado befinden, wechseln Sie zu LetsMesh (globaler öffentlicher Broker).",
     "coloradoRegionGateStay": "Ich bin in Colorado",
@@ -2009,7 +2008,21 @@
       "done": "Erledigt",
       "cancelAria": "{{name}} abbrechen",
       "duplicateWarning": "Eine weitere aktivierte Verbindung zielt auf denselben Broker (Server und Port) ab, sodass Pakete zweimal veröffentlicht werden."
-    }
+    },
+    "iataPicklist": {
+      "label": "Gebiet IATA",
+      "placeholder": "Wählen Sie den Ort",
+      "aria": "MeshCore MQTT Gebiet IATA",
+      "searchAria": "IATA-Flughafencodes suchen",
+      "searchPlaceholder": "Code, Stadt oder Namen suchen …",
+      "listAria": "IATA-Flughafencodes",
+      "empty": "Es gibt keine Flughäfen, die dieser Suche entsprechen.",
+      "loadFailed": "Die Liste der Flughäfen konnte nicht geladen werden.",
+      "testOption": "Test – Analysegerät/nur Test",
+      "nearestBadge": "Am nächsten",
+      "nearestOption": "{{label}} (am nächsten)"
+    },
+    "coloradoServerNote": "Colorado Mesh ist für Mesh-Nutzer im Raum Colorado. Wählen Sie unten den IATA-Code Ihres lokalen Flughafens für das Themenpräfix MQTT aus."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

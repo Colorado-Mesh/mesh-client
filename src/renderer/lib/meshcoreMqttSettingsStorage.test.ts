@@ -9,7 +9,7 @@ describe('readMeshcoreMqttSettingsFromStorage', () => {
 
   it('returns defaults when key missing', () => {
     const s = readMeshcoreMqttSettingsFromStorage();
-    expect(s.topicPrefix).toBe('meshcore');
+    expect(s.topicPrefix).toBe('');
     expect(s.meshcorePacketLoggerEnabled).toBeUndefined();
   });
 

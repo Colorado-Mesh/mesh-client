@@ -13,7 +13,8 @@ export const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   port: 1883,
   username: '',
   password: '',
-  topicPrefix: 'meshcore',
+  /** Unset until the user picks an IATA from the MeshCore MQTT picklist. */
+  topicPrefix: '',
   autoLaunch: false,
   maxRetries: MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   tokenExpiresAt: undefined,

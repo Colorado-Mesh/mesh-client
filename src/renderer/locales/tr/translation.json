@@ -1862,7 +1862,6 @@
       "publishingOf": "RMAP v4: {{current}} / {{total}} yayınlanıyor"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir. Ön ayar meshcore/DEN (Denver IATA) altında yayınlanır. Colorado'da değilseniz, bunun yerine LetsMesh veya MeshMapper kullanın. Devam edilsin mi?",
-    "coloradoServerNote": "Colorado Mesh, Colorado bölgesindeki mesh kullanıcıları içindir. Konu ön eki Denver IATA (meshcore/DEN) kullanır.",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir ve meshcore/DEN altında yayınlanır. Colorado dışındaysanız, LetsMesh'e (küresel kamu brokeri) geçin.",
     "coloradoRegionGateStay": "Colorado'dayım",
@@ -2009,7 +2008,21 @@
       "done": "Bitti",
       "cancelAria": "{{name}} öğesini iptal et",
       "duplicateWarning": "Etkinleştirilmiş başka bir bağlantı aynı aracıyı (sunucu ve bağlantı noktası) hedefler, bu nedenle paketler iki kez yayınlanacaktır."
-    }
+    },
+    "iataPicklist": {
+      "label": "Bölge IATA kodu",
+      "placeholder": "Bölgenizi seçin",
+      "aria": "MeshCore MQTT bölgesi IATA",
+      "searchAria": "Havalimanı IATA kodlarını arayın",
+      "searchPlaceholder": "Kod, şehir veya ad arayın…",
+      "listAria": "Havalimanı IATA kodları",
+      "empty": "Bu aramayla eşleşen havalimanı yok.",
+      "loadFailed": "Havalimanı listesi yüklenemedi.",
+      "testOption": "test — analiz cihazı / yalnızca test",
+      "nearestBadge": "En yakın",
+      "nearestOption": "{{label}} (en yakın)"
+    },
+    "coloradoServerNote": "Colorado Mesh, Colorado bölgesindeki mesh kullanıcıları içindir. MQTT konu ön eki için aşağıdan yerel havalimanınızın IATA kodunu seçin."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

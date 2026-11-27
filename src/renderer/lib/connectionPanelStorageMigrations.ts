@@ -140,8 +140,9 @@ function seedMeshcoreLetsMeshDefaultOnce(): void {
 }
 
 /**
- * Repair malformed IATA-scoped topic prefixes; uppercase 3-letter segments.
- * Colorado host → meshcore/DEN; other device-signing hosts → meshcore/test.
+ * Repair valid IATA-scoped topic prefixes (uppercase 3-letter segments).
+ * Malformed prefixes are left as-is so the Connection panel IATA picklist can prompt;
+ * do not invent meshcore/DEN or meshcore/test.
  */
 function migrateMeshcoreTopicIataShapeOnce(): void {
   if (localStorage.getItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY) !== null) return;
@@ -152,18 +153,10 @@ function migrateMeshcoreTopicIataShapeOnce(): void {
     const topicPrefix = typeof parsed?.topicPrefix === 'string' ? parsed.topicPrefix : '';
     if (parsed && server && isLetsMeshSettings(server) && topicPrefix) {
       const result = parseMeshcoreIataTopicPrefix(topicPrefix);
-      if (result.ok) {
-        if (result.normalized !== topicPrefix) {
-          localStorage.setItem(
-            MESHCORE_MQTT_SETTINGS_KEY,
-            JSON.stringify({ ...parsed, topicPrefix: result.normalized }),
-          );
-        }
-      } else {
-        const fallback = server === COLORADO_MESH_HOST ? 'meshcore/DEN' : 'meshcore/test';
+      if (result.ok && result.normalized !== topicPrefix) {
         localStorage.setItem(
           MESHCORE_MQTT_SETTINGS_KEY,
-          JSON.stringify({ ...parsed, topicPrefix: fallback }),
+          JSON.stringify({ ...parsed, topicPrefix: result.normalized }),
         );
       }
     }

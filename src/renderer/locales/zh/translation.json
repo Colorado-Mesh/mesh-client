@@ -1862,7 +1862,6 @@
       "publishingOf": "RMAP v4：正在发布 {{current}}/{{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户。预设在meshcore/DEN（丹佛IATA）下发布。如果您不在科罗拉多州，请改用LetsMesh或MeshMapper。是否继续？",
-    "coloradoServerNote": "Colorado Mesh 面向科罗拉多州地区的网格用户。主题前缀使用丹佛 IATA（meshcore/DEN）。",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户，并在meshcore/DEN下发布。如果您在科罗拉多州以外，请切换到LetsMesh（全球公共经纪商）。",
     "coloradoRegionGateStay": "我在科罗拉多州",
@@ -2009,7 +2008,21 @@
       "done": "完成",
       "cancelAria": "取消{{name}}",
       "duplicateWarning": "另一个已启用的连接指向同一代理（服务器和端口），因此数据包将被发布两次。"
-    }
+    },
+    "iataPicklist": {
+      "label": "IATA区域",
+      "placeholder": "选择你的區域",
+      "aria": "MeshCore MQTT地区IATA",
+      "searchAria": "搜索机场IATA代码",
+      "searchPlaceholder": "搜索代码、城市或名称……",
+      "listAria": "机场IATA代码",
+      "empty": "没有与该搜索条件匹配的机场。",
+      "loadFailed": "无法加载机场列表。",
+      "testOption": "测试 — 分析仪/仅用于测试",
+      "nearestBadge": "最近",
+      "nearestOption": "{{label}}（最近）"
+    },
+    "coloradoServerNote": "Colorado Mesh 适用于科罗拉多地区的 Mesh 网络用户。请在下方选择您所在地的机场 IATA 代码，作为MQTT主题前缀。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
