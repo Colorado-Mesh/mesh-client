@@ -1,0 +1,5 @@
+# Maintainers own the whole repository. GitHub requests a review from this team
+# when a pull request opens as ready (not draft) or a draft is marked
+# "Ready for review". Open work in progress as a draft so the request means
+# "ready to look at". See CONTRIBUTING.md (PR process).
+* @Colorado-Mesh/mesh-client-maintainers
