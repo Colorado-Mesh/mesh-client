@@ -28,6 +28,8 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * `scheduled-broadcasts-interval-rebuild.js` (not in index.js).
  * Environment telemetry IPC/SQL ships as sibling `environment-telemetry-handlers.js`
  * (not in index.js).
+ * MeshCore reach check IPC and its HTTPS client ship as sibling `reach-check-handlers.js`
+ * (not in index.js).
  * MQTT publishWaypoint arg validation (2.8 geofence fields) ships as sibling
  * `mqtt-publish-waypoint-validation.js` (not in index.js).
  * Windows notification SoundPlayer (#1487) ships as sibling
@@ -220,6 +222,9 @@ describe('esbuild-main-build', () => {
       expect(environmentTelemetryFallbackBytes.toString('utf8')).toContain(
         'registerEnvironmentTelemetryIpcFallbackHandlers',
       );
+      const reachCheckBytes = fs.readFileSync(path.join(tempDir, 'reach-check-handlers.js'));
+      expect(reachCheckBytes.length).toBeGreaterThan(500);
+      expect(reachCheckBytes.toString('utf8')).toContain('registerReachCheckIpcHandlers');
       const trayUnreadDotBytes = fs.readFileSync(path.join(tempDir, 'tray-unread-dot.js'));
       expect(trayUnreadDotBytes.length).toBeGreaterThan(200);
       expect(trayUnreadDotBytes.toString('utf8')).toContain('paintTrayUnreadDot');

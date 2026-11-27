@@ -45,6 +45,8 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/main/ipc/environment-telemetry-handlers.ts --bundle --platform=node --outfile=dist-electron/main/environment-telemetry-handlers.js --external:electron --format=cjs --watch';
   const environmentTelemetryFallbackBuild =
     'esbuild src/main/ipc/environment-telemetry-handlers-fallback.ts --bundle --platform=node --outfile=dist-electron/main/environment-telemetry-handlers-fallback.js --external:electron --format=cjs --watch';
+  const reachCheckBuild =
+    'esbuild src/main/ipc/reach-check-handlers.ts --bundle --platform=node --outfile=dist-electron/main/reach-check-handlers.js --external:electron --format=cjs --watch';
   const trayUnreadDotBuild =
     'esbuild src/main/trayUnreadDot.ts --bundle --platform=node --outfile=dist-electron/main/tray-unread-dot.js --format=cjs --watch';
   const scheduledBroadcastsRebuildBuild =
@@ -84,6 +86,7 @@ export function buildDevConcurrentlyArgs() {
     teamRosterFallbackBuild,
     environmentTelemetryBuild,
     environmentTelemetryFallbackBuild,
+    reachCheckBuild,
     trayUnreadDotBuild,
     scheduledBroadcastsRebuildBuild,
     mqttWaypointValidationBuild,

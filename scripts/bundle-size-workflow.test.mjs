@@ -232,6 +232,16 @@ describe('always-on bundle workflow', () => {
             path.join(fixture, 'src/main/ipc/environment-telemetry-handlers-fallback.ts'),
             ['export function registerEnvironmentTelemetryIpcFallbackHandlers() {}', ''].join('\n'),
           );
+          const reachCheckPad = 'x'.repeat(600);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/reach-check-handlers.ts'),
+            [
+              'export function registerReachCheckIpcHandlers() {',
+              `  return 'reachCheck:bootstrap ${reachCheckPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
           const trayUnreadPad = 'x'.repeat(200);
           fs.writeFileSync(
             path.join(fixture, 'src/main/trayUnreadDot.ts'),

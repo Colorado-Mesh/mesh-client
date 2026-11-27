@@ -1003,6 +1003,8 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(INDEX_SOURCE).toContain('team-roster-handlers.js');
     expect(INDEX_SOURCE).toContain('registerTeamRosterIpcHandlers');
     expect(INDEX_SOURCE).toContain('team-roster-handlers-fallback.js');
+    expect(INDEX_SOURCE).toContain('reach-check-handlers.js');
+    expect(INDEX_SOURCE).toContain('registerReachCheckIpcHandlers');
     expect(INDEX_SOURCE).toContain('registerTeamRosterIpcFallbackHandlers');
     expect(INDEX_SOURCE).toContain('meshcom-db-handlers.js');
     expect(INDEX_SOURCE).toContain('registerMeshcomDbIpcHandlers');

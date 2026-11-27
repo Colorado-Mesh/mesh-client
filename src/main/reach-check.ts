@@ -15,8 +15,8 @@ import {
   type ReachCheckStatus,
 } from '../shared/reachCheck';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '../shared/timeConstants';
-import { logCaughtDebug } from './caughtErrorPolicy';
 import { pinnedLookup, resolvePublicAddress } from './public-address';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 const REQUEST_TIMEOUT_MS = 10 * MS_PER_SECOND;
 const MAX_RESPONSE_BYTES = 256 * 1024;
@@ -26,6 +26,15 @@ const MAX_TEXT_LENGTH = 32;
 const MAX_RETRY_AFTER_SECONDS = 86_400;
 const STATUSES: ReadonlySet<string> = new Set(['waiting', 'active', 'exhausted', 'expired']);
 const NOT_PUBLIC_MESSAGE = 'Reach check servers must be on the public internet.';
+
+/**
+ * Sanitized error text for soft-catch debug logs. Catches log with `console.debug` directly, not
+ * `logCaughtDebug`: that module pulls in the crash dialog and log service, which must not be
+ * bundled a second time into the sibling `reach-check-handlers.js`.
+ */
+export function errorText(e: unknown): string {
+  return sanitizeLogMessage(e instanceof Error ? e.message : String(e));
+}
 
 /** DNS resolved the server to a private, loopback or otherwise non-public address. */
 export class ReachCheckNotPublicError extends Error {}
@@ -164,7 +173,7 @@ export function createReachCheckClient(deps: ReachCheckClientDeps): ReachCheckAp
       const response = await deps.request(new URL(path, parsed.origin), init);
       return { ok: true, value: { origin: parsed.origin, response } };
     } catch (e: unknown) {
-      logCaughtDebug('[main/reach-check] request', e);
+      console.debug('[main/reach-check] request failed: %s', errorText(e));
       return { ok: false, error: e instanceof ReachCheckNotPublicError ? 'not_public' : 'network' };
     }
   }
@@ -244,7 +253,7 @@ function readJsonResponse(
       try {
         json = JSON.parse(text) as unknown;
       } catch (e: unknown) {
-        logCaughtDebug('[main/reach-check] json', e);
+        console.debug('[main/reach-check] answer is not JSON: %s', errorText(e));
         json = undefined;
       }
     }
@@ -280,7 +289,7 @@ export const defaultReachCheckTransport: ReachCheckTransport = async (url, init)
       notPublic: NOT_PUBLIC_MESSAGE,
     });
   } catch (e: unknown) {
-    logCaughtDebug('[main/reach-check] dns', e);
+    console.debug('[main/reach-check] DNS check failed: %s', errorText(e));
     // Only a non-public answer is "not public"; timeouts and unknown hosts stay network errors.
     if (e instanceof Error && e.message === NOT_PUBLIC_MESSAGE) {
       throw new ReachCheckNotPublicError(NOT_PUBLIC_MESSAGE);

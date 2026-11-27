@@ -30,6 +30,7 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
     projectRoot,
     'dist-electron/main/environment-telemetry-handlers-fallback.js',
   ),
+  reachCheck: path.join(projectRoot, 'dist-electron/main/reach-check-handlers.js'),
   trayUnreadDot: path.join(projectRoot, 'dist-electron/main/tray-unread-dot.js'),
   scheduledBroadcastsRebuild: path.join(
     projectRoot,

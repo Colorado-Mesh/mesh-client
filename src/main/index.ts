@@ -7379,6 +7379,30 @@ async function registerTeamRosterIpcWithFallback(): Promise<void> {
   }
 }
 
+async function registerReachCheckIpc(): Promise<void> {
+  // Production ships `reach-check-handlers.js` beside index.js (out of measured budget). No fallback:
+  // if it fails to load, renderer invokes reject and the reach check reports the server unreachable.
+  try {
+    const mod = (
+      process.env.VITEST
+        ? await import('./ipc/reach-check-handlers')
+        : await import(pathToFileURL(path.join(__dirname, 'reach-check-handlers.js')).href)
+    ) as {
+      registerReachCheckIpcHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+        isPackaged: boolean;
+      }) => void;
+    };
+    mod.registerReachCheckIpcHandlers({ ipcMain, assertIpcSender, isPackaged: app.isPackaged });
+  } catch (err: unknown) {
+    console.error(
+      'mcL1515 [main] reach check IPC registration failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+  }
+}
+
 async function registerEnvironmentTelemetryIpcWithFallback(): Promise<void> {
   // Production ships `environment-telemetry-handlers.js` beside index.js (out of measured budget).
   try {
@@ -7471,6 +7495,7 @@ void app
       await registerTeamRosterIpcWithFallback();
       await registerEnvironmentTelemetryIpcWithFallback();
       await registerMeshcomDbIpcWithFallback();
+      await registerReachCheckIpc();
       const coldStartUrl = registerLxmProtocolClient();
       if (coldStartUrl) pendingOpenUrl = coldStartUrl;
       registerIncidentIpcHandlers();

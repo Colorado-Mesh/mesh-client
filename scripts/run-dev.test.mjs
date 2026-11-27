@@ -41,6 +41,9 @@ describe('run-dev', () => {
           arg.includes('--external:electron'),
       ),
     ).toBe(true);
+    expect(args.some((arg) => arg.startsWith('esbuild src/main/ipc/reach-check-handlers.ts'))).toBe(
+      true,
+    );
     expect(args.some((arg) => arg.startsWith('esbuild src/main/trayUnreadDot.ts'))).toBe(true);
     expect(
       args.some((arg) => arg.startsWith('esbuild src/main/scheduledBroadcastsIntervalRebuild.ts')),
