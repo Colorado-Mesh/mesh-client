@@ -15,8 +15,9 @@ const config: CapacitorConfig = {
     // itself only loads bundled assets.
     allowMixedContent: false,
     captureInput: true,
-    // Remote WebView debugging only in debug builds (`CAP_DEBUG_WEBVIEW=1 pnpm run sync`).
-    webContentsDebuggingEnabled: process.env.CAP_DEBUG_WEBVIEW === '1',
+    // WebView debugging and plugin-call logging stay at Capacitor's defaults: debug builds only
+    // (`loggingBehavior: 'debug'`), so release builds never log plugin results such as the
+    // secure-storage key.
   },
   ios: {
     path: 'ios',
@@ -24,8 +25,6 @@ const config: CapacitorConfig = {
     scrollEnabled: false,
     limitsNavigationsToAppBoundDomains: false,
   },
-  // Plugin results (including the secure-storage key) stay out of logcat / the Xcode console.
-  loggingBehavior: 'production',
   server: {
     androidScheme: 'https',
     iosScheme: 'capacitor',
