@@ -5,6 +5,8 @@
     "tryAgain": "Spróbuj ponownie",
     "backgroundTitle": "Mesh Client jest połączony",
     "backgroundText": "Połączenia radiowe i sieciowe pozostają otwarte.",
+    "messagesChannel": "Wiadomości",
+    "alertsChannel": "Alerty",
     "chooseRadioTitle": "Wybierz radio",
     "chooseRadioMessage": "Wybierz urządzenie USB do połączenia",
     "noUsbDevice": "Nie podłączono żadnego szeregowego urządzenia USB. Podłącz radio kablem USB OTG.",

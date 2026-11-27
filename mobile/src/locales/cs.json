@@ -5,6 +5,8 @@
     "tryAgain": "Zkusit znovu",
     "backgroundTitle": "Mesh Client je připojen",
     "backgroundText": "Rádio a síťová spojení zůstávají otevřená.",
+    "messagesChannel": "Zprávy",
+    "alertsChannel": "Upozornění",
     "chooseRadioTitle": "Vyberte rádio",
     "chooseRadioMessage": "Vyberte zařízení USB, které chcete připojit",
     "noUsbDevice": "Není připojeno žádné sériové zařízení USB. Připojte rádio kabelem USB OTG.",

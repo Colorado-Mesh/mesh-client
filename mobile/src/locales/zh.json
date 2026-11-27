@@ -5,6 +5,8 @@
     "tryAgain": "重试",
     "backgroundTitle": "Mesh Client 已连接",
     "backgroundText": "正在保持电台和网络连接。",
+    "messagesChannel": "消息",
+    "alertsChannel": "警报",
     "chooseRadioTitle": "选择电台",
     "chooseRadioMessage": "选择要连接的 USB 设备",
     "noUsbDevice": "未连接 USB 串口设备。请用 USB OTG 线连接电台。",

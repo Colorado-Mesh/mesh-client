@@ -5,6 +5,8 @@
     "tryAgain": "Réessayer",
     "backgroundTitle": "Mesh Client est connecté",
     "backgroundText": "Les liaisons radio et réseau restent ouvertes.",
+    "messagesChannel": "Messages",
+    "alertsChannel": "Alertes",
     "chooseRadioTitle": "Choisir une radio",
     "chooseRadioMessage": "Choisissez l'appareil USB à connecter",
     "noUsbDevice": "Aucun appareil série USB n'est connecté. Branchez la radio avec un câble USB OTG.",

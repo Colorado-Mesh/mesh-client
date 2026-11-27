@@ -5,6 +5,8 @@
     "tryAgain": "Erneut versuchen",
     "backgroundTitle": "Mesh Client ist verbunden",
     "backgroundText": "Funk- und Netzwerkverbindungen bleiben offen.",
+    "messagesChannel": "Nachrichten",
+    "alertsChannel": "Warnungen",
     "chooseRadioTitle": "Funkgerät auswählen",
     "chooseRadioMessage": "Wähle das USB-Gerät für die Verbindung",
     "noUsbDevice": "Kein serielles USB-Gerät verbunden. Schließe das Funkgerät mit einem USB-OTG-Kabel an.",

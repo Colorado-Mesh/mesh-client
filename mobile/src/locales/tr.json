@@ -5,6 +5,8 @@
     "tryAgain": "Tekrar dene",
     "backgroundTitle": "Mesh Client bağlı",
     "backgroundText": "Telsiz ve ağ bağlantıları açık tutuluyor.",
+    "messagesChannel": "Mesajlar",
+    "alertsChannel": "Uyarılar",
     "chooseRadioTitle": "Bir telsiz seçin",
     "chooseRadioMessage": "Bağlanacak USB aygıtını seçin",
     "noUsbDevice": "Bağlı USB seri aygıt yok. Telsizi bir USB OTG kablosuyla bağlayın.",

@@ -7,6 +7,7 @@
  */
 import i18n from '@/renderer/lib/i18n';
 
+import { askNotificationPermissionInContext } from '../platform/webNotifications';
 import { getPlugin } from './nativePlugins';
 
 let workerLinksActive = false;
@@ -22,6 +23,8 @@ function apply(): void {
   const want = workerLinksActive || serialPortsOpen > 0;
   if (want === enabled) return;
   enabled = want;
+  // A live link is when notifications (this service's, and incoming messages) start to matter.
+  if (want) askNotificationPermissionInContext();
   pending = pending.then(async () => {
     const device = getPlugin('MeshDevice') as unknown as {
       setBackgroundMode?: (o: { enabled: boolean; title?: string; text?: string }) => Promise<void>;

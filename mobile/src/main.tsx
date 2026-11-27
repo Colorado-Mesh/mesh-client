@@ -22,6 +22,7 @@ import { getPlugin, mobilePlatform } from './bridge/nativePlugins';
 import { installMobileI18n } from './i18nMobile';
 import { handleAndroidBack } from './platform/androidBack';
 import { setMobileAppPlatform } from './platform/mobilePlatform';
+import { installMobileNotifications } from './platform/webNotifications';
 import { installMobileSerial } from './serial/installMobileSerial';
 import { installMobileViewport } from './viewport/mobileViewport';
 
@@ -148,6 +149,10 @@ async function boot(): Promise<void> {
   (window.electronAPI as unknown as { getPlatform: () => string }).getPlatform = () => nodePlatform;
   installMobileSerial(platform);
   installCustomSchemeImages();
+  // The renderer's OS notifications use the web Notification API, which the WebViews lack.
+  await installMobileNotifications().catch((e: unknown) => {
+    console.debug('[mobile] notifications unavailable', e);
+  });
 
   await import('@/renderer/main');
 }

@@ -5,6 +5,8 @@
     "tryAgain": "다시 시도",
     "backgroundTitle": "Mesh Client가 연결되었습니다",
     "backgroundText": "무전기 및 네트워크 연결을 유지하고 있습니다.",
+    "messagesChannel": "메시지",
+    "alertsChannel": "경보",
     "chooseRadioTitle": "무전기 선택",
     "chooseRadioMessage": "연결할 USB 장치를 선택하세요",
     "noUsbDevice": "연결된 USB 직렬 장치가 없습니다. USB OTG 케이블로 무전기를 연결하세요.",

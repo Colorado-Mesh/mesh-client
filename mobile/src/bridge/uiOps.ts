@@ -246,7 +246,9 @@ async function notify(opts: Record<string, unknown>): Promise<{ clicked?: boolea
         title,
         body,
         smallIcon: 'ic_stat_mesh',
-        schedule: { allowWhileIdle: true },
+        // Shown at once, no alarm: the plugin's default (exact) makes Android 12+ open the
+        // "Alarms & reminders" permission page instead.
+        isExactNotification: false,
       },
     ],
   });

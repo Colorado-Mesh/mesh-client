@@ -5,6 +5,8 @@
     "tryAgain": "Спробувати ще раз",
     "backgroundTitle": "Mesh Client під'єднано",
     "backgroundText": "Радіо- та мережеві з'єднання залишаються відкритими.",
+    "messagesChannel": "Повідомлення",
+    "alertsChannel": "Сповіщення",
     "chooseRadioTitle": "Виберіть рацію",
     "chooseRadioMessage": "Виберіть USB-пристрій для під'єднання",
     "noUsbDevice": "Не під'єднано жодного послідовного USB-пристрою. Під'єднайте рацію кабелем USB OTG.",

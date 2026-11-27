@@ -27,4 +27,5 @@ export const MOBILE_LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcM0021: 'src/host/hostChannel.ts:251',
   mcM0022: 'src/main.tsx:146',
   mcM0023: 'src/host/globals.ts:49',
+  mcM0024: 'src/platform/webNotifications.ts:148',
 };

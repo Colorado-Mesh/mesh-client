@@ -5,6 +5,8 @@
     "tryAgain": "Coba lagi",
     "backgroundTitle": "Mesh Client terhubung",
     "backgroundText": "Menjaga tautan radio dan jaringan tetap terbuka.",
+    "messagesChannel": "Pesan",
+    "alertsChannel": "Peringatan",
     "chooseRadioTitle": "Pilih radio",
     "chooseRadioMessage": "Pilih perangkat USB yang akan dihubungkan",
     "noUsbDevice": "Tidak ada perangkat serial USB yang terhubung. Hubungkan radio dengan kabel USB OTG.",

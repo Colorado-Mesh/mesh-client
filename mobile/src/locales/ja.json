@@ -5,6 +5,8 @@
     "tryAgain": "再試行",
     "backgroundTitle": "Mesh Client は接続中です",
     "backgroundText": "無線機とネットワークの接続を維持しています。",
+    "messagesChannel": "メッセージ",
+    "alertsChannel": "アラート",
     "chooseRadioTitle": "無線機を選択",
     "chooseRadioMessage": "接続する USB デバイスを選択してください",
     "noUsbDevice": "USB シリアルデバイスが接続されていません。USB OTG ケーブルで無線機を接続してください。",

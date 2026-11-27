@@ -5,6 +5,8 @@
     "tryAgain": "Opnieuw proberen",
     "backgroundTitle": "Mesh Client is verbonden",
     "backgroundText": "Radio- en netwerkverbindingen blijven open.",
+    "messagesChannel": "Berichten",
+    "alertsChannel": "Waarschuwingen",
     "chooseRadioTitle": "Kies een radio",
     "chooseRadioMessage": "Kies het USB-apparaat om te verbinden",
     "noUsbDevice": "Er is geen serieel USB-apparaat verbonden. Sluit de radio aan met een USB-OTG-kabel.",
