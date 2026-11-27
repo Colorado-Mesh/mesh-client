@@ -22,6 +22,7 @@ import {
   PARENT_HOVER_ATTR,
   Pin,
   PinOff,
+  Radar,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -60,8 +61,10 @@ import {
   truncateForAnnouncement,
 } from '@/renderer/lib/a11yAnnouncer';
 import {
+  getMeshcoreReachCheckServerUrl,
   isMecpComposeEnabled,
   isMeshcoreOpenWireCompatEnabled,
+  setMeshcoreReachCheckServerUrl,
 } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import {
@@ -180,6 +183,7 @@ import { useConversationMutes } from '../hooks/useConversationMutes';
 import { useConversationPins } from '../hooks/useConversationPins';
 import { useNowMs } from '../hooks/useNowMs';
 import { useOutboxRowAwaitingAck } from '../hooks/useOutboxRowAwaitingAck';
+import { useReachCheck } from '../hooks/useReachCheck';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
 import { useStarredMessages } from '../hooks/useStarredMessages';
 import { chatDmPeerMessageCounts } from '../lib/chatDmPeerIndex';
@@ -317,6 +321,7 @@ import { MecpUnreadIcon, useMecpUnreadLabel } from './mecp/MecpUnreadIcon';
 import MeshComGrcChatManager from './MeshComGrcChatManager';
 import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { ReachCheckDialog } from './ReachCheckDialog';
 import { ReachCheckLine } from './ReachCheckLine';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
@@ -349,6 +354,7 @@ function chatPanelIsLinux(): boolean {
 
 /** Last-read key for the Starred list. Distinct from `ch:` / `dm:` thread watermarks. */
 const STARRED_READ_KEY_PREFIX = 'star:';
+const EMPTY_MESHCORE_CHANNEL_SOURCES: readonly MeshcoreChatChannelSource[] = [];
 
 /** Toolbar icon button with Electron-friendly HelpTooltip (native `title` does not show). */
 const CHAT_TOOLBAR_BUTTON_BASE =
@@ -913,6 +919,11 @@ export interface ChatPanelProps {
   alwaysShowMessageActions?: boolean;
   /** Meshtastic RF: request Store & Forward chat history from the router. */
   onFetchStoreForwardHistory?: () => Promise<RequestStoreForwardHistoryResult>;
+  /**
+   * MeshCore companion: show the Reach check toolbar button (needs `meshcoreChannelSources` and
+   * `onSetMeshcoreChannel`). MeshCore only: the health-check observers are MeshCore MQTT feeds.
+   */
+  reachCheckAvailable?: boolean;
   /** Reticulum LXMF: DM-only chat (no channel pills). */
   dmOnlyChat?: boolean;
   /** Reticulum LXMF delivery status badge on outbound/inbound messages. */
@@ -1005,6 +1016,7 @@ function ChatPanel({
   compactMode = false,
   alwaysShowMessageActions = false,
   onFetchStoreForwardHistory,
+  reachCheckAvailable = false,
   dmOnlyChat = false,
   showLxmfDeliveryStatus = false,
   showLxmfAttachmentLine = false,
@@ -2391,6 +2403,31 @@ function ChatPanel({
 
   const outboxSendAvailable =
     isConnected && !(isMqttOnly && !protocolMqttProvidesChatSend(protocol));
+
+  const reachCheckChannelIndexes = useMemo(() => channels.map((c) => c.index), [channels]);
+  const reachCheck = useReachCheck({
+    identityId: identityId ?? null,
+    channels: meshcoreChannelSources ?? EMPTY_MESHCORE_CHANNEL_SOURCES,
+    channelIndexes: reachCheckChannelIndexes,
+    setChannel: (index, name, secret) =>
+      onSetMeshcoreChannel
+        ? onSetMeshcoreChannel(index, name, secret)
+        : Promise.reject(new Error('Channel management unavailable')),
+    selectChannel: (index) => {
+      setViewMode('channels');
+      selectChannel(index, { focusComposer: false });
+    },
+    sendOnChannel: (text, index) => outboxSendFn(text, index),
+    api: window.electronAPI.reachCheck,
+    getServerOrigin: getMeshcoreReachCheckServerUrl,
+    saveServerOrigin: setMeshcoreReachCheckServerUrl,
+  });
+  const showReachCheckButton =
+    reachCheckAvailable &&
+    meshcoreChannelSources != null &&
+    onSetMeshcoreChannel != null &&
+    !meshcoreChannelManagementDisabled &&
+    outboxSendAvailable;
   // Hop pill tooltip: capture lookup and name resolution run on hover/focus only.
   const describeMessageRoute = useCallback(
     (message: ChatMessage) => {
@@ -4030,6 +4067,19 @@ function ChatPanel({
                 </ChatToolbarTooltipButton>
               )}
 
+            {showReachCheckButton ? (
+              <ChatToolbarTooltipButton
+                tooltip={t('reachCheck.toolbarHint')}
+                aria-label={t('reachCheck.toolbarButton')}
+                disabled={reachCheck.busy}
+                aria-busy={reachCheck.busy || undefined}
+                onClick={reachCheck.run}
+                className={`${chatToolbarButtonClass()} disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                <Radar aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+              </ChatToolbarTooltipButton>
+            ) : null}
+
             <ChatToolbarTooltipButton
               tooltip={t('chatPanel.exportChat')}
               aria-label={t('chatPanel.exportChat')}
@@ -4334,6 +4384,13 @@ function ChatPanel({
           onCancel={() => {
             if (!clearingChannel) setChannelToClear(null);
           }}
+        />
+      ) : null}
+      {reachCheck.dialog ? (
+        <ReachCheckDialog
+          key={reachCheck.dialog.kind}
+          state={reachCheck.dialog}
+          onAnswer={reachCheck.answer}
         />
       ) : null}
 

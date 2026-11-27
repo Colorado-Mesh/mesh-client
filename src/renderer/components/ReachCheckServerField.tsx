@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { normalizeReachCheckOrigin } from '@/shared/reachCheck';
-
+import {
+  type ReachCheckServerInputError,
+  readReachCheckServerInput,
+} from '../lib/reachCheck/reachCheckServerInput';
 import { INPUT_CLASS } from './ui/formClasses';
 
 export interface ReachCheckServerFieldProps {
@@ -13,19 +15,7 @@ export interface ReachCheckServerFieldProps {
   onCommit: (origin: string) => void;
 }
 
-type FieldError = 'invalid_url' | 'not_public';
-
-/**
- * Result of reading a typed server address: a checked origin to save, `''` to clear, or the reason
- * it was refused. Local `http://127.0.0.1:<port>` passes here; main still refuses it outside
- * unpackaged development builds.
- */
-function readReachCheckServerInput(
-  raw: string,
-): { ok: true; origin: string } | { ok: false; error: FieldError } {
-  if (!raw.trim()) return { ok: true, origin: '' };
-  return normalizeReachCheckOrigin(raw, { allowLocal: true });
-}
+type FieldError = ReachCheckServerInputError;
 
 /** The reach check server address input with its help text and inline error. */
 export default function ReachCheckServerField({ id, value, onCommit }: ReachCheckServerFieldProps) {

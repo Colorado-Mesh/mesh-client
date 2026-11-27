@@ -5968,6 +5968,9 @@ function AppContent() {
                                         ? meshcorePanelActions.meshcoreSetChannel
                                         : undefined
                                     }
+                                    reachCheckAvailable={
+                                      chatCapabilities.hasCompanionContactManagementConfig
+                                    }
                                     onDeleteMeshcoreChannel={
                                       chatCapabilities.hasCompanionContactManagementConfig
                                         ? meshcorePanelActions.meshcoreDeleteChannel
