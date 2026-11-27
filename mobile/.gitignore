@@ -1,3 +1,8 @@
+# Web bundle (`pnpm -C mobile run build`) and test output
+/dist/
+/test-results/
+/playwright-report/
+
 # Reticulum sidecar builds (scripts/build-sidecar.mjs)
 # Stage crate: a build-time copy of reticulum-sidecar/ with the mobile [lib] target.
 /native/.stage/

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mesh Client: ink-900 (slate) background, Sky accent. -->
+    <color name="mesh_background">#0F172A</color>
+    <color name="mesh_accent">#38BDF8</color>
+    <color name="colorPrimary">#0F172A</color>
+    <color name="colorPrimaryDark">#0F172A</color>
+    <color name="colorAccent">#38BDF8</color>
+</resources>

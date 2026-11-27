@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext HTTP / WebSocket is permitted app-wide: Meshtastic radios serve http:// on arbitrary
+  LAN addresses (and mDNS names), and the Reticulum sidecar listens on http://127.0.0.1. Network
+  security config cannot scope cleartext to "private address ranges", so it cannot be narrower.
+  The WebView itself only loads bundled https://localhost assets (allowMixedContent is off).
+  Trust anchors stay the system store; TLS sockets that need a private CA pass it explicitly.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

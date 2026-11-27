@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  USB devices that offer to open Mesh Client when plugged in (USB_DEVICE_ATTACHED). Vendor IDs
+  are decimal. Any CDC-ACM serial device (class 2) also matches, which covers boards with
+  vendor IDs not listed here (Heltec / LilyGO nRF52 and ESP32-S3 native USB, RP2040, ...).
+  MeshUsbSerial lists every device with a usb-serial-for-android driver regardless of this list.
+-->
+<resources>
+    <!-- Adafruit / RAKwireless nRF52 (RAK4631, T-Echo, ...): 0x239A -->
+    <usb-device vendor-id="9114" />
+    <!-- Espressif ESP32-S2/S3/C3 native USB: 0x303A -->
+    <usb-device vendor-id="12346" />
+    <!-- Silicon Labs CP210x: 0x10C4 -->
+    <usb-device vendor-id="4292" />
+    <!-- WCH CH340/CH341/CH9102: 0x1A86 -->
+    <usb-device vendor-id="6790" />
+    <!-- FTDI: 0x0403 -->
+    <usb-device vendor-id="1027" />
+    <!-- Nordic Semiconductor nRF52840 dongle / USB CDC: 0x1915 -->
+    <usb-device vendor-id="6421" />
+    <!-- Seeed Studio (XIAO, Wio Tracker, SenseCAP): 0x2886 -->
+    <usb-device vendor-id="10374" />
+    <!-- Raspberry Pi RP2040 (RAK11310, Pico): 0x2E8A -->
+    <usb-device vendor-id="11914" />
+    <!-- Prolific PL2303: 0x067B -->
+    <usb-device vendor-id="1659" />
+    <!-- Any USB CDC-ACM serial device (communications class). -->
+    <usb-device class="2" />
+</resources>
