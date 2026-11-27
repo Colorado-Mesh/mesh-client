@@ -9,7 +9,7 @@ import net from 'node:net';
 
 import { expect, type Page, test } from '@playwright/test';
 
-import { bootApp, type Harness, startHarness, unexpectedErrors } from './harness';
+import { bootApp, type Harness, requireService, startHarness, unexpectedErrors } from './harness';
 
 const TARGET = process.env.MESHTASTICD ?? '127.0.0.1:4403';
 
@@ -58,7 +58,7 @@ test.afterAll(async () => {
 test('connects to meshtasticd over TCP, loads the node, and sends on the primary channel', async ({
   browser,
 }) => {
-  test.skip(!(await reachable(TARGET)), `meshtasticd not reachable at ${TARGET}`);
+  requireService('meshtasticd', await reachable(TARGET), `meshtasticd not reachable at ${TARGET}`);
   const context = await browser.newContext({
     viewport: { width: 412, height: 915 },
     isMobile: true,

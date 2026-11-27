@@ -6,7 +6,7 @@
  */
 import { expect, test } from '@playwright/test';
 
-import { bootApp, type Harness, startHarness, unexpectedErrors } from './harness';
+import { bootApp, type Harness, requireService, startHarness, unexpectedErrors } from './harness';
 
 let h: Harness;
 
@@ -23,7 +23,7 @@ test('map tiles load through the host tile cache', async ({ browser }) => {
     (r) => r.ok,
     () => false,
   );
-  test.skip(!online, 'tile server not reachable');
+  requireService('tiles', online, 'tile server not reachable');
   const context = await browser.newContext({
     viewport: { width: 412, height: 915 },
     isMobile: true,

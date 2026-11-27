@@ -8,7 +8,7 @@ import type { AddressInfo } from 'node:net';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import type { Page } from '@playwright/test';
+import { type Page, test } from '@playwright/test';
 
 const ROOT = path.resolve(import.meta.dirname, '../dist');
 const TYPES: Record<string, string> = {
@@ -21,6 +21,22 @@ const TYPES: Record<string, string> = {
   '.png': 'image/png',
   '.woff2': 'font/woff2',
 };
+
+/**
+ * Services a run must have (`MOBILE_E2E_REQUIRE=meshtasticd,tiles,sidecar`). Locally a spec skips
+ * when its service is missing; CI lists the services it starts so a missing one fails instead of
+ * silently skipping.
+ */
+export function requireService(name: string, available: boolean, reason: string): void {
+  const required = (process.env.MOBILE_E2E_REQUIRE ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (available) return;
+  if (required.includes(name))
+    throw new Error(`${name} is required (MOBILE_E2E_REQUIRE): ${reason}`);
+  test.skip(true, reason);
+}
 
 export interface Harness {
   url: string;

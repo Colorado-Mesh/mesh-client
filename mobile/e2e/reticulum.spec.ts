@@ -11,7 +11,7 @@ import path from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
-import { bootApp, type Harness, startHarness, unexpectedErrors } from './harness';
+import { bootApp, type Harness, requireService, startHarness, unexpectedErrors } from './harness';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const sidecarBuilt =
@@ -33,7 +33,7 @@ test.afterAll(async () => {
 test('starts the Reticulum sidecar through MeshProcess and reaches the stack API', async ({
   browser,
 }) => {
-  test.skip(!sidecarBuilt, 'no Reticulum sidecar build');
+  requireService('sidecar', sidecarBuilt, 'no Reticulum sidecar build');
   const context = await browser.newContext({
     viewport: { width: 412, height: 915 },
     isMobile: true,
