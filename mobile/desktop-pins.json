@@ -6,6 +6,7 @@
     "src/main/gps.ts": "09ee54cf2c2e1e79d868a5fa71d27aa790467b02d5ccb1a980ec5ae8897afbb4",
     "src/main/translation/loadTranslationManifest.ts": "c522bfab6f2fc9aa03b5c28f1b10d0777a53e2fa25468845778ca9165a107e24",
     "src/renderer/components/SetLocationCard.tsx": "5e63c1363034e478a0bad621f1819cd3ad2cef13ccca3085eccfc3ee3a294ef1",
+    "src/renderer/components/UpdateStatusIndicator.tsx": "a861cd75aad5c5a28bc47f8d972216dda8fed947b77e2a4092d842eefac72cca",
     "src/renderer/components/chat/ConversationLayout.tsx": "7deb744979204349f3181cc7d9eb0b71867cb573b800453fc77ec1980c083565",
     "src/renderer/components/shell/BottomNav.tsx": "fe919a3d931b5e3ed7e636a124f99151c75d1f6def188a9faff07dc0b4bde53e",
     "src/renderer/components/shell/QuitButton.tsx": "a0d93be6af115b946d1b18b0ca45cb4c16ae68265f1ed3536d7d2b638a0c7f7e",

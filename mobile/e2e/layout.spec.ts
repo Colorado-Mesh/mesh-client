@@ -89,6 +89,11 @@ for (const d of DEVICES) {
 
     // Desktop-only quit control is not offered in the mobile app.
     await expect(page.getByRole('button', { name: /disconnect & quit/i })).toHaveCount(0);
+    // Nor the app update indicator: the stores update the app, and the inert mobile updater left
+    // it on "Checking..." in the status strip.
+    const strip = page.locator('footer').last();
+    await expect(strip).toBeVisible();
+    await expect(strip).not.toContainText(/checking/i);
 
     await page.screenshot({ path: test.info().outputPath(`${d.name.replace(/\W+/g, '-')}.png`) });
     expect(unexpectedErrors(boot.pageErrors)).toEqual([]);
