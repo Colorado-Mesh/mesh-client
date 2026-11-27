@@ -224,6 +224,16 @@ describe('persistMeshcomMessage', () => {
         channel_idx: 0,
         timestamp: 5_000,
       });
+      persistMeshcomMessage(db, {
+        identity_id: 'offline-meshcom',
+        msg_id: '1',
+        from_call: 'SP2ONG',
+        to_call_or_group: '*',
+        text: 'inbound',
+        channel_idx: 0,
+        timestamp: 5_000,
+        status: 'failed',
+      });
       const rows = db
         .prepareOnce(
           `SELECT msg_id, from_call, text, status, timestamp FROM meshcom_messages
@@ -248,6 +258,7 @@ describe('persistMeshcomMessage', () => {
           msg_id: '1~5000',
           from_call: 'SP2ONG',
           text: 'inbound',
+          status: 'failed',
           timestamp: 5_000,
         }),
       ]);

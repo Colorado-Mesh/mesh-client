@@ -20,8 +20,11 @@ function sameLogicalMeshcomMessage(
   );
 }
 
-function fitMeshcomMsgId(id: string): string {
-  return id.length <= MESHCOM_MAX_MSG_ID_LEN ? id : id.slice(0, MESHCOM_MAX_MSG_ID_LEN);
+/** Keep the suffix intact so later retries stay distinct after the id is capped. */
+function boundedMeshcomId(base: string, suffix: string): string {
+  const headRoom = MESHCOM_MAX_MSG_ID_LEN - suffix.length;
+  if (headRoom <= 0) return suffix.slice(0, MESHCOM_MAX_MSG_ID_LEN);
+  return `${base.slice(0, headRoom)}${suffix}`;
 }
 
 /**
@@ -32,10 +35,15 @@ export function meshcomIncomingStoreId(
   byId: Readonly<Record<string, MeshcomLogicalMessage | undefined>>,
   incoming: MeshcomLogicalMessage,
 ): string {
-  const existing = byId[incoming.id];
-  if (existing == null || sameLogicalMeshcomMessage(existing, incoming)) return incoming.id;
-  const stamped = fitMeshcomMsgId(`${incoming.id}~${incoming.timestamp}`);
-  const stampedRow = byId[stamped];
-  if (stampedRow == null || sameLogicalMeshcomMessage(stampedRow, incoming)) return stamped;
-  return fitMeshcomMsgId(`${stamped}~${incoming.from}`);
+  const accept = (id: string): boolean => {
+    const row = byId[id];
+    return row == null || sameLogicalMeshcomMessage(row, incoming);
+  };
+  if (accept(incoming.id)) return incoming.id;
+  for (let n = 0; n < 50; n++) {
+    const suffix = n === 0 ? `~${incoming.timestamp}` : `~${incoming.timestamp}~${n}`;
+    const candidate = boundedMeshcomId(incoming.id, suffix);
+    if (accept(candidate)) return candidate;
+  }
+  return boundedMeshcomId(incoming.id, `~${incoming.timestamp}~${incoming.from}`);
 }

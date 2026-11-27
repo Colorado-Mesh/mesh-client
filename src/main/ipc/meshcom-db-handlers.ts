@@ -229,27 +229,53 @@ function meshcomStoredMessageMatches(
   return true;
 }
 
-function fitMeshcomMsgId(id: string): string {
-  return id.length <= MAX_MSG_ID_LEN ? id : id.slice(0, MAX_MSG_ID_LEN);
+interface MeshcomStoredIdentity {
+  from_call: string | null;
+  to_call_or_group: string | null;
+  text: string;
+  channel_idx: number;
+  timestamp: number;
 }
 
-/** New id when `baseId` already stores a different message. */
-function mintDistinctMeshcomMsgId(
+function boundedMeshcomDbId(base: string, suffix: string): string {
+  const headRoom = MAX_MSG_ID_LEN - suffix.length;
+  if (headRoom <= 0) return suffix.slice(0, MAX_MSG_ID_LEN);
+  return `${base.slice(0, headRoom)}${suffix}`;
+}
+
+function loadMeshcomMessageIdentity(
+  db: NodeSqliteDB,
+  identityId: string,
+  msgId: string,
+): MeshcomStoredIdentity | undefined {
+  return db
+    .prepareOnce(
+      `SELECT from_call, to_call_or_group, text, channel_idx, timestamp
+       FROM meshcom_messages
+       WHERE identity_id = ? AND msg_id = ?`,
+    )
+    .get(identityId, msgId) as MeshcomStoredIdentity | undefined;
+}
+
+/** Reuse a minted id that already stores this message; otherwise the first free id. */
+function resolveMeshcomMsgId(
   db: NodeSqliteDB,
   identityId: string,
   baseId: string,
-  timestamp: number,
-): string {
-  const stamp = `~${timestamp}`;
-  const root = fitMeshcomMsgId(`${baseId}${stamp}`);
+  row: MeshcomStoredIdentity,
+): { id: string; matched: boolean } {
+  const candidates = [baseId];
   for (let n = 0; n < 50; n++) {
-    const candidate = fitMeshcomMsgId(n === 0 ? root : `${root}~${n}`);
-    const hit = db
-      .prepareOnce('SELECT 1 AS ok FROM meshcom_messages WHERE identity_id = ? AND msg_id = ?')
-      .get(identityId, candidate) as { ok: number } | undefined;
-    if (!hit) return candidate;
+    const suffix = n === 0 ? `~${row.timestamp}` : `~${row.timestamp}~${n}`;
+    candidates.push(boundedMeshcomDbId(baseId, suffix));
   }
-  return root;
+  for (const candidate of candidates) {
+    const existing = loadMeshcomMessageIdentity(db, identityId, candidate);
+    if (!existing) return { id: candidate, matched: false };
+    if (meshcomStoredMessageMatches(existing, row)) return { id: candidate, matched: true };
+  }
+  const last = candidates[candidates.length - 1] ?? baseId;
+  return { id: last, matched: false };
 }
 
 /** Validate `db:saveMeshcomContact` payload (throws on invalid fields). */
@@ -515,22 +541,9 @@ export function persistMeshcomMessage(
   // Same msg_id is an update only when sender/text/channel/timestamp match.
   // Wrapped firmware ids and EXTUDP "1" vs outbound "1" insert under a new id.
   if (row.msg_id) {
-    const existing = db
-      .prepareOnce(
-        `SELECT from_call, to_call_or_group, text, channel_idx, timestamp
-         FROM meshcom_messages
-         WHERE identity_id = ? AND msg_id = ?`,
-      )
-      .get(row.identity_id, row.msg_id) as
-      | {
-          from_call: string | null;
-          to_call_or_group: string | null;
-          text: string;
-          channel_idx: number;
-          timestamp: number;
-        }
-      | undefined;
-    if (existing && meshcomStoredMessageMatches(existing, row)) {
+    const resolved = resolveMeshcomMsgId(db, row.identity_id, row.msg_id, row);
+    row.msg_id = resolved.id;
+    if (resolved.matched) {
       const updated = db
         .prepareOnce(
           `UPDATE meshcom_messages SET
@@ -549,8 +562,6 @@ export function persistMeshcomMessage(
         )
         .run(row);
       if (updated.changes > 0) return { changes: Number(updated.changes) };
-    } else if (existing) {
-      row.msg_id = mintDistinctMeshcomMsgId(db, row.identity_id, row.msg_id, row.timestamp);
     }
   }
   const result = db

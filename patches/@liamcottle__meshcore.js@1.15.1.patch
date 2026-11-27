@@ -364,15 +364,23 @@ index 18f5f3763a278815bc84d9152a904b2dd2191409..05bf7408f1009fd4c88a5f646316c29a
                  }
  
                  // listen for events
-@@ -1951,54 +2037,65 @@ class Connection extends EventEmitter {
+@@ -1951,54 +2037,67 @@ class Connection extends EventEmitter
          });
      }
  
 -    getStats(statsType) {
 +    getStats(statsType, timeoutMs) {
          return new Promise(async (resolve, reject) => {
+-            try {
+-
+-                // resolve promise when we receive stats
+-                const onStats = (response) => {
 +            let settled = false;
 +            let timer = null;
++            // Listeners live in the executor scope. Declaring them inside try makes
++            // finish's this.off(onStats) a ReferenceError, so the promise never settles.
++            let onStats = () => {};
++            let onErr = () => {};
 +            const finish = (fn, value) => {
 +                if (settled) return;
 +                settled = true;
@@ -384,48 +392,48 @@ index 18f5f3763a278815bc84d9152a904b2dd2191409..05bf7408f1009fd4c88a5f646316c29a
 +                this.off(Constants.ResponseCodes.Err, onErr);
 +                fn(value);
 +            };
-+
-             try {
++            // Keep the listener until a Stats frame of this type arrives.
++            // once() removes it on the first Stats event even when the type differs,
++            // and a caller timeout never called off(), so listeners accumulated.
++            onStats = (response) => {
++                if (response.type !== statsType) {
++                    return;
++                }
++                finish(resolve, response);
++            };
++            onErr = () => {
++                finish(reject, undefined);
++            };
  
--                // resolve promise when we receive stats
-+                // Keep the listener until a Stats frame of this type arrives.
-+                // once() removes it on the first Stats event even when the type differs,
-+                // and a caller timeout never called off(), so listeners accumulated.
-                 const onStats = (response) => {
--
 -                    // make sure stats response is for this stats request
 -                    if(response.type !== statsType){
-+                    if (response.type !== statsType) {
-                         return;
-                     }
+-                        return;
+-                    }
 -
 -                    this.off(Constants.ResponseCodes.Stats, onStats);
 -                    this.off(Constants.ResponseCodes.Err, onErr);
 -                    resolve(response);
--
-+                    finish(resolve, response);
-                 }
++            try {
+ 
+-                }
++                this.on(Constants.ResponseCodes.Stats, onStats);
++                this.on(Constants.ResponseCodes.Err, onErr);
  
 -                // reject promise when we receive err
-                 const onErr = () => {
+-                const onErr = () => {
 -                    this.off(Constants.ResponseCodes.Stats, onStats);
 -                    this.off(Constants.ResponseCodes.Err, onErr);
 -                    reject();
-+                    finish(reject, undefined);
++                if (typeof timeoutMs === 'number' && timeoutMs > 0) {
++                    timer = setTimeout(() => {
++                        finish(reject, new Error('MeshCore stats timed out after ' + timeoutMs + 'ms'));
++                    }, timeoutMs);
                  }
  
 -                // listen for events
 -                this.once(Constants.ResponseCodes.Stats, onStats);
 -                this.once(Constants.ResponseCodes.Err, onErr);
-+                this.on(Constants.ResponseCodes.Stats, onStats);
-+                this.on(Constants.ResponseCodes.Err, onErr);
-+
-+                if (typeof timeoutMs === 'number' && timeoutMs > 0) {
-+                    timer = setTimeout(() => {
-+                        finish(reject, new Error('MeshCore stats timed out after ' + timeoutMs + 'ms'));
-+                    }, timeoutMs);
-+                }
- 
+-
 -                // send get stats
                  await this.sendCommandGetStats(statsType);
  
@@ -455,8 +463,7 @@ index 18f5f3763a278815bc84d9152a904b2dd2191409..05bf7408f1009fd4c88a5f646316c29a
      }
  
      sendChannelData(channelIdx, pathLen, path, dataType, payload) {
-
-@@ -2013,10 +2099,10 @@ class Connection extends EventEmitter {
+@@ -2013,10 +2112,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -469,7 +476,7 @@ index 18f5f3763a278815bc84d9152a904b2dd2191409..05bf7408f1009fd4c88a5f646316c29a
                  }
  
                  // listen for events
-@@ -2079,10 +2165,10 @@ class Connection extends EventEmitter {
+@@ -2079,10 +2178,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -482,7 +489,7 @@ index 18f5f3763a278815bc84d9152a904b2dd2191409..05bf7408f1009fd4c88a5f646316c29a
                  }
  
                  // listen for events
-@@ -2318,10 +2404,10 @@ class Connection extends EventEmitter {
+@@ -2318,10 +2417,10 @@ class Connection extends EventEmitter {
                  }
  
                  // reject promise when we receive err
@@ -495,7 +502,7 @@ index 18f5f3763a278815bc84d9152a904b2dd2191409..05bf7408f1009fd4c88a5f646316c29a
                  }
  
                  // listen for events
-@@ -2337,6 +2423,33 @@ class Connection extends EventEmitter {
+@@ -2337,6 +2436,33 @@ class Connection extends EventEmitter {
          });
      }
  

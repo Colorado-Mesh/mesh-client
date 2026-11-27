@@ -30,7 +30,7 @@ export function redactMeshcomCommandArgForLog(command: string): string {
  */
 export function redactMeshcomSecretsInText(text: string): string {
   return text.replace(
-    /(--(?:setpwd|webpwd|btcode|passwd))(\s+)(?!\[redacted\])\S+/gi,
+    /(--(?:setpwd|webpwd|btcode|passwd))(\s+)(?!--(?:setpwd|webpwd|btcode|passwd)\b)(?!\[redacted\])\S+/gi,
     `$1$2${MESHCOM_COMMAND_REDACTED}`,
   );
 }
