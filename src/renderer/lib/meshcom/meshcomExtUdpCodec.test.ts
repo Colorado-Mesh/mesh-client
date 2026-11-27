@@ -39,7 +39,12 @@ describe('meshcomExtUdpCodec', () => {
         snr: 5,
       }),
     );
-    expect(msg).toMatchObject({ type: 'msg', dst: '*', msg: 'hello' });
+    expect(msg).toMatchObject({
+      type: 'msg',
+      src: 'DH1FR-2,OE1ABC-1',
+      dst: '*',
+      msg: 'hello',
+    });
 
     const pos = parseMeshcomExtUdp(
       JSON.stringify({
@@ -54,6 +59,20 @@ describe('meshcomExtUdpCodec', () => {
       }),
     );
     expect(pos).toMatchObject({ type: 'pos', src: 'DH1FR-2', lat: 48.2, long: 16.3 });
+  });
+
+  it('preserves digipeater src paths on inbound msg/pos/tele (#1582)', () => {
+    const path = 'IK5NJM-11,IW5EIA-12';
+    const msg = parseMeshcomExtUdp(
+      JSON.stringify({ type: 'msg', src: path, dst: '*', msg: 'ping' }),
+    );
+    expect(msg).toMatchObject({ type: 'msg', src: path });
+
+    const pos = parseMeshcomExtUdp(JSON.stringify({ type: 'pos', src: path, lat: 43.7 }));
+    expect(pos).toMatchObject({ type: 'pos', src: path });
+
+    const tele = parseMeshcomExtUdp(JSON.stringify({ type: 'tele', src: path, temp: 20 }));
+    expect(tele).toMatchObject({ type: 'tele', src: path });
   });
 
   it('parses inbound tele', () => {

@@ -1,8 +1,11 @@
 /** Soft callsign normalize + stable node-id hash for MeshCom (no hard ITU reject). */
 
 /** Wire length for callsign+SSID (hyphen included); EXTUDP `dst` is tighter (1–9). */
-export const MESHCOM_CALLSIGN_MAX_LEN = 11;
+const MESHCOM_CALLSIGN_MAX_LEN = 11;
 export const MESHCOM_EXTUDP_DST_MAX_LEN = 9;
+
+/** Origin + up to 8 digipeaters (MeshCom protocol digipeater field). */
+export const MESHCOM_SRC_PATH_MAX_CALLS = 9;
 
 /** Permissive soft-warn pattern — does not block Save/Send. */
 const MESHCOM_CALLSIGN_SOFT_PATTERN = /^[A-Z0-9]{1,7}-[0-9]{1,2}$/;
@@ -100,10 +103,22 @@ export function parseMeshcomSrcPath(src: string): MeshcomPathParse {
   const parts = src
     .split(',')
     .map((p) => normalizeMeshcomCallsign(p))
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, MESHCOM_SRC_PATH_MAX_CALLS);
   if (parts.length === 0) {
     return { origin: '', digis: [], hopCount: 0 };
   }
   const [origin, ...digis] = parts;
   return { origin, digis, hopCount: digis.length };
+}
+
+/**
+ * Normalize a comma-separated digipeater `src` path hop-by-hop.
+ * Does not clamp the whole path to {@link MESHCOM_CALLSIGN_MAX_LEN} (that mangled
+ * multi-hop paths into a single bogus callsign — see #1582).
+ */
+export function normalizeMeshcomSrcPath(raw: string): string {
+  const { origin, digis } = parseMeshcomSrcPath(raw);
+  if (!origin) return '';
+  return digis.length > 0 ? [origin, ...digis].join(',') : origin;
 }

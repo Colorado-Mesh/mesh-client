@@ -142,6 +142,7 @@ function isConnectionType(v: unknown): v is ConnectionType {
 export function isValidLastConnectionForHistory(last: LastConnection): boolean {
   if (!isConnectionType(last.type)) return false;
   if (last.httpAddress !== undefined && typeof last.httpAddress !== 'string') return false;
+  if (last.deviceName !== undefined && typeof last.deviceName !== 'string') return false;
   if (last.bleDeviceId !== undefined && typeof last.bleDeviceId !== 'string') return false;
   if (last.bleDeviceName !== undefined && typeof last.bleDeviceName !== 'string') return false;
   if (last.bleMac !== undefined && typeof last.bleMac !== 'string') return false;
@@ -166,6 +167,7 @@ function isStoredSavedConnection(v: unknown): v is SavedConnection {
   if (!isConnectionType(c.type)) return false;
   const optionalStrings = [
     'httpAddress',
+    'deviceName',
     'bleDeviceId',
     'bleDeviceName',
     'bleMac',
@@ -179,6 +181,7 @@ function isStoredSavedConnection(v: unknown): v is SavedConnection {
 function pickLastConnectionFields(conn: LastConnection): LastConnection {
   const next: LastConnection = { type: conn.type };
   if (conn.httpAddress !== undefined) next.httpAddress = conn.httpAddress;
+  if (conn.deviceName !== undefined) next.deviceName = conn.deviceName;
   if (conn.bleDeviceId !== undefined) next.bleDeviceId = conn.bleDeviceId;
   if (conn.bleDeviceName !== undefined) next.bleDeviceName = conn.bleDeviceName;
   if (conn.bleMac !== undefined) next.bleMac = conn.bleMac;
@@ -291,6 +294,9 @@ export function upsertConnectionHistory(
     });
   const nextEntry: SavedConnection = {
     ...fields,
+    // Keep a previously saved radio name when this write has none (panel and recorder
+    // can upsert the same endpoint from different call sites).
+    deviceName: fields.deviceName ?? existing?.deviceName,
     id: existing?.id ?? id,
     lastUsedAt: nowMs,
   };
@@ -304,7 +310,7 @@ export function upsertConnectionHistory(
   });
   const next = [nextEntry, ...rest].slice(0, CONNECTION_HISTORY_MAX);
   if (!persistHistory(protocol, next)) return prev;
-  if (!saveLastConnection(protocol, fields)) {
+  if (!saveLastConnection(protocol, pickLastConnectionFields(nextEntry))) {
     // Roll back history so callers do not treat a partial write as success.
     persistHistory(protocol, prev);
     return null;
@@ -350,7 +356,10 @@ export function deleteConnectionHistory(
 }
 
 /** Clear the entire history list and the lastConnection MRU for the protocol. */
-/** Primary label for a saved/last connection row (BLE name, host:port, or serial path). */
+/**
+ * Transport endpoint label for a saved/last connection row (BLE name, host:port, or serial
+ * path). Saved-devices rows show a stored `deviceName` as the primary label when known.
+ */
 export function savedConnectionPrimaryLabel(conn: LastConnection): string | null {
   if (conn.type === 'ble') {
     const name = conn.bleDeviceName?.trim();
