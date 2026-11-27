@@ -11,6 +11,7 @@
  *
  * Documented coordinate overrides (upstream CSV has known bad rows):
  * - JUH: Chizhou Jiuhuashan Airport → ~30.74, 117.69 (not Mumbai/Borivli)
+ * - HUW: Humaitá Airport → ~-7.53, -63.07 (not UK-ish coords in upstream)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -37,6 +38,12 @@ const COORDINATE_OVERRIDES = {
     city: 'Chizhou',
     lat: 30.74028,
     lon: 117.68667,
+  },
+  HUW: {
+    name: 'Humaita',
+    city: 'Humaitá',
+    lat: -7.53472,
+    lon: -63.07222,
   },
 };
 

@@ -30,8 +30,9 @@ COS,KCOS,City of Colorado Springs Municipal Airport,38.8058,-104.7008,6187,,Amer
 XXX,XXXX,Bad,0,0,,,,XXX,US,,,,AP
 BAD,XBAD,Bad coords,999,0,,,,BAD,US,,,,AP
 AB,KAB,Too short,1,2,,,,AB,US,,,,AP
-BLANK,KBL,Missing lat,,,0,,,,BLANK,US,Blank,,AP
+ZZZ,KZZ,Blank lat only,,-104.0,0,,,,ZZZ,US,Blank,,AP
 JUH,ZSJH,Chizhou Jiuhuashan Airport,19.222221,72.84722,60,,Asia/Shanghai,JUH,CN,Borivli,Maharashtra,Mumbai Suburban,AP
+HUW,SWHT,Humaita,53.583447,-0.348669,230,,America/Manaus,HUW,BR,,,,AP
 `;
 
   it('keeps valid 3-letter airports with finite coords', () => {
@@ -54,7 +55,7 @@ JUH,ZSJH,Chizhou Jiuhuashan Airport,19.222221,72.84722,60,,Asia/Shanghai,JUH,CN,
 
   it('rejects blank latitude/longitude before Number coercion', () => {
     const rows = parseIataAirportsCsv(csv);
-    expect(rows.find((r) => r[0] === 'BLANK')).toBeUndefined();
+    expect(rows.find((r) => r[0] === 'ZZZ')).toBeUndefined();
   });
 
   it('applies the documented JUH coordinate override', () => {
@@ -65,6 +66,17 @@ JUH,ZSJH,Chizhou Jiuhuashan Airport,19.222221,72.84722,60,,Asia/Shanghai,JUH,CN,
       'Chizhou',
       30.74028,
       117.68667,
+    ]);
+  });
+
+  it('applies the documented HUW coordinate override', () => {
+    const rows = parseIataAirportsCsv(csv);
+    expect(rows.find((r) => r[0] === 'HUW')).toEqual([
+      'HUW',
+      'Humaita',
+      'Humaitá',
+      -7.53472,
+      -63.07222,
     ]);
   });
 });

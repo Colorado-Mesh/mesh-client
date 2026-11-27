@@ -13,7 +13,7 @@ import {
   readStoredMeshcoreMqttPreset,
 } from './meshcoreMqttPresets';
 import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
-import { parseMeshcoreIataTopicPrefix } from './meshcoreMqttTopicPrefix';
+import { isIataScopedMeshcoreMqtt, parseMeshcoreIataTopicPrefix } from './meshcoreMqttTopicPrefix';
 import { parseStoredJson } from './parseStoredJson';
 import {
   getCachedSecureSecret,
@@ -86,13 +86,19 @@ function migrateMeshcoreTopicIataOnce(): void {
   const raw = localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY);
   if (raw) {
     const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'migrateMeshcoreTopicIataOnce');
-    // Bare `meshcore` is not a valid IATA area — clear so the picklist can require a choice.
+    // Bare `meshcore` is not a valid IATA area on device-signing brokers — clear so the
+    // picklist can require a choice. Non-IATA / Custom brokers keep `meshcore` as the root.
     // Preserve prefixes that already contain a valid area (e.g. meshcore/DEN).
     if (parsed?.topicPrefix === 'meshcore') {
-      localStorage.setItem(
-        MESHCORE_MQTT_SETTINGS_KEY,
-        JSON.stringify({ ...parsed, topicPrefix: '' }),
-      );
+      // MESHCORE_MQTT_PRESET_STORAGE_KEY via readStoredMeshcoreMqttPreset + server host.
+      const preset = readStoredMeshcoreMqttPreset();
+      const server = typeof parsed.server === 'string' ? parsed.server : '';
+      if (isIataScopedMeshcoreMqtt(preset, { server })) {
+        localStorage.setItem(
+          MESHCORE_MQTT_SETTINGS_KEY,
+          JSON.stringify({ ...parsed, topicPrefix: '' }),
+        );
+      }
     }
   }
   localStorage.setItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY, '1');

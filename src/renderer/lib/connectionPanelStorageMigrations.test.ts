@@ -134,7 +134,23 @@ describe('runConnectionPanelStorageMigrations', () => {
     expect(localStorage.getItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY)).toBe('1');
   });
 
-  it('clears bare meshcore topicPrefix for non-Colorado hosts too', () => {
+  it('clears bare meshcore topicPrefix for other IATA-scoped hosts', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({ server: LETSMESH_HOST_US, topicPrefix: 'meshcore', port: 443 }),
+    );
+
+    runConnectionPanelStorageMigrations();
+
+    const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
+      topicPrefix?: string;
+    };
+    expect(parsed.topicPrefix).toBe('');
+  });
+
+  it('retains bare meshcore topicPrefix for non-IATA custom brokers', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
     localStorage.setItem(
       MESHCORE_MQTT_SETTINGS_KEY,
       JSON.stringify({ server: 'mqtt.example.com', topicPrefix: 'meshcore', port: 1883 }),
@@ -145,7 +161,7 @@ describe('runConnectionPanelStorageMigrations', () => {
     const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
       topicPrefix?: string;
     };
-    expect(parsed.topicPrefix).toBe('');
+    expect(parsed.topicPrefix).toBe('meshcore');
   });
 
   it('preserves an already-valid IATA area prefix during the bare-prefix migration', () => {
