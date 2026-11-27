@@ -5,7 +5,8 @@
  * with a system side column (iPhone Duo outer display, Duo Split View) it stands upright in that
  * column with the tabs at the bottom, where Apple's iPhone Duo guidelines put tab bars, instead of
  * taking a strip off the bottom of an already narrow screen. `mobileShell.css` positions it from
- * the `--mobile-side-column-*` geometry and hides it while the keyboard is up.
+ * the `--mobile-side-column-*` geometry. In both modes the navigation steps aside while the
+ * keyboard is up, so a composer or search field gets the screen's height.
  */
 import {
   BottomNav as DesktopBottomNav,
@@ -18,6 +19,9 @@ export * from '@/renderer/components/shell/BottomNav';
 
 export function BottomNav(props: BottomNavProps) {
   const { sideColumn } = useMobileViewport();
+  // No wrapper in bar mode: a `display: contents` wrapper drops the bar's buttons from the
+  // Android WebView accessibility tree (TalkBack). mobileShell.css finds the bar by its More
+  // button instead.
   if (!sideColumn) return <DesktopBottomNav {...props} />;
   return (
     <div data-mobile-side-nav={sideColumn.edge}>

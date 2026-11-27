@@ -18,6 +18,7 @@ import {
   type ScreenRect,
   setMobileViewport,
 } from '../platform/mobileViewport';
+import { createKeyboardFocusGuard } from './keyboardFocusGuard';
 
 interface NativeFold {
   /** Bounds in CSS px (native divides by density). */
@@ -165,6 +166,12 @@ export function installMobileViewport(): void {
   window.addEventListener('orientationchange', schedule);
   window.visualViewport?.addEventListener('resize', schedule);
   window.visualViewport?.addEventListener('scroll', schedule);
+  const keyboard = getPlugin('Keyboard') as unknown as { hide?: () => Promise<void> };
+  const focusGuard = createKeyboardFocusGuard(() => {
+    void keyboard.hide?.().catch((e: unknown) => {
+      console.debug('[mobile] keyboard hide failed', e);
+    });
+  });
   for (const [event, open] of [
     ['keyboardWillShow', true],
     ['keyboardDidShow', true],
@@ -173,6 +180,7 @@ export function installMobileViewport(): void {
   ] as const) {
     void listenPlugin('Keyboard', event, () => {
       nativeKeyboardOpen = open;
+      focusGuard.setKeyboardOpen(open);
       schedule();
     }).catch((e: unknown) => {
       console.debug('[mobile] keyboard listener unavailable', e);

@@ -193,8 +193,14 @@ html[data-mesh-mobile] [data-mobile-side-nav] > nav > button {
   width: 100%;
 }
 
-/* Typing: the keyboard needs the column's height; navigation returns when it closes. */
-html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav] {
+/*
+ * Typing: the keyboard needs the height; navigation returns when it closes. The bar is the shell's
+ * nav that holds the More button (BottomNav), found with :has() so no wrapper element is needed.
+ */
+html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav],
+html[data-mesh-mobile][data-mobile-keyboard='open']
+  [data-app-shell]
+  > nav:has(> [data-nav-section='more']) {
   display: none;
 }
 
