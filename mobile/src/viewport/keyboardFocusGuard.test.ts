@@ -1,14 +1,20 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createKeyboardFocusGuard, isEditable } from './keyboardFocusGuard';
+import { createKeyboardFocusGuard, isEditable, SETTLE_MS } from './keyboardFocusGuard';
+
+beforeEach(() => {
+  vi.useFakeTimers();
+});
 
 afterEach(() => {
   document.body.innerHTML = '';
   vi.useRealTimers();
 });
 
-async function settle() {
-  await new Promise((r) => setTimeout(r, 5));
+/** Let MutationObserver callbacks (microtasks) run, then advance the guard's timer. */
+async function advance(ms: number) {
+  await Promise.resolve();
+  await vi.advanceTimersByTimeAsync(ms);
 }
 
 describe('isEditable', () => {
@@ -29,7 +35,7 @@ describe('isEditable', () => {
 });
 
 describe('keyboard focus guard', () => {
-  it('hides the keyboard when the focused field is removed (sheet closed after a pick)', async () => {
+  it('hides the keyboard when the focused field is removed and nothing else takes focus', async () => {
     const hide = vi.fn();
     const guard = createKeyboardFocusGuard(hide);
     const search = document.createElement('input');
@@ -37,8 +43,27 @@ describe('keyboard focus guard', () => {
     search.focus();
     guard.setKeyboardOpen(true);
     search.remove(); // focus falls back to <body> without a blur event in Chromium
-    await settle();
+    await advance(SETTLE_MS - 1);
+    expect(hide).not.toHaveBeenCalled();
+    await advance(1);
     expect(hide).toHaveBeenCalledTimes(1);
+    guard.dispose();
+  });
+
+  it('keeps the keyboard when a field takes focus shortly after (search result opens a setting)', async () => {
+    const hide = vi.fn();
+    const guard = createKeyboardFocusGuard(hide);
+    const search = document.createElement('input');
+    document.body.append(search);
+    search.focus();
+    guard.setKeyboardOpen(true);
+    search.remove();
+    await advance(100);
+    const setting = document.createElement('input');
+    document.body.append(setting);
+    setting.focus();
+    await advance(SETTLE_MS);
+    expect(hide).not.toHaveBeenCalled();
     guard.dispose();
   });
 
@@ -51,7 +76,7 @@ describe('keyboard focus guard', () => {
     a.focus();
     guard.setKeyboardOpen(true);
     b.focus();
-    await settle();
+    await advance(SETTLE_MS);
     expect(hide).not.toHaveBeenCalled();
     guard.dispose();
   });
@@ -63,7 +88,7 @@ describe('keyboard focus guard', () => {
     document.body.append(a);
     a.focus();
     a.remove();
-    await settle();
+    await advance(SETTLE_MS);
     expect(hide).not.toHaveBeenCalled();
     guard.dispose();
   });

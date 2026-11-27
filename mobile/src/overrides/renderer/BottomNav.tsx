@@ -19,9 +19,8 @@ export * from '@/renderer/components/shell/BottomNav';
 
 export function BottomNav(props: BottomNavProps) {
   const { sideColumn } = useMobileViewport();
-  // No wrapper in bar mode: a `display: contents` wrapper drops the bar's buttons from the
-  // Android WebView accessibility tree (TalkBack). mobileShell.css finds the bar by its More
-  // button instead.
+  // No wrapper in bar mode, so the bar's markup is exactly the desktop one; mobileShell.css finds
+  // the bar by its More button.
   if (!sideColumn) return <DesktopBottomNav {...props} />;
   return (
     <div data-mobile-side-nav={sideColumn.edge}>

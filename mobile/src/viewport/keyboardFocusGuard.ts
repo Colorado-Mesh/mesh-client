@@ -17,6 +17,9 @@ export function isEditable(el: Element | null): boolean {
   return el instanceof HTMLElement && el.isContentEditable;
 }
 
+/** How long focus may take to land on a new field before the keyboard is hidden. */
+export const SETTLE_MS = 250;
+
 export interface KeyboardFocusGuard {
   /** The native keyboard opened (start watching) or closed (stop). */
   setKeyboardOpen(open: boolean): void;
@@ -30,12 +33,14 @@ export function createKeyboardFocusGuard(hideKeyboard: () => void): KeyboardFocu
     pending = false;
     if (open && !isEditable(document.activeElement)) hideKeyboard();
   };
-  // Focus can move to another field in the same task (Tab, a new input autofocusing), so look
-  // once the current task has settled.
+  // Focus often lands on the next field a moment later (a settings search result scrolls to its
+  // setting, then focuses it); checking at once hid the keyboard and Android raised it again 5 ms
+  // later. One check per burst, a fixed delay after the first change, so a stream of DOM updates
+  // cannot postpone it.
   const schedule = () => {
     if (pending || !open) return;
     pending = true;
-    setTimeout(check, 0);
+    setTimeout(check, SETTLE_MS);
   };
   const observer = new MutationObserver(schedule);
   const onFocusOut = () => {
