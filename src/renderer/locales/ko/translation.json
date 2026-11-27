@@ -540,7 +540,8 @@
     "meshcomWatchlistHeading": "MeshCom 호출 부호 감시 목록",
     "verboseLogging": "로그에 디버그 및 정보 포함",
     "verboseLoggingDesc": "내보내기 파일 크기가 작게 유지되도록 기본적으로 꺼져 있습니다. 기능을 켠 후 문제를 재현한 다음 GitHub용으로 내보내세요. 문제를 신고할 때 로그에 있는 mcL#### 코드를 모두 인용하세요.",
-    "verboseLoggingSupportHint": "재현하기 어려운 버그의 경우, 앱 → 로그 패널에서 '로그 파일에 디버그 및 정보 기록'을 켜고 문제를 재현한 다음 '내보내기'를 선택하세요. 지원 내보내기에는 항상 디스크의 전체 로그가 포함됩니다. 문제를 신고할 때 mcL#### 코드를 인용하세요."
+    "verboseLoggingSupportHint": "재현하기 어려운 버그의 경우, 앱 → 로그 패널에서 '로그 파일에 디버그 및 정보 기록'을 켜고 문제를 재현한 다음 '내보내기'를 선택하세요. 지원 내보내기에는 항상 디스크의 전체 로그가 포함됩니다. 문제를 신고할 때 mcL#### 코드를 인용하세요.",
+    "reachCheckSection": "도달 범위 확인"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -9342,5 +9343,12 @@
     "tourLastHint": "앱 > 프로토콜에서 언제든지 프로토콜을 변경할 수 있습니다.",
     "next": "다음",
     "done": "완료"
+  },
+  "reachCheck": {
+    "serverLabel": "연결 확인 서버",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "모든 Mesh Health Check 서버. 커뮤니티에 주소를 문의하세요.",
+    "serverInvalid": "https:// 주소를 입력하세요.",
+    "serverNotPublic": "서버의 공인 인터넷 주소를 사용합니다."
   }
 }

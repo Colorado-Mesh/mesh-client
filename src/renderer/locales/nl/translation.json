@@ -540,7 +540,8 @@
     "meshcomWatchlistHeading": "Watchlist voor MeshCom-roepnamen",
     "verboseLogging": "Debug- en infogegevens opnemen in logboeken",
     "verboseLoggingDesc": "Standaard uitgeschakeld, zodat exporten klein blijven. Schakel in, reproduceer het probleem en exporteer vervolgens voor GitHub. Vermeld eventuele mcL####-codes uit het logboek wanneer u een probleem meldt.",
-    "verboseLoggingSupportHint": "Voor moeilijk te reproduceren bugs schakelt u Debuggen en informatie naar het logbestand schrijven in onder App → Logvenster, reproduceert u het probleem en vervolgens Exporteren. Supportexports bevatten altijd het volledige logbestand op de schijf. Vermeld eventuele mcL####-codes wanneer u een probleem meldt."
+    "verboseLoggingSupportHint": "Voor moeilijk te reproduceren bugs schakelt u Debuggen en informatie naar het logbestand schrijven in onder App → Logvenster, reproduceert u het probleem en vervolgens Exporteren. Supportexports bevatten altijd het volledige logbestand op de schijf. Vermeld eventuele mcL####-codes wanneer u een probleem meldt.",
+    "reachCheckSection": "Reikwijdtecontrole"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -9342,5 +9343,12 @@
     "tourLastHint": "Je kunt protocollen op elk moment wijzigen in App > Protocollen.",
     "next": "Volgende",
     "done": "Klaar"
+  },
+  "reachCheck": {
+    "serverLabel": "Server voor bereikcontrole",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "Elke Mesh Health Check-server. Vraag uw community om het adres.",
+    "serverInvalid": "Voer een https://-adres in.",
+    "serverNotPublic": "Gebruik het openbare internetadres van de server."
   }
 }

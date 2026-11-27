@@ -164,6 +164,7 @@
     "title": "App Settings",
     "logPanelSection": "Log panel",
     "floodAdvertSection": "Flood Advert",
+    "reachCheckSection": "Reach check",
     "floodAdvertScheduleLabel": "Automatically send a flood advert on a schedule:",
     "floodAdvertEvery12h": "Every 12 hours",
     "floodAdvertEvery24h": "Every 24 hours",
@@ -6292,6 +6293,13 @@
     },
     "floodScopeDiscoverStale": "Last discovered {{when}}",
     "floodScopeDiscoverError": "Region discovery failed. Try again or check the Repeaters tab."
+  },
+  "reachCheck": {
+    "serverLabel": "Reach check server",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "Any Mesh Health Check server. Ask your community for its address.",
+    "serverInvalid": "Enter an https:// address.",
+    "serverNotPublic": "Use the server's public internet address."
   },
   "rawPacketLog": {
     "filterPackets": "Filter packets",

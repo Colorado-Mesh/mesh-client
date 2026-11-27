@@ -540,7 +540,8 @@
     "meshcomWatchlistHeading": "Elenco di controllo dei nominativi MeshCom",
     "verboseLogging": "Includi debug e informazioni nei registri",
     "verboseLoggingDesc": "Disattivata per impostazione predefinita, in modo che le esportazioni rimangano di dimensioni ridotte. Attiva, riproduci il problema, quindi esporta per GitHub. Quando segnali un problema, cita tutti i codici mcL#### presenti nel registro.",
-    "verboseLoggingSupportHint": "Per i bug difficili da riprodurre, attiva l'opzione Scrivi debug e informazioni nel file di registro nel pannello App → Registro, riproduci il problema, quindi seleziona Esporta. Le esportazioni di assistenza includono sempre il registro completo su disco. Quando segnali un problema, riporta tutti i codici mcL####."
+    "verboseLoggingSupportHint": "Per i bug difficili da riprodurre, attiva l'opzione Scrivi debug e informazioni nel file di registro nel pannello App → Registro, riproduci il problema, quindi seleziona Esporta. Le esportazioni di assistenza includono sempre il registro completo su disco. Quando segnali un problema, riporta tutti i codici mcL####.",
+    "reachCheckSection": "Controllo della portata"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -9342,5 +9343,12 @@
     "tourLastHint": "Puoi modificare i protocolli in qualsiasi momento in App > Protocolli.",
     "next": "Avanti",
     "done": "Fine"
+  },
+  "reachCheck": {
+    "serverLabel": "Server di verifica della portata",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "Qualsiasi server di controllo dello stato della mesh. Chiedi alla tua community il suo indirizzo.",
+    "serverInvalid": "Inserisci un indirizzo https://.",
+    "serverNotPublic": "Utilizzare l'indirizzo Internet pubblico del server."
   }
 }

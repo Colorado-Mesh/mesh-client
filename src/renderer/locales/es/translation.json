@@ -540,7 +540,8 @@
     "meshcomWatchlistHeading": "Lista de seguimiento de indicativos de MeshCom",
     "verboseLogging": "Incluir depuración e información en los registros",
     "verboseLoggingDesc": "Desactivado de forma predeterminada para que las exportaciones sigan siendo pequeñas. Actívela, reproduzca el problema y, a continuación, exporte para GitHub. Indique cualquier código mcL#### del registro al comunicar un problema.",
-    "verboseLoggingSupportHint": "Para los errores difíciles de reproducir, active «Escribir depuración e información en el archivo de registro» en «Aplicación» → «Panel de registro», reproduzca el problema y, a continuación, «Exportar». Las exportaciones de asistencia siempre incluyen el registro completo en el disco. Indique cualquier código mcL#### cuando informe de un problema."
+    "verboseLoggingSupportHint": "Para los errores difíciles de reproducir, active «Escribir depuración e información en el archivo de registro» en «Aplicación» → «Panel de registro», reproduzca el problema y, a continuación, «Exportar». Las exportaciones de asistencia siempre incluyen el registro completo en el disco. Indique cualquier código mcL#### cuando informe de un problema.",
+    "reachCheckSection": "Comprobación del alcance"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -9342,5 +9343,12 @@
     "tourLastHint": "Puedes cambiar los protocolos en cualquier momento en Aplicación > Protocolos.",
     "next": "Siguiente",
     "done": "Terminado"
+  },
+  "reachCheck": {
+    "serverLabel": "Servidor de comprobación de alcance",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "Cualquier servidor de comprobación del estado de la malla. Pregunte a su comunidad cuál es su dirección.",
+    "serverInvalid": "Introduce una dirección https://.",
+    "serverNotPublic": "Utilizar la dirección de Internet pública del servidor."
   }
 }

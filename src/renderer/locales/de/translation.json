@@ -540,7 +540,8 @@
     "meshcomWatchlistHeading": "MeshCom-Rufzeichen-Beobachtungsliste",
     "verboseLogging": "Debugging- und Info-Daten in Protokolle aufnehmen",
     "verboseLoggingDesc": "Standardmäßig deaktiviert, damit die Exporte klein bleiben. Aktivieren Sie die Option, reproduzieren Sie das Problem und exportieren Sie dann für GitHub. Geben Sie beim Melden eines Problems alle mcL####-Codes aus dem Protokoll an.",
-    "verboseLoggingSupportHint": "Bei schwer zu reproduzierenden Fehlern aktivieren Sie unter App → Protokoll-Panel die Option „Debug- und Info-Daten in die Protokolldatei schreiben“, reproduzieren Sie das Problem und klicken Sie dann auf „Exportieren“. Support-Exporte enthalten immer das vollständige Protokoll auf dem Datenträger. Geben Sie alle mcL####-Codes an, wenn Sie ein Problem melden."
+    "verboseLoggingSupportHint": "Bei schwer zu reproduzierenden Fehlern aktivieren Sie unter App → Protokoll-Panel die Option „Debug- und Info-Daten in die Protokolldatei schreiben“, reproduzieren Sie das Problem und klicken Sie dann auf „Exportieren“. Support-Exporte enthalten immer das vollständige Protokoll auf dem Datenträger. Geben Sie alle mcL####-Codes an, wenn Sie ein Problem melden.",
+    "reachCheckSection": "Reichweitenprüfung"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -9342,5 +9343,12 @@
     "tourLastHint": "Sie können die Protokolle jederzeit unter App > Protokolle ändern.",
     "next": "Weiter",
     "done": "Erledigt"
+  },
+  "reachCheck": {
+    "serverLabel": "Server zur Erreichbarkeitsprüfung",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "Ein beliebiger Mesh-Health-Check-Server. Fragen Sie Ihre Community nach ihrer Adresse.",
+    "serverInvalid": "Geben Sie eine https://-Adresse ein.",
+    "serverNotPublic": "Verwenden Sie die öffentliche Internetadresse des Servers."
   }
 }

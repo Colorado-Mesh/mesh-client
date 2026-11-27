@@ -556,7 +556,8 @@
     "meshcomWatchlistHeading": "Lista obserwowanych sygnałów wywoławczych MeshCom",
     "verboseLogging": "Uwzględnij w dziennikach informacje debugowania i inne informacje",
     "verboseLoggingDesc": "Domyślnie wyłączone, aby eksporty pozostawały niewielkie. Włącz, odtwórz problem, a następnie wyeksportuj dla GitHub. Podczas zgłaszania problemu podaj wszelkie kody mcL#### z dziennika.",
-    "verboseLoggingSupportHint": "W przypadku błędów, które trudno odtworzyć, włącz opcję Zapisuj informacje debugowania i inne informacje w pliku dziennika w sekcji Aplikacja → Panel dziennika, odtwórz problem, a następnie wybierz Eksportuj. Eksporty pomocy technicznej zawsze zawierają pełny dziennik na dysku. Podczas zgłaszania problemu podaj wszelkie kody mcL####."
+    "verboseLoggingSupportHint": "W przypadku błędów, które trudno odtworzyć, włącz opcję Zapisuj informacje debugowania i inne informacje w pliku dziennika w sekcji Aplikacja → Panel dziennika, odtwórz problem, a następnie wybierz Eksportuj. Eksporty pomocy technicznej zawsze zawierają pełny dziennik na dysku. Podczas zgłaszania problemu podaj wszelkie kody mcL####.",
+    "reachCheckSection": "Kontrola zasięgu"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -9486,5 +9487,12 @@
     "tourLastHint": "Protokoły można zmieniać w dowolnym momencie w sekcji Aplikacja > Protokoły.",
     "next": "Dalej",
     "done": "Gotowe"
+  },
+  "reachCheck": {
+    "serverLabel": "Serwer kontroli zasięgu",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "Dowolny serwer kontroli stanu sieci Mesh. Zapytaj swoją społeczność o jej adres.",
+    "serverInvalid": "Wprowadź adres https://.",
+    "serverNotPublic": "Użyj publicznego adresu internetowego serwera."
   }
 }

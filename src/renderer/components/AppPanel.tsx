@@ -106,6 +106,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshComCallsignWatchlistSettings } from './MeshComCallsignWatchlistSettings';
 import NotificationSoundSettings from './NotificationSoundSettings';
+import ReachCheckServerField from './ReachCheckServerField';
 import SavedLocationsSection from './SavedLocationsSection';
 import { ThemePicker } from './ThemePicker';
 import { useToast } from './Toast';
@@ -220,6 +221,7 @@ interface AppSettings {
   /** App → Window: keep the computer awake while connected. */
   preventSleepWhileConnected: 'off' | 'rf' | 'always';
   meshcoreOpenWireCompatEnabled: boolean;
+  meshcoreReachCheckServerUrl: string;
   meshcorePathHashMode: 0 | 1 | 2;
   rrcUnreadAllRoomMessages: boolean;
   mecpComposeEnabled: boolean;
@@ -431,8 +433,13 @@ export default function AppPanel({
     };
   }, [t]);
 
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasReticulumInterfaceConfig, hasRrcPanel } =
-    useRadioProvider(protocol);
+  const {
+    nodeStaleThresholdMs,
+    nodeOfflineThresholdMs,
+    hasReticulumInterfaceConfig,
+    hasRrcPanel,
+    hasCompanionContactManagementConfig,
+  } = useRadioProvider(protocol);
   const isReticulumDmOnly = hasReticulumInterfaceConfig;
 
   // ─── Node retention settings ────────────────────────────────
@@ -1133,6 +1140,21 @@ export default function AppPanel({
               <option value="flood">{t('appPanel.floodAdvertTypeFlood')}</option>
               <option value="zeroHop">{t('appPanel.floodAdvertTypeZeroHop')}</option>
             </select>
+          </div>
+        </SettingsCollapsible>
+      )}
+
+      {/* Reach check server (MeshCore companion: the observers are MeshCore MQTT feeds) */}
+      {hasCompanionContactManagementConfig && (
+        <SettingsCollapsible title={t('appPanel.reachCheckSection')}>
+          <div data-setting-anchor="app.reachCheck.server">
+            <ReachCheckServerField
+              id="app-reach-check-server"
+              value={settings.meshcoreReachCheckServerUrl}
+              onCommit={(origin) => {
+                updateSetting('meshcoreReachCheckServerUrl', origin);
+              }}
+            />
           </div>
         </SettingsCollapsible>
       )}

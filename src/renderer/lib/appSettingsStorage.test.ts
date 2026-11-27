@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   APP_SETTINGS_STORAGE_KEY,
   getAppSettingsRaw,
+  getMeshcoreReachCheckServerUrl,
   getOperationalAlertSettings,
   isReticulumAutoResendOnAnnounceEnabled,
   isRrcUnreadAllRoomMessagesEnabled,
@@ -12,6 +13,7 @@ import {
   mergeAppSettingsPartial,
   migrateLegacyAppSettingsIfNeeded,
   setAppSettingsRaw,
+  setMeshcoreReachCheckServerUrl,
   setReticulumAutoResendOnAnnounceEnabled,
 } from './appSettingsStorage';
 import { canTransmitLocation } from './locationTransmit';
@@ -168,6 +170,35 @@ describe('appSettingsStorage', () => {
     setAppSettingsRaw(JSON.stringify({ fresh: 2 }));
     expect(JSON.parse(getAppSettingsRaw() ?? '{}')).toEqual({ fresh: 2 });
     expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+  });
+});
+
+describe('MeshCore reach check server address', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('is blank by default', () => {
+    expect(getMeshcoreReachCheckServerUrl()).toBe('');
+  });
+
+  it('stores and returns the saved origin', () => {
+    setMeshcoreReachCheckServerUrl('https://rangecheck.example.org');
+    expect(getMeshcoreReachCheckServerUrl()).toBe('https://rangecheck.example.org');
+    expect(JSON.parse(getAppSettingsRaw() ?? '{}')).toMatchObject({
+      meshcoreReachCheckServerUrl: 'https://rangecheck.example.org',
+    });
+  });
+
+  it('clears the address with an empty string', () => {
+    setMeshcoreReachCheckServerUrl('https://rangecheck.example.org');
+    setMeshcoreReachCheckServerUrl('');
+    expect(getMeshcoreReachCheckServerUrl()).toBe('');
+  });
+
+  it('reads a stored value that is not a string as blank', () => {
+    mergeAppSetting('meshcoreReachCheckServerUrl', 42, 'test');
+    expect(getMeshcoreReachCheckServerUrl()).toBe('');
   });
 });
 

@@ -540,7 +540,8 @@
     "meshcomWatchlistHeading": "MeshCom呼号观察名单",
     "verboseLogging": "在日志中包含调试信息和一般信息",
     "verboseLoggingDesc": "默认情况下处于关闭状态，因此导出文件保持较小。开启，重现问题，然后导出为GitHub。提交问题时，请引用日志中的任何 mcL#### 代码。",
-    "verboseLoggingSupportHint": "对于难以重现的错误，请在“应用”→“日志”面板下启用“将调试和信息写入日志文件”，重现问题，然后“导出”。支持导出始终包含完整的磁盘日志。在提交问题时，请引用所有 mcL#### 代码。"
+    "verboseLoggingSupportHint": "对于难以重现的错误，请在“应用”→“日志”面板下启用“将调试和信息写入日志文件”，重现问题，然后“导出”。支持导出始终包含完整的磁盘日志。在提交问题时，请引用所有 mcL#### 代码。",
+    "reachCheckSection": "触及范围检查"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -9342,5 +9343,12 @@
     "tourLastHint": "您可以随时在“应用”>“协议”中更改协议。",
     "next": "下一頁",
     "done": "完成"
+  },
+  "reachCheck": {
+    "serverLabel": "访问检查服务器",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "任何网格健康检查服务器。向您的社区询问其地址。",
+    "serverInvalid": "请输入 https:// 地址。",
+    "serverNotPublic": "使用服务器的公用互联网地址。"
   }
 }

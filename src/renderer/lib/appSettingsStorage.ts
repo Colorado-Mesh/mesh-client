@@ -57,6 +57,23 @@ export function isMeshcoreOpenWireCompatEnabled(): boolean {
   );
 }
 
+/** Saved MeshCore reach check server origin, or `''` when none is set. */
+export function getMeshcoreReachCheckServerUrl(): string {
+  const parsed = parseStoredJson<{ meshcoreReachCheckServerUrl?: unknown }>(
+    getAppSettingsRaw(),
+    'getMeshcoreReachCheckServerUrl',
+  );
+  const value = parsed?.meshcoreReachCheckServerUrl;
+  return typeof value === 'string'
+    ? value
+    : DEFAULT_APP_SETTINGS_SHARED.meshcoreReachCheckServerUrl;
+}
+
+/** Saves an origin already checked with `normalizeReachCheckOrigin`, or `''` to clear it. */
+export function setMeshcoreReachCheckServerUrl(origin: string): void {
+  mergeAppSetting('meshcoreReachCheckServerUrl', origin, 'setMeshcoreReachCheckServerUrl');
+}
+
 export type StoreForwardHistoryProfile = 'conservative' | 'aggressive';
 
 /** Store & Forward auto-history aggressiveness profile. */

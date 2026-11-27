@@ -540,7 +540,8 @@
     "meshcomWatchlistHeading": "Liste de surveillance des indicatifs d’appel MeshCom",
     "verboseLogging": "Inclure le débogage et les informations dans les journaux",
     "verboseLoggingDesc": "Désactivé par défaut afin que les exportations restent de petite taille. Activez, reproduisez le problème, puis exportez pour GitHub. Indiquez tous les codes mcL#### du journal lorsque vous signalez un problème.",
-    "verboseLoggingSupportHint": "Pour les bugs difficiles à reproduire, activez l'option Écrire le débogage et les informations dans le fichier journal sous Application → Panneau Journal, reproduisez le problème, puis cliquez sur Exporter. Les exportations d'assistance incluent toujours le journal complet sur le disque. Indiquez tous les codes mcL#### lorsque vous signalez un problème."
+    "verboseLoggingSupportHint": "Pour les bugs difficiles à reproduire, activez l'option Écrire le débogage et les informations dans le fichier journal sous Application → Panneau Journal, reproduisez le problème, puis cliquez sur Exporter. Les exportations d'assistance incluent toujours le journal complet sur le disque. Indiquez tous les codes mcL#### lorsque vous signalez un problème.",
+    "reachCheckSection": "Vérification de la portée"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -9342,5 +9343,12 @@
     "tourLastHint": "Vous pouvez modifier les protocoles à tout moment dans Application > Protocoles.",
     "next": "Suivant",
     "done": "Effectué"
+  },
+  "reachCheck": {
+    "serverLabel": "Serveur de vérification de portée",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "N’importe quel serveur de vérification de l’état du maillage. Demandez à votre communauté son adresse.",
+    "serverInvalid": "Saisissez une adresse https://.",
+    "serverNotPublic": "Utilisez l'adresse Internet publique du serveur."
   }
 }

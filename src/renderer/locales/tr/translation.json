@@ -540,7 +540,8 @@
     "meshcomWatchlistHeading": "MeshCom çağrı işareti izleme listesi",
     "verboseLogging": "Günlüklere hata ayıklama ve bilgi ekleyin",
     "verboseLoggingDesc": "Varsayılan olarak kapalıdır, böylece dışa aktarımlar küçük kalır. Açın, sorunu yeniden oluşturun, ardından GitHub için dışa aktarın. Bir sorun bildirirken günlükten herhangi bir mcL#### kodunu belirtin.",
-    "verboseLoggingSupportHint": "Yeniden oluşturulması zor hatalar için Uygulama → Günlük paneli altında Günlük dosyasına hata ayıklama ve bilgi yaz seçeneğini açın, sorunu yeniden oluşturun ve ardından Dışa aktar seçeneğini kullanın. Destek dışa aktarımları her zaman diske kaydedilen günlüğün tamamını içerir. Bir sorun bildirirken mcL#### kodlarını belirtin."
+    "verboseLoggingSupportHint": "Yeniden oluşturulması zor hatalar için Uygulama → Günlük paneli altında Günlük dosyasına hata ayıklama ve bilgi yaz seçeneğini açın, sorunu yeniden oluşturun ve ardından Dışa aktar seçeneğini kullanın. Destek dışa aktarımları her zaman diske kaydedilen günlüğün tamamını içerir. Bir sorun bildirirken mcL#### kodlarını belirtin.",
+    "reachCheckSection": "Erişim kontrolü"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -9342,5 +9343,12 @@
     "tourLastHint": "Protokolleri istediğiniz zaman Uygulama > Protokoller bölümünden değiştirebilirsiniz.",
     "next": "İleri",
     "done": "Bitti"
+  },
+  "reachCheck": {
+    "serverLabel": "Erişim kontrolü sunucusu",
+    "serverPlaceholder": "https://healthcheck.example.org",
+    "serverHelp": "Herhangi bir Mesh Sağlık Kontrolü sunucusu. Topluluğunuza adresini sorun.",
+    "serverInvalid": "Bir https:// adresi girin.",
+    "serverNotPublic": "Sunucunun genel internet adresini kullanın."
   }
 }
