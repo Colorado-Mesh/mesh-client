@@ -34,6 +34,7 @@ import {
 import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { isLoraSenderBlocked } from '../loraBlocklist';
+import { meshcomIncomingStoreId } from '../meshcom/meshcomMessageId';
 import { noteMeshcomNetworkTimeFromText } from '../meshcom/meshcomNetworkTime';
 import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import { nextMeshcoreMessageLocalOrder } from '../meshcoreMessageOrder';
@@ -485,6 +486,17 @@ class PacketRouter {
     identityId: IdentityId,
   ): void {
     const protocolType = getIdentity(identityId)?.protocol.type;
+    if (protocolType === 'meshcom') {
+      const bucket = useMessageStore.getState().messages[identityId] ?? {};
+      const nextId = meshcomIncomingStoreId(bucket, {
+        id: event.payload.id,
+        from: event.payload.from,
+        payload: event.payload.payload,
+        channelIndex: event.payload.channelIndex,
+        timestamp: event.payload.timestamp,
+      });
+      if (nextId !== event.payload.id) event.payload.id = nextId;
+    }
     const senderName = resolveMeshtasticSenderName(identityId, event.payload.from);
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
     const existingRecord = useMessageStore.getState().messages[identityId]?.[event.payload.id];

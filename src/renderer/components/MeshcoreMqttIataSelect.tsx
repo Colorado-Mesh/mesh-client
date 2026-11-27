@@ -71,6 +71,7 @@ export function MeshcoreMqttIataSelect({
   const popoverRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const nearestRowRef = useRef<HTMLButtonElement>(null);
+  const highlightRowRef = useRef<HTMLButtonElement>(null);
   const [focusAfterClose, setFocusAfterClose] = useState(false);
   const listId = useId();
   const optionIdPrefix = useId();
@@ -95,28 +96,33 @@ export function MeshcoreMqttIataSelect({
     const nearest =
       nearestCode != null ? (airports.find((a) => a.code === nearestCode) ?? null) : null;
     let filtered = filterMeshcoreIataAirports(airports, query);
-    // Blank search: pin nearest into the capped window so highlight/scroll/Enter work.
-    if (!q && nearest) {
-      filtered = [nearest, ...filtered.filter((a) => a.code !== nearest.code)].slice(
-        0,
-        FILTERED_LIST_CAP,
-      );
-    } else {
-      filtered = filtered.slice(0, FILTERED_LIST_CAP);
+    const pins: MeshcoreIataAirport[] = [];
+    if (!q && nearest) pins.push(nearest);
+    if (
+      selectedAirport &&
+      filtered.some((a) => a.code === selectedAirport.code) &&
+      !pins.some((a) => a.code === selectedAirport.code)
+    ) {
+      pins.push(selectedAirport);
     }
-    const out: ListEntry[] = [];
-    if (!q || MESHCORE_IATA_TEST_CODE.includes(q) || 'test'.includes(q)) {
-      out.push({ kind: 'test' });
+    if (pins.length > 0) {
+      const pinCodes = new Set(pins.map((a) => a.code));
+      filtered = [...pins, ...filtered.filter((a) => !pinCodes.has(a.code))];
     }
-    for (const airport of filtered) {
-      out.push({
-        kind: 'airport',
-        airport,
-        nearest: nearestCode != null && airport.code === nearestCode,
-      });
-    }
-    return out;
-  }, [airports, query, nearestCode]);
+    filtered = filtered.slice(0, FILTERED_LIST_CAP);
+    const airportEntries: ListEntry[] = filtered.map((airport) => ({
+      kind: 'airport' as const,
+      airport,
+      nearest: nearestCode != null && airport.code === nearestCode,
+    }));
+    // Prefix only (`t`, `te`, `test`), not any substring of "test".
+    const showTest = !q || MESHCORE_IATA_TEST_CODE.startsWith(q);
+    if (!showTest) return airportEntries;
+    const testEntry: ListEntry = { kind: 'test' };
+    // When airports match, Enter stays on an airport (highlight 0), not meshcore/test.
+    if (q && airportEntries.length > 0) return [...airportEntries, testEntry];
+    return [testEntry, ...airportEntries];
+  }, [airports, query, nearestCode, selectedAirport]);
 
   const closeMenu = (restoreFocus: boolean) => {
     setOpen(false);
@@ -218,9 +224,9 @@ export function MeshcoreMqttIataSelect({
   }, [open, nearestCode, entries, query]);
 
   useLayoutEffect(() => {
-    if (!open || !nearestCode || query.trim()) return;
-    nearestRowRef.current?.scrollIntoView({ block: 'nearest' });
-  }, [open, nearestCode, entries, query]);
+    if (!open) return;
+    highlightRowRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [open, highlight, entries]);
 
   useEffect(() => {
     if (!open) return;
@@ -235,11 +241,23 @@ export function MeshcoreMqttIataSelect({
         closeMenu(true);
       }
     };
+    const onDismiss = () => {
+      closeMenu(false);
+    };
+    // Scroll inside the list must not close it; scroll elsewhere moves the anchor.
+    const onScroll = (e: Event) => {
+      if (e.target instanceof Node && popoverRef.current?.contains(e.target)) return;
+      onDismiss();
+    };
     document.addEventListener('mousedown', handleMouseDown);
     document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', onDismiss);
+    window.addEventListener('scroll', onScroll, true);
     return () => {
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', onDismiss);
+      window.removeEventListener('scroll', onScroll, true);
     };
   }, [open]);
 
@@ -372,7 +390,7 @@ export function MeshcoreMqttIataSelect({
                   return (
                     <button
                       key={segment}
-                      ref={isNearest ? nearestRowRef : undefined}
+                      ref={highlighted ? highlightRowRef : isNearest ? nearestRowRef : undefined}
                       type="button"
                       id={`${optionIdPrefix}-${index}`}
                       role="option"

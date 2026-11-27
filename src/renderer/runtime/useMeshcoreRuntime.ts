@@ -651,6 +651,7 @@ import {
   MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS,
   MESHCORE_ROOM_SYNC_TICK_MS,
   MESHCORE_STATS_POLL_MS,
+  MESHCORE_STATS_RPC_TIMEOUT_MS,
   MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
@@ -1828,7 +1829,10 @@ export function useMeshcoreRuntime() {
     try {
       let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
       try {
-        coreStats = await withMeshcoreStatsTimeout(conn.getStatsCore(), 'core');
+        coreStats = await withMeshcoreStatsTimeout(
+          conn.getStatsCore(MESHCORE_STATS_RPC_TIMEOUT_MS),
+          'core',
+        );
       } catch (e: unknown) {
         // Radio silent: surface to the caller's warn (mcL1190 periodic, mcL1191 initial).
         if (isMeshcoreStatsTimeoutError(e)) throw e;
@@ -1875,7 +1879,10 @@ export function useMeshcoreRuntime() {
       let packetStats: Awaited<ReturnType<MeshCoreConnection['getStatsPackets']>>;
       // Sequential: meshcore.js once(Stats) + type filter drops a parallel waiter on the first reply.
       try {
-        radioStats = await withMeshcoreStatsTimeout(conn.getStatsRadio(), 'radio');
+        radioStats = await withMeshcoreStatsTimeout(
+          conn.getStatsRadio(MESHCORE_STATS_RPC_TIMEOUT_MS),
+          'radio',
+        );
       } catch (e: unknown) {
         if (isMeshcoreStatsTimeoutError(e)) throw e;
         console.debug('[renderer/runtime/useMeshcoreRuntime] catch:', e);
@@ -1885,7 +1892,10 @@ export function useMeshcoreRuntime() {
       if (connRef.current !== conn) return;
 
       try {
-        packetStats = await withMeshcoreStatsTimeout(conn.getStatsPackets(), 'packets');
+        packetStats = await withMeshcoreStatsTimeout(
+          conn.getStatsPackets(MESHCORE_STATS_RPC_TIMEOUT_MS),
+          'packets',
+        );
       } catch (e: unknown) {
         if (isMeshcoreStatsTimeoutError(e)) throw e;
         console.debug('[renderer/runtime/useMeshcoreRuntime] catch:', e);
@@ -10699,7 +10709,7 @@ export function useMeshcoreRuntime() {
       const conn = connRef.current;
       if (!conn) return null;
       try {
-        const result = await conn.getStatsRadio();
+        const result = await conn.getStatsRadio(MESHCORE_STATS_RPC_TIMEOUT_MS);
         return result;
       } catch (e: unknown) {
         console.warn('mcL1320 [useMeshcoreRuntime] getRadioStats error ' + errLikeToLogString(e));
@@ -10712,7 +10722,7 @@ export function useMeshcoreRuntime() {
       const conn = connRef.current;
       if (!conn) return null;
       try {
-        const result = await conn.getStatsPackets();
+        const result = await conn.getStatsPackets(MESHCORE_STATS_RPC_TIMEOUT_MS);
         return result;
       } catch (e: unknown) {
         console.warn('mcL1321 [useMeshcoreRuntime] getPacketStats error ' + errLikeToLogString(e));

@@ -41,6 +41,13 @@ describe('meshcore.js patch — firmware-ahead push codes', () => {
     expect(matches.length).toBeGreaterThanOrEqual(2);
   });
 
+  it('keeps getStats subscribed until the frame type matches and removes it on timeout', () => {
+    expect(PATCH).toMatch(/this\.on\(Constants\.ResponseCodes\.Stats, onStats\)/);
+    expect(PATCH).toMatch(/response\.type !== statsType/);
+    expect(PATCH).toContain('MeshCore stats timed out after ');
+    expect(PATCH).not.toMatch(/^\+.*this\.once\(Constants\.ResponseCodes\.Stats/m);
+  });
+
   it('keeps the SignedPlain room post author prefix as raw bytes', () => {
     // Room authors are matched on these 4 key bytes; UTF-8 decoding them loses most authors.
     expect(PATCH).toMatch(

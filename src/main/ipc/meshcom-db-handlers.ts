@@ -196,6 +196,62 @@ export function validateSaveMeshcomMessage(msg: unknown): asserts msg is Meshcom
   }
 }
 
+function blankCall(value: string | null | undefined): string {
+  return value ?? '';
+}
+
+/** Same logical chat row: text, channel, timestamp, and non-empty sender/recipient. */
+function meshcomStoredMessageMatches(
+  existing: {
+    from_call: string | null;
+    to_call_or_group: string | null;
+    text: string;
+    channel_idx: number;
+    timestamp: number;
+  },
+  row: {
+    from_call: string | null;
+    to_call_or_group: string | null;
+    text: string;
+    channel_idx: number;
+    timestamp: number;
+  },
+): boolean {
+  if (existing.text !== row.text) return false;
+  if (existing.channel_idx !== row.channel_idx) return false;
+  if (existing.timestamp !== row.timestamp) return false;
+  const fromA = blankCall(existing.from_call);
+  const fromB = blankCall(row.from_call);
+  if (fromA && fromB && fromA !== fromB) return false;
+  const toA = blankCall(existing.to_call_or_group);
+  const toB = blankCall(row.to_call_or_group);
+  if (toA && toB && toA !== toB) return false;
+  return true;
+}
+
+function fitMeshcomMsgId(id: string): string {
+  return id.length <= MAX_MSG_ID_LEN ? id : id.slice(0, MAX_MSG_ID_LEN);
+}
+
+/** New id when `baseId` already stores a different message. */
+function mintDistinctMeshcomMsgId(
+  db: NodeSqliteDB,
+  identityId: string,
+  baseId: string,
+  timestamp: number,
+): string {
+  const stamp = `~${timestamp}`;
+  const root = fitMeshcomMsgId(`${baseId}${stamp}`);
+  for (let n = 0; n < 50; n++) {
+    const candidate = fitMeshcomMsgId(n === 0 ? root : `${root}~${n}`);
+    const hit = db
+      .prepareOnce('SELECT 1 AS ok FROM meshcom_messages WHERE identity_id = ? AND msg_id = ?')
+      .get(identityId, candidate) as { ok: number } | undefined;
+    if (!hit) return candidate;
+  }
+  return root;
+}
+
 /** Validate `db:saveMeshcomContact` payload (throws on invalid fields). */
 export function validateSaveMeshcomContact(
   contact: unknown,
@@ -431,6 +487,87 @@ export interface MeshcomDbIpcDeps {
   ipcMain: IpcMain;
 }
 
+/** Insert or update one MeshCom message. A colliding wire id with different content is reminted. */
+export function persistMeshcomMessage(
+  db: NodeSqliteDB,
+  m: MeshcomMessageInput,
+): { changes: number } {
+  const receivedVia =
+    typeof m.received_via === 'string' && VALID_RECEIVED_VIA.has(m.received_via)
+      ? m.received_via
+      : null;
+  const row = {
+    identity_id: clampStr(m.identity_id, MAX_IDENTITY_LEN) ?? '',
+    msg_id: clampStr(m.msg_id, MAX_MSG_ID_LEN),
+    from_call: clampStr(m.from_call, MAX_CALLSIGN_LEN),
+    to_call_or_group: clampStr(m.to_call_or_group, MAX_CALLSIGN_LEN),
+    text: m.text.slice(0, MAX_TEXT_LEN),
+    channel_idx: m.channel_idx != null ? Math.trunc(m.channel_idx) : 0,
+    path: clampStr(m.path, MAX_PATH_LEN),
+    rssi: optionalFinite(m.rssi),
+    snr: optionalFinite(m.snr),
+    hw_id: m.hw_id != null && Number.isFinite(m.hw_id) ? Math.trunc(m.hw_id) : null,
+    received_via: receivedVia,
+    timestamp: Math.trunc(m.timestamp),
+    status: typeof m.status === 'string' ? m.status.slice(0, MAX_STATUS_LEN) : 'acked',
+    received_at: chatReceivedAtForDb(m.received_at),
+  };
+  // Same msg_id is an update only when sender/text/channel/timestamp match.
+  // Wrapped firmware ids and EXTUDP "1" vs outbound "1" insert under a new id.
+  if (row.msg_id) {
+    const existing = db
+      .prepareOnce(
+        `SELECT from_call, to_call_or_group, text, channel_idx, timestamp
+         FROM meshcom_messages
+         WHERE identity_id = ? AND msg_id = ?`,
+      )
+      .get(row.identity_id, row.msg_id) as
+      | {
+          from_call: string | null;
+          to_call_or_group: string | null;
+          text: string;
+          channel_idx: number;
+          timestamp: number;
+        }
+      | undefined;
+    if (existing && meshcomStoredMessageMatches(existing, row)) {
+      const updated = db
+        .prepareOnce(
+          `UPDATE meshcom_messages SET
+           from_call = @from_call,
+           to_call_or_group = @to_call_or_group,
+           text = @text,
+           channel_idx = @channel_idx,
+           path = COALESCE(@path, path),
+           rssi = COALESCE(@rssi, rssi),
+           snr = COALESCE(@snr, snr),
+           hw_id = COALESCE(@hw_id, hw_id),
+           received_via = COALESCE(@received_via, received_via),
+           timestamp = @timestamp,
+           status = @status
+         WHERE identity_id = @identity_id AND msg_id = @msg_id`,
+        )
+        .run(row);
+      if (updated.changes > 0) return { changes: Number(updated.changes) };
+    } else if (existing) {
+      row.msg_id = mintDistinctMeshcomMsgId(db, row.identity_id, row.msg_id, row.timestamp);
+    }
+  }
+  const result = db
+    .prepareOnce(
+      `INSERT INTO meshcom_messages (
+         identity_id, msg_id, from_call, to_call_or_group, text, channel_idx,
+         path, rssi, snr, hw_id, received_via, timestamp, status, received_at
+       ) VALUES (
+         @identity_id, @msg_id, @from_call, @to_call_or_group, @text, @channel_idx,
+         @path, @rssi, @snr, @hw_id, @received_via, @timestamp, @status, @received_at
+       )`,
+    )
+    .run(row);
+  pruneMeshcomMessagesByCountOn(db, meshcomMessageRetentionCap);
+  return { changes: Number(result.changes) };
+}
+
 export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): void {
   ipcMain.handle('meshcom:db-degraded', (event) => {
     assertIpcSender(event, MESHCOM_DB_DEGRADED_CHANNEL);
@@ -486,65 +623,9 @@ export function registerMeshcomDbIpcHandlers({ ipcMain }: MeshcomDbIpcDeps): voi
     if (!validateIpcSender(event)) throw new Error('db:saveMeshcomMessage: unauthorized sender');
     try {
       validateSaveMeshcomMessage(message);
-      const m = message;
       const db = getDbForIpc('db:saveMeshcomMessage');
       if (!db) return { changes: 0 };
-      const receivedVia =
-        typeof m.received_via === 'string' && VALID_RECEIVED_VIA.has(m.received_via)
-          ? m.received_via
-          : null;
-      const row = {
-        identity_id: clampStr(m.identity_id, MAX_IDENTITY_LEN) ?? '',
-        msg_id: clampStr(m.msg_id, MAX_MSG_ID_LEN),
-        from_call: clampStr(m.from_call, MAX_CALLSIGN_LEN),
-        to_call_or_group: clampStr(m.to_call_or_group, MAX_CALLSIGN_LEN),
-        text: m.text.slice(0, MAX_TEXT_LEN),
-        channel_idx: m.channel_idx != null ? Math.trunc(m.channel_idx) : 0,
-        path: clampStr(m.path, MAX_PATH_LEN),
-        rssi: optionalFinite(m.rssi),
-        snr: optionalFinite(m.snr),
-        hw_id: m.hw_id != null && Number.isFinite(m.hw_id) ? Math.trunc(m.hw_id) : null,
-        received_via: receivedVia,
-        timestamp: Math.trunc(m.timestamp),
-        status: typeof m.status === 'string' ? m.status.slice(0, MAX_STATUS_LEN) : 'acked',
-        received_at: chatReceivedAtForDb(m.received_at),
-      };
-      // Partial unique index on (identity_id, msg_id) is not a reliable ON CONFLICT target —
-      // update-then-insert keeps duplicates out when msg_id is present.
-      if (row.msg_id) {
-        const updated = db
-          .prepareOnce(
-            `UPDATE meshcom_messages SET
-               from_call = @from_call,
-               to_call_or_group = @to_call_or_group,
-               text = @text,
-               channel_idx = @channel_idx,
-               path = COALESCE(@path, path),
-               rssi = COALESCE(@rssi, rssi),
-               snr = COALESCE(@snr, snr),
-               hw_id = COALESCE(@hw_id, hw_id),
-               received_via = COALESCE(@received_via, received_via),
-               timestamp = @timestamp,
-               status = @status
-             WHERE identity_id = @identity_id AND msg_id = @msg_id`,
-          )
-          .run(row);
-        if (updated.changes > 0) return { changes: updated.changes };
-      }
-      const result = db
-        .prepareOnce(
-          `INSERT INTO meshcom_messages (
-             identity_id, msg_id, from_call, to_call_or_group, text, channel_idx,
-             path, rssi, snr, hw_id, received_via, timestamp, status, received_at
-           ) VALUES (
-             @identity_id, @msg_id, @from_call, @to_call_or_group, @text, @channel_idx,
-             @path, @rssi, @snr, @hw_id, @received_via, @timestamp, @status, @received_at
-           )`,
-        )
-        .run(row);
-      // Bound growth under unique msg_id flood (MeshCom was missing from retention).
-      pruneMeshcomMessagesByCountOn(db, meshcomMessageRetentionCap);
-      return { changes: result.changes };
+      return persistMeshcomMessage(db, message);
     } catch (err) {
       finishDbIpcHandler('db:saveMeshcomMessage', err);
     }

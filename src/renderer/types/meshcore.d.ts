@@ -152,10 +152,13 @@ declare module '@liamcottle/meshcore.js' {
     }>;
     getTelemetry(pubKey: Uint8Array, extraTimeoutMillis?: number): Promise<unknown>;
     // Statistics
-    getStats(statsType: number): Promise<MeshCoreStatsResponse<Record<string, unknown>>>;
-    getStatsCore(): Promise<MeshCoreStatsResponse<MeshCoreCoreStatsData>>;
-    getStatsRadio(): Promise<MeshCoreStatsResponse<MeshCoreRadioStatsData>>;
-    getStatsPackets(): Promise<MeshCoreStatsResponse<MeshCorePacketStatsData>>;
+    getStats(
+      statsType: number,
+      timeoutMs?: number,
+    ): Promise<MeshCoreStatsResponse<Record<string, unknown>>>;
+    getStatsCore(timeoutMs?: number): Promise<MeshCoreStatsResponse<MeshCoreCoreStatsData>>;
+    getStatsRadio(timeoutMs?: number): Promise<MeshCoreStatsResponse<MeshCoreRadioStatsData>>;
+    getStatsPackets(timeoutMs?: number): Promise<MeshCoreStatsResponse<MeshCorePacketStatsData>>;
     // Neighbors
     getNeighbours(
       pubKey: Uint8Array,

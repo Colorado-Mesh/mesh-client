@@ -222,18 +222,16 @@ function parseMeshcomInboundMsgId(raw: string | number | undefined): number | nu
 }
 
 /**
- * Drop own TX chat echoes. Dest+text alone must not suppress (or teach self)
- * when the RF source conflicts with a known local identity — except serial/BLE
- * `{PEER}text` inject echoes, where the brace is the outbound destination.
- * When identity is still unknown, a content match with a real SOURCE can seed
- * `operatorCallsign` / `device_self_info` for `myNodeNum` sync.
+ * Drop own TX chat echoes. A matching dest+text from another station must not
+ * suppress traffic or teach `operatorCallsign` — callsign comes from settings
+ * or an explicit self frame. Serial/BLE `{PEER}text` and sourceless `::text`
+ * inject echoes have no foreign SOURCE (the brace is the outbound destination).
  */
 function shouldDropLocalMeshcomText(
   handle: MeshComDeviceHandle,
   sourceCall: string,
   dst: string,
   msg: string,
-  emit: (event: DomainEvent) => void,
 ): boolean {
   const local = isLocalMeshcomSource(handle, sourceCall);
   const echoIdx = findRecentOutboundEchoIndex(handle, dst, msg);
@@ -241,35 +239,15 @@ function shouldDropLocalMeshcomText(
   if (!local && !echo) return false;
 
   const src = normalizeMeshcomCallsign(sourceCall);
-  const knownOp =
-    normalizeMeshcomCallsign(handle.operatorCallsign) ||
-    normalizeMeshcomCallsign(handle.deviceSettings.call ?? '');
   const echoDstNorm = normalizeMeshcomEchoDst(dst);
-  // Foreign peer repeating our outbound text (real RF SOURCE ≠ local).
-  // Serial/BLE DM inject echoes put the peer callsign in braces (= outbound dest).
-  if (echo && !local && src && knownOp && src !== knownOp && src !== echoDstNorm) {
-    return false;
+  if (!local) {
+    const injectEcho = echo && src.length > 0 && src === echoDstNorm;
+    const sourcelessEcho = echo && src.length === 0;
+    if (!injectEcho && !sourcelessEcho) return false;
   }
 
   if (echo) {
     handle.recentOutbound.splice(echoIdx, 1);
-  }
-
-  // Learn self only from a real SOURCE that is not a dest-addressed inject brace.
-  if (echo && !knownOp && src && src !== echoDstNorm) {
-    handle.operatorCallsign = src;
-    handle.deviceSettings.call ??= src;
-    emit({
-      type: 'device_self_info',
-      payload: {
-        name: src,
-        publicKey: new Uint8Array(0),
-        type: 0,
-        txPower: 0,
-        radioFreq: 0,
-        manualAddContacts: false,
-      },
-    });
   }
   return true;
 }
@@ -560,7 +538,7 @@ function emitPhoneAprsEvents(
     return;
   }
   if (parsed.kind === 'text') {
-    if (shouldDropLocalMeshcomText(handle, parsed.sourceCall, parsed.destCall, parsed.text, emit)) {
+    if (shouldDropLocalMeshcomText(handle, parsed.sourceCall, parsed.destCall, parsed.text)) {
       noteLocalMeshcomFirmwareMsgId(handle, parsed.msgId);
       return;
     }
@@ -666,7 +644,7 @@ function emitExtUdpEvents(
   if (parsed.type === 'msg') {
     const { origin, digis, hopCount } = parseMeshcomSrcPath(parsed.src);
     const sourceCall = origin || parsed.src;
-    if (shouldDropLocalMeshcomText(handle, sourceCall, parsed.dst, parsed.msg, emit)) {
+    if (shouldDropLocalMeshcomText(handle, sourceCall, parsed.dst, parsed.msg)) {
       const msgId = parseMeshcomInboundMsgId(parsed.msg_id);
       if (msgId != null) noteLocalMeshcomFirmwareMsgId(handle, msgId);
       return;
@@ -856,7 +834,7 @@ function emitConsoleTextLine(
         : dest.channelIndex === 0
           ? '*'
           : dest.wireDest;
-    if (shouldDropLocalMeshcomText(handle, fromCall, echoDst, text, emit)) return;
+    if (shouldDropLocalMeshcomText(handle, fromCall, echoDst, text)) return;
     const from = rememberCallsign(handle, fromCall);
     // DM: peer is the braced callsign (inbound attribution). ALL/group use broadcast `to`.
     const { to, channelIndex } =
@@ -893,7 +871,7 @@ function emitConsoleTextLine(
   if (trimmed.startsWith('::')) {
     const text = trimmed.slice(2).trim().slice(0, MESHCOM_MAX_TEXT_LEN);
     if (!text) return;
-    if (shouldDropLocalMeshcomText(handle, '', '*', text, emit)) return;
+    if (shouldDropLocalMeshcomText(handle, '', '*', text)) return;
     emit({
       type: 'text_message',
       payload: {
@@ -998,7 +976,7 @@ function emitKissEvents(
         });
         continue;
       }
-      if (shouldDropLocalMeshcomText(handle, frame.src, info.addressee, info.text, emit)) {
+      if (shouldDropLocalMeshcomText(handle, frame.src, info.addressee, info.text)) {
         continue;
       }
       const { to, channelIndex } = textMessageToFromDest(handle, info.addressee);

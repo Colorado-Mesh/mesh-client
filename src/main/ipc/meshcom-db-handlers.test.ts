@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NodeSqliteDB } from '../db-compat';
 import { runSchemaUpgrade } from '../db-schema-sync';
 import {
+  persistMeshcomMessage,
   pruneMeshcomContactsByCountOn,
   pruneMeshcomMessagesByCountOn,
   rebindMeshcomIdentityOn,
@@ -185,6 +186,75 @@ describe('pruneMeshcomContactsByCountOn', () => {
     const db = { prepareOnce } as never;
     expect(pruneMeshcomContactsByCountOn(db, 100)).toBe(45);
     expect(run).toHaveBeenCalledWith(95);
+  });
+});
+
+describe('persistMeshcomMessage', () => {
+  it('updates the same logical message and remints a wrapped wire id', () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-mc-save-'));
+    try {
+      const db = new NodeSqliteDB(path.join(dir, 'test.db'));
+      runSchemaUpgrade(db);
+      persistMeshcomMessage(db, {
+        identity_id: 'offline-meshcom',
+        msg_id: '1',
+        from_call: 'N0CALL',
+        to_call_or_group: '*',
+        text: 'outbound',
+        channel_idx: 0,
+        timestamp: 1_000,
+        status: 'acked',
+      });
+      persistMeshcomMessage(db, {
+        identity_id: 'offline-meshcom',
+        msg_id: '1',
+        from_call: 'N0CALL',
+        to_call_or_group: '*',
+        text: 'outbound',
+        channel_idx: 0,
+        timestamp: 1_000,
+        status: 'sent',
+      });
+      persistMeshcomMessage(db, {
+        identity_id: 'offline-meshcom',
+        msg_id: '1',
+        from_call: 'SP2ONG',
+        to_call_or_group: '*',
+        text: 'inbound',
+        channel_idx: 0,
+        timestamp: 5_000,
+      });
+      const rows = db
+        .prepareOnce(
+          `SELECT msg_id, from_call, text, status, timestamp FROM meshcom_messages
+           ORDER BY timestamp`,
+        )
+        .all() as {
+        msg_id: string;
+        from_call: string;
+        text: string;
+        status: string;
+        timestamp: number;
+      }[];
+      expect(rows).toEqual([
+        expect.objectContaining({
+          msg_id: '1',
+          from_call: 'N0CALL',
+          text: 'outbound',
+          status: 'sent',
+          timestamp: 1_000,
+        }),
+        expect.objectContaining({
+          msg_id: '1~5000',
+          from_call: 'SP2ONG',
+          text: 'inbound',
+          timestamp: 5_000,
+        }),
+      ]);
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

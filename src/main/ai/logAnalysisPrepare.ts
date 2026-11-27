@@ -3,8 +3,14 @@ import {
   buildAiLogAnalysisPrompt,
   isEmptyLogAnalysisFindings,
 } from '../../shared/aiLogAnalysisPrompt';
+import { redactMeshcomSecretsInText } from '../../shared/meshcomCommandSecrets';
+import { redactMeshcoreCliSecretsInText } from '../../shared/meshcoreCliSecrets';
 import { logCaughtDebug } from '../caughtErrorPolicy';
 import { fetchLogDocsForAnalysis, LogDocsUnavailableError } from './fetchLogDocs';
+
+function redactLogAnalysisText(value: string): string {
+  return redactMeshcomSecretsInText(redactMeshcoreCliSecretsInText(value));
+}
 
 export interface LogAnalysisPromptBudget {
   maxChars: number;
@@ -27,8 +33,13 @@ export async function prepareLogAnalysisPrompt(
   if (isEmptyLogAnalysisFindings(request.messages)) {
     return { ok: false, reason: 'noFindings' };
   }
+  const messages = request.messages.map((message) => ({
+    ...message,
+    sender: redactLogAnalysisText(message.sender),
+    body: redactLogAnalysisText(message.body),
+  }));
   const docsBudget = Math.max(512, Math.floor(budget.maxPromptBytes * 0.45));
-  const findingHints = request.messages.flatMap((message: AiSummaryMessage) => [
+  const findingHints = messages.flatMap((message: AiSummaryMessage) => [
     message.sender,
     message.body,
   ]);
@@ -42,7 +53,7 @@ export async function prepareLogAnalysisPrompt(
         conversationLabel: request.conversationLabel,
         protocol: request.protocol,
         locale: request.locale,
-        messages: request.messages,
+        messages,
         maxChars: budget.maxChars,
         maxPromptBytes: budget.maxPromptBytes,
         docsText: docs.docsText,

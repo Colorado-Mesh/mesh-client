@@ -96,6 +96,31 @@ function viaNodeId(via: string): number {
   return call ? registerMeshcomCallsign(call) : 0;
 }
 
+/** Direct (hopsAway 0) and a newer lastHeardAt win over a via-relay stub. */
+function relayStubFields(
+  identityId: IdentityId,
+  relayId: number,
+  queued: readonly NodeRecord[],
+  heardAt: number,
+): { hopsAway: number; lastHeardAt: number } {
+  let hopsAway: number | undefined;
+  let lastHeardAt: number | undefined;
+  const bucket = useNodeStore.getState().nodes[identityId] ?? {};
+  if (Object.hasOwn(bucket, relayId)) {
+    hopsAway = bucket[relayId].hopsAway;
+    lastHeardAt = bucket[relayId].lastHeardAt;
+  }
+  for (const record of queued) {
+    if (record.nodeId !== relayId) continue;
+    if (record.hopsAway != null) hopsAway = record.hopsAway;
+    if (record.lastHeardAt != null) lastHeardAt = record.lastHeardAt;
+  }
+  return {
+    hopsAway: hopsAway === 0 ? 0 : 1,
+    lastHeardAt: lastHeardAt != null && lastHeardAt > heardAt ? lastHeardAt : heardAt,
+  };
+}
+
 /** Last-heard ms: report time minus reported age when present. */
 function stationLastHeardAt(heardAt: number, ageMin: number | undefined): number {
   if (ageMin == null || !Number.isFinite(ageMin) || ageMin < 0) return heardAt;
@@ -194,19 +219,20 @@ export function applyMeshcomMheardStations(
       const prevList = viaNeighborPatches.get(relayId) ?? [];
       viaNeighborPatches.set(relayId, mergeNeighborEntry(prevList, neighbor));
 
+      const relayFields = relayStubFields(identityId, relayId, records, lastHeardAt);
       records.push({
         nodeId: relayId,
         longName: viaCall,
         shortName: viaCall.slice(0, 4),
-        lastHeardAt,
-        hopsAway: 1,
+        lastHeardAt: relayFields.lastHeardAt,
+        hopsAway: relayFields.hopsAway,
         source: 'rf',
       });
 
       persistDurableMeshcomContact(identityId, {
         callsign: viaCall,
         nodeId: relayId,
-        lastHeardAt,
+        lastHeardAt: relayFields.lastHeardAt,
       });
     }
   }

@@ -112,21 +112,29 @@ export class MeshcomAuthLineBuffer {
     this.buf = merged;
 
     const lines: MeshcomAuthBufferedLine[] = [];
+    let sawOk = false;
     for (;;) {
       const nl = this.buf.indexOf(0x0a);
       if (nl < 0) break;
-      const rawWithNl = this.buf.subarray(0, nl + 1);
       const rawLine = this.buf.subarray(0, nl);
-      this.buf = this.buf.subarray(nl + 1);
-      // Discard oversized lines in full — never emit a truncated greeting prefix.
+      // Discard oversized auth lines in full — never emit a truncated greeting prefix.
+      // The loop stops at OK, so this cap never applies to the KISS/NET Console tail.
       if (rawLine.length > MESHCOM_AUTH_MAX_LINE_BYTES) {
+        this.buf = this.buf.subarray(nl + 1);
         continue;
       }
-      lines.push({ text: this.decoder.decode(rawLine), rawWithNl: rawWithNl.slice() });
+      const rawWithNl = this.buf.subarray(0, nl + 1);
+      const text = this.decoder.decode(rawLine);
+      this.buf = this.buf.subarray(nl + 1);
+      lines.push({ text, rawWithNl: rawWithNl.slice() });
+      if (parseMeshcomAuthGreeting(text).kind === 'ok') {
+        sawOk = true;
+        break;
+      }
     }
-    // Limit only the unfinished line; drop it entirely if already oversized so a
-    // later `\n` cannot turn a suffix into a valid greeting.
-    if (this.buf.length > MESHCOM_AUTH_MAX_LINE_BYTES) {
+    // Limit only the unfinished auth line; drop it entirely if already oversized so a
+    // later `\n` cannot turn a suffix into a valid greeting. Post-OK bytes stay raw.
+    if (!sawOk && this.buf.length > MESHCOM_AUTH_MAX_LINE_BYTES) {
       this.buf = new Uint8Array(0);
     }
     return lines;

@@ -94,7 +94,7 @@ describe('meshcomDeviceSettings', () => {
     });
     expect(accum.fwver).toBe('4.40 a');
     expect(accum.buildDate).toBe('20261122-143000');
-    expect(snapshotMeshcomDeviceSettings(accum).firmwareVersion).toBe('4.40a.11.22');
+    expect(snapshotMeshcomDeviceSettings(accum).firmwareVersion).toBe('4.40a.2026.11.22');
   });
 
   it('parses serial --info console text', () => {
@@ -149,7 +149,7 @@ describe('meshcomDeviceSettings', () => {
     expect(accum.battVoltage).toBe(3.95);
     expect(accum.battPercent).toBe(72);
     expect(accum.fwver).toBe('4.35p (build: Mar 20 2026)');
-    expect(snapshotMeshcomDeviceSettings(accum).firmwareVersion).toBe('4.35p.03.20');
+    expect(snapshotMeshcomDeviceSettings(accum).firmwareVersion).toBe('4.35p.2026.03.20');
     expect(meshcomListenGroupIdsFromSnapshot(snapshotMeshcomDeviceSettings(accum))).toEqual([
       232, 20,
     ]);

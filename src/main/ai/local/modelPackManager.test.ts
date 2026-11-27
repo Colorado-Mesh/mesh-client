@@ -184,6 +184,9 @@ describe('AI verified model downloads', () => {
       expect(await fs.readFile(noticePath, 'utf8')).toBe(notice);
       expect(await packs.verify('model-1')).toBe(true);
       await fs.writeFile(noticePath, notice.replace('Synthetic', 'Incorrect'));
+      // Same-millisecond rewrites can keep mtimeMs, which is part of the verify cache key.
+      const later = new Date(Date.now() + 2_000);
+      await fs.utimes(noticePath, later, later);
       expect(await packs.verify('model-1')).toBe(false);
     },
   );
@@ -229,7 +232,11 @@ it.each(['linux', 'darwin', 'win32'])(
       expect(hashReads).not.toHaveBeenCalled();
       expect(await restarted.verify('model-1')).toBe(true);
       expect(hashReads).toHaveBeenCalledOnce();
-      await fs.writeFile(packs.assetPath('model-1', 'model.gguf'), Buffer.alloc(data.length));
+      const ggufPath = packs.assetPath('model-1', 'model.gguf');
+      await fs.writeFile(ggufPath, Buffer.alloc(data.length));
+      // Same-millisecond rewrites can keep mtimeMs, which is part of the verify cache key.
+      const later = new Date(Date.now() + 2_000);
+      await fs.utimes(ggufPath, later, later);
       expect(await restarted.verify('model-1')).toBe(false);
       const third = create(vi.fn());
       expect((await third.list())[0].installed).toBe(false);

@@ -3982,6 +3982,19 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
     expect(screen.getByText('Colorado chat')).toBeInTheDocument();
   });
 
+  it('disconnects a feed on delete while status is disconnected', async () => {
+    localStorage.setItem(FEEDS_KEY, JSON.stringify({ version: 1, feeds: [seededFeed(0, true)] }));
+    act(() => {
+      useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-0', 'disconnected');
+    });
+    vi.mocked(window.electronAPI.mqtt.disconnect).mockClear();
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByRole('button', { name: 'Delete Feed 0' }));
+    expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshcore', 'feed-0');
+    expect(screen.queryByText('Feed 0')).not.toBeInTheDocument();
+  });
+
   it('deletes a feed', async () => {
     localStorage.setItem(FEEDS_KEY, JSON.stringify({ version: 1, feeds: [seededFeed(0, true)] }));
     const user = userEvent.setup();

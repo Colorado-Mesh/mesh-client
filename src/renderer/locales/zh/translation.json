@@ -1763,7 +1763,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[国家/地区]/[州]，例如msh/CO/美国",
-      "meshcoreLetsmesh": "meshcore/{IATA}，例如网状核心/DEN",
+      "meshcoreLetsmesh": "请选择离你所在地区最近的机场 IATA（meshcore/{IATA}）。test 仅用于分析器测试。",
       "meshcoreDefault": "MESHCORE/[国家/地区]/[州]，例如MESHCORE/美国/CO",
       "meshcom": "MeshCom 网关的代理根主题，例如 meshcom"
     },
@@ -1861,12 +1861,12 @@
       "syncFailed": "RMAP发现同步失败。",
       "publishingOf": "RMAP v4：正在发布 {{current}}/{{total}}"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户。预设在meshcore/DEN（丹佛IATA）下发布。如果您不在科罗拉多州，请改用LetsMesh或MeshMapper。是否继续？",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT 面向科罗拉多地区的 mesh 用户。主题前缀请选择当地机场 IATA。如果不在科罗拉多，请改用 LetsMesh 或 MeshMapper。继续？",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户，并在meshcore/DEN下发布。如果您在科罗拉多州以外，请切换到LetsMesh（全球公共经纪商）。",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT 面向科罗拉多地区的 mesh 用户。如果在科罗拉多以外，请改用 LetsMesh（全球公共代理）。",
     "coloradoRegionGateStay": "我在科罗拉多州",
     "coloradoRegionGateSwitch": "切换到LetsMesh",
-    "topicPrefixInvalidIata": "主题前缀必须是meshcore/test或meshcore/{IATA} （ 3个字母） ，例如meshcore/DEN。",
+    "topicPrefixInvalidIata": "连接前请从列表中选择机场 IATA（或 test 选项）。",
     "maxRetriesHelpConnected": {
       "meshcore": "在放弃前尝试重新连接（ 1– {{max}} ）。已保存设置；更改后再次按“连接” ，以便主进程将其拾取。",
       "meshtastic": "两种方案均允许1– {{max}}。已使用设置保存；断开连接并再次连接，以便正在运行的会话使用新值。",
@@ -9177,7 +9177,7 @@
     "connectionHint": "MeshCom 通过国家/地区设置 (--setctry) 使用业余无线电频段 LoRa。请确保您节点的国家/地区配置文件与您的执照相匹配。",
     "countrySettingLabel": "国家/地区设置 (--setctry)",
     "extUdpHint": "EXTUDP需要将节点配置为--extudp开启，且--extudpip指向此计算机（UDP 1799）。",
-    "kissTcpHint": "KISS/TCP 使用 MeshCom 端口 8001 — 而非 Reticulum KISS/AX.25。",
+    "kissTcpHint": "KISS/TCP 使用 MeshCom 端口 8001 — 不是 Reticulum KISS/AX.25。启用 --kiss auth 时可选 --passwd。仅限可信 LAN/VPN（无 TLS）。",
     "channelAll": "全部",
     "channelGroup": "群组{{id}}",
     "callsignFieldLabel": "呼号 (--setcall)",
@@ -9322,7 +9322,7 @@
     "autoSettime": "连接时自动设置节点时间",
     "autoSettimeHint": "通过串行或BLE连接时，使用此计算机的 UTC 时钟（例如 {{example}}）发送 --settime。",
     "settimeNow": "立即设置时间（UTC）",
-    "requiresSerialBle": "通过串行或BLE连接以发送设备命令。EXTUDP 和 KISS/TCP 仅用于聊天。",
+    "requiresSerialBle": "请通过 Serial、BLE 或 NET Console 连接以发送设备命令。EXTUDP 和 KISS/TCP 只传输聊天。",
     "filter": "筛选命令",
     "filterPlaceholder": "搜索 --settime、网关、邻居……",
     "serialOnly": "USB串行控制台（旧版）",

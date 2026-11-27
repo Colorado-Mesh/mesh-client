@@ -98,6 +98,28 @@ describe('applyMeshcomMheardStations', () => {
     expect(bucket[liveId]?.lastHeardAt).toBe(1_700_000_000_000 - 5 * 60_000);
   });
 
+  it('keeps a direct station at hopsAway 0 and does not rewind lastHeardAt when it is a via', () => {
+    const relayId = callsignToNodeId('OE1ABC-1');
+    const heard = 1_700_000_200_000;
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [relayId]: {
+            nodeId: relayId,
+            longName: 'OE1ABC-1',
+            hopsAway: 0,
+            lastHeardAt: heard,
+            source: 'rf',
+          },
+        },
+      },
+    });
+    applyMeshcomMheardStations(ID, [{ callsign: 'DH1FR-2', via: 'OE1ABC-1', ageMin: 5 }], heard);
+    const relay = useNodeStore.getState().nodes[ID]?.[relayId];
+    expect(relay?.hopsAway).toBe(0);
+    expect(relay?.lastHeardAt).toBe(heard);
+  });
+
   it('subtracts reported ageMin from heardAt for lastHeardAt', () => {
     applyMeshcomMheardStations(ID, [{ callsign: 'AGE-1', ageMin: 2 }], 1_700_000_120_000);
     const id = callsignToNodeId('AGE-1');

@@ -1803,7 +1803,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Страна]/[Штат], например. мш/Колорадо/США",
-      "meshcoreLetsmesh": "meshcore/{IATA}, например. сетка/DEN",
+      "meshcoreLetsmesh": "Выберите IATA аэропорта ближе всего к вашему району (meshcore/{IATA}). test — только для проверки анализатора.",
       "meshcoreDefault": "MESHCORE/[Страна]/[Штат], например. МЕШКОР/США/КО",
       "meshcom": "Корневая тема брокера для вашего шлюза MeshCom, например, meshcom"
     },
@@ -1901,12 +1901,12 @@
       "syncFailed": "Ошибка синхронизации обнаружения RMAP.",
       "publishingOf": "RMAP v4: публикация {{current}} из {{total}}"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT предназначен для пользователей mesh-сети в регионе Колорадо. Предустановка публикуется в meshcore/DEN (Denver IATA). Если вы не в Колорадо, используйте вместо этого LetsMesh или MeshMapper. Продолжить?",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT предназначен для пользователей mesh в районе Колорадо. Для префикса темы выберите IATA местного аэропорта. Если вы не в Колорадо, используйте LetsMesh или MeshMapper. Продолжить?",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT предназначен для пользователей сети Колорадо и публикуется под meshcore/DEN. Если вы находитесь за пределами Колорадо, переключитесь на LetsMesh (глобальный публичный брокер).",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT предназначен для пользователей mesh в районе Колорадо. Если вы за пределами Колорадо, переключитесь на LetsMesh (глобальный публичный брокер).",
     "coloradoRegionGateStay": "Я в Колорадо",
     "coloradoRegionGateSwitch": "Переключиться на LetsMesh",
-    "topicPrefixInvalidIata": "Префикс темы должен быть meshcore/test или meshcore/{IATA} (3 буквы), например meshcore/DEN.",
+    "topicPrefixInvalidIata": "Перед подключением выберите IATA аэропорта из списка (или тестовый вариант).",
     "maxRetriesHelpConnected": {
       "meshcore": "Повторно подключитесь, прежде чем сдаваться (1–{{max}}). Сохранено с настройками; нажмите «Подключиться» еще раз после изменения, чтобы основной процесс забрал его.",
       "meshtastic": "Оба протокола допускают 1–{{max}}. Сохранено с настройками; отключите и снова подключитесь, чтобы сеанс работы использовал новое значение.",
@@ -9321,7 +9321,7 @@
     "connectionHint": "MeshCom использует любительский диапазон LoRa через настройку страны (--setctry). Убедитесь, что профиль страны вашего узла соответствует вашей лицензии.",
     "countrySettingLabel": "Настройка страны (--setctry)",
     "extUdpHint": "Для EXTUDP требуется, чтобы узел был настроен с параметрами --extudp on и --extudpip, указывающими на этот компьютер (UDP 1799).",
-    "kissTcpHint": "KISS/TCP использует порт MeshCom 8001, а не Reticulum KISS/AX.25.",
+    "kissTcpHint": "KISS/TCP использует порт MeshCom 8001 — не Reticulum KISS/AX.25. Необязательный --passwd, когда включён --kiss auth. Только доверенная LAN/VPN (без TLS).",
     "channelAll": "ALL",
     "channelGroup": "Группа {{id}}",
     "callsignFieldLabel": "Позывной (--setcall)",
@@ -9466,7 +9466,7 @@
     "autoSettime": "Автоматически устанавливать время узла при подключении",
     "autoSettimeHint": "При подключении по последовательному интерфейсу или через BLE отправьте команду --settime с указанием времени по UTC на этом компьютере (например, {{example}}).",
     "settimeNow": "Установить текущее время (UTC)",
-    "requiresSerialBle": "Подключитесь через последовательный порт или BLE, чтобы отправлять команды устройству. EXTUDP и KISS/TCP предназначены только для чата.",
+    "requiresSerialBle": "Подключитесь через Serial, BLE или NET Console, чтобы отправлять команды устройству. EXTUDP и KISS/TCP передают только чат.",
     "filter": "Команды фильтра",
     "filterPlaceholder": "Поиск --settime, шлюз, соседи…",
     "serialOnly": "Последовательная консоль USB (устаревшая)",
