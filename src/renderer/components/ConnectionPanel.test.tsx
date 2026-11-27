@@ -3288,6 +3288,118 @@ describe('ConnectionPanel saved device history', () => {
     });
   });
 
+  it('falls back to the endpoint when the saved radio name is blank', async () => {
+    localStorage.setItem(
+      'mesh-client:connectionHistory:meshtastic',
+      JSON.stringify([
+        {
+          id: 'tcp-blank-name',
+          lastUsedAt: 2000,
+          type: 'tcp',
+          httpAddress: '10.0.0.9:4403',
+          deviceName: '   ',
+        },
+      ]),
+    );
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({ type: 'tcp', httpAddress: '10.0.0.9:4403', deviceName: '   ' }),
+    );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    expect(await screen.findByText('10.0.0.9:4403')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reconnect to 10.0.0.9:4403' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Delete saved device 10.0.0.9:4403' }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not backfill the previous protocol endpoint under MeshCore on switch', async () => {
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({
+        type: 'serial',
+        serialPortId: '/dev/ttyUSB0',
+        deviceName: 'Meshtastic Radio',
+      }),
+    );
+    localStorage.setItem(
+      'mesh-client:connectionHistory:meshtastic',
+      JSON.stringify([
+        {
+          id: 'mt-serial',
+          lastUsedAt: 1000,
+          type: 'serial',
+          serialPortId: '/dev/ttyUSB0',
+          deviceName: 'Meshtastic Radio',
+        },
+      ]),
+    );
+    const meshcoreStored = {
+      type: 'http' as const,
+      httpAddress: '192.168.1.172:5000',
+      deviceName: 'MeshCore Radio',
+    };
+    localStorage.setItem('mesh-client:lastConnection:meshcore', JSON.stringify(meshcoreStored));
+    localStorage.setItem(
+      'mesh-client:connectionHistory:meshcore',
+      JSON.stringify([{ id: 'mc-http', lastUsedAt: 2000, ...meshcoreStored }]),
+    );
+
+    const view = render(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'configured',
+          connectionType: 'serial',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+        myNodeName="Meshtastic Radio"
+      />,
+    );
+
+    view.rerender(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'configured',
+          connectionType: 'http',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+        myNodeName="MeshCore Radio"
+      />,
+    );
+
+    await waitFor(() => {
+      const last = JSON.parse(localStorage.getItem('mesh-client:lastConnection:meshcore')!);
+      expect(last).toMatchObject(meshcoreStored);
+      const history = JSON.parse(localStorage.getItem('mesh-client:connectionHistory:meshcore')!);
+      expect(history).toHaveLength(1);
+      expect(history[0]).toMatchObject(meshcoreStored);
+      expect(
+        history.some((e: { serialPortId?: string }) => e.serialPortId === '/dev/ttyUSB0'),
+      ).toBe(false);
+    });
+  });
+
   it('lists multiple saved TCP hosts and reconnects the selected one', async () => {
     const user = userEvent.setup();
     localStorage.setItem(

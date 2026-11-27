@@ -1657,18 +1657,32 @@ export default function ConnectionPanel({
   // Backfill / refresh the radio's own name on the saved endpoint. Meshtastic can flip to
   // `configured` on MyNodeInfo before the self NodeInfo (long name) arrives, and a rename
   // while connected must reach the Saved devices row.
+  // Gate on this protocol's stored MRU identity: on protocol switch, lastConnectionRef can
+  // still hold the previous protocol's endpoint until rehydrate commits (same render cycle).
   useEffect(() => {
     if (!myNodeName) return;
     if (state.status !== 'configured') return;
     if (protocol !== 'meshtastic' && protocol !== 'meshcore' && protocol !== 'meshcom') return;
     const current = lastConnectionRef.current;
     if (!current || current.type === 'ble') return;
+    if (state.connectionType != null && current.type !== state.connectionType) return;
+    const storedMru = loadLastConnection(protocol);
+    const currentKey = connectionHistoryIdentityKey(current, protocol);
+    const storedKey = storedMru ? connectionHistoryIdentityKey(storedMru, protocol) : null;
+    if (!currentKey || !storedKey || currentKey !== storedKey) return;
     if ((current.deviceName ?? '').trim() === myNodeName) return;
     const next = upsertConnectionHistory(protocol, { ...current, deviceName: myNodeName });
     if (!next) return;
     setConnectionHistory(next);
     setLastConnection(loadLastConnection(protocol));
-  }, [myNodeName, protocol, state.status, setLastConnection, setConnectionHistory]);
+  }, [
+    myNodeName,
+    protocol,
+    state.status,
+    state.connectionType,
+    setLastConnection,
+    setConnectionHistory,
+  ]);
 
   // Persist live / scan BLE RSSI onto lastConnection so reconnect can seed the host meter.
   // Pending reconnect RSSI stays in UI state only — do not promote to MRU before configure.
@@ -4527,7 +4541,9 @@ export default function ConnectionPanel({
         {connectionHistory.map((entry) => {
           const endpointLabel = savedConnectionPrimaryLabel(entry);
           // Serial / WiFi rows show the radio's own name when known; BLE keeps its BLE name.
-          const savedName = entry.type !== 'ble' ? entry.deviceName?.trim() : undefined;
+          // Whitespace-only names must fall through to endpointLabel (?? does not treat '').
+          const savedName =
+            entry.type !== 'ble' ? entry.deviceName?.trim() || undefined : undefined;
           const primary =
             savedName ??
             endpointLabel ??
