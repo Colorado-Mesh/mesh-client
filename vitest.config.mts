@@ -376,7 +376,7 @@ export default defineConfig({
         'src/main/translation/vendor/**',
         'src/renderer/lib/nomad/vendor/**',
         'src/renderer/locales/**',
-        'src/renderer/index.html',
+        'src/renderer/**/*.html',
         'src/renderer/vitest.setup.ts',
         'src/renderer/vitest.electronApiMock.ts',
       ],
