@@ -105,8 +105,13 @@ export default function LogAnalyzeModal({
   }, []);
 
   useEffect(() => {
-    if (isOpen) return;
-    cancelSummary(summaryKey);
+    if (!isOpen) {
+      cancelSummary(summaryKey);
+      return;
+    }
+    return () => {
+      cancelSummary(summaryKey);
+    };
   }, [isOpen, summaryKey]);
 
   const runAiAnalysis = () => {

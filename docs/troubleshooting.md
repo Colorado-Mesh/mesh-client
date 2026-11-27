@@ -824,9 +824,9 @@ After **24 hours** of uptime, the main process logs periodic **long-session heal
 
 **Fix**:
 
-- The app publishes to `meshcore/{IATA}/{pubKey}/packets` (e.g., `meshcore/DEN/AABBCCDDEEFF001122/packets` when you picked DEN)
+- The app publishes to `{configuredPrefix}/{pubKey}/packets` (e.g., `meshcore/DEN/AABBCCDDEEFF001122/packets` when the Connection → MQTT prefix is `meshcore/DEN`)
 - Use an external MQTT client (like MQTT Explorer, mosquitto_sub, or your broker's dashboard) to subscribe and view the packets
-- Subscribe to `meshcore/{YOUR_IATA}/+/packets/#` using the Area IATA you selected in Connection → MQTT
+- Subscribe to `{configuredPrefix}/+/packets/#` using the topic prefix shown in Connection → MQTT (for IATA-scoped brokers that is `meshcore/{YOUR_IATA}/+/packets/#`)
 - The explicit `test` picklist option publishes under `meshcore/test/…` (analyzer / testing only)
 - Verify your broker ACL allows publishing to `packets/` topics
 - Check the Log panel for "Published RF packet" entries to confirm packets are being sent

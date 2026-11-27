@@ -375,6 +375,8 @@ export function aiReady(status: AiProviderStatus | null): boolean {
 export function cancelSummary(key: string): void {
   const entry = useAiSummaryStore.getState().summaries[key];
   if (!entry) return;
+  // Leave completed summaries unchanged (modal close / unmount must not wipe results).
+  if (!entry.streaming) return;
   controllers.get(key)?.abort();
   for (const turn of entry.followUps ?? []) {
     if (turn.streaming) cancelFollowUp(key, turn.id);

@@ -29,7 +29,7 @@ describe('useProtocolMqttSettings helpers', () => {
     const meshtastic = loadProtocolMqttSettings('meshtastic');
     expect(meshtastic.topicPrefix).toBeTruthy();
     const meshcore = loadProtocolMqttSettings('meshcore');
-    expect(meshcore.topicPrefix).toBe('');
+    expect(meshcore.topicPrefix).toBe('meshcore');
     const meshcom = loadProtocolMqttSettings('meshcom');
     expect(meshcom.topicPrefix).toBe('meshcom');
   });

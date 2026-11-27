@@ -8,6 +8,9 @@
  *
  * Usage: node scripts/generate-meshcore-iata-airports.mjs
  * Offline: MESHCORE_IATA_CSV=/path/to/airports.csv node scripts/generate-meshcore-iata-airports.mjs
+ *
+ * Documented coordinate overrides (upstream CSV has known bad rows):
+ * - JUH: Chizhou Jiuhuashan Airport → ~30.74, 117.69 (not Mumbai/Borivli)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,6 +26,19 @@ const IATA_AIRPORTS_JSON_PATH = path.join(
 );
 
 const DEFAULT_CSV_URL = 'https://raw.githubusercontent.com/michaelhart/iata/main/airports.csv';
+
+/**
+ * Known bad upstream rows — applied after CSV parse so regen preserves corrections.
+ * @type {Readonly<Record<string, { name?: string; city?: string; lat: number; lon: number }>>}
+ */
+const COORDINATE_OVERRIDES = {
+  JUH: {
+    name: 'Chizhou Jiuhuashan Airport',
+    city: 'Chizhou',
+    lat: 30.74028,
+    lon: 117.68667,
+  },
+};
 
 /**
  * Minimal CSV line split that respects double-quoted fields.
@@ -64,11 +80,51 @@ export function splitCsvLine(line) {
 }
 
 /**
+ * Split CSV text into records, keeping quoted newlines inside a single record.
+ * @param {string} csvText
+ * @returns {string[]}
+ */
+export function splitCsvRecords(csvText) {
+  const records = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < csvText.length; i++) {
+    const ch = csvText[i];
+    if (inQuotes) {
+      cur += ch;
+      if (ch === '"') {
+        if (csvText[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inQuotes = true;
+      cur += ch;
+      continue;
+    }
+    if (ch === '\n') {
+      if (cur.trim().length > 0) records.push(cur.replace(/\r$/, ''));
+      cur = '';
+      continue;
+    }
+    if (ch === '\r') continue;
+    cur += ch;
+  }
+  if (cur.trim().length > 0) records.push(cur.replace(/\r$/, ''));
+  return records;
+}
+
+/**
  * @param {string} csvText
  * @returns {Array<[string, string, string, number, number]>}
  */
 export function parseIataAirportsCsv(csvText) {
-  const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const lines = splitCsvRecords(csvText);
   if (lines.length < 2) return [];
   const header = splitCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
   const idx = {
@@ -88,8 +144,12 @@ export function parseIataAirportsCsv(csvText) {
     const cols = splitCsvLine(lines[i]);
     const code = (cols[idx.code] ?? '').trim().toUpperCase();
     if (!/^[A-Z]{3}$/.test(code)) continue;
-    const lat = Number(cols[idx.latitude]);
-    const lon = Number(cols[idx.longitude]);
+    const latRaw = (cols[idx.latitude] ?? '').trim();
+    const lonRaw = (cols[idx.longitude] ?? '').trim();
+    // Reject missing/blank before Number() so "" cannot become 0.
+    if (!latRaw || !lonRaw) continue;
+    const lat = Number(latRaw);
+    const lon = Number(lonRaw);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
     if (lat === 0 && lon === 0) continue;
@@ -97,6 +157,18 @@ export function parseIataAirportsCsv(csvText) {
     const city = idx.city >= 0 ? (cols[idx.city] ?? '').trim() : '';
     byCode.set(code, [code, name, city, lat, lon]);
   }
+
+  for (const [code, override] of Object.entries(COORDINATE_OVERRIDES)) {
+    const prev = byCode.get(code);
+    byCode.set(code, [
+      code,
+      override.name ?? prev?.[1] ?? code,
+      override.city ?? prev?.[2] ?? '',
+      override.lat,
+      override.lon,
+    ]);
+  }
+
   return [...byCode.values()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
@@ -129,7 +201,22 @@ async function generateMeshcoreIataAirportsJson(csvText) {
     airports: rows,
   };
   fs.mkdirSync(path.dirname(IATA_AIRPORTS_JSON_PATH), { recursive: true });
-  fs.writeFileSync(IATA_AIRPORTS_JSON_PATH, `${JSON.stringify(payload)}\n`, 'utf8');
+  const body = `${JSON.stringify(payload)}\n`;
+  const tmpPath = path.join(
+    path.dirname(IATA_AIRPORTS_JSON_PATH),
+    `.meshcoreMqttIataAirports.${process.pid}.${Date.now()}.tmp.json`,
+  );
+  try {
+    fs.writeFileSync(tmpPath, body, 'utf8');
+    fs.renameSync(tmpPath, IATA_AIRPORTS_JSON_PATH);
+  } catch (err) {
+    try {
+      fs.unlinkSync(tmpPath);
+    } catch {
+      // catch-no-log-ok best-effort temp cleanup
+    }
+    throw err;
+  }
   return { path: IATA_AIRPORTS_JSON_PATH, count: rows.length };
 }
 

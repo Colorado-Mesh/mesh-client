@@ -24,6 +24,7 @@ const POPOVER_WIDTH = 360;
 const VIEWPORT_MARGIN = 8;
 /** Cap filtered rows so the list stays responsive with ~10k airports. */
 const FILTERED_LIST_CAP = 200;
+const POPOVER_MAX_H_PX = 420;
 
 export interface MeshcoreMqttIataSelectProps {
   id: string;
@@ -60,7 +61,11 @@ export function MeshcoreMqttIataSelect({
   const [airports, setAirports] = useState<MeshcoreIataAirport[]>([]);
   const [nearestCode, setNearestCode] = useState<string | null>(null);
   const [highlight, setHighlight] = useState(0);
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [position, setPosition] = useState<{
+    top: number;
+    left: number;
+    maxHeight: number;
+  } | null>(null);
   const [loadError, setLoadError] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -86,9 +91,20 @@ export function MeshcoreMqttIataSelect({
   })();
 
   const entries: ListEntry[] = useMemo(() => {
-    const filtered = filterMeshcoreIataAirports(airports, query).slice(0, FILTERED_LIST_CAP);
-    const out: ListEntry[] = [];
     const q = query.trim().toLowerCase();
+    const nearest =
+      nearestCode != null ? (airports.find((a) => a.code === nearestCode) ?? null) : null;
+    let filtered = filterMeshcoreIataAirports(airports, query);
+    // Blank search: pin nearest into the capped window so highlight/scroll/Enter work.
+    if (!q && nearest) {
+      filtered = [nearest, ...filtered.filter((a) => a.code !== nearest.code)].slice(
+        0,
+        FILTERED_LIST_CAP,
+      );
+    } else {
+      filtered = filtered.slice(0, FILTERED_LIST_CAP);
+    }
+    const out: ListEntry[] = [];
     if (!q || MESHCORE_IATA_TEST_CODE.includes(q) || 'test'.includes(q)) {
       out.push({ kind: 'test' });
     }
@@ -147,12 +163,25 @@ export function MeshcoreMqttIataSelect({
       VIEWPORT_MARGIN,
       Math.min(rect.left, window.innerWidth - width - VIEWPORT_MARGIN),
     );
-    const top = Math.min(rect.bottom + 4, window.innerHeight - VIEWPORT_MARGIN - 40);
+    const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_MARGIN;
+    const spaceAbove = rect.top - VIEWPORT_MARGIN;
+    const idealMax = Math.min(POPOVER_MAX_H_PX, window.innerHeight * 0.7);
+    const placeBelow = spaceBelow >= 160 || spaceBelow >= spaceAbove;
+    const maxHeight = Math.max(
+      120,
+      Math.min(idealMax, placeBelow ? spaceBelow - 4 : spaceAbove - 4),
+    );
+    const top = placeBelow ? rect.bottom + 4 : Math.max(VIEWPORT_MARGIN, rect.top - 4 - maxHeight);
     queueMicrotask(() => {
-      setPosition({ top, left });
+      setPosition({ top, left, maxHeight });
     });
-    inputRef.current?.focus();
   }, [open]);
+
+  // Focus after the positioned portal mounts (input exists only when position is set).
+  useLayoutEffect(() => {
+    if (!open || !position) return;
+    inputRef.current?.focus();
+  }, [open, position]);
 
   useEffect(() => {
     if (!open || airports.length === 0) return;
@@ -170,15 +199,23 @@ export function MeshcoreMqttIataSelect({
       if (ac.signal.aborted || !pos) return;
       const nearest = findNearestMeshcoreIata(airports, pos.lat, pos.lon);
       if (!nearest || ac.signal.aborted) return;
+      // Highlight-only — never auto-commit the nearest airport.
       setNearestCode(nearest.code);
-      const filtered = filterMeshcoreIataAirports(airports, '');
-      const airportIdx = filtered.findIndex((a) => a.code === nearest.code);
-      if (airportIdx >= 0) setHighlight(airportIdx + 1);
     })();
     return () => {
       ac.abort();
     };
   }, [open, airports]);
+
+  // Map nearest → highlight index only for rows currently shown (blank search).
+  useEffect(() => {
+    if (!open || !nearestCode || query.trim()) return;
+    const idx = entries.findIndex((e) => e.kind === 'airport' && e.airport.code === nearestCode);
+    if (idx < 0) return;
+    queueMicrotask(() => {
+      setHighlight(idx);
+    });
+  }, [open, nearestCode, entries, query]);
 
   useLayoutEffect(() => {
     if (!open || !nearestCode || query.trim()) return;
@@ -270,11 +307,12 @@ export function MeshcoreMqttIataSelect({
         createPortal(
           <div
             ref={popoverRef}
-            className="bg-deep-black rounded-modal shadow-level-3 border-ink-800 fixed flex max-h-[min(420px,70vh)] flex-col overflow-hidden border"
+            className="bg-deep-black rounded-modal shadow-level-3 border-ink-800 fixed flex flex-col overflow-hidden border"
             style={{
               zIndex: Z_POPOVER_MENU,
               width: `${POPOVER_WIDTH / 16}rem`,
               maxWidth: `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`,
+              maxHeight: position.maxHeight,
               top: position.top,
               left: position.left,
             }}

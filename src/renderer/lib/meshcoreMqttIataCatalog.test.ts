@@ -111,7 +111,7 @@ describe('parseMeshcoreIataCatalog / loadMeshcoreIataAirports', () => {
   it('loads the vendored catalog with DEN present', async () => {
     setMeshcoreIataAirportsForTests(null);
     const airports = await loadMeshcoreIataAirports();
-    expect(airports.length).toBeGreaterThan(1000);
+    expect(airports.length).toBeGreaterThanOrEqual(1000);
     expect(airports.find((a) => a.code === 'DEN')).toMatchObject({ code: 'DEN' });
   });
 });

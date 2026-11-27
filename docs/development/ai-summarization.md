@@ -106,9 +106,10 @@ no follow-ups or multi-pass). Main allowlist-fetches troubleshooting markdown fr
 `raw.githubusercontent.com/Colorado-Mesh/mesh-client/main/docs/` (same pages as the published
 MkDocs site), selects heading sections that match finding tokens under the engine prompt budget,
 and builds the prompt via sibling `ai-summarize-prompt-prepare.js`
-(`src/main/ai/summarizePromptPrepare.ts`, using `src/shared/aiLogAnalysisPrompt.ts`). Docs fetch
-failure or offline → `docsUnavailable`; the built-in analyzer remains available. See
-[Log analysis](../log-analysis.md).
+(`src/main/ai/summarizePromptPrepare.ts`, using `src/shared/aiLogAnalysisPrompt.ts`). A docs fetch failure, or an offline state detected by the main process after a
+request starts, produces `docsUnavailable`. Separately, the Log panel disables the
+AI action when the renderer is already offline. The built-in analyzer remains
+available either way. See [Log analysis](../log-analysis.md).
 
 ## Data and runtime boundaries
 

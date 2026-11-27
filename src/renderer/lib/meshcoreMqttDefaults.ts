@@ -13,8 +13,11 @@ export const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
   port: 1883,
   username: '',
   password: '',
-  /** Unset until the user picks an IATA from the MeshCore MQTT picklist. */
-  topicPrefix: '',
+  /**
+   * Non-IATA / Custom broker fallback when nothing is saved.
+   * Device-signing (IATA-scoped) presets clear this so the Area IATA picklist is required.
+   */
+  topicPrefix: 'meshcore',
   autoLaunch: false,
   maxRetries: MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   tokenExpiresAt: undefined,

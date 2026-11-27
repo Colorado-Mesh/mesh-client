@@ -557,6 +557,11 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     const budget = aiSummaryPromptBudget(c.engine);
     const { prepareSummarizePrompt } = await loadSummarizePromptPrepare();
     const prepared = await prepareSummarizePrompt(request, budget, () => net.isOnline());
+    if (controller.signal.aborted) {
+      if (active.get(request.requestId) === controller) active.delete(request.requestId);
+      if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);
+      return { ok: false, reason: 'cancelled' };
+    }
     if (!prepared.ok) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);

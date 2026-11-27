@@ -102,7 +102,10 @@ export function filterMeshcoreIataAirports(
 
 /** Display label: `DEN — Denver International Airport` (city when name is sparse). */
 export function formatMeshcoreIataAirportLabel(airport: MeshcoreIataAirport): string {
-  const detail = airport.city && airport.city !== airport.name ? airport.name : airport.name;
+  const name = airport.name.trim();
+  const city = airport.city.trim();
+  const nameSparse = !name || name === airport.code;
+  const detail = nameSparse && city ? city : name || city || airport.code;
   return `${airport.code} — ${detail}`;
 }
 
