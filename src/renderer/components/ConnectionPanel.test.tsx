@@ -3400,6 +3400,115 @@ describe('ConnectionPanel saved device history', () => {
     });
   });
 
+  it('names an unnamed MeshCore HTTP destination after switching from Meshtastic serial', async () => {
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({
+        type: 'serial',
+        serialPortId: '/dev/ttyUSB0',
+        deviceName: 'Meshtastic Radio',
+      }),
+    );
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshcore',
+      JSON.stringify({ type: 'http', httpAddress: '192.168.1.172:5000' }),
+    );
+    localStorage.setItem(
+      'mesh-client:connectionHistory:meshcore',
+      JSON.stringify([
+        {
+          id: 'mc-http-unnamed',
+          lastUsedAt: 2000,
+          type: 'http',
+          httpAddress: '192.168.1.172:5000',
+        },
+      ]),
+    );
+
+    const view = render(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'configured',
+          connectionType: 'serial',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+        myNodeName="Meshtastic Radio"
+      />,
+    );
+
+    view.rerender(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'configured',
+          connectionType: 'http',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+        myNodeName="MeshCore Radio"
+      />,
+    );
+
+    await waitFor(() => {
+      const last = JSON.parse(localStorage.getItem('mesh-client:lastConnection:meshcore')!);
+      expect(last).toMatchObject({
+        type: 'http',
+        httpAddress: '192.168.1.172:5000',
+        deviceName: 'MeshCore Radio',
+      });
+      const history = JSON.parse(localStorage.getItem('mesh-client:connectionHistory:meshcore')!);
+      expect(history).toHaveLength(1);
+      expect(history[0]).toMatchObject({
+        type: 'http',
+        httpAddress: '192.168.1.172:5000',
+        deviceName: 'MeshCore Radio',
+      });
+      expect(
+        history.some((e: { serialPortId?: string }) => e.serialPortId === '/dev/ttyUSB0'),
+      ).toBe(false);
+    });
+  });
+
+  it('backfills MeshCom KISS when live state reports tcp but MRU is stored as http', async () => {
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshcom',
+      JSON.stringify({ type: 'http', httpAddress: '127.0.0.1:8001' }),
+    );
+
+    render(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'configured',
+          connectionType: 'tcp',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcom"
+        myNodeName="IK5XMK-12"
+      />,
+    );
+
+    await waitFor(() => {
+      const last = JSON.parse(localStorage.getItem('mesh-client:lastConnection:meshcom')!);
+      expect(last).toMatchObject({
+        type: 'http',
+        httpAddress: '127.0.0.1:8001',
+        deviceName: 'IK5XMK-12',
+      });
+    });
+  });
+
   it('lists multiple saved TCP hosts and reconnects the selected one', async () => {
     const user = userEvent.setup();
     localStorage.setItem(

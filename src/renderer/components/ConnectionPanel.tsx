@@ -1659,13 +1659,17 @@ export default function ConnectionPanel({
   // while connected must reach the Saved devices row.
   // Gate on this protocol's stored MRU identity: on protocol switch, lastConnectionRef can
   // still hold the previous protocol's endpoint until rehydrate commits (same render cycle).
+  // Depend on `lastConnection` so backfill re-runs once rehydrate replaces that stale ref.
   useEffect(() => {
     if (!myNodeName) return;
     if (state.status !== 'configured') return;
     if (protocol !== 'meshtastic' && protocol !== 'meshcore' && protocol !== 'meshcom') return;
     const current = lastConnectionRef.current;
     if (!current || current.type === 'ble') return;
-    if (state.connectionType != null && current.type !== state.connectionType) return;
+    // MeshCom KISS: configure writer stores `http` even when live state reports `tcp`.
+    const liveType: ConnectionType | null =
+      protocol === 'meshcom' && state.connectionType === 'tcp' ? 'http' : state.connectionType;
+    if (liveType != null && current.type !== liveType) return;
     const storedMru = loadLastConnection(protocol);
     const currentKey = connectionHistoryIdentityKey(current, protocol);
     const storedKey = storedMru ? connectionHistoryIdentityKey(storedMru, protocol) : null;
@@ -1680,6 +1684,7 @@ export default function ConnectionPanel({
     protocol,
     state.status,
     state.connectionType,
+    lastConnection,
     setLastConnection,
     setConnectionHistory,
   ]);
