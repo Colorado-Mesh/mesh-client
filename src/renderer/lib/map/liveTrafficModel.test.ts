@@ -527,6 +527,26 @@ describe('MeshCom live traffic', () => {
     expect(event.observerId).toBeUndefined();
     expect(event.routeStatus).toBe('partial');
   });
+
+  it('preserves null MeshCom signal as non-finite while keeping measured zero', () => {
+    const originId = callsignToNodeId('IK5NJM-11');
+    const [missing] = buildMeshcomLiveTrafficEvents(
+      [meshcomCapture({ fromNodeId: originId, rssi: null, snr: null })],
+      indexFor(node(originId, { long_name: 'IK5NJM-11', latitude: 43.1, longitude: 11.2 })),
+      null,
+      NOW,
+    );
+    expect(Number.isFinite(missing.rssi)).toBe(false);
+    expect(Number.isFinite(missing.snr)).toBe(false);
+    const [zero] = buildMeshcomLiveTrafficEvents(
+      [meshcomCapture({ fromNodeId: originId, rssi: 0, snr: 0 })],
+      indexFor(node(originId, { long_name: 'IK5NJM-11', latitude: 43.1, longitude: 11.2 })),
+      null,
+      NOW,
+    );
+    expect(zero.rssi).toBe(0);
+    expect(zero.snr).toBe(0);
+  });
 });
 
 describe('Meshtastic live traffic', () => {

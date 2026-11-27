@@ -141,12 +141,8 @@ function applySourceFilter(
   filter: SourceFilter,
   variant: Variant,
 ): NormalizedPacket[] {
-  if (variant === 'meshcore' || variant === 'reticulum') return packets;
-  if (variant === 'meshcom') {
-    if (filter === 'all') return packets;
-    if (filter === 'rf') return packets.filter((p) => !p.viaMqtt);
-    return packets.filter((p) => p.viaMqtt);
-  }
+  // Source control is Meshtastic-only; ignore stale filter state for other variants.
+  if (variant === 'meshcore' || variant === 'reticulum' || variant === 'meshcom') return packets;
   const nonLocal = packets.filter((p) => !p.isLocal);
   if (filter === 'all') return nonLocal;
   if (filter === 'rf') return nonLocal.filter((p) => !p.viaMqtt);

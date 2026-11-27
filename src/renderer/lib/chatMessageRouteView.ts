@@ -177,12 +177,13 @@ export interface ChatMessageRouteTooltipInput {
 
 function hopLine(t: Translate, index: number, hop: ChatRouteHop): string {
   if (hop.name == null) return t('chatPanel.messageRoute.hopUnknown', { index, hash: hop.hash });
-  // MeshCom digipeaters: name and hash are the same callsign — no redundant "(CALL)".
-  if (hop.name === hop.hash) {
-    return t('chatPanel.messageRoute.hopCallsign', { index, name: hop.name });
-  }
   if (hop.matchCount > 1) {
     return t('chatPanel.messageRoute.hopGuess', { index, name: hop.name, hash: hop.hash });
+  }
+  // MeshCom digipeaters: name and hash are the same callsign — no redundant "(CALL)".
+  // Only when unambiguous (matchCount === 1); never hide multi-match warnings.
+  if (hop.matchCount === 1 && hop.name === hop.hash) {
+    return t('chatPanel.messageRoute.hopCallsign', { index, name: hop.name });
   }
   return t('chatPanel.messageRoute.hopNamed', { index, name: hop.name, hash: hop.hash });
 }

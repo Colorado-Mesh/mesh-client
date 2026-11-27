@@ -11,12 +11,17 @@ import { nodeRecordsToMeshNodeMap } from '../storeRecordAdapters';
 import { applyMeshcomMheardStations } from './applyMeshcomMheardStations';
 import { clearMeshcomCallRegistry } from './meshcomCallRegistry';
 import { callsignToNodeId } from './meshcomCallsign';
+import {
+  clearAllMeshcomLocallyDeletedContactsForTests,
+  markMeshcomLocallyDeletedContact,
+} from './meshcomLocallyDeletedContacts';
 
 const ID = 'meshcom-session-test';
 
 describe('applyMeshcomMheardStations', () => {
   beforeEach(() => {
     clearMeshcomCallRegistry();
+    clearAllMeshcomLocallyDeletedContactsForTests();
     useNodeStore.setState({ nodes: {} });
   });
 
@@ -67,5 +72,30 @@ describe('applyMeshcomMheardStations', () => {
       (e) => e.source === String(relayId) && e.target === String(peerId),
     );
     expect(relayEdge?.kind).toBe('relay');
+  });
+
+  it('skips tombstoned stations but still updates a non-tombstoned via relay', () => {
+    markMeshcomLocallyDeletedContact('GONE-1');
+    applyMeshcomMheardStations(
+      ID,
+      [
+        { callsign: 'GONE-1', via: 'RELAY-2', snr: 3 },
+        { callsign: 'LIVE-3', rssi: -70, ageMin: 5 },
+      ],
+      1_700_000_000_000,
+    );
+    const goneId = callsignToNodeId('GONE-1');
+    const relayId = callsignToNodeId('RELAY-2');
+    const liveId = callsignToNodeId('LIVE-3');
+    const bucket = useNodeStore.getState().nodes[ID] ?? {};
+    expect(bucket[goneId]).toBeUndefined();
+    expect(bucket[relayId]).toBeUndefined();
+    expect(bucket[liveId]?.lastHeardAt).toBe(1_700_000_000_000 - 5 * 60_000);
+  });
+
+  it('subtracts reported ageMin from heardAt for lastHeardAt', () => {
+    applyMeshcomMheardStations(ID, [{ callsign: 'AGE-1', ageMin: 2 }], 1_700_000_120_000);
+    const id = callsignToNodeId('AGE-1');
+    expect(useNodeStore.getState().nodes[ID]?.[id]?.lastHeardAt).toBe(1_700_000_000_000);
   });
 });

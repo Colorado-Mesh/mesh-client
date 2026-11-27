@@ -94,6 +94,7 @@ describe('meshcomIngest', () => {
           timestamp: 1_700_000_000_000,
           rxRssi: -88,
           rxSnr: 4,
+          hopCount: 0,
         },
       },
       { getMyNodeNum: () => 0 },
@@ -105,8 +106,58 @@ describe('meshcomIngest', () => {
         msg_id: msgId,
         from_call: 'DH1FR-2',
         text: 'hello meshcom',
+        path: 'DH1FR-2',
       }),
     );
+  });
+
+  it('persists digipeater path, numeric hops without digis, and null when hops unknown', () => {
+    const from = registerMeshcomCallsign('DH1FR-2');
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          [from]: { nodeId: from, longName: 'DH1FR-2', lastHeardAt: 1_700_000_000 },
+        },
+      },
+      traceRoutes: {},
+      waypoints: {},
+      neighborInfo: {},
+    });
+    const base = {
+      sender_id: from,
+      sender_name: 'DH1FR-2',
+      payload: 'path-check',
+      channel: 0,
+      timestamp: 1_700_000_000_000,
+      receivedVia: 'rf' as const,
+    };
+    for (const [msgId, hopCount, digis, expectedPath] of [
+      ['meshcom-path-digis', 2, ['RELAY-1'], 'DH1FR-2,RELAY-1'],
+      ['meshcom-path-hops', 3, undefined, '3'],
+      ['meshcom-path-unknown', undefined, undefined, null],
+    ] as const) {
+      upsertMessage(ID, chatMessageToMessageRecord({ ...base, storeId: msgId }));
+      meshcomIngestHandleTextMessage(
+        ID,
+        {
+          type: 'text_message',
+          payload: {
+            id: msgId,
+            from,
+            to: 0,
+            payload: 'path-check',
+            channelIndex: 0,
+            timestamp: 1_700_000_000_000,
+            hopCount,
+            ...(digis ? { rxPathCallsigns: [...digis] } : {}),
+          },
+        },
+        { getMyNodeNum: () => 0 },
+      );
+      expect(window.electronAPI.db.saveMeshcomMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ msg_id: msgId, path: expectedPath }),
+      );
+    }
   });
 
   it('resolves from_call from the callsign registry when node_info has not landed yet', () => {

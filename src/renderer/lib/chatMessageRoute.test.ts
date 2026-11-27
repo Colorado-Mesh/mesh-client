@@ -528,4 +528,20 @@ describe('formatChatMessageRouteTooltip MeshCom digipeater', () => {
       }),
     ).toBe(['Reached you in 1 hop', 'From IK5NJM-11', '1. IW5EIA-12', 'To you'].join('\n'));
   });
+
+  it('keeps ambiguity warning when name equals hash but matchCount > 1', () => {
+    expect(
+      formatChatMessageRouteTooltip(t, {
+        hops: 1,
+        senderName: 'Base',
+        routeDetail: 'floodPath',
+        view: {
+          kind: 'floodPath',
+          hops: [{ hash: 'AB', name: 'AB', matchCount: 2 }],
+        },
+      }),
+    ).toBe(
+      ['Reached you in 1 hop', 'From Base', '1. AB or another repeater (AB)', 'To you'].join('\n'),
+    );
+  });
 });

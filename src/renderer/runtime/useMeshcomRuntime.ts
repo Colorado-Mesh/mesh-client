@@ -34,7 +34,10 @@ import {
   markMeshcomLocallyDeletedContact,
 } from '../lib/meshcom/meshcomLocallyDeletedContacts';
 import { meshcomPersistIdentityId } from '../lib/meshcom/meshcomPersistIdentity';
-import { attachMeshcomRawPacketSideEffects } from '../lib/meshcom/meshcomRawPacketSideEffects';
+import {
+  attachMeshcomRawPacketSideEffects,
+  clearMeshcomRawPacketPending,
+} from '../lib/meshcom/meshcomRawPacketSideEffects';
 import { attachMeshcomRoutingAckSideEffects } from '../lib/meshcom/meshcomRoutingAckSideEffects';
 import { applyMeshcomSelfCallsign } from '../lib/meshcom/meshcomSelfCallsign';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
@@ -219,6 +222,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   }, []);
 
   const clearRawPackets = useCallback(() => {
+    clearMeshcomRawPacketPending(setRawPackets);
     setRawPackets([]);
     rawPacketsRef.current = [];
   }, []);
@@ -989,7 +993,6 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     let skipped = parsed.skipped;
 
     for (const row of parsed.rows) {
-      clearMeshcomLocallyDeletedContact(row.callsign);
       const nodeId = registerMeshcomCallsign(row.callsign);
       if (!nodeId) {
         skipped++;
@@ -1006,19 +1009,6 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       const hwModel =
         row.hw_id != null ? meshcomHwLabel(row.hw_id) || undefined : existing?.hwModel;
 
-      for (const id of syncIdentityIds) {
-        upsertNodeRecord(id, {
-          nodeId,
-          longName: row.callsign,
-          shortName: row.callsign.slice(0, 4),
-          latitude: latitude ?? undefined,
-          longitude: longitude ?? undefined,
-          favorited,
-          lastHeardAt,
-          hwModel,
-        });
-      }
-
       try {
         await window.electronAPI.db.saveMeshcomContact({
           callsign: row.callsign,
@@ -1031,12 +1021,28 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           last_heard:
             lastHeardAt != null && lastHeardAt > 0 ? lastHeardToUnixSeconds(lastHeardAt) : null,
         });
-        imported++;
       } catch (e: unknown) {
         skipped++;
         errors.push(t('meshcom.importSaveFailed', { callsign: row.callsign }));
         console.warn('mcL1516 [useMeshcomRuntime] importContacts save ' + errLikeToLogString(e));
+        continue;
       }
+
+      // Commit in-memory / tombstone clear only after durable save succeeds.
+      clearMeshcomLocallyDeletedContact(row.callsign);
+      for (const id of syncIdentityIds) {
+        upsertNodeRecord(id, {
+          nodeId,
+          longName: row.callsign,
+          shortName: row.callsign.slice(0, 4),
+          latitude: latitude ?? undefined,
+          longitude: longitude ?? undefined,
+          favorited,
+          lastHeardAt,
+          hwModel,
+        });
+      }
+      imported++;
     }
 
     return { imported, skipped, errors };

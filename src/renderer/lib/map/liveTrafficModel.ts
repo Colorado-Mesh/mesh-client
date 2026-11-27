@@ -487,8 +487,9 @@ export function buildMeshcomLiveTrafficEvents(
       routeStatus,
       scopeCode: null,
       returnScopeCode: null,
-      rssi: packet.rssi ?? 0,
-      snr: packet.snr ?? 0,
+      // Preserve unavailable readings as NaN so Number.isFinite treats them as missing (0 stays 0).
+      rssi: packet.rssi ?? Number.NaN,
+      snr: packet.snr ?? Number.NaN,
       hopCount: packet.hopsAway,
       senderLabel:
         nodeLabel(packet.fromNodeId, index) ||

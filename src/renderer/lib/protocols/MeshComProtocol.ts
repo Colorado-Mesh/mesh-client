@@ -498,7 +498,9 @@ function emitMeshcomRx(emit: (event: DomainEvent) => void, entry: MeshcomRxEvent
 }
 
 function meshcomSerialOrExtUdpTransport(device: MeshComDeviceHandle): MeshcomRxEvent['transport'] {
-  return device.transport === 'serial' || device.transport === 'netconsole' ? 'serial' : 'extudp';
+  if (device.transport === 'serial' || device.transport === 'netconsole') return 'serial';
+  if (device.transport === 'ble') return 'ble';
+  return 'extudp';
 }
 
 function textMessageToFromDest(

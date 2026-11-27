@@ -61,6 +61,13 @@ function appendRawPacketLog(payload: MeshcomRxEvent, deps: MeshcomRawPacketSideE
   }
 }
 
+/** Discard captures queued before Clear; later appends flush normally. */
+export function clearMeshcomRawPacketPending(
+  setRawPackets: Dispatch<SetStateAction<MeshcomRawPacketEntry[]>>,
+): void {
+  rawPacketAppenders.get(setRawPackets)?.clearPending();
+}
+
 /** Attach sniffer side effects for one MeshCom identity. */
 export function attachMeshcomRawPacketSideEffects(
   identityId: IdentityId,

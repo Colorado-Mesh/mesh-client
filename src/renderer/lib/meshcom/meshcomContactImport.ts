@@ -73,14 +73,21 @@ function protocolAllowsRow(rec: Record<string, unknown>): boolean {
 function rowFromRecord(rec: Record<string, unknown>): MeshcomContactImportRow | null {
   if (!protocolAllowsRow(rec)) return null;
   const callsign = normalizeMeshcomCallsign(
-    firstString(rec.callsign, rec.call, rec.long_name, rec.longName, rec.name),
+    firstString(
+      rec.callsign,
+      rec.call,
+      rec.long_name,
+      rec.longName,
+      rec.longname, // CSV lowercases camelCase headers
+      rec.name,
+    ),
   );
   if (!callsign || isMeshcomLegacyBroadcastPlaceholder(callsign)) return null;
   const lat = parseCoord(rec.lat ?? rec.latitude);
   const lon = parseCoord(rec.lon ?? rec.longitude ?? rec.lng);
   const favorited = parseFavorited(rec.favorited ?? rec.favorite);
-  const hw_id = parseHwId(rec.hw_id ?? rec.hwId);
-  const last_heard = parseLastHeardMs(rec, rec.last_heard ?? rec.lastHeard);
+  const hw_id = parseHwId(rec.hw_id ?? rec.hwId ?? rec.hwid);
+  const last_heard = parseLastHeardMs(rec, rec.last_heard ?? rec.lastHeard ?? rec.lastheard);
   return {
     callsign,
     lat,
@@ -149,11 +156,45 @@ function parseCsvLine(line: string): string[] {
   return cells;
 }
 
+/** Split CSV text into records, respecting quoted fields (CRLF / LF / CR separators). */
+function splitCsvRecords(raw: string): string[] {
+  const text = raw.replace(/^\uFEFF/, '');
+  const records: string[] = [];
+  let record = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charAt(i);
+    if (inQuotes) {
+      record += ch;
+      if (ch === '"') {
+        if (text.charAt(i + 1) === '"') {
+          record += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inQuotes = true;
+      record += ch;
+      continue;
+    }
+    if (ch === '\r' || ch === '\n') {
+      if (ch === '\r' && text.charAt(i + 1) === '\n') i++;
+      if (record.trim().length > 0) records.push(record);
+      record = '';
+      continue;
+    }
+    record += ch;
+  }
+  if (record.trim().length > 0) records.push(record);
+  return records;
+}
+
 function parseCsvRecords(raw: string): Record<string, unknown>[] {
-  const lines = raw
-    .replace(/^\uFEFF/, '')
-    .split(/\r\n|\n/)
-    .filter((l) => l.trim().length > 0);
+  const lines = splitCsvRecords(raw);
   if (lines.length < 2) return [];
   const header = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
   const rows: Record<string, unknown>[] = [];

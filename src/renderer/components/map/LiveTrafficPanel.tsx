@@ -131,7 +131,8 @@ export interface LiveTrafficPanelProps {
 }
 
 function packetCategory(kind: string): 'message' | 'advert' | 'telemetry' | 'routing' | 'other' {
-  if (/TXT|TEXT|MESSAGE/i.test(kind)) return 'message';
+  // MeshCom sniffer kinds are `msg` / `msg/gw`; keep TXT|TEXT|MESSAGE for other protocols.
+  if (/^(msg(\/gw)?)$/i.test(kind) || /TXT|TEXT|MESSAGE/i.test(kind)) return 'message';
   if (/ADVERT|POSITION|NODEINFO/i.test(kind)) return 'advert';
   if (/TELEMETRY|STATUS/i.test(kind)) return 'telemetry';
   if (/ACK|TRACE|PATH|ROUT|REQ|RESP/i.test(kind)) return 'routing';

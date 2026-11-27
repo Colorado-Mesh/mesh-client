@@ -165,13 +165,17 @@ function handleTextMessage(
   }
   const fromCallForPath = fromCall || callsignFromNode(identityId, event.payload.from);
   const digis = event.payload.rxPathCallsigns ?? [];
+  const hopCount = event.payload.hopCount;
+  // Origin-only only when digis empty and hops are known zero; unknown hops stay null / numeric.
   const path =
-    fromCallForPath && digis.length > 0
-      ? [fromCallForPath, ...digis].join(',')
-      : fromCallForPath
+    digis.length > 0
+      ? fromCallForPath
+        ? [fromCallForPath, ...digis].join(',')
+        : digis.join(',')
+      : hopCount === 0 && fromCallForPath
         ? fromCallForPath
-        : event.payload.hopCount != null
-          ? String(event.payload.hopCount)
+        : hopCount != null
+          ? String(hopCount)
           : null;
 
   if (fromIsDurable) {

@@ -6226,9 +6226,16 @@ ipcMain.handle('meshcom:openContactsImportFile', async (event) => {
       properties: ['openFile'],
     });
     if (result.canceled || result.filePaths.length === 0) return null;
-    const raw = await fs.promises.readFile(result.filePaths[0], 'utf-8');
-    if (raw.length > 5 * 1024 * 1024) throw new Error('File too large (max 5 MB)');
-    return raw;
+    const CONTACT_IMPORT_MAX_BYTES = 5 * 1024 * 1024;
+    try {
+      const buf = await readFileUpTo(result.filePaths[0], CONTACT_IMPORT_MAX_BYTES);
+      return buf.toString('utf-8');
+    } catch (err) {
+      if (err instanceof Error && err.message === 'File too large') {
+        throw new Error('File too large (max 5 MB)');
+      }
+      throw err;
+    }
   } catch (err) {
     console.error(
       'mcL1515 [IPC] meshcom:openContactsImportFile failed:',

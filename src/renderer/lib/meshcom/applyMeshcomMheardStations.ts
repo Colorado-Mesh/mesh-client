@@ -2,6 +2,7 @@
  * Apply MeshCom MHEARD rows to nodeStore (hops/path/neighbors) and durable SQLite contacts.
  */
 import { MESHCOM_CONTACT_CAP_DEFAULT } from '@/shared/meshcomConstants';
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import {
   type NodeRecord,
@@ -57,7 +58,6 @@ function persistDurableMeshcomContact(
       last_heard: Math.floor(opts.lastHeardAt / 1000),
     }),
   );
-  trimMeshcomIdentityNodes(identityId, MESHCOM_CONTACT_CAP_DEFAULT);
 }
 
 /** Drop oldest non-favorited in-memory nodes when an identity exceeds the contact cap. */
@@ -86,11 +86,19 @@ function viaNodeId(via: string): number {
   return call ? registerMeshcomCallsign(call) : 0;
 }
 
+/** Last-heard ms: report time minus reported age when present. */
+function stationLastHeardAt(heardAt: number, ageMin: number | undefined): number {
+  if (ageMin == null || !Number.isFinite(ageMin) || ageMin < 0) return heardAt;
+  return Math.max(0, heardAt - ageMin * MS_PER_MINUTE);
+}
+
 /**
  * Upsert MHEARD stations into Zustand and SQLite contacts with RF topology for the peer graph.
  *
  * - No `via`: direct RF contact (`hopsAway` 0).
  * - With `via`: relay path + neighbor reverse link so `resolveMeshPeerRelayId` can edge peers.
+ * - Tombstoned stations are skipped entirely. A tombstoned station's via relay is still updated
+ *   when the relay itself is not tombstoned (relay is a separate heard contact).
  */
 export function applyMeshcomMheardStations(
   identityId: IdentityId,
@@ -103,14 +111,16 @@ export function applyMeshcomMheardStations(
 
   for (const station of stations) {
     const callsign = normalizeMeshcomCallsign(station.callsign);
-    if (!callsign) continue;
+    if (!callsign || !shouldApplyMeshcomContact(callsign)) continue;
     const nodeId = stationNodeId(station);
     if (!nodeId) continue;
 
     const viaCall = station.via ? normalizeMeshcomCallsign(station.via) : '';
-    const relayId = viaCall ? viaNodeId(viaCall) : 0;
-    const hasVia = viaCall.length > 0 && relayId > 0;
+    const relayAllowed = viaCall.length > 0 && shouldApplyMeshcomContact(viaCall);
+    const relayId = relayAllowed ? viaNodeId(viaCall) : 0;
+    const hasVia = relayAllowed && relayId > 0;
 
+    const lastHeardAt = stationLastHeardAt(heardAt, station.ageMin);
     const hopsAway = hasVia ? 2 : 0;
     const path = hasVia ? [relayId, nodeId] : undefined;
     const hwModel = station.hwId != null ? meshcomHwLabel(station.hwId) : undefined;
@@ -121,7 +131,7 @@ export function applyMeshcomMheardStations(
       shortName: callsign.slice(0, 4),
       rssi: station.rssi,
       snr: station.snr,
-      lastHeardAt: heardAt,
+      lastHeardAt,
       hopsAway,
       path,
       source: 'rf',
@@ -134,14 +144,14 @@ export function applyMeshcomMheardStations(
       rssi: station.rssi,
       snr: station.snr,
       hwId: station.hwId,
-      lastHeardAt: heardAt,
+      lastHeardAt,
     });
 
     if (hasVia) {
       const neighbor: MeshNeighbor = {
         nodeId,
         snr: station.snr ?? 0,
-        lastRxTime: Math.floor(heardAt / 1000),
+        lastRxTime: Math.floor(lastHeardAt / 1000),
       };
       const prevList = viaNeighborPatches.get(relayId) ?? [];
       viaNeighborPatches.set(relayId, mergeNeighborEntry(prevList, neighbor));
@@ -150,7 +160,7 @@ export function applyMeshcomMheardStations(
         nodeId: relayId,
         longName: viaCall,
         shortName: viaCall.slice(0, 4),
-        lastHeardAt: heardAt,
+        lastHeardAt,
         hopsAway: 1,
         source: 'rf',
       });
@@ -158,7 +168,7 @@ export function applyMeshcomMheardStations(
       persistDurableMeshcomContact(identityId, {
         callsign: viaCall,
         nodeId: relayId,
-        lastHeardAt: heardAt,
+        lastHeardAt,
       });
     }
   }
@@ -171,12 +181,19 @@ export function applyMeshcomMheardStations(
     const bucket = useNodeStore.getState().nodes[identityId] ?? {};
     const relayRecords: NodeRecord[] = [];
     for (const [relayId, addedNeighbors] of viaNeighborPatches) {
+      // Guard missing relay rows (should be rare after the station upsert above).
+      if (!Object.hasOwn(bucket, relayId)) continue;
       let merged = bucket[relayId].neighbors;
       for (const n of addedNeighbors) {
         merged = mergeNeighborEntry(merged, n);
       }
       relayRecords.push({ nodeId: relayId, neighbors: merged });
     }
-    upsertNodeRecordsForIdentity(identityId, relayRecords);
+    if (relayRecords.length > 0) {
+      upsertNodeRecordsForIdentity(identityId, relayRecords);
+    }
   }
+
+  // Cap after both upserts so newly inserted stations count toward the limit.
+  trimMeshcomIdentityNodes(identityId, MESHCOM_CONTACT_CAP_DEFAULT);
 }

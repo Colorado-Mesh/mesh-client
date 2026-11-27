@@ -69,6 +69,35 @@ describe('parseMeshcomContactsImport', () => {
     expect(rows[0].last_heard).toBe(1_700_000_000_000);
   });
 
+  it('accepts camelCase CSV headers after lowercase normalization', () => {
+    const csv = [
+      'callsign,lastHeard,hwId,latitude,longitude',
+      'W0XYZ-1,1700000000,4,39.74,-104.99',
+    ].join('\n');
+    const { rows, errors } = parseMeshcomContactsImport(csv);
+    expect(errors).toEqual([]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      callsign: 'W0XYZ-1',
+      hw_id: 4,
+      lat: 39.74,
+      lon: -104.99,
+      last_heard: 1_700_000_000_000,
+    });
+  });
+
+  it('keeps quoted multiline notes with the same contact row', () => {
+    const csv = [
+      'callsign,notes,latitude,longitude',
+      '"N0CALL-1","line one\nline two",40.0,-105.0',
+    ].join('\n');
+    const { rows } = parseMeshcomContactsImport(csv);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].callsign).toBe('N0CALL-1');
+    expect(rows[0].lat).toBe(40);
+    expect(rows[0].lon).toBe(-105);
+  });
+
   it('skips non-meshcom protocol rows in topology export', () => {
     const { rows, skipped } = parseMeshcomContactsImport(
       JSON.stringify({
