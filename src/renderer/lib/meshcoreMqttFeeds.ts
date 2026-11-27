@@ -257,20 +257,21 @@ export function meshcorePacketTopic(
   return pubKey ? `${base}/${pubKey}/packets` : `${base}/meshcore/packets`;
 }
 
-/** Two enabled feeds on the same broker/topic would publish identical packets twice. */
+/**
+ * Two enabled feeds on the same broker duplicate every publish. The same topic on different
+ * brokers is the intended analyzer fan-out, so it must not warn.
+ */
 export function meshcoreFeedOverrideWarning(
   feeds: readonly MeshcoreMqttFeed[],
   candidate: Pick<MeshcoreMqttFeed, 'id' | 'enabled' | 'settings'>,
 ): boolean {
   if (!candidate.enabled) return false;
-  const topic = meshcorePacketTopic(candidate.settings);
   return feeds.some(
     (feed) =>
       feed.id !== candidate.id &&
       feed.enabled &&
-      (meshcorePacketTopic(feed.settings) === topic ||
-        (feed.settings.server.trim().toLowerCase() ===
-          candidate.settings.server.trim().toLowerCase() &&
-          feed.settings.port === candidate.settings.port)),
+      feed.settings.server.trim().toLowerCase() ===
+        candidate.settings.server.trim().toLowerCase() &&
+      feed.settings.port === candidate.settings.port,
   );
 }

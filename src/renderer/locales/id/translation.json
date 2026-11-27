@@ -1985,7 +1985,6 @@
       "nameLabel": "Nama",
       "savedLimit": "Anda dapat menyimpan hingga {{max}} feed paket.",
       "enabledLimit": "Nonaktifkan feed lain terlebih dahulu — paling banyak {{max}} feed yang terhubung sekaligus (broker obrolan menggunakan satu slot).",
-      "duplicateWarning": "Feed ini menunjuk ke broker atau topik yang sama dengan feed lain, sehingga akan memublikasikan paket duplikat.",
       "help": "Feed hanya memublikasikan ringkasan paket — obrolan tetap ada di koneksi obrolan. Hingga {{maxSaved}} disimpan, {{maxEnabled}} terhubung sekaligus ditambah broker obrolan.",
       "packetLoggerAlwaysOn": "Umpan paket selalu meneruskan ringkasan paket RX ke {{topic}}. Mereka tidak pernah berlangganan atau mengirim obrolan.",
       "statusConnected": "Tersambung",
@@ -2007,7 +2006,8 @@
       "newBrokerName": "Broker baru",
       "disconnectAll": "Putuskan semua sambungan",
       "done": "Selesai",
-      "cancelAria": "Batalkan {{name}}"
+      "cancelAria": "Batalkan {{name}}",
+      "duplicateWarning": "Koneksi aktif lainnya menargetkan broker yang sama (server dan port), sehingga paket akan dipublikasikan dua kali."
     }
   },
   "contactGroupsModal": {

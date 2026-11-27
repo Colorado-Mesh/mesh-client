@@ -2009,7 +2009,6 @@
       "nameLabel": "Jméno",
       "savedLimit": "Můžete si uložit až {{max}} kanálů balíčků.",
       "enabledLimit": "Nejprve deaktivujte jiný feed – současně lze připojit maximálně {{max}} feedů (chatovací broker zabírá jedno místo).",
-      "duplicateWarning": "Tento feed odkazuje na stejného brokera nebo téma jako jiný feed, takže bude publikovat duplicitní pakety.",
       "help": "Kanály zveřejňují pouze souhrny paketů – chat zůstává na připojení chatu. Uloženo až {{maxSaved}}, {{maxEnabled}} připojeno najednou plus chatový broker.",
       "packetLoggerAlwaysOn": "Feedy paketů vždy předávají souhrny paketů RX do {{topic}}. Nikdy se nepřihlašují k odběru ani neodesílají chat.",
       "statusConnected": "Připojeno",
@@ -2031,7 +2030,8 @@
       "newBrokerName": "Nový makléř",
       "disconnectAll": "Ukončit všechna připojení",
       "done": "Hotovo",
-      "cancelAria": "Zrušit {{name}}"
+      "cancelAria": "Zrušit {{name}}",
+      "duplicateWarning": "Další povolené připojení směřuje na stejného brokera (server a port), takže by byly pakety publikovány dvakrát."
     }
   },
   "contactGroupsModal": {

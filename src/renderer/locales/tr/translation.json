@@ -1985,7 +1985,6 @@
       "nameLabel": "Adı",
       "savedLimit": "En fazla {{max}} paket akışını kaydedebilirsiniz.",
       "enabledLimit": "Önce başka bir yayını devre dışı bırakın. Aynı anda en fazla {{max}} yayın bağlanabilir (sohbet aracı bir yuva kullanır).",
-      "duplicateWarning": "Bu besleme, başka bir besleme ile aynı aracıya veya konuya işaret etmektedir, bu nedenle yinelenen paketler yayınlayacaktır.",
       "help": "Yayınlar yalnızca paket özetlerini yayımlar; sohbet, sohbet bağlantısında kalır. En fazla {{maxSaved}} kaydedildi, {{maxEnabled}} sohbet aracısıyla birlikte aynı anda bağlandı.",
       "packetLoggerAlwaysOn": "Paket yayınları, RX paket özetlerini her zaman {{topic}} adresine iletir. Asla sohbete abone olmaz veya sohbet göndermezler.",
       "statusConnected": "Bağlandı",
@@ -2007,7 +2006,8 @@
       "newBrokerName": "Yeni acente",
       "disconnectAll": "Bağlantıyı tamamen kes",
       "done": "Bitti",
-      "cancelAria": "{{name}} öğesini iptal et"
+      "cancelAria": "{{name}} öğesini iptal et",
+      "duplicateWarning": "Etkinleştirilmiş başka bir bağlantı aynı aracıyı (sunucu ve bağlantı noktası) hedefler, bu nedenle paketler iki kez yayınlanacaktır."
     }
   },
   "contactGroupsModal": {

@@ -147,11 +147,18 @@ export default defineConfig({
               priority: 25,
             },
             {
+              // The MeshCore runtime shell alone is the largest single renderer module; keeping
+              // it in its own chunk keeps every protocol chunk under the 1200 kB advisory limit.
+              name: 'protocol-runtimes-config',
+              test: /[\\/]runtime[\\/]useMeshcoreRuntime\.ts$/,
+              priority: 23,
+            },
+            {
               // Keep the per-protocol runtime shells out of App-*.js (1000 kB entry budget).
               // They are needed at startup, but as a separate chunk they load in parallel and
               // keep App parseable without the ~550 kB of runtime code.
               name: 'protocol-runtimes',
-              test: /[\\/]runtime[\\/](useMeshtasticRuntime|useMeshcoreRuntime|useReticulumRuntime)\.ts$/,
+              test: /[\\/]runtime[\\/](useMeshtasticRuntime|useReticulumRuntime)\.ts$/,
               priority: 22,
             },
             {

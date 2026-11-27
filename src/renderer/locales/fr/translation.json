@@ -1985,7 +1985,6 @@
       "nameLabel": "Nom",
       "savedLimit": "Vous pouvez enregistrer jusqu’à {{max}} flux de paquets.",
       "enabledLimit": "Désactivez d’abord un autre flux : un maximum de {{max}} flux peuvent être connectés en même temps (le broker de chat utilise un emplacement).",
-      "duplicateWarning": "Ce flux pointe vers le même broker ou le même sujet qu'un autre flux, il publiera donc des paquets en double.",
       "help": "Les flux publient uniquement des résumés de paquets : le chat reste sur la connexion de chat. Jusqu’à {{maxSaved}} enregistrés, {{maxEnabled}} connectés simultanément, plus le broker de chat.",
       "packetLoggerAlwaysOn": "Les flux de paquets transmettent toujours les résumés des paquets RX à {{topic}}. Ils ne s’abonnent jamais et n’envoient jamais de chat.",
       "statusConnected": "Connecté",
@@ -2007,7 +2006,8 @@
       "newBrokerName": "Nouveau courtier",
       "disconnectAll": "Tout déconnecter",
       "done": "Effectué",
-      "cancelAria": "Annuler {{name}}"
+      "cancelAria": "Annuler {{name}}",
+      "duplicateWarning": "Une autre connexion activée cible le même broker (serveur et port), de sorte que les paquets seraient publiés deux fois."
     }
   },
   "contactGroupsModal": {

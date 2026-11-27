@@ -1985,7 +1985,6 @@
       "nameLabel": "Name",
       "savedLimit": "Sie können bis zu {{max}} Packet-Feeds speichern.",
       "enabledLimit": "Deaktivieren Sie zuerst einen anderen Feed – es können maximal {{max}} Feeds gleichzeitig verbunden werden (der Chat-Broker belegt einen Slot).",
-      "duplicateWarning": "Dieser Feed verweist auf denselben Broker oder dasselbe Thema wie ein anderer Feed, sodass er doppelte Pakete veröffentlicht.",
       "help": "Feeds veröffentlichen nur Paketübersichten – der Chat bleibt auf der Chat-Verbindung. Bis zu {{maxSaved}} gespeichert, {{maxEnabled}} gleichzeitig verbunden plus der Chat-Broker.",
       "packetLoggerAlwaysOn": "Paket-Feeds leiten RX-Paketübersichten immer an {{topic}} weiter. Sie abonnieren oder senden niemals Chats.",
       "statusConnected": "Verbunden",
@@ -2007,7 +2006,8 @@
       "newBrokerName": "Neuer Broker",
       "disconnectAll": "Alle trennen",
       "done": "Erledigt",
-      "cancelAria": "{{name}} abbrechen"
+      "cancelAria": "{{name}} abbrechen",
+      "duplicateWarning": "Eine weitere aktivierte Verbindung zielt auf denselben Broker (Server und Port) ab, sodass Pakete zweimal veröffentlicht werden."
     }
   },
   "contactGroupsModal": {

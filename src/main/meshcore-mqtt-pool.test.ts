@@ -159,15 +159,21 @@ describe('MeshcoreMqttPool', () => {
     }).toThrow(/already connected/);
   });
 
-  it('warns when two enabled feeds publish the same packets', () => {
+  it('warns only when two connections target the same broker endpoint', () => {
     pool.connect('feed-1', { ...BASE, username: pubKey('b') }, { role: 'feed', publishOnly: true });
+    // Same host/port with a different username still duplicates every publish.
+    pool.connect('feed-2', { ...BASE, username: pubKey('c') }, { role: 'feed', publishOnly: true });
+    expect(duplicateWarnings).toHaveLength(1);
+    expect(duplicateWarnings[0]).toContain(`${BASE.server.trim()}:${BASE.port}`);
+
+    duplicateWarnings.length = 0;
+    // Same topic prefix on a different broker is the intended fan-out, not a duplicate.
     pool.connect(
-      'feed-2',
+      'feed-3',
       { ...BASE, server: 'other.example.com', username: pubKey('b') },
       { role: 'feed', publishOnly: true },
     );
-    expect(duplicateWarnings).toHaveLength(1);
-    expect(duplicateWarnings[0]).toContain('meshcore/DEN');
+    expect(duplicateWarnings).toHaveLength(0);
   });
 
   it(`caps analyzer feeds at ${MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS} and still allows chat`, () => {

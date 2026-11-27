@@ -1988,7 +1988,7 @@
       "nameLabel": "Name",
       "savedLimit": "You can save up to {{max}} packet feeds.",
       "enabledLimit": "Disable another feed first — at most {{max}} feeds connect at once (the chat broker uses one slot).",
-      "duplicateWarning": "This feed points at the same broker or topic as another feed, so it will publish duplicate packets.",
+      "duplicateWarning": "Another enabled connection targets the same broker (server and port), so packets would be published twice.",
       "help": "Feeds publish packet summaries only — chat stays on the chat connection. Up to {{maxSaved}} saved, {{maxEnabled}} connected at once plus the chat broker.",
       "packetLoggerAlwaysOn": "Packet feeds always forward RX packet summaries to {{topic}}. They never subscribe or send chat.",
       "statusConnected": "Connected",

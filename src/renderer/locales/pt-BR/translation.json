@@ -1985,7 +1985,6 @@
       "nameLabel": "Nome",
       "savedLimit": "Você pode salvar até {{max}} feeds de pacotes.",
       "enabledLimit": "Desative outro feed primeiro — no máximo {{max}} feeds se conectam ao mesmo tempo (o agente de chat usa um slot).",
-      "duplicateWarning": "Este feed aponta para o mesmo broker ou tópico que outro feed, portanto, publicará pacotes duplicados.",
       "help": "Os feeds publicam apenas resumos de pacotes — o chat permanece na conexão de chat. Até {{maxSaved}} salvos, {{maxEnabled}} conectados ao mesmo tempo, além do agente de chat.",
       "packetLoggerAlwaysOn": "Os feeds de pacotes sempre encaminham resumos de pacotes RX para {{topic}}. Eles nunca se inscrevem ou enviam mensagens de chat.",
       "statusConnected": "Conectado",
@@ -2007,7 +2006,8 @@
       "newBrokerName": "Novo corretor",
       "disconnectAll": "Desconectar Tudo",
       "done": "Pronto",
-      "cancelAria": "Cancelar {{name}}"
+      "cancelAria": "Cancelar {{name}}",
+      "duplicateWarning": "Outra conexão ativada tem como destino o mesmo broker (servidor e porta), de modo que os pacotes seriam publicados duas vezes."
     }
   },
   "contactGroupsModal": {

@@ -115,24 +115,25 @@ describe('meshcoreMqttFeeds', () => {
     expect(feeds.map((f) => f.id)).toEqual(['b']);
   });
 
-  it('flags feeds that duplicate a broker or packet topic', () => {
+  it('warns only when feeds target the same broker', () => {
     const feedA = makeFeed('A', { enabled: true }, 'a');
-    const sameTopic = makeFeed('B', { enabled: true }, 'b');
-    const other = makeFeed(
-      'C',
+    const sameBroker = makeFeed(
+      'B',
       {
         enabled: true,
-        settings: {
-          ...baseSettings,
-          server: 'analyzer.local',
-          topicPrefix: 'meshcore/SEA',
-        },
+        settings: { ...baseSettings, username: 'other', topicPrefix: 'meshcore/SEA' },
       },
+      'b',
+    );
+    const sameTopicDifferentBroker = makeFeed(
+      'C',
+      { enabled: true, settings: { ...baseSettings, server: 'analyzer.local' } },
       'c',
     );
-    expect(meshcoreFeedOverrideWarning([feedA], sameTopic)).toBe(true);
-    expect(meshcoreFeedOverrideWarning([feedA], { ...other, enabled: true })).toBe(false);
-    expect(meshcoreFeedOverrideWarning([feedA], { ...sameTopic, enabled: false })).toBe(false);
+    expect(meshcoreFeedOverrideWarning([feedA], sameBroker)).toBe(true);
+    // Same topic prefix on a different broker is the intended analyzer fan-out.
+    expect(meshcoreFeedOverrideWarning([feedA], sameTopicDifferentBroker)).toBe(false);
+    expect(meshcoreFeedOverrideWarning([feedA], { ...sameBroker, enabled: false })).toBe(false);
   });
 
   it('builds the analyzer topic from the prefix and v1 pubkey', () => {

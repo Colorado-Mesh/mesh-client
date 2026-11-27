@@ -1985,7 +1985,6 @@
       "nameLabel": "Name",
       "savedLimit": "您最多可以保存{{max}}个数据包源。",
       "enabledLimit": "请先禁用另一个源 — 一次最多连接 {{max}} 个源（聊天代理占用一个槽位）。",
-      "duplicateWarning": "此订阅源指向与另一个订阅源相同的代理或主题，因此它将发布重复的数据包。",
       "help": "摘要仅发布数据包摘要——聊天仍保留在聊天连接上。最多保存{{maxSaved}}个，同时连接{{maxEnabled}}个，外加聊天代理。",
       "packetLoggerAlwaysOn": "数据包馈送始终将 RX 数据包摘要转发到{{topic}}。它们绝不会订阅或发送聊天。",
       "statusConnected": "已連線",
@@ -2007,7 +2006,8 @@
       "newBrokerName": "新经纪商类型",
       "disconnectAll": "全部断开",
       "done": "完成",
-      "cancelAria": "取消{{name}}"
+      "cancelAria": "取消{{name}}",
+      "duplicateWarning": "另一个已启用的连接指向同一代理（服务器和端口），因此数据包将被发布两次。"
     }
   },
   "contactGroupsModal": {

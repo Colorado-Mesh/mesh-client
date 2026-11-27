@@ -68,6 +68,7 @@ describe('vite build config', () => {
       'connection-runtime',
       'meshcom-runtime',
       'protocol-runtimes',
+      'protocol-runtimes-config',
       'ai-summary',
       'chat-runtime',
       'peer-network',

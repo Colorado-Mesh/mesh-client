@@ -2025,7 +2025,6 @@
       "nameLabel": "Nazwisko",
       "savedLimit": "Możesz zapisać maksymalnie {{max}} kanałów pakietowych.",
       "enabledLimit": "Najpierw wyłącz inny kanał – jednocześnie można połączyć maksymalnie {{max}} kanałów (broker czatu zajmuje jedno miejsce).",
-      "duplicateWarning": "Ten kanał wskazuje tego samego brokera lub temat co inny kanał, więc będzie publikował zduplikowane pakiety.",
       "help": "Kanały publikują tylko podsumowania pakietów – czat pozostaje w ramach połączenia czatu. Zapisano maksymalnie {{maxSaved}}, {{maxEnabled}} połączono jednocześnie plus broker czatu.",
       "packetLoggerAlwaysOn": "Kanały pakietów zawsze przekazują podsumowania pakietów RX do {{topic}}. Nigdy nie subskrybują ani nie wysyłają czatów.",
       "statusConnected": "Połączono",
@@ -2047,7 +2046,8 @@
       "newBrokerName": "Nowy broker",
       "disconnectAll": "Rozłącz wszystkie",
       "done": "Gotowe",
-      "cancelAria": "Anuluj {{name}}"
+      "cancelAria": "Anuluj {{name}}",
+      "duplicateWarning": "Inne włączone połączenie jest skierowane do tego samego brokera (serwer i port), więc pakiety byłyby publikowane dwukrotnie."
     }
   },
   "contactGroupsModal": {

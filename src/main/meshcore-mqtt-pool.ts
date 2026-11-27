@@ -15,7 +15,6 @@ import {
   MeshcoreMqttAdapter as MeshcoreMqttAdapterClass,
   meshcoreMqttPubKey,
   type MeshcorePacketLogArgs,
-  meshcorePacketTopicTail,
 } from './meshcore-mqtt-adapter';
 
 export type MeshcoreMqttRole = MeshcoreMqttConnectionRole;
@@ -68,12 +67,10 @@ function sameBroker(a: MQTTSettings | null, b: MQTTSettings): boolean {
   );
 }
 
-function samePacketTopic(a: MQTTSettings | null, b: MQTTSettings): boolean {
+/** Same broker endpoint, regardless of topic/username. Duplicate feeds here waste a socket. */
+function sameEndpoint(a: MQTTSettings | null, b: MQTTSettings): boolean {
   if (!a) return false;
-  return (
-    a.meshcorePacketLoggerEnabled === true &&
-    meshcorePacketTopicTail(a) === meshcorePacketTopicTail(b)
-  );
+  return a.server.trim().toLowerCase() === b.server.trim().toLowerCase() && a.port === b.port;
 }
 
 /**
@@ -150,9 +147,9 @@ export class MeshcoreMqttPool extends EventEmitter {
           `MeshCore MQTT: ${settings.server.trim()}:${settings.port} with this username is already connected.`,
         );
       }
-      if (options.publishOnly && samePacketTopic(other, settings)) {
+      if (sameEndpoint(other, settings)) {
         this.onDuplicateFeedWarning?.(
-          `MeshCore MQTT: two brokers publish the same packet topic (${settings.topicPrefix}).`,
+          `MeshCore MQTT: another connection already targets ${settings.server.trim()}:${settings.port}; packets may be published twice.`,
         );
       }
     }
