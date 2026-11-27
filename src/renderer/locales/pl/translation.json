@@ -2042,8 +2042,7 @@
       "settingsHeading": "Ustawienia połączenia",
       "reconnect": "Połącz ponownie",
       "reconnectAria": "Połącz ponownie {{name}}",
-      "unnamedFeed": "Nienazwany kanał",
-      "disconnectToEditChat": "Odłącz MQTT, aby edytować brokera czatu. Kanały analizatora pozostają edytowalne podczas połączenia."
+      "unnamedFeed": "Nienazwany kanał"
     }
   },
   "contactGroupsModal": {

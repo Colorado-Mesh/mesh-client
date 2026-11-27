@@ -2002,8 +2002,7 @@
       "settingsHeading": "Configurações de conexão",
       "reconnect": "Reconectar",
       "reconnectAria": "Reconectar {{name}}",
-      "unnamedFeed": "Feed sem nome",
-      "disconnectToEditChat": "Desconecte MQTT para editar o broker de chat. Os feeds do analisador permanecem editáveis enquanto estiverem conectados."
+      "unnamedFeed": "Feed sem nome"
     }
   },
   "contactGroupsModal": {

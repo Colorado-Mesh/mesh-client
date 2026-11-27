@@ -2002,8 +2002,7 @@
       "settingsHeading": "Instellingen verbinding",
       "reconnect": "Opnieuw verbinding maken",
       "reconnectAria": "Opnieuw verbinden {{name}}",
-      "unnamedFeed": "Naamloze feed",
-      "disconnectToEditChat": "Verbreek de verbinding met MQTT om de chatbroker te bewerken. Analyzerfeeds blijven bewerkbaar terwijl ze zijn verbonden."
+      "unnamedFeed": "Naamloze feed"
     }
   },
   "contactGroupsModal": {

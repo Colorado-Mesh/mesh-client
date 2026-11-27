@@ -2002,8 +2002,7 @@
       "settingsHeading": "Pengaturan Koneksi",
       "reconnect": "Sambung ulang",
       "reconnectAria": "Sambungkan kembali {{name}}",
-      "unnamedFeed": "Feed tanpa nama",
-      "disconnectToEditChat": "Putuskan sambungan MQTT untuk mengedit broker obrolan. Feed analyzer tetap dapat diedit saat terhubung."
+      "unnamedFeed": "Feed tanpa nama"
     }
   },
   "contactGroupsModal": {

@@ -2002,8 +2002,7 @@
       "settingsHeading": "_基本概念必须具备操作型定义中青年是人生的黄金期",
       "reconnect": "重新连接",
       "reconnectAria": "重新连接{{name}}",
-      "unnamedFeed": "未命名订阅源",
-      "disconnectToEditChat": "断开MQTT的连接以编辑聊天代理。分析器馈送在连接时仍可编辑。"
+      "unnamedFeed": "未命名订阅源"
     }
   },
   "contactGroupsModal": {

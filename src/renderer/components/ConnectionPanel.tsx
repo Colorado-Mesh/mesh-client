@@ -108,23 +108,16 @@ import {
   resolveLastSerialPortId,
   resolveMeshcomKissReconnectAddress,
 } from '../lib/lastConnectionStorage';
+import { letsMeshPresetConfigurationDeviation } from '../lib/letsMeshConnectionGuards';
 import {
-  letsMeshPresetConfigurationDeviation,
-  validateLetsMeshManualCredentials,
-  validateLetsMeshPresetConnect,
-} from '../lib/letsMeshConnectionGuards';
-import {
-  generateLetsMeshAuthToken,
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
   letsMeshMqttUsernameFromIdentity,
   MESHCORE_CA_HOST_BACKUP,
   MESHCORE_CA_HOST_PRIMARY,
   meshcoreClientKeyHexFromIdentity,
-  meshcoreIdentityHasFullKeyPair,
   meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentity,
-  readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
 import { parseBluetoothctlPairedState } from '../lib/linuxBlePairingInfo';
 import { looksLikeRnodeBleName, meshcomBlePickerDisplayName } from '../lib/meshcom/meshcomBleName';
@@ -140,7 +133,7 @@ import {
 import { shouldOpenMeshcomMqttPanel } from '../lib/meshcomMqttPanelOpen';
 import { MESHCOM_MQTT_SETTINGS_KEY } from '../lib/meshcomMqttSettingsStorage';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
-import { connectMeshcoreMqttFeed } from '../lib/meshcoreMqttConnect';
+import { connectMeshcoreMqttFeed, prepareMeshcoreMqttConnect } from '../lib/meshcoreMqttConnect';
 import {
   canEnableMeshcoreMqttFeed,
   createMeshcoreMqttFeed,
@@ -163,7 +156,6 @@ import {
 import {
   isIataScopedMeshcoreMqtt,
   parseMeshcoreIataTopicPrefix,
-  prepareMeshcoreIataMqttTopicPrefix,
 } from '../lib/meshcoreMqttTopicPrefix';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
@@ -344,6 +336,30 @@ function meshcorePresetDeviationText(
       return t('connectionPanel.meshcorePresetDeviation.eastmesh');
     default:
       return t('connectionPanel.meshcorePresetDeviation.letsmesh');
+  }
+}
+
+/** User-facing preset name; also the default name for the chat entry. */
+function meshcorePresetLabel(t: (key: string) => string, preset: MeshcoreMqttPreset): string {
+  switch (preset) {
+    case 'letsmesh':
+      return t('connectionPanel.meshcorePreset.letsmesh');
+    case 'meshmapper':
+      return t('connectionPanel.meshcorePreset.meshmapper');
+    case 'coloradomesh':
+      return t('connectionPanel.meshcorePreset.coloradomesh');
+    case 'waev':
+      return t('connectionPanel.meshcorePreset.waev');
+    case 'meshatse':
+      return t('connectionPanel.meshcorePreset.meshatse');
+    case 'meshcoreca':
+      return t('connectionPanel.meshcorePreset.meshcoreca');
+    case 'eastmesh':
+      return t('connectionPanel.meshcorePreset.eastmesh');
+    case 'ripple':
+      return t('connectionPanel.meshcorePreset.ripple');
+    default:
+      return t('connectionPanel.meshcorePreset.custom');
   }
 }
 
@@ -635,7 +651,10 @@ export default function ConnectionPanel({
   const meshcoreFeedsRef = useRef(meshcoreFeeds);
   meshcoreFeedsRef.current = meshcoreFeeds;
   const meshcoreChatLabel =
-    meshcoreChatName.trim() || t('connectionPanel.meshcoreFeeds.chatOption');
+    meshcoreChatName.trim() ||
+    (meshcorePreset === 'custom'
+      ? meshcoreMqttSettings.server.trim() || t('connectionPanel.meshcoreFeeds.chatOption')
+      : meshcorePresetLabel(t, meshcorePreset));
   const [meshcoreEditorTarget, setMeshcoreEditorTarget] = useState<string>(
     MESHCORE_MQTT_CHAT_CONNECTION_ID,
   );
@@ -2999,6 +3018,40 @@ export default function ConnectionPanel({
     });
   };
 
+  const connectMeshcoreChatNow = () => {
+    setMqttError(null);
+    void (async () => {
+      // Always the chat entry, even when the editor is pointed at an analyzer feed.
+      const chatSettings = meshcoreMqttSettings;
+      const prepared = await prepareMeshcoreMqttConnect({
+        preset: meshcorePreset,
+        settings: { ...chatSettings, mqttTransportProtocol: 'meshcore' },
+        ensureIdentity: ensureMeshcoreMqttIdentity
+          ? async () => {
+              await ensureMeshcoreMqttIdentity();
+            }
+          : undefined,
+      });
+      if (!prepared.ok) {
+        const { failure } = prepared;
+        setMqttError(failure.errorKey ? t(failure.errorKey, failure.params) : failure.message);
+        return;
+      }
+      if (prepared.settings.topicPrefix !== chatSettings.topicPrefix) {
+        setMeshcoreMqttSettings((prev) => ({
+          ...prev,
+          topicPrefix: prepared.settings.topicPrefix,
+        }));
+      }
+      try {
+        await window.electronAPI.mqtt.connect(prepared.settings);
+      } catch (err: unknown) {
+        setMqttError(err instanceof Error ? err.message : String(err));
+        console.warn('mcL0411 [ConnectionPanel] mqtt.connect failed: ' + errLikeToLogString(err));
+      }
+    })();
+  };
+
   const connectMeshcoreFeedNow = (feed: MeshcoreMqttFeed) => {
     setMeshcoreFeedError(null);
     void connectMeshcoreMqttFeed(feed, {
@@ -3705,6 +3758,19 @@ export default function ConnectionPanel({
         actions={
           <>
             {mqttAuthDocsLink}
+            {protocol === 'meshcore' && (
+              <Button
+                size="sm"
+                aria-label={t('connectionPanel.meshcoreFeeds.reconnectAria', {
+                  name: meshcoreChatLabel,
+                })}
+                onClick={() => {
+                  connectMeshcoreChatNow();
+                }}
+              >
+                {t('connectionPanel.meshcoreFeeds.reconnect')}
+              </Button>
+            )}
             <Button
               data-setting-anchor="connection.mqtt.disconnect"
               variant="danger"
@@ -3755,16 +3821,8 @@ export default function ConnectionPanel({
                 {t('connectionPanel.meshcoreFeeds.settingsHeading')}
               </p>
               {meshcoreConnectionNameField}
-              {editingMeshcoreFeed ? (
-                <>
-                  {meshcorePresetEditor}
-                  {mqttConnectionFields}
-                </>
-              ) : (
-                <p className="text-muted text-xs">
-                  {t('connectionPanel.meshcoreFeeds.disconnectToEditChat')}
-                </p>
-              )}
+              {meshcorePresetEditor}
+              {mqttConnectionFields}
             </div>
           )}
           {protocol === 'meshtastic' && mqttProfiles.length > 0 ? (
@@ -4061,10 +4119,11 @@ export default function ConnectionPanel({
             <Button
               data-setting-anchor="connection.mqtt.connect"
               variant="primary"
-              onClick={async () => {
+              onClick={() => {
                 setMqttError(null);
-                if (protocol === 'meshcore' && editingMeshcoreFeed) {
-                  connectMeshcoreFeedNow(editingMeshcoreFeed);
+                if (protocol === 'meshcore') {
+                  if (editingMeshcoreFeed) connectMeshcoreFeedNow(editingMeshcoreFeed);
+                  else connectMeshcoreChatNow();
                   return;
                 }
                 const committedPsks = commitChannelPskDraft();
@@ -4074,78 +4133,8 @@ export default function ConnectionPanel({
                     protocol === 'meshtastic' && committedPsks.length > 0
                       ? committedPsks
                       : undefined,
-                  mqttTransportProtocol:
-                    protocol === 'meshcore'
-                      ? 'meshcore'
-                      : protocol === 'meshcom'
-                        ? 'meshcom'
-                        : 'meshtastic',
+                  mqttTransportProtocol: protocol === 'meshcom' ? 'meshcom' : 'meshtastic',
                 };
-                if (protocol === 'meshcore') {
-                  const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(
-                    activeMeshcorePreset,
-                    settings,
-                  );
-                  if (!iataPrepared.ok) {
-                    setMqttError(t(iataPrepared.errorKey));
-                    return;
-                  }
-                  if (iataPrepared.changed) {
-                    settings.topicPrefix = iataPrepared.topicPrefix;
-                    updateMqtt('topicPrefix', iataPrepared.topicPrefix, false);
-                  }
-                }
-                if (
-                  protocol === 'meshcore' &&
-                  usesMeshcoreDeviceSigningMqtt(activeMeshcorePreset, settings)
-                ) {
-                  const presetErr = validateLetsMeshPresetConnect(settings);
-                  if (presetErr) {
-                    setMqttError(presetErr);
-                    return;
-                  }
-                  if (ensureMeshcoreMqttIdentity && !meshcoreIdentityHasFullKeyPair()) {
-                    await ensureMeshcoreMqttIdentity();
-                  }
-                  const identity = await readMeshcoreIdentityAsync();
-                  const hasFullIdentity = !!(identity?.private_key && identity?.public_key);
-                  if (!hasFullIdentity) {
-                    const manualErr = validateLetsMeshManualCredentials(settings);
-                    if (manualErr) {
-                      setMqttError(manualErr);
-                      return;
-                    }
-                  }
-                  if (hasFullIdentity) {
-                    try {
-                      const u = letsMeshMqttUsernameFromIdentity(identity);
-                      if (u) settings.username = u;
-                      const { token, expiresAt } = await generateLetsMeshAuthToken(
-                        identity,
-                        settings.server,
-                      );
-                      settings.password = token;
-                      settings.tokenExpiresAt = expiresAt;
-                    } catch (e) {
-                      const msg = e instanceof Error ? e.message : String(e);
-                      setMqttError(t('connectionPanel.authTokenFailed', { message: msg }));
-                      console.warn(
-                        'mcL0410 [ConnectionPanel] LetsMesh auth token generation failed ' +
-                          errLikeToLogString(e),
-                      );
-                      return;
-                    }
-                  } else if (!settings.password) {
-                    setMqttError(
-                      identity?.private_key && !identity?.public_key
-                        ? t('connectionPanel.meshcoreMqttIdentity.publicKeyMissing')
-                        : identity
-                          ? t('connectionPanel.meshcoreMqttIdentity.usernameBuildFailed')
-                          : t('connectionPanel.meshcoreMqttIdentity.noIdentity'),
-                    );
-                    return;
-                  }
-                }
                 window.electronAPI.mqtt.connect(settings).catch((err: unknown) => {
                   const msg = err instanceof Error ? err.message : String(err);
                   setMqttError(msg);

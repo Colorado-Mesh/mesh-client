@@ -3492,7 +3492,7 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
       within(editor)
         .getAllByRole('option')
         .map((o) => o.textContent),
-    ).toEqual(['Chat connection']);
+    ).toEqual(['mqtt-us-v1.letsmesh.net']);
 
     await user.type(screen.getByLabelText('New feed name'), 'Local analyzer');
     await user.click(screen.getByLabelText('Add packet analyzer feed'));
@@ -3501,7 +3501,7 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
       within(editor)
         .getAllByRole('option')
         .map((o) => o.textContent),
-    ).toEqual(['Chat connection', 'Local analyzer']);
+    ).toEqual(['mqtt-us-v1.letsmesh.net', 'Local analyzer']);
     expect(screen.getByLabelText('Name')).toHaveValue('Local analyzer');
     // Feed mode never lets the analyzer opt out of packet publishing.
     expect(screen.queryByLabelText(/Packet logger/)).not.toBeInTheDocument();
@@ -3555,13 +3555,14 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
         .map((o) => o.textContent),
     ).toEqual(['Home mesh', 'Feed 0']);
 
-    // Chat settings stay read-only while connected; feeds are editable.
-    expect(screen.queryByRole('combobox', { name: 'Network Preset' })).not.toBeInTheDocument();
-    expect(screen.getByText(/Disconnect MQTT to edit the chat broker/i)).toBeInTheDocument();
-
-    await user.selectOptions(editor, 'feed-0');
+    // Every entry, including chat, exposes the same preset-backed editor while connected.
     const preset = screen.getByRole('combobox', { name: 'Network Preset' });
     expect(within(preset).getAllByRole('option')).toHaveLength(9);
+    expect(screen.getByLabelText('Server')).toHaveValue('mqtt-us-v1.letsmesh.net');
+    expect(screen.getByRole('button', { name: /Reconnect Home mesh/i })).toBeInTheDocument();
+
+    await user.selectOptions(editor, 'feed-0');
+    expect(preset).toHaveValue('custom');
     const name = screen.getByLabelText('Name');
     await user.clear(name);
     await user.type(name, 'Denver analyzer');
@@ -3574,6 +3575,25 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
 
     await user.selectOptions(preset, 'meshatse');
     expect(preset).toHaveValue('meshatse');
+  });
+
+  it('names the chat entry after its preset instead of a hardcoded label', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt.meshcore.coloradomesh.org',
+        topicPrefix: 'meshcore/DEN',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+      }),
+    );
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    renderPanel();
+    const editor = screen.getByRole('combobox', { name: 'Broker to edit' });
+    expect(within(editor).getByRole('option', { name: 'Colorado Mesh' })).toBeInTheDocument();
   });
 
   it('renames the chat connection', async () => {
