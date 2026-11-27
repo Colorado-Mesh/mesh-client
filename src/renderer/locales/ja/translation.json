@@ -1862,7 +1862,6 @@
       "publishingOf": "RMAP v4: {{total}} 中 {{current}} を公開しています"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けです。プリセットはmeshcore/DEN（デンバーIATA）で公開されています。コロラド州にいない場合は、代わりにLetsMeshまたはMeshMapperを使用してください。続行しますか？",
-    "coloradoServerNote": "Colorado Mesh はコロラド地域のメッシュ利用者向けです。トピック接頭辞はデンバー IATA（meshcore/DEN）を使用します。",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けで、meshcore/DENの下で公開されています。コロラド州外にいる場合は、LetsMesh（グローバルパブリックブローカー）に切り替えます。",
     "coloradoRegionGateStay": "私はコロラド州にいます",
@@ -2009,7 +2008,21 @@
       "done": "完了",
       "cancelAria": "{{name}}をキャンセル",
       "duplicateWarning": "別の有効な接続が同じブローカー（サーバーとポート）をターゲットにしているため、パケットが2回パブリッシュされます。"
-    }
+    },
+    "iataPicklist": {
+      "label": "エリアIATA",
+      "placeholder": "お住まいの地域のIATAを選択してください…",
+      "aria": "MeshCore MQTTエリアIATA",
+      "searchAria": "空港のIATAコードを検索",
+      "searchPlaceholder": "コード、市区町村、または名前を検索…",
+      "listAria": "空港のIATAコード",
+      "empty": "検索条件に一致する空港はありません。",
+      "loadFailed": "空港リストを読み込めませんでした。",
+      "testOption": "テスト — 分析器/テストのみ",
+      "nearestBadge": "近傍",
+      "nearestOption": "{{label}}（最寄り）"
+    },
+    "coloradoServerNote": "Colorado Meshはコロラド地域のメッシュユーザー向けです。MQTTトピックのプレフィックスとして、以下からお近くの空港のIATAコードを選択してください。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -2578,7 +2591,18 @@
     "evidence": "{{category}}の証拠を表示",
     "evidenceShown": "{{shown}}/{{total}}の一致するエントリを表示しています。最新のものが最初です。",
     "ignoredOtherProtocol": "{{count}}他の無線プロトコルの行は除外されました。",
-    "protocolNote": "アクティブな無線プロトコルを使用します。別の無線が所有する回線は除外されます。アプリ全体で共有される回線は残ります。"
+    "protocolNote": "アクティブな無線プロトコルを使用します。別の無線が所有する回線は除外されます。アプリ全体で共有される回線は残ります。",
+    "aiAnalyze": "AIで分析する",
+    "aiSetup": "ログ分析用のAIを設定する",
+    "aiFixEngine": "AIエンジンを修正する",
+    "aiNeedsNetwork": "AIによる分析では、トラブルシューティング文書を読み込むためにインターネット接続が必要です。組み込みの分析はオフラインでも機能します。",
+    "aiPrivacyHint": "パッケージ化された調査結果をAIエンジンに送信し、公開されているトラブルシューティング文書を取得します。共有する前にサンプルを確認してください。",
+    "aiConversationLabel": "{{protocol}}ログ分析",
+    "aiResultHeading": "AIトリアージ",
+    "aiWorking": "ドキュメントを取得して分析しています…",
+    "aiVerify": "AIトリアージを所見と文書と照合して確認します。上記のヒューリスティックな推奨事項は、オフラインでも引き続き信頼できるものです。",
+    "troubleshootingDocs": "トラブルシューティングに関する記事↗",
+    "aiNeedsFindings": "AIによる分析には、少なくとも1つのルールベースの検出結果が必要です。組み込みの分析では、すでに問題がないことが報告されています。"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8525,9 @@
       "invalidResponse": "エンジンが不完全またはサポートされていない応答を返しました。",
       "cancelled": "サマリーがキャンセルされました。",
       "error": "要約できませんでした。AI設定を確認して再試行してください。",
-      "repetitiveOutput": "モデルはそれ自体を繰り返し始めました。より大きなモデルまたはより短い範囲をお試しください。"
+      "repetitiveOutput": "モデルはそれ自体を繰り返し始めました。より大きなモデルまたはより短い範囲をお試しください。",
+      "docsUnavailable": "トラブルシューティングのドキュメントを読み込めませんでした。インターネット接続を確認し、AIによる分析を再試行してください。",
+      "noFindings": "分析すべきルールベースの検出結果はありません。組み込みの分析では、すでに問題がないことが報告されています。"
     },
     "loadingModel": "このデバイスにモデルを読み込んでいます...",
     "readingMessages": "このデバイスでメッセージを読んでいます。CPUの処理には数分かかる場合があります...",

@@ -408,6 +408,29 @@ describe('AI prompts and validation', () => {
       }),
     ).toThrow('Invalid AI follow-up');
   });
+  it('accepts log analysis surface including meshcom and rejects follow-up or map', () => {
+    const logRequest = {
+      ...request,
+      surface: 'log' as const,
+      protocol: 'meshcom' as const,
+      scope: { kind: 'loaded' as const },
+    };
+    expect(validateAiRequest(logRequest).surface).toBe('log');
+    expect(() =>
+      validateAiRequest({
+        ...logRequest,
+        followUp: {
+          question: 'How?',
+          summary: 'x',
+          turns: [],
+          contextKind: 'none',
+        },
+      }),
+    ).toThrow('Invalid AI summary request');
+    expect(() => validateAiRequest({ ...logRequest, mode: 'map' })).toThrow(
+      'Invalid AI summary request',
+    );
+  });
 });
 describe('AI follow-up prompts', () => {
   it('quotes summary and prior turns so delimiter injection cannot escape', () => {

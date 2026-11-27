@@ -22,6 +22,9 @@ const text = (value: unknown, cap: number): value is string =>
   typeof value === 'string' && value.length <= cap;
 const PASS_MODES: AiSummaryPassMode[] = ['map', 'reduce', 'final'];
 const CONTEXT_KINDS: AiFollowUpContextKind[] = ['transcript', 'digests', 'none'];
+const CHAT_PROTOCOLS = new Set(['meshtastic', 'meshcore', 'reticulum']);
+const LOG_PROTOCOLS = new Set(['meshtastic', 'meshcore', 'reticulum', 'meshcom']);
+const CHAT_SURFACES = new Set(['channel', 'dm', 'room', 'rrc']);
 
 /** Strip nonprinting controls from untrusted / user-authored AI text. */
 export const stripNonprinting = (value: string): string =>
@@ -121,14 +124,18 @@ export function validateAiRequest(value: unknown): AiSummaryRequest {
     !text(value.conversationLabel, 256) ||
     !text(value.locale, 64) ||
     typeof value.protocol !== 'string' ||
-    !['meshtastic', 'meshcore', 'reticulum'].includes(value.protocol) ||
     typeof value.surface !== 'string' ||
-    !['channel', 'dm', 'room', 'rrc'].includes(value.surface) ||
     !record(value.scope) ||
     typeof value.scope.kind !== 'string' ||
     !['unread', 'loaded', 'hours'].includes(value.scope.kind)
   )
     throw new Error('Invalid AI summary request');
+  const isLog = value.surface === 'log';
+  if (isLog) {
+    if (!LOG_PROTOCOLS.has(value.protocol)) throw new Error('Invalid AI summary request');
+  } else if (!CHAT_SURFACES.has(value.surface) || !CHAT_PROTOCOLS.has(value.protocol)) {
+    throw new Error('Invalid AI summary request');
+  }
   if (
     value.scope.kind === 'hours' &&
     (typeof value.scope.hours !== 'number' ||
@@ -146,9 +153,16 @@ export function validateAiRequest(value: unknown): AiSummaryRequest {
 
   let followUp: AiSummaryFollowUp | undefined;
   if (value.followUp !== undefined) {
+    if (isLog) throw new Error('Invalid AI summary request');
     followUp = validateFollowUp(value.followUp);
     if (value.jobId !== undefined || (value.mode !== undefined && value.mode !== 'final'))
       throw new Error('Invalid AI follow-up');
+  }
+  if (
+    isLog &&
+    (value.jobId !== undefined || (value.mode !== undefined && value.mode !== 'final'))
+  ) {
+    throw new Error('Invalid AI summary request');
   }
 
   if (!Array.isArray(value.messages) || value.messages.length > AI_MAX_MESSAGES)

@@ -1861,7 +1861,6 @@
       "publishingOf": "RMAP v4: publicatie van {{current}} van {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT is voor gebruikers van Colorado-zone mesh. De preset publiceert onder meshcore/DEN (Denver IATA). Als je niet in Colorado bent, gebruik dan LetsMesh of MeshMapper. Doorgaan?",
-    "coloradoServerNote": "Colorado Mesh is voor meshgebruikers in de regio Colorado. Onderwerpvoorvoegsel gebruikt de Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT is voor Colorado-area mesh-gebruikers en publiceert onder meshcore/DEN. Als je buiten Colorado bent, schakel dan over naar LetsMesh (global public broker).",
     "coloradoRegionGateStay": "Ik ben in Colorado",
@@ -2009,7 +2008,21 @@
       "done": "Klaar",
       "cancelAria": "Annuleren {{name}}",
       "duplicateWarning": "Een andere ingeschakelde verbinding richt zich op dezelfde broker (server en poort), dus pakketten zouden twee keer worden gepubliceerd."
-    }
+    },
+    "iataPicklist": {
+      "label": "Regio IATA",
+      "placeholder": "Selecteer je regio IATA…",
+      "aria": "MeshCore MQTT gebied IATA",
+      "searchAria": "Luchthaven-IATA-codes zoeken",
+      "searchPlaceholder": "Zoek op code, plaats of naam...",
+      "listAria": "IATA-luchthavencodes",
+      "empty": "Geen luchthavens komen overeen met die zoekopdracht.",
+      "loadFailed": "Kan de lijst met luchthavens niet laden.",
+      "testOption": "test — alleen voor analyse/testen",
+      "nearestBadge": "Dichtbijzijnd",
+      "nearestOption": "{{label}} (dichtstbijzijnd)"
+    },
+    "coloradoServerNote": "Colorado Mesh is voor mesh-gebruikers in de regio Colorado. Kies hieronder de IATA-code van je lokale luchthaven voor het onderwerpvoorvoegsel MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -2578,7 +2591,18 @@
     "evidence": "Bekijk bewijsmateriaal voor {{category}}",
     "evidenceShown": "Toont {{shown}} van {{total}} overeenkomende inzendingen, nieuwste eerst.",
     "ignoredOtherProtocol": "{{count}} regels van andere radioprotocollen zijn uitgesloten.",
-    "protocolNote": "Gebruikt het actieve radioprotocol. Lijnen die eigendom zijn van een andere radio worden uitgesloten; gedeelde app-brede lijnen blijven bestaan."
+    "protocolNote": "Gebruikt het actieve radioprotocol. Lijnen die eigendom zijn van een andere radio worden uitgesloten; gedeelde app-brede lijnen blijven bestaan.",
+    "aiAnalyze": "Analyseren met AI",
+    "aiSetup": "AI instellen voor loganalyse",
+    "aiFixEngine": "AI-engine repareren",
+    "aiNeedsNetwork": "Analyseren met AI vereist een internetverbinding om documenten voor probleemoplossing te laden. De ingebouwde analyse werkt nog steeds offline.",
+    "aiPrivacyHint": "Verstuurt verpakte bevindingen naar uw AI-engine en haalt openbare documenten voor probleemoplossing op. Bekijk voorbeelden voordat u ze deelt.",
+    "aiConversationLabel": "{{protocol}} loganalyse",
+    "aiResultHeading": "AI-triage",
+    "aiWorking": "Documenten ophalen en analyseren…",
+    "aiVerify": "Verifieer de AI-triage aan de hand van de bevindingen en documenten. Bovenstaande heuristische aanbevelingen blijven gezaghebbend wanneer ze offline zijn.",
+    "troubleshootingDocs": "Documenten voor probleemoplossing ↗",
+    "aiNeedsFindings": "Analyseren met AI vereist ten minste één op regels gebaseerde bevinding. De ingebouwde analyse heeft al gemeld dat er geen problemen zijn."
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8525,9 @@
       "invalidResponse": "De motor heeft een onvolledig of niet-ondersteund antwoord geretourneerd",
       "cancelled": "Samenvatting geannuleerd.",
       "error": "Kon het niet samenvatten. Controleer de AI-instellingen en probeer het opnieuw.",
-      "repetitiveOutput": "Het model begon zich te herhalen. Probeer een groter model of een korter bereik."
+      "repetitiveOutput": "Het model begon zich te herhalen. Probeer een groter model of een korter bereik.",
+      "docsUnavailable": "Kan documenten voor probleemoplossing niet laden. Controleer uw internetverbinding en probeer Analyseren met AI opnieuw.",
+      "noFindings": "Geen op regels gebaseerde bevindingen om te analyseren. De ingebouwde analyse heeft al geen problemen gemeld."
     },
     "loadingModel": "Model laden op dit apparaat...",
     "readingMessages": "Berichten lezen op dit apparaat. CPU-verwerking kan een paar minuten duren...",

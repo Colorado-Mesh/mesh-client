@@ -1862,7 +1862,6 @@
       "publishingOf": "RMAP v4：正在发布 {{current}}/{{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户。预设在meshcore/DEN（丹佛IATA）下发布。如果您不在科罗拉多州，请改用LetsMesh或MeshMapper。是否继续？",
-    "coloradoServerNote": "Colorado Mesh 面向科罗拉多州地区的网格用户。主题前缀使用丹佛 IATA（meshcore/DEN）。",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户，并在meshcore/DEN下发布。如果您在科罗拉多州以外，请切换到LetsMesh（全球公共经纪商）。",
     "coloradoRegionGateStay": "我在科罗拉多州",
@@ -2009,7 +2008,21 @@
       "done": "完成",
       "cancelAria": "取消{{name}}",
       "duplicateWarning": "另一个已启用的连接指向同一代理（服务器和端口），因此数据包将被发布两次。"
-    }
+    },
+    "iataPicklist": {
+      "label": "IATA区域",
+      "placeholder": "选择你的區域",
+      "aria": "MeshCore MQTT地区IATA",
+      "searchAria": "搜索机场IATA代码",
+      "searchPlaceholder": "搜索代码、城市或名称……",
+      "listAria": "机场IATA代码",
+      "empty": "没有与该搜索条件匹配的机场。",
+      "loadFailed": "无法加载机场列表。",
+      "testOption": "测试 — 分析仪/仅用于测试",
+      "nearestBadge": "最近",
+      "nearestOption": "{{label}}（最近）"
+    },
+    "coloradoServerNote": "Colorado Mesh 适用于科罗拉多地区的 Mesh 网络用户。请在下方选择您所在地的机场 IATA 代码，作为MQTT主题前缀。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -2578,7 +2591,18 @@
     "evidence": "查看{{category}}的证据",
     "evidenceShown": "显示{{shown}}/{{total}}条匹配条目，最新在前。",
     "ignoredOtherProtocol": "{{count}} 来自其他无线电协议的线路已被排除。",
-    "protocolNote": "使用活动的无线电协议。不包括属于另一部无线电的线路；保留整个应用程序的共享线路。"
+    "protocolNote": "使用活动的无线电协议。不包括属于另一部无线电的线路；保留整个应用程序的共享线路。",
+    "aiAnalyze": "使用人工智能进行分析",
+    "aiSetup": "设置用于日志分析的 AI",
+    "aiFixEngine": "修复 AI 引擎",
+    "aiNeedsNetwork": "使用 AI 进行分析需要联网才能加载故障排除文档。内置分析功能仍可在离线状态下使用。",
+    "aiPrivacyHint": "将打包的调查结果发送到您的 AI 引擎，并获取公开的故障排除文档。在分享之前先查看示例。",
+    "aiConversationLabel": "{{protocol}}日志分析",
+    "aiResultHeading": "AI 分流",
+    "aiWorking": "正在获取文档并进行分析……",
+    "aiVerify": "根据检查结果和文档验证 AI 分流。上述启发式建议在离线时仍具有权威性。",
+    "troubleshootingDocs": "故障排除文档 ↗",
+    "aiNeedsFindings": "使用 AI 进行分析需要至少一个基于规则的结果。内置分析已报告不存在问题。"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8525,9 @@
       "invalidResponse": "引擎返回了不完整或不受支持的响应。",
       "cancelled": "摘要已取消。",
       "error": "无法汇总。请检查AI设置并重试。",
-      "repetitiveOutput": "模型开始自我重复。尝试更大的型号或更短的范围。"
+      "repetitiveOutput": "模型开始自我重复。尝试更大的型号或更短的范围。",
+      "docsUnavailable": "无法加载故障排除文档。请检查您的互联网连接，然后重试“使用 AI 分析”。",
+      "noFindings": "没有基于规则的结果可供分析。内置分析已报告不存在问题。"
     },
     "loadingModel": "正在此设备上加载模型...",
     "readingMessages": "正在读取此设备上的消息。CPU处理可能需要几分钟时间...",

@@ -264,10 +264,12 @@ export function AppTranslationSection() {
   };
   const url = urlDraft ?? status?.libre.url ?? '';
   let validUrl = false;
-  try {
-    validUrl = Boolean(validateLibreTranslationUrl(url));
-  } catch (e: unknown) {
-    console.debug('[renderer/components/AppTranslationSection] catch:', e);
+  if (url.trim()) {
+    try {
+      validUrl = Boolean(validateLibreTranslationUrl(url));
+    } catch {
+      // catch-no-log-ok empty/incomplete LibreTranslate drafts are expected while typing
+    }
   }
   return (
     <SettingsCollapsible title={t('chatTranslation.settingsTitle')} anchorId="app.translation">

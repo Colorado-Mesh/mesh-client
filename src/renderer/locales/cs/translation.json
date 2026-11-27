@@ -1885,7 +1885,6 @@
       "publishingOf": "RMAP v4: publikování {{current}} z {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT je určen pro uživatele síťoviny v oblasti Colorada. Přednastavení publikuje pod meshcore/DEN (Denver IATA). Pokud nejste v Coloradu, použijte LetsMesh nebo MeshMapper. Pokračovat?",
-    "coloradoServerNote": "Colorado Mesh je určen pro uživatele mesh v oblasti Colorada. Předpona tématu používá Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT je určen pro uživatele sítí v oblasti Colorada a publikuje pod meshcore/DEN. Pokud se nacházíte mimo Colorado, přepněte na LetsMesh (globální veřejný makléř).",
     "coloradoRegionGateStay": "Jsem v Coloradu",
@@ -2033,7 +2032,21 @@
       "done": "Hotovo",
       "cancelAria": "Zrušit {{name}}",
       "duplicateWarning": "Další povolené připojení směřuje na stejného brokera (server a port), takže by byly pakety publikovány dvakrát."
-    }
+    },
+    "iataPicklist": {
+      "label": "Oblast IATA",
+      "placeholder": "Vyberte svou oblast IATA…",
+      "aria": "MeshCore MQTT oblast IATA",
+      "searchAria": "Hledat kódy IATA letišť",
+      "searchPlaceholder": "Hledat kód, město nebo název…",
+      "listAria": "Kódy letišť IATA",
+      "empty": "Hledání neodpovídá žádné letiště.",
+      "loadFailed": "Seznam letišť se nepodařilo načíst.",
+      "testOption": "test – analyzátor / pouze testování",
+      "nearestBadge": "Nejbližší",
+      "nearestOption": "{{label}} (nejbližší)"
+    },
+    "coloradoServerNote": "Colorado Mesh je určeno pro uživatele sítě v oblasti Colorada. Níže vyberte kód IATA místního letiště pro předponu tématu MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -2609,7 +2622,18 @@
     "evidence": "Zobrazit důkazy pro {{category}}",
     "evidenceShown": "Zobrazeno {{shown}} z {{total}} odpovídajících záznamů, nejnovější jako první.",
     "ignoredOtherProtocol": "Řádky z jiných rádiových protokolů ({{count}}) byly vyloučeny.",
-    "protocolNote": "Používá aktivní rádiový protokol. Linky vlastněné jiným rádiem jsou vyloučeny; sdílené linky v rámci celé aplikace zůstávají."
+    "protocolNote": "Používá aktivní rádiový protokol. Linky vlastněné jiným rádiem jsou vyloučeny; sdílené linky v rámci celé aplikace zůstávají.",
+    "aiAnalyze": "Analyzovat pomocí umělé inteligence",
+    "aiSetup": "Nastavení umělé inteligence pro analýzu protokolů",
+    "aiFixEngine": "Opravit modul umělé inteligence",
+    "aiNeedsNetwork": "Analýza pomocí umělé inteligence vyžaduje připojení k internetu pro načtení dokumentů k řešení problémů. Vestavěná analýza funguje i offline.",
+    "aiPrivacyHint": "Odešle zabalené nálezy do vašeho modulu umělé inteligence a získá veřejné dokumenty k řešení problémů. Před sdílením si prohlédněte vzorky.",
+    "aiConversationLabel": "{{protocol}} analýza protokolů",
+    "aiResultHeading": "Třídění pomocí umělé inteligence",
+    "aiWorking": "Načítání dokumentů a analýza…",
+    "aiVerify": "Ověřte třídění pomocí umělé inteligence podle zjištění a dokumentů. Výše uvedená heuristická doporučení zůstávají směrodatná i v režimu offline.",
+    "troubleshootingDocs": "Dokumenty k řešení problémů ↗",
+    "aiNeedsFindings": "Analýza pomocí umělé inteligence vyžaduje alespoň jeden nález založený na pravidlech. Vestavěná analýza již nahlásila, že nebyly zjištěny žádné problémy."
   },
   "logAnalyzer": {
     "categories": {
@@ -8578,7 +8602,9 @@
       "invalidResponse": "Motor vrátil neúplnou nebo nepodporovanou odpověď.",
       "cancelled": "Shrnutí bylo zrušeno.",
       "error": "Nelze shrnout. Zkontrolujte nastavení AI a zkuste to znovu.",
-      "repetitiveOutput": "Model se začal opakovat. Vyzkoušejte větší model nebo kratší řadu."
+      "repetitiveOutput": "Model se začal opakovat. Vyzkoušejte větší model nebo kratší řadu.",
+      "docsUnavailable": "Nepodařilo se načíst dokumenty k řešení problémů. Zkontrolujte připojení k internetu a zkuste funkci Analýza pomocí umělé inteligence znovu.",
+      "noFindings": "Žádné nálezy založené na pravidlech k analýze. Vestavěná analýza již nahlásila, že nebyly zjištěny žádné problémy."
     },
     "hours_few": "Poslední {{count}} hodiny",
     "loadingModel": "Načítání modelu na tomto zařízení...",

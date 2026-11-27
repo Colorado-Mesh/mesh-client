@@ -1862,7 +1862,6 @@
       "publishingOf": "RMAP v4: publicação de {{current}} de {{total}}"
     },
     "coloradoPresetConfirm": "O Colorado Mesh MQTT é para usuários de malha da área do Colorado. A predefinição publica sob meshcore/DEN (Denver IATA). Se você não estiver no Colorado, use LetsMesh ou MeshMapper. Continuar?",
-    "coloradoServerNote": "O Colorado Mesh é para usuários de malha da região do Colorado. O prefixo do tópico usa a IATA de Denver (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "O Colorado Mesh MQTT é para usuários de malha da área do Colorado e publica sob meshcore/DEN. Se você estiver fora do Colorado, mude para LetsMesh (corretor público global).",
     "coloradoRegionGateStay": "Estou no Colorado",
@@ -2009,7 +2008,21 @@
       "done": "Pronto",
       "cancelAria": "Cancelar {{name}}",
       "duplicateWarning": "Outra conexão ativada tem como destino o mesmo broker (servidor e porta), de modo que os pacotes seriam publicados duas vezes."
-    }
+    },
+    "iataPicklist": {
+      "label": "Área IATA",
+      "placeholder": "Selecione sua área",
+      "aria": "MeshCore MQTT área IATA",
+      "searchAria": "Buscar códigos IATA de aeroportos",
+      "searchPlaceholder": "Buscar código, cidade ou nome…",
+      "listAria": "Códigos IATA dos aeroportos",
+      "empty": "Nenhum aeroporto corresponde a essa busca.",
+      "loadFailed": "Não foi possível carregar a lista de aeroportos.",
+      "testOption": "teste — apenas analisador/teste",
+      "nearestBadge": "Mais Próximo",
+      "nearestOption": "{{label}} (mais próximo)"
+    },
+    "coloradoServerNote": "Colorado Mesh é para usuários da rede mesh da região do Colorado. Escolha o código IATA do seu aeroporto local abaixo para o prefixo do tópico MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -2578,7 +2591,18 @@
     "evidence": "Ver evidências para {{category}}",
     "evidenceShown": "Mostrando {{shown}} de {{total}} entradas correspondentes, as mais recentes primeiro.",
     "ignoredOtherProtocol": "{{count}} linhas de outros protocolos de rádio foram excluídas.",
-    "protocolNote": "Usa o protocolo de rádio ativo. As linhas pertencentes a outro rádio são excluídas; as linhas compartilhadas em todo o aplicativo permanecem."
+    "protocolNote": "Usa o protocolo de rádio ativo. As linhas pertencentes a outro rádio são excluídas; as linhas compartilhadas em todo o aplicativo permanecem.",
+    "aiAnalyze": "Analisar com IA",
+    "aiSetup": "Configurar IA para análise de logs",
+    "aiFixEngine": "Corrigir o mecanismo de IA",
+    "aiNeedsNetwork": "A análise com IA precisa de uma conexão com a Internet para carregar os documentos de solução de problemas. A análise integrada ainda funciona offline.",
+    "aiPrivacyHint": "Envia resultados compactados para o seu mecanismo de IA e busca documentos públicos de solução de problemas. Analise as amostras antes de compartilhar.",
+    "aiConversationLabel": "{{protocol}} análise de log",
+    "aiResultHeading": "Triagem por IA",
+    "aiWorking": "Buscando documentos e analisando…",
+    "aiVerify": "Verifique a triagem da IA em relação às conclusões e aos documentos. As recomendações heurísticas acima permanecem confiáveis quando offline.",
+    "troubleshootingDocs": "Documentos de solução de problemas ↗",
+    "aiNeedsFindings": "A análise com IA precisa de pelo menos um resultado baseado em regras. A Análise integrada já informou que não há problemas."
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8525,9 @@
       "invalidResponse": "O motor retornou uma resposta incompleta ou sem suporte.",
       "cancelled": "Resumo cancelado.",
       "error": "Não foi possível resumir. Verifique as configurações de IA e tente novamente.",
-      "repetitiveOutput": "O modelo começou a se repetir. Experimente um modelo maior ou um intervalo mais curto."
+      "repetitiveOutput": "O modelo começou a se repetir. Experimente um modelo maior ou um intervalo mais curto.",
+      "docsUnavailable": "Não foi possível carregar os documentos de solução de problemas. Verifique sua conexão com a Internet e tente novamente Analisar com IA.",
+      "noFindings": "Não há resultados baseados em regras para analisar. A Análise integrada já informou que não há problemas."
     },
     "loadingModel": "Carregando modelo neste dispositivo...",
     "readingMessages": "Ler mensagens neste dispositivo. O processamento da CPU pode levar alguns minutos...",

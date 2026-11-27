@@ -1861,7 +1861,6 @@
       "publishingOf": "RMAP v4 : publication de {{current}} de {{total}}"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT est destiné aux utilisateurs de maillage de la région du Colorado. Le préréglage est publié sous meshcore/DEN (Denver IATA). Si vous n'êtes pas au Colorado, utilisez LetsMesh ou MeshMapper à la place. Continuer ?",
-    "coloradoServerNote": "Colorado Mesh est destiné aux utilisateurs de maillage de la région du Colorado. Le préfixe du sujet utilise l'IATA de Denver (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT est destiné aux utilisateurs de mailles Colorado-area et publie sous meshcore/DEN. Si vous êtes à l'extérieur du Colorado, passez à LetsMesh (courtier public mondial).",
     "coloradoRegionGateStay": "Je suis au Colorado",
@@ -2009,7 +2008,21 @@
       "done": "Effectué",
       "cancelAria": "Annuler {{name}}",
       "duplicateWarning": "Une autre connexion activée cible le même broker (serveur et port), de sorte que les paquets seraient publiés deux fois."
-    }
+    },
+    "iataPicklist": {
+      "label": "Zone IATA",
+      "placeholder": "Choisissez votre région",
+      "aria": "MeshCore MQTT zone IATA",
+      "searchAria": "Rechercher les codes IATA des aéroports",
+      "searchPlaceholder": "Rechercher un code, une ville ou un nom…",
+      "listAria": "Codes IATA des aéroports",
+      "empty": "Aucun aéroport ne correspond à cette recherche.",
+      "loadFailed": "Impossible de charger la liste des aéroports.",
+      "testOption": "test — analyseur/test uniquement",
+      "nearestBadge": "Plus proche",
+      "nearestOption": "{{label}} (le plus proche)"
+    },
+    "coloradoServerNote": "Colorado Mesh est destiné aux utilisateurs du réseau maillé de la région du Colorado. Choisissez ci-dessous le code IATA de votre aéroport local pour le préfixe du sujet MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
@@ -2578,7 +2591,18 @@
     "evidence": "Afficher les preuves pour {{category}}",
     "evidenceShown": "Affichage de {{shown}} entrées correspondantes sur {{total}}, les plus récentes en premier.",
     "ignoredOtherProtocol": "{{count}} lignes provenant d’autres protocoles radio ont été exclues.",
-    "protocolNote": "Utilise le protocole radio actif. Les lignes appartenant à une autre radio sont exclues ; les lignes partagées à l’échelle de l’application sont conservées."
+    "protocolNote": "Utilise le protocole radio actif. Les lignes appartenant à une autre radio sont exclues ; les lignes partagées à l’échelle de l’application sont conservées.",
+    "aiAnalyze": "Analyser avec l’IA",
+    "aiSetup": "Configurer l’IA pour l’analyse des journaux",
+    "aiFixEngine": "Réparer le moteur d’IA",
+    "aiNeedsNetwork": "L’analyse avec l’IA nécessite une connexion Internet pour charger les documents de dépannage. L’analyse intégrée fonctionne toujours hors ligne.",
+    "aiPrivacyHint": "Envoie les résultats compilés à votre moteur d'IA et récupère les documents publics de dépannage. Examinez les exemples avant de les partager.",
+    "aiConversationLabel": "{{protocol}} analyse des journaux",
+    "aiResultHeading": "Triage par IA",
+    "aiWorking": "Récupération des documents et analyse en cours…",
+    "aiVerify": "Vérifiez le triage effectué par l’IA par rapport aux résultats et aux documents. Les recommandations heuristiques ci-dessus restent faisant autorité hors ligne.",
+    "troubleshootingDocs": "Documents de dépannage ↗",
+    "aiNeedsFindings": "L'analyse avec l'IA nécessite au moins un résultat basé sur des règles. L'analyse intégrée n'a déjà signalé aucun problème."
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8525,9 @@
       "invalidResponse": "Le moteur a renvoyé une réponse incomplète ou non prise en charge.",
       "cancelled": "Résumé annulé.",
       "error": "Impossible de résumer. Vérifiez les paramètres de l'IA et réessayez.",
-      "repetitiveOutput": "Le modèle a commencé à se répéter. Essayez un modèle plus grand ou une gamme plus courte."
+      "repetitiveOutput": "Le modèle a commencé à se répéter. Essayez un modèle plus grand ou une gamme plus courte.",
+      "docsUnavailable": "Impossible de charger les documents de dépannage. Vérifiez votre connexion Internet et réessayez d’utiliser la fonctionnalité Analyser avec l’IA.",
+      "noFindings": "Aucun résultat basé sur des règles à analyser. L’analyse intégrée n’a déjà signalé aucun problème."
     },
     "loadingModel": "Chargement du modèle sur cet appareil...",
     "readingMessages": "Lecture des messages sur cet appareil. Le traitement par le processeur peut prendre quelques minutes...",

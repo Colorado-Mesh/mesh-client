@@ -48,17 +48,27 @@ const base: MQTTSettings = {
 };
 
 describe('applyMeshcoreMqttPreset', () => {
-  it('applies Colorado Mesh defaults while preserving user fields', () => {
+  it('applies Colorado Mesh defaults while preserving user topicPrefix', () => {
     const next = applyMeshcoreMqttPreset('coloradomesh', base);
     expect(next.server).toBe(COLORADO_MESH_HOST);
     expect(next.port).toBe(443);
-    expect(next.topicPrefix).toBe('meshcore/DEN');
+    // Presets never invent an IATA; the picklist owns topicPrefix.
+    expect(next.topicPrefix).toBe(base.topicPrefix);
     expect(next.useWebSocket).toBe(true);
     expect(next.tlsEnabled).toBe(true);
     expect(next.wsPath).toBe('/ws');
     expect(next.username).toBe(base.username);
     expect(next.autoLaunch).toBe(true);
     expect(next.password).toBe('');
+  });
+
+  it('preserves a previously chosen IATA when applying a device-signing preset', () => {
+    const next = applyMeshcoreMqttPreset('letsmesh', {
+      ...base,
+      topicPrefix: 'meshcore/SEA',
+    });
+    expect(next.topicPrefix).toBe('meshcore/SEA');
+    expect(next.server).toBe(LETSMESH_HOST_US);
   });
 
   it('preserves LetsMesh EU server when already selected', () => {
@@ -80,7 +90,7 @@ describe('applyMeshcoreMqttPreset', () => {
     expect(next.useWebSocket).toBe(true);
     expect(next.tlsEnabled).toBe(true);
     expect(next.wsPath).toBe('/ws');
-    expect(next.topicPrefix).toBe('meshcore/test');
+    expect(next.topicPrefix).toBe(base.topicPrefix);
     expect(next.password).toBe('');
   });
 
@@ -92,7 +102,7 @@ describe('applyMeshcoreMqttPreset', () => {
     expect(next.useWebSocket).toBe(true);
     expect(next.tlsEnabled).toBe(true);
     expect(next.wsPath).toBe('/mqtt');
-    expect(next.topicPrefix).toBe('meshcore/test');
+    expect(next.topicPrefix).toBe(base.topicPrefix);
     expect(next.password).toBe('');
     expect(next.username).toBe(base.username);
   });

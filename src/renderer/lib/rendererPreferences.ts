@@ -27,9 +27,8 @@ function preferenceValue(key: string, raw: string): string | null {
 function hasInlineCredentials(raw: string): boolean {
   try {
     return rendererPreferenceHasInlineCredentials(JSON.parse(raw));
-  } catch (e: unknown) {
-    console.debug('[renderer/lib/rendererPreferences] catch:', e);
-
+  } catch {
+    // catch-no-log-ok plain preference strings are not credential-bearing JSON
     return false;
   }
 }
@@ -56,9 +55,8 @@ function encodeValues(values: Record<string, string>): Record<string, unknown> {
       try {
         const value: unknown = JSON.parse(raw);
         return [key, record(value) || Array.isArray(value) ? value : raw];
-      } catch (e: unknown) {
-        console.debug('[renderer/lib/rendererPreferences] catch:', e);
-
+      } catch {
+        // catch-no-log-ok plain strings (protocol, nick, section ids) stay scalar
         return [key, raw];
       }
     }),
@@ -78,9 +76,8 @@ function decodeValues(values: Record<string, unknown>): Record<string, string> {
       let parsed: unknown;
       try {
         parsed = JSON.parse(raw);
-      } catch (e: unknown) {
-        console.debug('[renderer/lib/rendererPreferences] catch:', e);
-
+      } catch {
+        // catch-no-log-ok non-JSON scalars are valid for non-credential keys
         if (credentialBearingKey.test(key))
           throw new Error('Invalid structured renderer preference');
         return [key, raw];
@@ -169,8 +166,8 @@ export function importLegacyPreferenceAliases(
       values[appKey] ?? values['mesh-client:adminSettings'] ?? '{}',
     );
     if (record(parsed)) app = parsed;
-  } catch (e: unknown) {
-    console.debug('[renderer/lib/rendererPreferences] catch:', e);
+  } catch {
+    // catch-no-log-ok malformed legacy app blob is treated as empty for alias import
   }
   const selfNode = values['mesh-client:meshcoreLastSelfNodeId'];
   if (selfNode?.trim() && Number.isFinite(Number(selfNode)))
@@ -191,8 +188,8 @@ export function importLegacyPreferenceAliases(
       try {
         const parsed: unknown = JSON.parse(raw);
         if (record(parsed)) app[key] = parsed;
-      } catch (e: unknown) {
-        console.debug('[renderer/lib/rendererPreferences] catch:', e);
+      } catch {
+        // catch-no-log-ok malformed object scalar mirrors are skipped
       }
     } else if (/^(?:meshtasticRemoteAdminKey|meshcoreRoomSync|meshcoreRoomLastPost):/.test(key)) {
       app[key] = raw;
@@ -271,8 +268,8 @@ async function synchronizeScalarCaches(
       try {
         const parsed: unknown = typeof value === 'string' ? JSON.parse(value) : value;
         if (record(parsed)) encoded = JSON.stringify(parsed);
-      } catch (e: unknown) {
-        console.debug('[renderer/lib/rendererPreferences] catch:', e);
+      } catch {
+        // catch-no-log-ok malformed object fields are not mirrored to SQLite
       }
     }
     const limit =

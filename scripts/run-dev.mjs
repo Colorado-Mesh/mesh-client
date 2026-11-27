@@ -31,6 +31,8 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/shared/aiSummaryPrompt.ts --bundle --platform=node --outfile=dist-electron/main/ai-summary-prompt.js --format=cjs --watch';
   const followUpPromptBuild =
     'esbuild src/shared/aiFollowUpPrompt.ts --bundle --platform=node --outfile=dist-electron/main/ai-follow-up-prompt.js --format=cjs --watch';
+  const summarizePromptPrepareBuild =
+    'esbuild src/main/ai/summarizePromptPrepare.ts --bundle --platform=node --outfile=dist-electron/main/ai-summarize-prompt-prepare.js --external:electron --format=cjs --watch';
   const localModelsBuild =
     'esbuild src/main/ai/local/modelCatalogData.ts --bundle --platform=node --outfile=dist-electron/main/ai-local-models.js --format=cjs --watch';
   const nativeAiRuntimeBuild =
@@ -71,12 +73,13 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,mcpool,notifwav,nodeupsert,meshcomdb,meshcomdbfb,udpbridge,vite,electron',
+    'main,preload,translation,summary,followup,sumprep,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,mcpool,notifwav,nodeupsert,meshcomdb,meshcomdbfb,udpbridge,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
     summaryPromptBuild,
     followUpPromptBuild,
+    summarizePromptPrepareBuild,
     localModelsBuild,
     nativeAiRuntimeBuild,
     identityHydrationBuild,

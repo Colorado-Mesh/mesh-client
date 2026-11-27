@@ -240,6 +240,7 @@ import ConnectionLinkMeter from './ConnectionLinkMeter';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshComConnectionHints } from './MeshComConnectionHints';
+import { MeshcoreMqttIataSelect } from './MeshcoreMqttIataSelect';
 import { MqttNetworkPresetSelect } from './MqttNetworkPresetSelect';
 import { MqttProfileControls } from './MqttProfileControls';
 import { PickerSortControls } from './PickerSortControls';
@@ -3532,10 +3533,21 @@ export default function ConnectionPanel({
                 }
                 setActiveMeshcorePreset(id);
                 const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                setActiveMqttSettings((prev) => ({
-                  ...applyMeshcoreMqttPreset(id, prev),
-                  username: fromIdentity || prev.username,
-                }));
+                setActiveMqttSettings((prev) => {
+                  const next = {
+                    ...applyMeshcoreMqttPreset(id, prev),
+                    username: fromIdentity || prev.username,
+                  };
+                  // Device-signing presets omit topicPrefix; keep a prior valid IATA, else clear
+                  // so the picklist prompts instead of leaving a stale non-IATA value.
+                  if (
+                    isDeviceSigningMeshcorePreset(id) &&
+                    !parseMeshcoreIataTopicPrefix(prev.topicPrefix).ok
+                  ) {
+                    next.topicPrefix = '';
+                  }
+                  return next;
+                });
               }}
             />
             {activeMeshcorePreset === 'coloradomesh' && (
@@ -3840,8 +3852,20 @@ export default function ConnectionPanel({
       </div>
       <div data-setting-anchor="connection.mqtt.topicPrefix" className="space-y-1">
         <div className="flex items-center gap-1.5">
-          <label htmlFor="mqtt-topic-prefix" className="text-muted text-xs">
-            {t('connectionPanel.topicPrefix')}
+          <label
+            htmlFor={
+              protocol === 'meshcore' &&
+              isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings)
+                ? 'mqtt-topic-prefix-iata'
+                : 'mqtt-topic-prefix'
+            }
+            id="mqtt-topic-prefix-label"
+            className="text-muted text-xs"
+          >
+            {protocol === 'meshcore' &&
+            isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings)
+              ? t('connectionPanel.iataPicklist.label')
+              : t('connectionPanel.topicPrefix')}
           </label>
           <HelpTooltip
             text={
@@ -3856,33 +3880,33 @@ export default function ConnectionPanel({
             }
           />
         </div>
-        <input
-          id="mqtt-topic-prefix"
-          type="text"
-          value={activeMqttSettings.topicPrefix}
-          onChange={(e) => {
-            updateMqtt('topicPrefix', e.target.value, false);
-          }}
-          onBlur={() => {
-            if (protocol !== 'meshcore') return;
-            if (!isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings)) return;
-            const parsed = parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix);
-            if (parsed.ok && parsed.normalized !== activeMqttSettings.topicPrefix) {
-              updateMqtt('topicPrefix', parsed.normalized, false);
-            }
-          }}
-          className={INPUT_CLASS}
-          placeholder={t('connectionPanel.topicPrefixPlaceholder')}
-          aria-invalid={
-            protocol === 'meshcore' &&
-            isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings) &&
-            !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok
-          }
-        />
+        {protocol === 'meshcore' &&
+        isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings) ? (
+          <MeshcoreMqttIataSelect
+            id="mqtt-topic-prefix-iata"
+            labelledById="mqtt-topic-prefix-label"
+            topicPrefix={activeMqttSettings.topicPrefix}
+            onSelectTopicPrefix={(next) => {
+              updateMqtt('topicPrefix', next, false);
+            }}
+            invalid={!parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok}
+          />
+        ) : (
+          <input
+            id="mqtt-topic-prefix"
+            type="text"
+            value={activeMqttSettings.topicPrefix}
+            onChange={(e) => {
+              updateMqtt('topicPrefix', e.target.value, false);
+            }}
+            className={INPUT_CLASS}
+            placeholder={t('connectionPanel.topicPrefixPlaceholder')}
+          />
+        )}
         {protocol === 'meshcore' &&
         isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings) &&
         !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok ? (
-          <p className="text-xs text-orange-400" role="alert">
+          <p id="mqtt-topic-prefix-iata-invalid" className="text-xs text-orange-400" role="alert">
             {t('connectionPanel.topicPrefixInvalidIata')}
           </p>
         ) : null}

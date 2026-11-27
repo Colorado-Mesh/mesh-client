@@ -258,4 +258,18 @@ describe('App translation settings', () => {
       });
     });
   });
+
+  it('does not debug-log Invalid URL for an empty or incomplete LibreTranslate draft', async () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    resetTranslation(translationStatus());
+    render(<AppTranslationSection />);
+    const urlField = await screen.findByRole('textbox', { name: 'chatTranslation.serverUrl' });
+    expect(urlField).toHaveValue('');
+    fireEvent.change(urlField, { target: { value: 'not-a-url' } });
+    expect(
+      debug.mock.calls.some((args) =>
+        args.some((arg) => arg instanceof TypeError && String(arg).includes('Invalid URL')),
+      ),
+    ).toBe(false);
+  });
 });

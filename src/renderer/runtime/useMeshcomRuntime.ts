@@ -24,7 +24,6 @@ import { canTransmitLocation } from '../lib/locationTransmit';
 import { applyMeshcomMheardStations } from '../lib/meshcom/applyMeshcomMheardStations';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from '../lib/meshcom/meshcomCallRegistry';
 import { normalizeMeshcomCallsign } from '../lib/meshcom/meshcomCallsign';
-import { collectMeshcomMheardStations } from '../lib/meshcom/meshcomCollectMheardStations';
 import { resolveMeshcomContactIdentity } from '../lib/meshcom/meshcomContactIdentity';
 import { parseMeshcomContactsImport } from '../lib/meshcom/meshcomContactImport';
 import type { MeshcomDeviceSettingsSnapshot } from '../lib/meshcom/meshcomDeviceSettings';
@@ -407,10 +406,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     const handle = connectionDriver.getHandle(identityIdRef.current) as MeshComDeviceHandle | null;
     if (!handle) return;
     try {
-      const [{ buildMeshcomSettimeCommand }, { sendMeshcomDeviceCommand }] = await Promise.all([
-        import('../lib/meshcom/meshcomCommandWire'),
-        import('../lib/meshcom/meshcomDeviceCommands'),
-      ]);
+      const { buildMeshcomSettimeCommand, sendMeshcomDeviceCommand } =
+        await import('../lib/meshcom/meshcomDeviceCommands');
       const result = await sendMeshcomDeviceCommand(handle, buildMeshcomSettimeCommand());
       console.debug('[useMeshcomRuntime] auto settime ' + result.command);
     } catch (e) {
@@ -493,6 +490,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       if (!handle) {
         throw new Error('Not connected to MeshCom radio');
       }
+      const { collectMeshcomMheardStations } =
+        await import('../lib/meshcom/meshcomCollectMheardStations');
       const stations = await collectMeshcomMheardStations(handle, identityId);
       if (stations.length > 0) {
         applyMeshcomMheardStations(identityId, stations, Date.now());

@@ -1862,7 +1862,6 @@
       "publishingOf": "RMAP v4: {{total}} 중 {{current}} 게시"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것입니다. 사전 설정은 meshcore/DEN(덴버 IATA) 아래에 게시됩니다. 콜로라도에 있지 않은 경우 LetsMesh 또는 MeshMapper를 대신 사용하십시오. 계속하시겠습니까?",
-    "coloradoServerNote": "Colorado Mesh는 콜로라도 지역의 메쉬 사용자를 위한 것입니다. 주제 접두사는 덴버 IATA(meshcore/DEN)를 사용합니다.",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것이며 meshcore/DEN 아래에 게시됩니다. 콜로라도 외부에 있는 경우 LetsMesh(글로벌 공개 브로커)로 전환하십시오.",
     "coloradoRegionGateStay": "콜로라도에 있습니다",
@@ -2009,7 +2008,21 @@
       "done": "완료",
       "cancelAria": "{{name}} 취소",
       "duplicateWarning": "다른 활성화된 연결이 동일한 브로커(서버 및 포트)를 대상으로 하므로 패킷이 두 번 게시됩니다."
-    }
+    },
+    "iataPicklist": {
+      "label": "지역 IATA",
+      "placeholder": "해당 지역선택",
+      "aria": "MeshCore MQTT 지역 IATA",
+      "searchAria": "공항 IATA 코드 검색",
+      "searchPlaceholder": "코드, 도시 또는 이름 검색…",
+      "listAria": "공항 IATA 코드",
+      "empty": "검색 결과와 일치하는 공항이 없습니다.",
+      "loadFailed": "공항 목록을 불러올 수 없습니다.",
+      "testOption": "검사 — 분석기/검사 전용",
+      "nearestBadge": "가장 가까운",
+      "nearestOption": "{{label}} (가장 가까움)"
+    },
+    "coloradoServerNote": "Colorado Mesh은 콜로라도 지역 메쉬 사용자용입니다. 아래에서 MQTT 주제 접두사를 위한 현지 공항 IATA 코드를 선택하세요."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -2578,7 +2591,18 @@
     "evidence": "{{category}} 에 대한 증거 보기",
     "evidenceShown": "일치하는 항목이 {{total}} 개 중 {{shown}} 개 표시 중 가장 최신 항목이 먼저 표시됩니다.",
     "ignoredOtherProtocol": "다른 무선 프로토콜의 {{count}} 라인이 제외되었습니다.",
-    "protocolNote": "활성 무선 프로토콜을 사용합니다. 다른 무전기의 소유 라인은 제외되며, 앱 전체에서 공유되는 라인은 그대로 유지됩니다."
+    "protocolNote": "활성 무선 프로토콜을 사용합니다. 다른 무전기의 소유 라인은 제외되며, 앱 전체에서 공유되는 라인은 그대로 유지됩니다.",
+    "aiAnalyze": "AI로 분석하기",
+    "aiSetup": "로그 분석을 위한 AI 설정",
+    "aiFixEngine": "AI 엔진 수정",
+    "aiNeedsNetwork": "AI로 분석하려면 문제 해결 문서를 불러오기 위한 인터넷 연결이 필요합니다. 내장 분석 기능은 오프라인에서도 작동합니다.",
+    "aiPrivacyHint": "패키징된 결과를 AI 엔진으로 전송하고 공개 문제 해결 문서를 가져옵니다. 공유하기 전에 샘플을 검토하세요.",
+    "aiConversationLabel": "{{protocol}} 로그 분석",
+    "aiResultHeading": "AI 분류",
+    "aiWorking": "문서를 가져와 분석 중...",
+    "aiVerify": "AI 분류 결과를 소견 및 문서와 대조하여 확인하세요. 위의 휴리스틱 권장 사항은 오프라인 상태에서도 유효합니다.",
+    "troubleshootingDocs": "문제 해결 문서 ↗",
+    "aiNeedsFindings": "AI로 분석하려면 규칙 기반 결과가 하나 이상 필요합니다. 기본 제공 분석 기능에서 이미 문제가 없다고 보고했습니다."
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8525,9 @@
       "invalidResponse": "엔진이 불완전하거나 지원되지 않는 응답을 반환했습니다.",
       "cancelled": "요약이 취소되었습니다.",
       "error": "요약할 수 없습니다. AI 설정을 확인하고 다시 시도하십시오.",
-      "repetitiveOutput": "모델이 반복되기 시작했습니다. 더 큰 모델 또는 더 짧은 범위를 시도하십시오."
+      "repetitiveOutput": "모델이 반복되기 시작했습니다. 더 큰 모델 또는 더 짧은 범위를 시도하십시오.",
+      "docsUnavailable": "문제 해결 문서를 불러올 수 없습니다. 인터넷 연결을 확인하고 AI로 분석을 다시 시도하세요.",
+      "noFindings": "분석할 규칙 기반 결과가 없습니다. 내장된 분석 기능에서 이미 문제가 없다고 보고했습니다."
     },
     "loadingModel": "이 장치에 모델 로드 중...",
     "readingMessages": "이 장치에서 메시지를 읽습니다. CPU 처리에는 몇 분 정도 걸릴 수 있습니다...",

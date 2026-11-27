@@ -2,6 +2,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import type { AiFollowUpPromptInput } from '../../shared/aiFollowUpPrompt';
+import type { prepareSummarizePrompt } from './summarizePromptPrepare';
 
 export type BuildAiFollowUpPrompt = (input: AiFollowUpPromptInput) => {
   system: string;
@@ -10,6 +11,8 @@ export type BuildAiFollowUpPrompt = (input: AiFollowUpPromptInput) => {
   truncated: boolean;
   fits: boolean;
 };
+
+export type PrepareSummarizePrompt = typeof prepareSummarizePrompt;
 
 /**
  * Production main ships `ai-follow-up-prompt.js` next to `index.js` so the
@@ -27,4 +30,20 @@ export async function loadBuildAiFollowUpPrompt(): Promise<BuildAiFollowUpPrompt
     buildAiFollowUpPrompt: BuildAiFollowUpPrompt;
   };
   return loaded.buildAiFollowUpPrompt;
+}
+
+/**
+ * Sibling `ai-summarize-prompt-prepare.js` — Catch up / follow-up / log prompt build.
+ * Keeps prompt construction out of the measured main bundle.
+ */
+export async function loadSummarizePromptPrepare(): Promise<{
+  prepareSummarizePrompt: PrepareSummarizePrompt;
+}> {
+  if (process.env.VITEST) {
+    return import('./summarizePromptPrepare');
+  }
+  const sibling = path.join(__dirname, 'ai-summarize-prompt-prepare.js');
+  return import(pathToFileURL(sibling).href) as Promise<{
+    prepareSummarizePrompt: PrepareSummarizePrompt;
+  }>;
 }
