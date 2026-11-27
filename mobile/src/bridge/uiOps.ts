@@ -100,7 +100,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(s);
 }
 
-async function exportFile(arg: { name: string; bytes: Uint8Array }): Promise<void> {
+export async function exportFile(arg: { name: string; bytes: Uint8Array }): Promise<void> {
   if (mobilePlatform() === 'web') {
     const url = URL.createObjectURL(new Blob([arg.bytes as BlobPart]));
     const a = document.createElement('a');

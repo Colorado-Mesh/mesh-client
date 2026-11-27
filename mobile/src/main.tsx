@@ -19,8 +19,10 @@ import { reapplyBackgroundMode } from './bridge/backgroundKeeper';
 import { installCustomSchemeImages } from './bridge/customSchemes';
 import { sendLifecycle, startHost } from './bridge/hostClient';
 import { getPlugin, mobilePlatform } from './bridge/nativePlugins';
+import { exportFile } from './bridge/uiOps';
 import { installMobileI18n } from './i18nMobile';
 import { handleAndroidBack } from './platform/androidBack';
+import { installBlobDownloads } from './platform/blobDownloads';
 import { setMobileAppPlatform } from './platform/mobilePlatform';
 import { installMobileNotifications } from './platform/webNotifications';
 import { installMobileSerial } from './serial/installMobileSerial';
@@ -153,6 +155,9 @@ async function boot(): Promise<void> {
   await installMobileNotifications().catch((e: unknown) => {
     console.debug('[mobile] notifications unavailable', e);
   });
+  // Files the renderer builds (`<a download href="blob:">`) go to the share sheet; WebViews
+  // ignore such downloads. The browser harness keeps real downloads.
+  if (platform !== 'web') installBlobDownloads(exportFile);
 
   await import('@/renderer/main');
 }
