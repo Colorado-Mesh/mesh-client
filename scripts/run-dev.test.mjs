@@ -94,6 +94,22 @@ describe('run-dev', () => {
     expect(args.some((arg) => arg.startsWith('pnpm run'))).toBe(false);
   });
 
+  it('buildDevConcurrentlyArgs names every command, so -s command-electron watches electron', () => {
+    const args = buildDevConcurrentlyArgs();
+    const namesAt = args.indexOf('--names');
+    const names = args[namesAt + 1].split(',');
+    const commands = args.slice(namesAt + 2);
+    expect(names).toHaveLength(commands.length);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names[commands.indexOf('vite')]).toBe('vite');
+    expect(names.at(-1)).toBe('electron');
+    expect(commands.at(-1)).toContain('electron .');
+    const reachCheckAt = commands.findIndex((arg) =>
+      arg.startsWith('esbuild src/main/ipc/reach-check-handlers.ts'),
+    );
+    expect(names[reachCheckAt]).toBe('reachcheck');
+  });
+
   it('resolveDevExitCode treats intentional signals as success', () => {
     expect(resolveDevExitCode(null, 'SIGINT')).toBe(0);
     expect(resolveDevExitCode(null, 'SIGTERM')).toBe(0);

@@ -73,7 +73,7 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,mcpool,notifwav,nodeupsert,meshcomdb,meshcomdbfb,udpbridge,vite,electron',
+    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,reachcheck,traydot,schedbc,mqttwp,mcpool,notifwav,nodeupsert,meshcomdb,meshcomdbfb,udpbridge,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
