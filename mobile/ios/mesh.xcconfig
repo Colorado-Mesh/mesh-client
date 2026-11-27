@@ -1,0 +1,22 @@
+// Mesh Client build settings for the App target: included by debug.xcconfig (Debug) and the base
+// configuration of the target's Release configuration. Swift packages do not see these.
+
+// iPhone Duo fold (App/MeshWebView.swift) uses UIView.reservedRegions(kind:options:), new in the
+// iOS 27.1 SDK. The Swift code compiles it only with Swift >= 6.4, but Xcode 27.0 also ships
+// Swift 6.4 without that API, so turn it off there. XCODE_VERSION_MINOR is 2700 for Xcode 27.0.x
+// and 2710 for Xcode 27.1. To force the fallback elsewhere pass
+// MESH_SDK_SWIFT_FLAGS=-DMESH_NO_RESERVED_REGIONS (the CI workflow does when the SDK is < 27.1).
+MESH_XCODE_SWIFT_FLAGS_2700 = -DMESH_NO_RESERVED_REGIONS
+OTHER_SWIFT_FLAGS = $(inherited) $(MESH_XCODE_SWIFT_FLAGS_$(XCODE_VERSION_MINOR)) $(MESH_SDK_SWIFT_FLAGS)
+
+// Optional in-process Reticulum sidecar (App/Plugins/MeshProcessPlugin.swift). After
+// `node mobile/scripts/build-sidecar.mjs ios` has built App/MeshReticulum.xcframework, run
+// `mobile/ios/scripts/configure-sidecar.sh`; it writes the gitignored mesh-sidecar.xcconfig next
+// to this file, defining (per SDK) MESH_SIDECAR_SWIFT_INCLUDE_PATHS (the slice's Headers with
+// module.modulemap for `module MeshReticulum`), MESH_SIDECAR_LIBRARY_SEARCH_PATHS and
+// MESH_SIDECAR_LDFLAGS (-lmesh_reticulum + system libraries). With the module visible,
+// `canImport(MeshReticulum)` turns MeshProcess.spawn on; without the file nothing is linked.
+#include? "mesh-sidecar.xcconfig"
+SWIFT_INCLUDE_PATHS = $(inherited) $(MESH_SIDECAR_SWIFT_INCLUDE_PATHS)
+LIBRARY_SEARCH_PATHS = $(inherited) $(MESH_SIDECAR_LIBRARY_SEARCH_PATHS)
+OTHER_LDFLAGS = $(inherited) $(MESH_SIDECAR_LDFLAGS)

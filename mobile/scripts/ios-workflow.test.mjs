@@ -140,15 +140,15 @@ describe('Mobile iOS simulator workflow', () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
-  it('builds the iOS sidecar when its script exists but links it only on request', () => {
+  it('builds and links the iOS sidecar only on a manual run that asks for it', () => {
     const build = stepIndex((s) => s.id === 'sidecar');
     const link = stepIndex((s) => runOf(s).includes('configure-sidecar.sh'));
     const sync = stepIndex((s) => s.run === 'pnpm -C mobile exec cap sync ios');
     const step = job.steps[build];
-    expect(step.if).toContain("hashFiles('mobile/scripts/build-sidecar.mjs'");
+    expect(step.if).toBe("matrix.slug == 'xcode27' && inputs.build_sidecar");
     expect(step['continue-on-error']).toBe(true);
     expect(step['timeout-minutes']).toBeGreaterThan(0);
-    expect(runOf(step)).toContain('node "$script" ios');
+    expect(runOf(step)).toContain('node mobile/scripts/build-sidecar.mjs ios');
     expect(job.steps[link].if).toBe("inputs.build_sidecar && steps.sidecar.outcome == 'success'");
     expect(build).toBeLessThan(link);
     expect(link).toBeLessThan(sync);

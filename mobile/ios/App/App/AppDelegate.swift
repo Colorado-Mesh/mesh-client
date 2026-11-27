@@ -7,7 +7,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        #if DEBUG
+        // Capacitor prints the page console with Swift.print (stdout). Line-buffer stdout so
+        // `simctl launch --stdout=…` captures in CI show lines as they happen, not at exit.
+        setvbuf(stdout, nil, _IOLBF, 0)
+        #endif
         return true
     }
 

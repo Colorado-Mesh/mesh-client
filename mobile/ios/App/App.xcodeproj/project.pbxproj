@@ -16,6 +16,17 @@
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
+		4D4553480000000000000201 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4553480000000000000101 /* MainViewController.swift */; };
+		4D4553480000000000000202 /* MeshWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4553480000000000000102 /* MeshWebView.swift */; };
+		4D4553480000000000000203 /* MeshSmokeProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4553480000000000000103 /* MeshSmokeProbe.swift */; };
+		4D4553480000000000000204 /* MeshNetPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4553480000000000000104 /* MeshNetPlugin.swift */; };
+		4D4553480000000000000205 /* MeshNetSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4553480000000000000105 /* MeshNetSupport.swift */; };
+		4D4553480000000000000206 /* MeshNetTcp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4553480000000000000106 /* MeshNetTcp.swift */; };
+		4D4553480000000000000207 /* MeshNetTls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4553480000000000000107 /* MeshNetTls.swift */; };
+		4D4553480000000000000208 /* MeshNetUdp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4553480000000000000108 /* MeshNetUdp.swift */; };
+		4D4553480000000000000209 /* MeshNetHttp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4553480000000000000109 /* MeshNetHttp.swift */; };
+		4D455348000000000000020A /* MeshDevicePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D455348000000000000010A /* MeshDevicePlugin.swift */; };
+		4D455348000000000000020B /* MeshProcessPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D455348000000000000010B /* MeshProcessPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +41,18 @@
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		4D4553480000000000000101 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
+		4D4553480000000000000102 /* MeshWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshWebView.swift; sourceTree = "<group>"; };
+		4D4553480000000000000103 /* MeshSmokeProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshSmokeProbe.swift; sourceTree = "<group>"; };
+		4D4553480000000000000104 /* MeshNetPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshNetPlugin.swift; sourceTree = "<group>"; };
+		4D4553480000000000000105 /* MeshNetSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshNetSupport.swift; sourceTree = "<group>"; };
+		4D4553480000000000000106 /* MeshNetTcp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshNetTcp.swift; sourceTree = "<group>"; };
+		4D4553480000000000000107 /* MeshNetTls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshNetTls.swift; sourceTree = "<group>"; };
+		4D4553480000000000000108 /* MeshNetUdp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshNetUdp.swift; sourceTree = "<group>"; };
+		4D4553480000000000000109 /* MeshNetHttp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshNetHttp.swift; sourceTree = "<group>"; };
+		4D455348000000000000010A /* MeshDevicePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshDevicePlugin.swift; sourceTree = "<group>"; };
+		4D455348000000000000010B /* MeshProcessPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshProcessPlugin.swift; sourceTree = "<group>"; };
+		4D455348000000000000010C /* mesh.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = mesh.xcconfig; path = ../mesh.xcconfig; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +71,7 @@
 			isa = PBXGroup;
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
+				4D455348000000000000010C /* mesh.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
 			);
@@ -67,6 +91,10 @@
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
+				4D4553480000000000000101 /* MainViewController.swift */,
+				4D4553480000000000000102 /* MeshWebView.swift */,
+				4D4553480000000000000103 /* MeshSmokeProbe.swift */,
+				4D455348000000000000010D /* Plugins */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -75,6 +103,21 @@
 				50B271D01FEDC1A000F3C39B /* public */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		4D455348000000000000010D /* Plugins */ = {
+			isa = PBXGroup;
+			children = (
+				4D4553480000000000000104 /* MeshNetPlugin.swift */,
+				4D4553480000000000000105 /* MeshNetSupport.swift */,
+				4D4553480000000000000106 /* MeshNetTcp.swift */,
+				4D4553480000000000000107 /* MeshNetTls.swift */,
+				4D4553480000000000000108 /* MeshNetUdp.swift */,
+				4D4553480000000000000109 /* MeshNetHttp.swift */,
+				4D455348000000000000010A /* MeshDevicePlugin.swift */,
+				4D455348000000000000010B /* MeshProcessPlugin.swift */,
+			);
+			path = Plugins;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -160,6 +203,17 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
+				4D4553480000000000000201 /* MainViewController.swift in Sources */,
+				4D4553480000000000000202 /* MeshWebView.swift in Sources */,
+				4D4553480000000000000203 /* MeshSmokeProbe.swift in Sources */,
+				4D4553480000000000000204 /* MeshNetPlugin.swift in Sources */,
+				4D4553480000000000000205 /* MeshNetSupport.swift in Sources */,
+				4D4553480000000000000206 /* MeshNetTcp.swift in Sources */,
+				4D4553480000000000000207 /* MeshNetTls.swift in Sources */,
+				4D4553480000000000000208 /* MeshNetUdp.swift in Sources */,
+				4D4553480000000000000209 /* MeshNetHttp.swift in Sources */,
+				4D455348000000000000020A /* MeshDevicePlugin.swift in Sources */,
+				4D455348000000000000020B /* MeshProcessPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -319,6 +373,7 @@
 		};
 		504EC3181FED79650016851F /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4D455348000000000000010C /* mesh.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
