@@ -5297,10 +5297,19 @@ export function useMeshcoreRuntime() {
       if (type === 'serial') {
         await prepareRfConnect('serial');
         let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
+        let provisionalParams: typeof meshcoreConnectionParamsRef.current = null;
         const attachSerialSession = async () => {
           opened = await openMeshCoreTransport('serial', {
             portSignature: lastSerialPortId,
           });
+          // prepareRfConnect cleared the params; attachRfSession starts the serial watchdog
+          // and unplug watch only when they already say serial (as manual connect sets them).
+          provisionalParams = {
+            rfType: 'serial',
+            serialPortId: lastSerialPortId ?? localStorage.getItem(LAST_SERIAL_PORT_KEY),
+            serialPort: null,
+          };
+          meshcoreConnectionParamsRef.current = provisionalParams;
           await attachRfSession(opened.driverIdentityId, 'serial');
           meshcoreConnectionParamsRef.current = {
             rfType: 'serial',
@@ -5330,6 +5339,11 @@ export function useMeshcoreRuntime() {
             await attachSerialSession();
           }
         } catch (err) {
+          // A failed auto-connect leaves no serial session to reconnect to; a superseding
+          // connect has already replaced the params, so only clear the ones set here.
+          if (provisionalParams && meshcoreConnectionParamsRef.current === provisionalParams) {
+            meshcoreConnectionParamsRef.current = null;
+          }
           const isSetupAbort = isMeshcoreSetupAbortError(err);
           if (!isSetupAbort) {
             const normalized = normalizeMeshCoreError(

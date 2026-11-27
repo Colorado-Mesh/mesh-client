@@ -66,6 +66,18 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
+  it('serial auto-connect sets serial params before attach and clears only its own on failure', () => {
+    const body = extractUseCallbackBody(RUNTIME_SOURCE, 'connectAutomatic');
+    expect(body).not.toBe('');
+    // attachRfSession starts the serial watchdog only when params already say serial.
+    expect(body).toMatch(
+      /meshcoreConnectionParamsRef\.current = provisionalParams;\s*await attachRfSession\(opened\.driverIdentityId, 'serial'\)/,
+    );
+    expect(body).toMatch(
+      /\} catch \(err\) \{[\s\S]*?if \(provisionalParams && meshcoreConnectionParamsRef\.current === provisionalParams\) \{\s*meshcoreConnectionParamsRef\.current = null;/,
+    );
+  });
+
   it('prepareRfConnect preserves reconnect state when requested', () => {
     const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
     expect(prepareBody).toContain('preserveReconnectState');

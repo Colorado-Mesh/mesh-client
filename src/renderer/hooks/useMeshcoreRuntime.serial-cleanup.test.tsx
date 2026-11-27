@@ -254,6 +254,67 @@ describe('useMeshcoreRuntime serial cleanup', () => {
     expect(result.current.state.status).toBe('disconnected');
   });
 
+  it('connectAutomatic serial starts the silence watchdog once attached', async () => {
+    // Connect setup uses real setTimeout; only the watchdog interval and its clock are faked.
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let unmount: (() => void) | undefined;
+    try {
+      const port = makeMockSerialPort('auto-port');
+      Object.defineProperty(navigator, 'serial', {
+        configurable: true,
+        value: {
+          getPorts: vi.fn().mockResolvedValue([port]),
+        },
+      });
+      serialConnGetSelfInfoMock.mockReset();
+      serialConnGetSelfInfoMock.mockResolvedValue({
+        publicKey: new Uint8Array(32).fill(7),
+        name: 'Watchdog test radio',
+        type: 1,
+        txPower: 20,
+        maxTxPower: 22,
+        advLat: 0,
+        advLon: 0,
+        radioFreq: 910525,
+        radioBw: 62500,
+        radioSf: 7,
+        radioCr: 5,
+      });
+
+      const rendered = renderHook(() => useMeshcoreRuntime());
+      const { result } = rendered;
+      unmount = rendered.unmount;
+      await act(async () => {
+        await result.current.connectAutomatic('serial', undefined, 'auto-port');
+      });
+      expect(result.current.state.status).toBe('configured');
+      warnSpy.mockClear();
+
+      // No radio data for longer than SERIAL_STALE_THRESHOLD_MS (120 s), checked every 15 s.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(135_000);
+      });
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/^mcL1203 .*watchdog: serial stale for \d+ms/),
+      );
+      expect(result.current.state.status).toBe('stale');
+
+      // Past SERIAL_DEAD_THRESHOLD_MS (180 s) the watchdog hands off to reconnect.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/^mcL1202 .*watchdog: serial dead for \d+ms, triggering reconnect/),
+      );
+    } finally {
+      // Stop the reconnect the dead watchdog started before real timers return.
+      unmount?.();
+      warnSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it('connect serial closes connection on init failure via ConnectionDriver', async () => {
     const port = makeMockSerialPort('manual-port');
     Object.defineProperty(navigator, 'serial', {
