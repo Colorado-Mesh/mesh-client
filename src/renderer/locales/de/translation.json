@@ -9349,6 +9349,18 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Ein beliebiger Mesh-Health-Check-Server. Fragen Sie Ihre Community nach ihrer Adresse.",
     "serverInvalid": "Geben Sie eine https://-Adresse ein.",
-    "serverNotPublic": "Verwenden Sie die öffentliche Internetadresse des Servers."
+    "serverNotPublic": "Verwenden Sie die öffentliche Internetadresse des Servers.",
+    "lineWaiting": "Reichweitenprüfung: Warten auf Beobachter*innen",
+    "lineResults": "Reichweitenprüfung: {{summary}}",
+    "lineFinished": "REACH-Prüfung abgeschlossen: {{summary}}",
+    "lineFinishedNone": "Reichweitenprüfung abgeschlossen: Keine Beobachter haben sie gehört",
+    "lineGone": "Reichweitenprüfung: Ergebnisse nicht mehr auf dem Server",
+    "lineUnreachable": "Erreichbarkeitsprüfung: Server nicht erreichbar",
+    "lineObservers_one": "{{seen}} von {{count}} Beobachter(n)",
+    "lineObservers_other": "{{seen}} von {{count}} Beobachtern",
+    "lineRepeaters_one": "{{count}} Repeater",
+    "lineRepeaters_other": "{{count}} Repeater",
+    "lineFarthest": "am weitesten entfernt {{distance}}",
+    "lineFullResults": "Vollständige Ergebnisse"
   }
 }

@@ -9349,6 +9349,18 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Qualsiasi server di controllo dello stato della mesh. Chiedi alla tua community il suo indirizzo.",
     "serverInvalid": "Inserisci un indirizzo https://.",
-    "serverNotPublic": "Utilizzare l'indirizzo Internet pubblico del server."
+    "serverNotPublic": "Utilizzare l'indirizzo Internet pubblico del server.",
+    "lineWaiting": "Controllo della portata: in attesa degli osservatori",
+    "lineResults": "Controllo della portata: {{summary}}",
+    "lineFinished": "Controllo della portata completato: {{summary}}",
+    "lineFinishedNone": "Controllo della portata terminato: nessun osservatore lo ha sentito",
+    "lineGone": "Controllo della portata: i risultati non sono più sul server",
+    "lineUnreachable": "Controllo della raggiungibilità: server non raggiungibile",
+    "lineObservers_one": "{{seen}} di {{count}} osservatore",
+    "lineObservers_other": "{{seen}} di {{count}} osservatori",
+    "lineRepeaters_one": "{{count}} ripetitore",
+    "lineRepeaters_other": "{{count}} ripetitori",
+    "lineFarthest": "più lontano {{distance}}",
+    "lineFullResults": "Risultati finali"
   }
 }

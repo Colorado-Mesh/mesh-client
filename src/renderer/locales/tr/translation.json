@@ -9349,6 +9349,18 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Herhangi bir Mesh Sağlık Kontrolü sunucusu. Topluluğunuza adresini sorun.",
     "serverInvalid": "Bir https:// adresi girin.",
-    "serverNotPublic": "Sunucunun genel internet adresini kullanın."
+    "serverNotPublic": "Sunucunun genel internet adresini kullanın.",
+    "lineWaiting": "Erişim kontrolü: Gözlemciler bekleniyor",
+    "lineResults": "Erişim kontrolü: {{summary}}",
+    "lineFinished": "Erişim kontrolü tamamlandı: {{summary}}",
+    "lineFinishedNone": "Menzil kontrolü tamamlandı: Hiçbir gözlemci duymadı",
+    "lineGone": "Erişim kontrolü: Sonuçlar artık sunucuda değil",
+    "lineUnreachable": "Erişilebilirlik kontrolü: Sunucuya erişilemiyor",
+    "lineObservers_one": "{{seen}} / {{count}} gözlemci",
+    "lineObservers_other": "{{seen}} / {{count}} gözlemci",
+    "lineRepeaters_one": "{{count}} tekrarlayıcı",
+    "lineRepeaters_other": "{{count}} tekrarlayıcı",
+    "lineFarthest": "en uzak {{distance}}",
+    "lineFullResults": "Tüm sonuçlar"
   }
 }

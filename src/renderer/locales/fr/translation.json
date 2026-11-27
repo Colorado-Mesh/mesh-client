@@ -9349,6 +9349,18 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "N’importe quel serveur de vérification de l’état du maillage. Demandez à votre communauté son adresse.",
     "serverInvalid": "Saisissez une adresse https://.",
-    "serverNotPublic": "Utilisez l'adresse Internet publique du serveur."
+    "serverNotPublic": "Utilisez l'adresse Internet publique du serveur.",
+    "lineWaiting": "Vérification de la portée : en attente des observateurs",
+    "lineResults": "Vérification de la portée : {{summary}}",
+    "lineFinished": "Vérification de la portée terminée : {{summary}}",
+    "lineFinishedNone": "Vérification de portée terminée : aucun observateur ne l’a entendue",
+    "lineGone": "Vérification de la portée : les résultats ne sont plus sur le serveur",
+    "lineUnreachable": "Vérification de l’accessibilité : serveur inaccessible",
+    "lineObservers_one": "{{seen}} sur {{count}} observateur",
+    "lineObservers_other": "{{seen}} observateurs sur {{count}}",
+    "lineRepeaters_one": "{{count}} répéteur",
+    "lineRepeaters_other": "{{count}} répéteurs",
+    "lineFarthest": "le plus éloigné {{distance}}",
+    "lineFullResults": "Résultats"
   }
 }

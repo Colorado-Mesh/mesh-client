@@ -6299,7 +6299,19 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Any Mesh Health Check server. Ask your community for its address.",
     "serverInvalid": "Enter an https:// address.",
-    "serverNotPublic": "Use the server's public internet address."
+    "serverNotPublic": "Use the server's public internet address.",
+    "lineWaiting": "Reach check: waiting for observers",
+    "lineResults": "Reach check: {{summary}}",
+    "lineFinished": "Reach check finished: {{summary}}",
+    "lineFinishedNone": "Reach check finished: no observers heard it",
+    "lineGone": "Reach check: results no longer on the server",
+    "lineUnreachable": "Reach check: server not reachable",
+    "lineObservers_one": "{{seen}} of {{count}} observer",
+    "lineObservers_other": "{{seen}} of {{count}} observers",
+    "lineRepeaters_one": "{{count}} repeater",
+    "lineRepeaters_other": "{{count}} repeaters",
+    "lineFarthest": "farthest {{distance}}",
+    "lineFullResults": "Full results"
   },
   "rawPacketLog": {
     "filterPackets": "Filter packets",

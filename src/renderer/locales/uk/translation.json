@@ -9493,6 +9493,22 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Будь-який сервер перевірки стану Mesh. Запитайте адресу у своєї спільноти.",
     "serverInvalid": "Введіть адресу https://.",
-    "serverNotPublic": "Використовуйте загальнодоступну інтернет-адресу сервера."
+    "serverNotPublic": "Використовуйте загальнодоступну інтернет-адресу сервера.",
+    "lineWaiting": "Перевірка охоплення: очікування спостерігачів",
+    "lineResults": "Перевірка охоплення: {{summary}}",
+    "lineFinished": "Перевірку досяжності завершено: {{summary}}",
+    "lineFinishedNone": "Перевірку досяжності завершено: жоден спостерігач не почув її",
+    "lineGone": "Перевірка охоплення: результатів більше немає на сервері",
+    "lineUnreachable": "Перевірка доступності: сервер недоступний",
+    "lineObservers_one": "{{seen}} з {{count}} спостерігача",
+    "lineObservers_few": "{{seen}} з {{count}} спостерігачів",
+    "lineObservers_many": "{{seen}} з {{count}} спостерігачів",
+    "lineObservers_other": "{{seen}} з {{count}} спостерігачів",
+    "lineRepeaters_one": "{{count}} ретранслятор",
+    "lineRepeaters_few": "{{count}} ретранслятори",
+    "lineRepeaters_many": "{{count}} ретрансляторів",
+    "lineRepeaters_other": "{{count}} ретранслятора",
+    "lineFarthest": "найдальший {{distance}}",
+    "lineFullResults": "Повні результати"
   }
 }

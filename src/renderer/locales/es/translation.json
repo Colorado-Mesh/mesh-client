@@ -9349,6 +9349,18 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Cualquier servidor de comprobación del estado de la malla. Pregunte a su comunidad cuál es su dirección.",
     "serverInvalid": "Introduce una dirección https://.",
-    "serverNotPublic": "Utilizar la dirección de Internet pública del servidor."
+    "serverNotPublic": "Utilizar la dirección de Internet pública del servidor.",
+    "lineWaiting": "Comprobación del alcance: esperando a los observadores",
+    "lineResults": "Comprobación del alcance: {{summary}}",
+    "lineFinished": "Comprobación de alcance finalizada: {{summary}}",
+    "lineFinishedNone": "Comprobación de alcance finalizada: ningún observador la ha oído",
+    "lineGone": "Comprobación de alcance: los resultados ya no están en el servidor",
+    "lineUnreachable": "Comprobación de conectividad: no se puede acceder al servidor",
+    "lineObservers_one": "{{seen}} de {{count}} observador",
+    "lineObservers_other": "{{seen}} de {{count}} observadores",
+    "lineRepeaters_one": "{{count}} repetidor",
+    "lineRepeaters_other": "{{count}} repetidores",
+    "lineFarthest": "más lejos {{distance}}",
+    "lineFullResults": "Resultados completos"
   }
 }

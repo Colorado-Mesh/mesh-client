@@ -9493,6 +9493,22 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Любой сервер проверки состояния Mesh. Узнайте адрес у своего сообщества.",
     "serverInvalid": "Введите адрес https://.",
-    "serverNotPublic": "Используйте публичный интернет-адрес сервера."
+    "serverNotPublic": "Используйте публичный интернет-адрес сервера.",
+    "lineWaiting": "Проверка охвата: ожидание наблюдателей",
+    "lineResults": "Проверка охвата: {{summary}}",
+    "lineFinished": "Проверка диапазона завершена: {{summary}}",
+    "lineFinishedNone": "Проверка диапазона завершена: никто из наблюдателей не услышал сигнал",
+    "lineGone": "Проверка охвата: результаты больше не находятся на сервере",
+    "lineUnreachable": "Проверка доступности: сервер недоступен",
+    "lineObservers_one": "{{seen}} из {{count}} наблюдателя",
+    "lineObservers_few": "{{seen}} из {{count}} наблюдателей",
+    "lineObservers_many": "{{seen}} из {{count}} наблюдателей",
+    "lineObservers_other": "{{seen}} из {{count}} наблюдателей",
+    "lineRepeaters_one": "{{count}} ретранслятор",
+    "lineRepeaters_few": "{{count}} ретранслятора",
+    "lineRepeaters_many": "{{count}} ретрансляторов",
+    "lineRepeaters_other": "{{count}} ретранслятора",
+    "lineFarthest": "самый дальний {{distance}}",
+    "lineFullResults": "Смотреть полные результаты"
   }
 }

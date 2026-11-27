@@ -9349,6 +9349,18 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Elke Mesh Health Check-server. Vraag uw community om het adres.",
     "serverInvalid": "Voer een https://-adres in.",
-    "serverNotPublic": "Gebruik het openbare internetadres van de server."
+    "serverNotPublic": "Gebruik het openbare internetadres van de server.",
+    "lineWaiting": "Bereikcontrole: wachten op waarnemers",
+    "lineResults": "Reikwijdtecontrole: {{summary}}",
+    "lineFinished": "Bereikcontrole voltooid: {{summary}}",
+    "lineFinishedNone": "Reikwijdtecontrole voltooid: geen waarnemers hebben het gehoord",
+    "lineGone": "Bereikcontrole: resultaten niet langer op de server",
+    "lineUnreachable": "Bereikbaarheidstest: server niet bereikbaar",
+    "lineObservers_one": "{{seen}} van {{count}} observator",
+    "lineObservers_other": "{{seen}} van {{count}} waarnemers",
+    "lineRepeaters_one": "{{count}} repeater",
+    "lineRepeaters_other": "{{count}} repeaters",
+    "lineFarthest": "verst {{distance}}",
+    "lineFullResults": "VOLLEDIGE RESULTATEN:"
   }
 }

@@ -4,6 +4,7 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { activeDmStorageKey, openDmTabsStorageKey } from '../lib/chatPanelProtocolStorage';
+import { useReachCheckStore } from '../lib/reachCheck/reachCheckStore';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import { addMessage, renameMessageId, useMessageStore } from '../stores/messageStore';
 import ChatPanel from './ChatPanel';
@@ -400,6 +401,73 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
     );
     expect(screen.getByText('hello channel')).toBeInTheDocument();
     expect(screen.getByText('Heard by network')).toBeInTheDocument();
+  });
+
+  it('shows reach check results under the sent code, and not under other messages', () => {
+    const now = Date.now();
+    useReachCheckStore.setState({ entries: {} });
+    useReachCheckStore.getState().start(IDENTITY, 'out:1700000000000:abc', {
+      origin: 'https://rangecheck.example.org',
+      sessionId: 's1',
+      code: 'MHC-1A2B3C',
+      session: {
+        id: 's1',
+        code: 'MHC-1A2B3C',
+        status: 'active',
+        expiresAt: now + 600_000,
+        observedCount: 4,
+        expectedCount: 9,
+        repeaterCount: 0,
+        distanceText: '',
+        sharePath: '/share/s1',
+      },
+      state: 'polling',
+      startedAt: now,
+    });
+    render(
+      <ToastProvider>
+        <ChatPanel
+          messages={[
+            {
+              storeId: 'out:1700000000000:abc',
+              sender_id: 7,
+              sender_name: 'Me',
+              payload: 'MHC-1A2B3C',
+              channel: 0,
+              timestamp: now,
+              status: 'acked',
+            },
+            {
+              storeId: 'in:1',
+              sender_id: 9,
+              sender_name: 'Them',
+              payload: 'hello',
+              channel: 0,
+              timestamp: now + 1,
+            },
+          ]}
+          channels={[{ index: 0, name: 'cm-reach' }]}
+          myNodeNum={7}
+          onSend={vi.fn()}
+          onReact={vi.fn().mockResolvedValue(undefined)}
+          onResend={vi.fn()}
+          onNodeClick={vi.fn()}
+          isConnected
+          nodes={new Map()}
+          isActive
+          protocol="meshcore"
+          identityId={IDENTITY}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getAllByRole('status', { name: '' }).map((el) => el.textContent)).toContain(
+      'Reach check: 4 of 9 observers',
+    );
+    expect(screen.getAllByText(/Reach check:/)).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Full results' })).toHaveAttribute(
+      'href',
+      'https://rangecheck.example.org/share/s1',
+    );
   });
 
   it('shows Reticulum hops-only coverage inside ChatPanel status row', () => {

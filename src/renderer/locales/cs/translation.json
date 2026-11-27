@@ -9434,6 +9434,20 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Jakýkoli server pro kontrolu stavu sítě Mesh. Zeptejte se své komunity na její adresu.",
     "serverInvalid": "Zadejte adresu https://.",
-    "serverNotPublic": "Použijte veřejnou internetovou adresu serveru."
+    "serverNotPublic": "Použijte veřejnou internetovou adresu serveru.",
+    "lineWaiting": "Kontrola dosahu: čekání na pozorovatele",
+    "lineResults": "Kontrola dosahu: {{summary}}",
+    "lineFinished": "Kontrola dosahu dokončena: {{summary}}",
+    "lineFinishedNone": "Kontrola dosahu dokončena: neslyšeli ji žádní pozorovatelé",
+    "lineGone": "Kontrola dosahu: výsledky již nejsou na serveru",
+    "lineUnreachable": "Kontrola dosažitelnosti: server není dosažitelný",
+    "lineObservers_one": "{{seen}} z {{count}} pozorovatele",
+    "lineObservers_few": "{{seen}} z {{count}} pozorovatelů",
+    "lineObservers_other": "{{seen}} z {{count}} pozorovatelů",
+    "lineRepeaters_one": "{{count}} opakovač",
+    "lineRepeaters_few": "{{count}} opakovače",
+    "lineRepeaters_other": "{{count}} opakovačů",
+    "lineFarthest": "nejvzdálenější {{distance}}",
+    "lineFullResults": "kompletní výsledky"
   }
 }

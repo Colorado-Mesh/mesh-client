@@ -9349,6 +9349,18 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "任何网格健康检查服务器。向您的社区询问其地址。",
     "serverInvalid": "请输入 https:// 地址。",
-    "serverNotPublic": "使用服务器的公用互联网地址。"
+    "serverNotPublic": "使用服务器的公用互联网地址。",
+    "lineWaiting": "触达检查：正在等待观察员",
+    "lineResults": "触达检查：{{summary}}",
+    "lineFinished": "可达性检查已完成：{{summary}}",
+    "lineFinishedNone": "触及检查已完成：没有观察员听到声音",
+    "lineGone": "覆盖范围检查：结果不再位于服务器上",
+    "lineUnreachable": "可达性检查：服务器不可达",
+    "lineObservers_one": "{{seen}}/{{count}}名观察员",
+    "lineObservers_other": "{{seen}}个观察者，共{{count}}个",
+    "lineRepeaters_one": "{{count}}中继器",
+    "lineRepeaters_other": "{{count}}个中继器",
+    "lineFarthest": "最远的{{distance}}",
+    "lineFullResults": "全部结果"
   }
 }

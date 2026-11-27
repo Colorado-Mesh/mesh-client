@@ -317,6 +317,7 @@ import { MecpUnreadIcon, useMecpUnreadLabel } from './mecp/MecpUnreadIcon';
 import MeshComGrcChatManager from './MeshComGrcChatManager';
 import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { ReachCheckLine } from './ReachCheckLine';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
@@ -5416,6 +5417,11 @@ function ChatPanel({
                                 />
                               </div>
                             )}
+                            <ReachCheckLine
+                              messageId={relayCoverageMessageKey(msg)}
+                              isOwn={isOwn}
+                              identityId={identityId}
+                            />
                           </div>
 
                           {/* Inline reaction trigger — visible on hover/focus-within, or always when alwaysShowMessageActions is set */}

@@ -9493,6 +9493,22 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Dowolny serwer kontroli stanu sieci Mesh. Zapytaj swoją społeczność o jej adres.",
     "serverInvalid": "Wprowadź adres https://.",
-    "serverNotPublic": "Użyj publicznego adresu internetowego serwera."
+    "serverNotPublic": "Użyj publicznego adresu internetowego serwera.",
+    "lineWaiting": "Kontrola zasięgu: oczekiwanie na obserwatorów",
+    "lineResults": "Kontrola zasięgu: {{summary}}",
+    "lineFinished": "Kontrola zasięgu zakończona: {{summary}}",
+    "lineFinishedNone": "Kontrola zasięgu zakończona: żaden obserwator jej nie usłyszał",
+    "lineGone": "Kontrola zasięgu: wyniki nie znajdują się już na serwerze",
+    "lineUnreachable": "Kontrola zasięgu: serwer jest nieosiągalny",
+    "lineObservers_one": "{{seen}} z {{count}} obserwatora",
+    "lineObservers_few": "{{seen}} z {{count}} obserwatorów",
+    "lineObservers_many": "{{seen}} z {{count}} obserwatorów",
+    "lineObservers_other": "{{seen}} z {{count}} obserwatorów",
+    "lineRepeaters_one": "{{count}} przekaźnik",
+    "lineRepeaters_few": "{{count}} przekaźniki",
+    "lineRepeaters_many": "{{count}} przekaźników",
+    "lineRepeaters_other": "{{count}} przekaźnika",
+    "lineFarthest": "najdalszy {{distance}}",
+    "lineFullResults": "Pokaż pełne wyniki"
   }
 }

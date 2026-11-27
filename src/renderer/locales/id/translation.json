@@ -9349,6 +9349,18 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "Server Pemeriksaan Kesehatan Mesh mana pun. Tanyakan alamatnya kepada komunitas Anda.",
     "serverInvalid": "Masukkan alamat https://.",
-    "serverNotPublic": "Gunakan alamat internet publik server."
+    "serverNotPublic": "Gunakan alamat internet publik server.",
+    "lineWaiting": "Pemeriksaan jangkauan: menunggu pengamat",
+    "lineResults": "Pemeriksaan jangkauan: {{summary}}",
+    "lineFinished": "Pemeriksaan jangkauan selesai: {{summary}}",
+    "lineFinishedNone": "Pemeriksaan jangkauan selesai: tidak ada pengamat yang mendengarnya",
+    "lineGone": "Pemeriksaan jangkauan: hasil tidak lagi ada di server",
+    "lineUnreachable": "Pemeriksaan jangkauan: server tidak dapat dijangkau",
+    "lineObservers_one": "{{seen}} dari {{count}} pengamat",
+    "lineObservers_other": "{{seen}} dari {{count}} pengamat",
+    "lineRepeaters_one": "{{count}} repeater",
+    "lineRepeaters_other": "{{count}} repeater",
+    "lineFarthest": "paling jauh {{distance}}",
+    "lineFullResults": "Lihat hasil lengkap"
   }
 }

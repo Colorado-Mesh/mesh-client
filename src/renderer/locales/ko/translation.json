@@ -9349,6 +9349,18 @@
     "serverPlaceholder": "https://healthcheck.example.org",
     "serverHelp": "모든 Mesh Health Check 서버. 커뮤니티에 주소를 문의하세요.",
     "serverInvalid": "https:// 주소를 입력하세요.",
-    "serverNotPublic": "서버의 공인 인터넷 주소를 사용합니다."
+    "serverNotPublic": "서버의 공인 인터넷 주소를 사용합니다.",
+    "lineWaiting": "도달 범위 확인: 관찰자 대기 중",
+    "lineResults": "도달 범위 확인: {{summary}}",
+    "lineFinished": "도달 범위 확인 완료: {{summary}}",
+    "lineFinishedNone": "도달 범위 확인 완료: 아무도 듣지 못함",
+    "lineGone": "도달 확인: 결과가 더 이상 서버에 없습니다.",
+    "lineUnreachable": "접속 확인: 서버에 접속할 수 없음",
+    "lineObservers_one": "{{seen}}/{{count}}명의 관찰자",
+    "lineObservers_other": "{{count}}명의 관찰자 중 {{seen}}명",
+    "lineRepeaters_one": "{{count}} 리피터",
+    "lineRepeaters_other": "{{count}} 리피터",
+    "lineFarthest": "가장 먼 {{distance}}",
+    "lineFullResults": "모든 결과 보기"
   }
 }
