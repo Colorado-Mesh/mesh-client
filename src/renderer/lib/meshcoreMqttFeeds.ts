@@ -137,7 +137,10 @@ export function loadMeshcoreMqttFeeds(): MeshcoreMqttFeed[] {
 
 function toStored(feed: MeshcoreMqttFeed): StoredMeshcoreMqttFeed {
   const settings: Partial<MQTTSettings> = { ...feed.settings };
+  // Credential material never belongs in plaintext metadata. `channelPsks` is Meshtastic-only
+  // but can survive a legacy cross-protocol migration, so strip it as well as the password.
   delete settings.password;
+  delete settings.channelPsks;
   return { ...feed, settings: settings as Omit<MQTTSettings, 'password'> };
 }
 

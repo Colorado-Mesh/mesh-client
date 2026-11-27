@@ -3169,6 +3169,8 @@ export default function ConnectionPanel({
       username: '',
       tokenExpiresAt: undefined,
       autoLaunch: false,
+      // Legacy cross-protocol migrations can leave Meshtastic PSKs on the chat record.
+      channelPsks: undefined,
     });
     // Keep the mesh's regional topic prefix so feeds publish to the same stream as chat.
     const chatPrefix = parseMeshcoreIataTopicPrefix(meshcoreMqttSettings.topicPrefix);

@@ -80,6 +80,23 @@ describe('meshcoreMqttFeeds', () => {
     expect(loaded[0].enabled).toBe(false);
   });
 
+  it('strips legacy channel PSKs from persisted feed metadata', async () => {
+    const feeds = [
+      makeFeed(
+        'Legacy keys',
+        { settings: { ...baseSettings, channelPsks: ['legacy-psk-a', 'legacy-psk-b'] } },
+        'feed-psk',
+      ),
+    ];
+    await persistMeshcoreMqttFeeds(feeds);
+
+    const raw = localStorage.getItem(MESHCORE_MQTT_FEEDS_STORAGE_KEY) ?? '';
+    expect(raw).not.toContain('legacy-psk-a');
+    expect(raw).not.toContain('channelPsks');
+    expect(getCachedSecureSecret(MESHCORE_MQTT_FEEDS_SECRET_KEY)).not.toContain('legacy-psk-a');
+    expect(loadMeshcoreMqttFeeds()[0].settings.channelPsks).toBeUndefined();
+  });
+
   it('drops invalid rows and caps the saved list', async () => {
     const feeds: MeshcoreMqttFeed[] = [];
     for (let i = 0; i < MAX_MESHCORE_MQTT_PUBLISH_FEEDS + 3; i += 1) {
