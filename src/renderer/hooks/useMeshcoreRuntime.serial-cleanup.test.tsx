@@ -315,6 +315,53 @@ describe('useMeshcoreRuntime serial cleanup', () => {
     }
   });
 
+  it('runtime unmount stops the serial watchdog started by auto-connect', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const port = makeMockSerialPort('auto-port');
+      Object.defineProperty(navigator, 'serial', {
+        configurable: true,
+        value: {
+          getPorts: vi.fn().mockResolvedValue([port]),
+        },
+      });
+      serialConnGetSelfInfoMock.mockReset();
+      serialConnGetSelfInfoMock.mockResolvedValue({
+        publicKey: new Uint8Array(32).fill(8),
+        name: 'Unmount test radio',
+        type: 1,
+        txPower: 20,
+        maxTxPower: 22,
+        advLat: 0,
+        advLon: 0,
+        radioFreq: 910525,
+        radioBw: 62500,
+        radioSf: 7,
+        radioCr: 5,
+      });
+
+      const { result, unmount } = renderHook(() => useMeshcoreRuntime());
+      await act(async () => {
+        await result.current.connectAutomatic('serial', undefined, 'auto-port');
+      });
+      expect(result.current.state.status).toBe('configured');
+
+      unmount();
+      warnSpy.mockClear();
+      // Past both the stale (120 s) and dead (180 s) thresholds.
+      await vi.advanceTimersByTimeAsync(200_000);
+
+      const watchdogWarns = warnSpy.mock.calls
+        .map((call) => String(call[0]))
+        .filter((line) => /watchdog: serial (stale|dead)/.test(line));
+      expect(watchdogWarns).toEqual([]);
+    } finally {
+      warnSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it('connect serial closes connection on init failure via ConnectionDriver', async () => {
     const port = makeMockSerialPort('manual-port');
     Object.defineProperty(navigator, 'serial', {

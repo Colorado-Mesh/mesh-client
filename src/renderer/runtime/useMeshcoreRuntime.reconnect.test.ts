@@ -66,16 +66,24 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
-  it('serial auto-connect sets serial params before attach and clears only its own on failure', () => {
+  it('serial auto-connect sets serial params before attach, only for an open nothing superseded', () => {
     const body = extractUseCallbackBody(RUNTIME_SOURCE, 'connectAutomatic');
     expect(body).not.toBe('');
-    // attachRfSession starts the serial watchdog only when params already say serial.
+    // Generation captured after prepareRfConnect, checked after the open and before any write.
     expect(body).toMatch(
-      /meshcoreConnectionParamsRef\.current = provisionalParams;\s*await attachRfSession\(opened\.driverIdentityId, 'serial'\)/,
+      /await prepareRfConnect\('serial'\);\s*const autoConnectSetupGen = meshcoreSetupGenerationRef\.current;/,
     );
     expect(body).toMatch(
-      /\} catch \(err\) \{[\s\S]*?if \(provisionalParams && meshcoreConnectionParamsRef\.current === provisionalParams\) \{\s*meshcoreConnectionParamsRef\.current = null;/,
+      /if \(meshcoreSetupGenerationRef\.current !== autoConnectSetupGen\) \{[\s\S]*?await disconnectSupersededMeshcoreOpen\(opened\.driverIdentityId, 'serial'\);\s*throw new DOMException\(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError'\);\s*\}[\s\S]*?meshcoreConnectionParamsRef\.current = \{[\s\S]*?\};\s*await attachRfSession\(opened\.driverIdentityId, 'serial'\)/,
     );
+  });
+
+  it('failed serial auto-connect keeps its params, as manual connect does', () => {
+    // A loss mid-initConn can start a reconnect that reads these params; clearing them on the
+    // failed attach left that reconnect with no target.
+    const body = extractUseCallbackBody(RUNTIME_SOURCE, 'connectAutomatic');
+    expect(body).not.toBe('');
+    expect(body).not.toContain('meshcoreConnectionParamsRef.current = null');
   });
 
   it('prepareRfConnect preserves reconnect state when requested', () => {
