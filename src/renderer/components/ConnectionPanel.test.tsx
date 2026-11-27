@@ -3220,6 +3220,74 @@ describe('ConnectionPanel saved device history', () => {
     });
   });
 
+  it('shows the saved radio name with the endpoint as the detail line', async () => {
+    localStorage.setItem(
+      'mesh-client:connectionHistory:meshtastic',
+      JSON.stringify([
+        {
+          id: 'tcp-named',
+          lastUsedAt: 2000,
+          type: 'tcp',
+          httpAddress: '10.0.0.9:4403',
+          deviceName: 'Ridge Fox',
+        },
+      ]),
+    );
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({ type: 'tcp', httpAddress: '10.0.0.9:4403', deviceName: 'Ridge Fox' }),
+    );
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    expect(await screen.findByText('Ridge Fox')).toBeInTheDocument();
+    expect(screen.getByText('10.0.0.9:4403')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Reconnect to Ridge Fox (10.0.0.9:4403)' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Delete saved device Ridge Fox (10.0.0.9:4403)' }),
+    ).toBeInTheDocument();
+  });
+
+  it('stores the radio name on the saved endpoint once it is known', async () => {
+    localStorage.setItem(
+      'mesh-client:lastConnection:meshtastic',
+      JSON.stringify({ type: 'tcp', httpAddress: '10.0.0.9:4403' }),
+    );
+
+    render(
+      <ConnectionPanel
+        state={{
+          ...disconnectedState,
+          status: 'configured',
+          connectionType: 'tcp',
+        }}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+        myNodeName="Ridge Fox"
+      />,
+    );
+
+    await waitFor(() => {
+      const raw = localStorage.getItem('mesh-client:connectionHistory:meshtastic');
+      expect(raw).toContain('Ridge Fox');
+      expect(JSON.parse(raw!)[0]?.deviceName).toBe('Ridge Fox');
+    });
+  });
+
   it('lists multiple saved TCP hosts and reconnects the selected one', async () => {
     const user = userEvent.setup();
     localStorage.setItem(

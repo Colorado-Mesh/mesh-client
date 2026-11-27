@@ -68,6 +68,78 @@ describe('connectionHistoryStorage', () => {
     expect(loadConnectionHistory('meshtastic')).toEqual([]);
   });
 
+  it('persists and reloads the radio name with the endpoint', () => {
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.9:4403', deviceName: 'Ridge Fox' },
+      1000,
+      'id-named',
+    );
+    expect(loadConnectionHistory('meshtastic')[0]?.deviceName).toBe('Ridge Fox');
+    expect(loadLastConnection('meshtastic')?.deviceName).toBe('Ridge Fox');
+  });
+
+  it('seeds the radio name from lastConnection', () => {
+    saveLastConnection('meshtastic', {
+      type: 'tcp',
+      httpAddress: '10.0.0.1:4403',
+      deviceName: 'Ridge Fox',
+    });
+    const history = loadConnectionHistory('meshtastic');
+    expect(history[0]?.deviceName).toBe('Ridge Fox');
+  });
+
+  it('keeps a stored radio name when a later upsert omits it', () => {
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.9:4403', deviceName: 'Ridge Fox' },
+      1000,
+      'id-named',
+    );
+    const next = upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.9:4403' },
+      2000,
+      'id-named',
+    );
+    expect(next?.[0]?.deviceName).toBe('Ridge Fox');
+    expect(loadLastConnection('meshtastic')?.deviceName).toBe('Ridge Fox');
+  });
+
+  it('updates the stored radio name when the radio is renamed', () => {
+    upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.9:4403', deviceName: 'Ridge Fox' },
+      1000,
+      'id-named',
+    );
+    const next = upsertConnectionHistory(
+      'meshtastic',
+      { type: 'tcp', httpAddress: '10.0.0.9:4403', deviceName: 'Ridge Fox II' },
+      2000,
+      'id-named',
+    );
+    expect(next?.[0]?.deviceName).toBe('Ridge Fox II');
+    expect(loadLastConnection('meshtastic')?.deviceName).toBe('Ridge Fox II');
+  });
+
+  it('keeps the saved radio name across a MeshCom KISS tcp→http alias', () => {
+    upsertConnectionHistory(
+      'meshcom',
+      { type: 'tcp', httpAddress: '192.168.1.9:8001', deviceName: 'N0CALL' },
+      1000,
+      'legacy-tcp',
+    );
+    const next = upsertConnectionHistory(
+      'meshcom',
+      { type: 'http', httpAddress: '192.168.1.9:8001' },
+      2000,
+      'http-new',
+    );
+    expect(next?.[0]?.type).toBe('http');
+    expect(next?.[0]?.deviceName).toBe('N0CALL');
+  });
+
   it('upserts distinct TCP hosts without wiping earlier entries', () => {
     upsertConnectionHistory(
       'meshtastic',

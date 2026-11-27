@@ -15,6 +15,11 @@ export const BLE_SELECTION_CLEARED_EVENT = 'mesh-client:ble-selection-cleared';
 export interface LastConnection {
   type: ConnectionType;
   httpAddress?: string;
+  /**
+   * Radio's own display name (Meshtastic/MeshCore long name, MeshCom callsign) for the
+   * Saved devices list. Display-only: dedup and reconnect still key off the endpoint.
+   */
+  deviceName?: string;
   bleDeviceId?: string;
   bleDeviceName?: string;
   /** Formatted BLE MAC when known (macOS UUID deviceId + CoreBluetoothCache address). */

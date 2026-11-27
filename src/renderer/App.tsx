@@ -468,6 +468,7 @@ import {
 } from './lib/protocolSwitchUiStore';
 import { queueBadgeColorClass } from './lib/queueBadgeColors';
 import { useRadioProvider } from './lib/radio/providerFactory';
+import { usableRadioLongName } from './lib/radioSelfName';
 import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { buildResendArgs } from './lib/reticulum/buildResendArgs';
 import { reticulumHashToNodeId } from './lib/reticulum/destHash';
@@ -2618,6 +2619,29 @@ function AppContent() {
       ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
           panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
       : panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum);
+  })();
+  /**
+   * Radio's own name for Saved devices rows on serial / WiFi transports. BLE rows keep the
+   * advertised BLE device name, so this is never applied to them.
+   */
+  const savedDeviceSelfName = (() => {
+    if (protocol === 'reticulum') return undefined;
+    const selfNum = headerMyNodeNum;
+    const nodesById =
+      protocol === 'meshtastic'
+        ? meshtasticNodesById
+        : protocol === 'meshcore'
+          ? meshcoreNodesById
+          : meshcomNodesById;
+    const fromNode = usableRadioLongName(
+      selfNum > 0 ? nodesById?.[selfNum]?.longName : undefined,
+      selfNum,
+      protocol,
+    );
+    if (protocol === 'meshcore') {
+      return meshcoreRuntime.deviceOwner?.longName?.trim() || fromNode;
+    }
+    return fromNode;
   })();
 
   const sendReactionByProtocol = useMemo(
@@ -5757,6 +5781,7 @@ function AppContent() {
                                     )
                                   : undefined
                               }
+                              myNodeName={savedDeviceSelfName}
                               protocol={protocol}
                               tak={connectionTakSummary}
                               firmwareCheckState={

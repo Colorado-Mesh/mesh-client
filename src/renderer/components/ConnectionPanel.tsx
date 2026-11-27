@@ -268,6 +268,8 @@ import { Switch } from './ui/Switch';
 interface LastConnection {
   type: ConnectionType;
   httpAddress?: string;
+  /** Radio's own name for the Saved devices row (serial / WiFi; BLE uses `bleDeviceName`). */
+  deviceName?: string;
   bleDeviceId?: string;
   bleDeviceName?: string;
   /** Formatted BLE MAC when known (macOS UUID deviceId + CoreBluetoothCache address). */
@@ -455,13 +457,13 @@ function resolveSavedBleConnectId(target: LastConnection): string | null {
   return null;
 }
 
-/** Accessible name for saved-device actions; append BLE identity only when it adds information. */
-function savedDeviceActionName(primary: string, bleIdentity: BlePickerIdentity | null): string {
-  const identity = bleIdentity?.display?.trim();
-  if (!identity) return primary;
-  if (primary === identity) return primary;
-  if (primary.toLowerCase().includes(identity.toLowerCase())) return primary;
-  return `${primary} (${identity})`;
+/** Accessible name for saved-device actions; append the endpoint identity only when it adds information. */
+function savedDeviceActionName(primary: string, detail: string | null): string {
+  const extra = detail?.trim();
+  if (!extra) return primary;
+  if (primary === extra) return primary;
+  if (primary.toLowerCase().includes(extra.toLowerCase())) return primary;
+  return `${primary} (${extra})`;
 }
 
 const LETS_MESH_USERNAME_SYNC_DEBOUNCE_MS = 100;
@@ -487,6 +489,8 @@ export interface Props {
   /** The drop was unexpected; the MQTT tile then reads as an error, like the status bar. */
   mqttConnectionLoss?: boolean;
   myNodeLabel?: string;
+  /** Radio's own long name/callsign for Saved devices rows (serial / WiFi; BLE uses its own name). */
+  myNodeName?: string;
   protocol: MeshProtocol;
   manualAddContacts?: boolean;
   onToggleManualContacts?: (manual: boolean) => Promise<void>;
@@ -520,6 +524,7 @@ export default function ConnectionPanel({
   mqttStatus,
   mqttConnectionLoss = false,
   myNodeLabel,
+  myNodeName,
   protocol,
   manualAddContacts,
   onToggleManualContacts,
@@ -1316,6 +1321,9 @@ export default function ConnectionPanel({
   deviceStateRef.current = state;
   const lastConnectionRef = useRef(lastConnection);
   lastConnectionRef.current = lastConnection;
+  /** Latest radio name; the configure effect stays status-keyed but captures the current name. */
+  const myNodeNameRef = useRef(myNodeName);
+  myNodeNameRef.current = myNodeName;
   /** Track displayed protocol so MeshCore-only storage clears skip when the panel switched away. */
   const displayedProtocolRef = useRef(protocol);
   displayedProtocolRef.current = protocol;
@@ -1571,6 +1579,8 @@ export default function ConnectionPanel({
             lastConnectionRef.current?.serialPortId?.trim() || resolveLastSerialPortId(protocol);
           if (serialId) conn.serialPortId = serialId;
         }
+        // Radio's own name (BLE rows keep the advertised device name instead).
+        if (myNodeNameRef.current && conn.type !== 'ble') conn.deviceName = myNodeNameRef.current;
         saveLastConnection(protocol, conn);
         setLastConnection(conn);
         // Auto-save into multi-device history (all transports); MRU stays in lastConnection.
@@ -1643,6 +1653,22 @@ export default function ConnectionPanel({
       setLastConnection(loadLastConnection(protocol));
     }
   }, [protocol, state.status, setLastConnection, setConnectionHistory]);
+
+  // Backfill / refresh the radio's own name on the saved endpoint. Meshtastic can flip to
+  // `configured` on MyNodeInfo before the self NodeInfo (long name) arrives, and a rename
+  // while connected must reach the Saved devices row.
+  useEffect(() => {
+    if (!myNodeName) return;
+    if (state.status !== 'configured') return;
+    if (protocol !== 'meshtastic' && protocol !== 'meshcore' && protocol !== 'meshcom') return;
+    const current = lastConnectionRef.current;
+    if (!current || current.type === 'ble') return;
+    if ((current.deviceName ?? '').trim() === myNodeName) return;
+    const next = upsertConnectionHistory(protocol, { ...current, deviceName: myNodeName });
+    if (!next) return;
+    setConnectionHistory(next);
+    setLastConnection(loadLastConnection(protocol));
+  }, [myNodeName, protocol, state.status, setLastConnection, setConnectionHistory]);
 
   // Persist live / scan BLE RSSI onto lastConnection so reconnect can seed the host meter.
   // Pending reconnect RSSI stays in UI state only — do not promote to MRU before configure.
@@ -4499,15 +4525,20 @@ export default function ConnectionPanel({
       <p className="text-muted text-xs">{t('connectionPanel.savedDevicesLabel')}</p>
       <ul className="space-y-2">
         {connectionHistory.map((entry) => {
+          const endpointLabel = savedConnectionPrimaryLabel(entry);
+          // Serial / WiFi rows show the radio's own name when known; BLE keeps its BLE name.
+          const savedName = entry.type !== 'ble' ? entry.deviceName?.trim() : undefined;
           const primary =
-            savedConnectionPrimaryLabel(entry) ??
+            savedName ??
+            endpointLabel ??
             (entry.type === 'ble'
               ? t('connectionPanel.bluetoothDevice')
               : entry.type === 'serial'
                 ? t('connectionPanel.serialDevice')
                 : t('connectionPanel.wifiDevice'));
           const bleIdentity = entry.type === 'ble' ? resolveLastBleIdentity(entry, protocol) : null;
-          const actionName = savedDeviceActionName(primary, bleIdentity);
+          const detailIdentity = savedName ? endpointLabel : (bleIdentity?.display ?? null);
+          const actionName = savedDeviceActionName(primary, detailIdentity);
           const canReconnectBle = entry.type !== 'ble' || resolveSavedBleConnectId(entry) != null;
           return (
             <li
@@ -4519,8 +4550,8 @@ export default function ConnectionPanel({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-ink-200 truncate text-sm font-semibold">{primary}</p>
-                {bleIdentity ? (
-                  <p className="text-muted font-mono text-xs">{bleIdentity.display}</p>
+                {detailIdentity ? (
+                  <p className="text-muted font-mono text-xs">{detailIdentity}</p>
                 ) : (
                   <p className="text-muted text-xs">
                     {connectionPanelConnectionTypeLabel(t, entry.type, protocol)}
