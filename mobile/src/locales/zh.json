@@ -18,6 +18,7 @@
     "phoneLocationName": "此手机",
     "phoneLocationFailed": "无法获取此手机的位置。请在系统设置中允许 Mesh Client 访问位置，或手动输入位置。",
     "bodyUnknownPhone": "您的电台未报告 GPS。请使用此手机的位置或输入一个位置，以确保节点距离和路由检查准确。",
+    "bodyConfirmPhone": "您的电台未报告 GPS。请确认此手机仍在保存的位置（{{coords}}），或选择其他位置。",
     "enterManually": "手动输入"
   }
 }

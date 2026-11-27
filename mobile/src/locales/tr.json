@@ -18,6 +18,7 @@
     "phoneLocationName": "Bu telefon",
     "phoneLocationFailed": "Bu telefonun konumu alınamadı. Sistem ayarlarından Mesh Client için konum erişimine izin verin veya bir konum girin.",
     "bodyUnknownPhone": "Telsiziniz GPS bildirmiyor. Düğüm mesafelerinin ve yönlendirme kontrollerinin doğru olması için bu telefonun konumunu kullanın veya bir konum girin.",
+    "bodyConfirmPhone": "Telsiziniz GPS bildirmiyor. Bu telefonun hâlâ kayıtlı konumda ({{coords}}) olduğunu onaylayın veya başka bir yer seçin.",
     "enterManually": "Elle gir"
   }
 }

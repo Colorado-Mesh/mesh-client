@@ -18,6 +18,7 @@
     "phoneLocationName": "Ten telefon",
     "phoneLocationFailed": "Nie udało się ustalić lokalizacji tego telefonu. Zezwól aplikacji Mesh Client na dostęp do lokalizacji w ustawieniach systemu lub wpisz lokalizację.",
     "bodyUnknownPhone": "Twoje radio nie zgłasza GPS. Użyj lokalizacji tego telefonu lub wpisz ją, aby odległości między węzłami i kontrole trasowania były dokładne.",
+    "bodyConfirmPhone": "Twoje radio nie zgłasza GPS. Potwierdź, że ten telefon nadal jest w zapisanej pozycji ({{coords}}), lub wybierz inne miejsce.",
     "enterManually": "Wpisz ręcznie"
   }
 }

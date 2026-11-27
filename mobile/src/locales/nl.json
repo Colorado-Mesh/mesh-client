@@ -18,6 +18,7 @@
     "phoneLocationName": "Deze telefoon",
     "phoneLocationFailed": "De locatie van deze telefoon kon niet worden bepaald. Sta locatietoegang toe voor Mesh Client in de systeeminstellingen of voer een locatie in.",
     "bodyUnknownPhone": "Je radio meldt geen GPS. Gebruik de locatie van deze telefoon of voer er een in, zodat knooppuntafstanden en routeringscontroles kloppen.",
+    "bodyConfirmPhone": "Je radio meldt geen GPS. Controleer of deze telefoon nog op de opgeslagen positie ({{coords}}) is of kies een andere plek.",
     "enterManually": "Handmatig invoeren"
   }
 }

@@ -18,6 +18,7 @@
     "phoneLocationName": "Dieses Telefon",
     "phoneLocationFailed": "Der Standort dieses Telefons konnte nicht ermittelt werden. Erlaube Mesh Client in den Systemeinstellungen den Zugriff auf den Standort oder gib einen Standort ein.",
     "bodyUnknownPhone": "Dein Funkgerät meldet kein GPS. Verwende den Standort dieses Telefons oder gib einen ein, damit Knotenentfernungen und Routing-Prüfungen stimmen.",
+    "bodyConfirmPhone": "Dein Funkgerät meldet kein GPS. Bestätige, dass dieses Telefon noch an der gespeicherten Position ({{coords}}) ist, oder wähle einen anderen Ort.",
     "enterManually": "Manuell eingeben"
   }
 }

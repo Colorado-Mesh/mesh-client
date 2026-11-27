@@ -18,6 +18,7 @@
     "phoneLocationName": "Questo telefono",
     "phoneLocationFailed": "Impossibile ottenere la posizione di questo telefono. Consenti l'accesso alla posizione per Mesh Client nelle impostazioni di sistema oppure inserisci una posizione.",
     "bodyUnknownPhone": "La tua radio non segnala il GPS. Usa la posizione di questo telefono o inseriscine una affinché le distanze tra i nodi e i controlli di instradamento siano accurati.",
+    "bodyConfirmPhone": "La tua radio non segnala il GPS. Conferma che questo telefono è ancora nella posizione salvata ({{coords}}) o scegli un altro posto.",
     "enterManually": "Inserisci manualmente"
   }
 }

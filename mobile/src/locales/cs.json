@@ -18,6 +18,7 @@
     "phoneLocationName": "Tento telefon",
     "phoneLocationFailed": "Polohu tohoto telefonu se nepodařilo zjistit. Povolte aplikaci Mesh Client přístup k poloze v nastavení systému nebo polohu zadejte.",
     "bodyUnknownPhone": "Vaše rádio nehlásí GPS. Použijte polohu tohoto telefonu nebo ji zadejte, aby byly vzdálenosti uzlů a kontroly směrování přesné.",
+    "bodyConfirmPhone": "Vaše rádio nehlásí GPS. Potvrďte, že je tento telefon stále na uložené pozici ({{coords}}), nebo vyberte jiné místo.",
     "enterManually": "Zadat ručně"
   }
 }

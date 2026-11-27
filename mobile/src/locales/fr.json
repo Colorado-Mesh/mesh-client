@@ -18,6 +18,7 @@
     "phoneLocationName": "Ce téléphone",
     "phoneLocationFailed": "Impossible d'obtenir la position de ce téléphone. Autorisez l'accès à la localisation pour Mesh Client dans les réglages du système, ou saisissez une position.",
     "bodyUnknownPhone": "Votre radio ne transmet pas de GPS. Utilisez la position de ce téléphone ou saisissez-en une pour que les distances entre nœuds et les contrôles de routage soient exacts.",
+    "bodyConfirmPhone": "Votre radio ne transmet pas de GPS. Confirmez que ce téléphone est toujours à la position enregistrée ({{coords}}) ou choisissez un autre endroit.",
     "enterManually": "Saisir manuellement"
   }
 }

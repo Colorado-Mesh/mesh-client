@@ -103,6 +103,10 @@ describe('SetLocationCard (mobile)', () => {
     const eoc = saveNewLocation({ name: 'EOC', lat: 39.7, lon: -104.9, fixed: false });
     render(<SetLocationCard ourPosition={null} trust="needsConfirm" variant="startup" />);
     expect(screen.getByRole('heading', { name: 'Still at EOC?' })).toBeInTheDocument();
+    // A phone is not "this computer" (the desktop sentence).
+    expect(
+      screen.getByText(/Confirm this phone is still at the saved position/),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: "Use this phone's location" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Yes, still at EOC/ }));
     expect(useLocationPromptStore.getState().confirmedLocationId).toBe(eoc.id);

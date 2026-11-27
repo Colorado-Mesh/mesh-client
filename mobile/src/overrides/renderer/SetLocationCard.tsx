@@ -154,7 +154,7 @@ function LocationCard(props: SetLocationCardProps) {
           </h3>
           <p className="text-body text-orange-200">
             {confirming
-              ? t('locationPrompt.bodyConfirm', {
+              ? t('locationPrompt.bodyConfirmPhone', {
                   coords: formatCoordPair(active.lat, active.lon, coordinateFormat),
                 })
               : t('locationPrompt.bodyUnknownPhone')}
