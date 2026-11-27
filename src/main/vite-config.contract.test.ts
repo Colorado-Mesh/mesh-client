@@ -67,6 +67,13 @@ describe('vite build config', () => {
       'esptool-js',
       'connection-runtime',
       'meshcom-runtime',
+      'protocol-runtimes',
+      'ai-summary',
+      'chat-runtime',
+      'peer-network',
+      'emergency',
+      'tak-relay',
+      'app-widgets',
     ]) {
       expect(VITE_CONFIG).toContain(`name: '${name}'`);
     }
