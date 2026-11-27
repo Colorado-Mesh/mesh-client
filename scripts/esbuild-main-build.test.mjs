@@ -14,7 +14,8 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Terrain LOS elevation (Open-Meteo sample + SRTM HGT offline DEM IPC) adds ~6 KiB
  * (HGT offset reader + clearance/bulge math follow-ups).
  * Catch up summary / follow-up prompt text ships as sibling `ai-summary-prompt.js` and
- * `ai-follow-up-prompt.js`; the offline model catalog as `ai-local-models.js`; OS AI / MLX
+ * `ai-follow-up-prompt.js`; summarize prompt dispatch (incl. log Analyze with AI) as
+ * `ai-summarize-prompt-prepare.js`; the offline model catalog as `ai-local-models.js`; OS AI / MLX
  * Metal ensure+spawn as `ai-native-runtime.js`; combined identity hydration SQL as
  * `identity-hydration.js` (not in index.js). Thin install-path checks stay in index.js for
  * sync status. Keep HF catalog / prompt / native runtime / identity hydration in siblings.
@@ -187,6 +188,11 @@ describe('esbuild-main-build', () => {
       const followUpPromptBytes = fs.readFileSync(path.join(tempDir, 'ai-follow-up-prompt.js'));
       expect(followUpPromptBytes.length).toBeGreaterThan(1_000);
       expect(followUpPromptBytes.toString('utf8')).toContain('buildAiFollowUpPrompt');
+      const summarizePrepareBytes = fs.readFileSync(
+        path.join(tempDir, 'ai-summarize-prompt-prepare.js'),
+      );
+      expect(summarizePrepareBytes.length).toBeGreaterThan(500);
+      expect(summarizePrepareBytes.toString('utf8')).toContain('prepareSummarizePrompt');
       const localModelsBytes = fs.readFileSync(path.join(tempDir, 'ai-local-models.js'));
       expect(localModelsBytes.length).toBeGreaterThan(1_000);
       expect(localModelsBytes.toString('utf8')).toContain('AI_LOCAL_MODELS');

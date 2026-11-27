@@ -2632,7 +2632,17 @@
     "evidence": "Zobacz dowody dla {{category}}",
     "evidenceShown": "Pokazuje {{shown}} z {{total}} pasujących wpisów, najpierw najnowsze.",
     "ignoredOtherProtocol": "Wykluczono {{count}} linii z innych protokołów radiowych.",
-    "protocolNote": "Używa aktywnego protokołu radiowego. Linie należące do innego radia są wykluczone; linie współdzielone w całej aplikacji pozostają."
+    "protocolNote": "Używa aktywnego protokołu radiowego. Linie należące do innego radia są wykluczone; linie współdzielone w całej aplikacji pozostają.",
+    "aiAnalyze": "Analizuj za pomocą sztucznej inteligencji",
+    "aiSetup": "Konfiguracja sztucznej inteligencji do analizy dzienników",
+    "aiFixEngine": "Napraw silnik AI",
+    "aiNeedsNetwork": "Funkcja „Analizuj za pomocą sztucznej inteligencji” wymaga połączenia z Internetem, aby załadować dokumenty dotyczące rozwiązywania problemów. Wbudowana funkcja analizy działa również w trybie offline.",
+    "aiPrivacyHint": "Wysyła spakowane wyniki do Twojego silnika AI i pobiera publiczne dokumenty dotyczące rozwiązywania problemów. Przejrzyj przykłady przed udostępnieniem.",
+    "aiConversationLabel": "{{protocol}} analiza dziennika",
+    "aiResultHeading": "Triaż oparty na sztucznej inteligencji",
+    "aiWorking": "Pobieranie dokumentów i analizowanie…",
+    "aiVerify": "Porównaj triaż przeprowadzony przez sztuczną inteligencję z ustaleniami i dokumentacją. Powyższe zalecenia heurystyczne pozostają wiążące w trybie offline.",
+    "troubleshootingDocs": "Dokumenty dotyczące rozwiązywania problemów ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -8629,7 +8639,8 @@
       "invalidResponse": "Silnik zwrócił niekompletną lub nieobsługiwaną odpowiedź.",
       "cancelled": "Podsumowanie anulowane.",
       "error": "Nie można podsumować. Sprawdź ustawienia sztucznej inteligencji i spróbuj ponownie.",
-      "repetitiveOutput": "Model zaczął się powtarzać. Wypróbuj większy model lub krótszy zasięg."
+      "repetitiveOutput": "Model zaczął się powtarzać. Wypróbuj większy model lub krótszy zasięg.",
+      "docsUnavailable": "Nie udało się załadować dokumentów dotyczących rozwiązywania problemów. Sprawdź połączenie internetowe i ponów próbę analizy za pomocą sztucznej inteligencji."
     },
     "hours_many": "Ostatnie {{count}} godzin",
     "hours_few": "Ostatnie {{count}} godziny",

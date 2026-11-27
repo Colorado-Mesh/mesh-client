@@ -5,9 +5,22 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import {
+  analysisResultToAiMessages,
+  logAnalyzeSummaryKey,
+} from '@/renderer/lib/logAnalysisAiMessages';
 import { buildLogAnalysisReport } from '@/renderer/lib/logAnalysisReport';
+import { requestOpenSetting } from '@/renderer/lib/openSettingRequest';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import {
+  aiReady,
+  cancelSummary,
+  dismissSummary,
+  runSummary,
+  useAiSummaryStore,
+} from '@/renderer/stores/aiSummaryStore';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
+import { troubleshootingDocsUrl } from '@/shared/docsSite';
 
 import {
   analyzeLogs,
@@ -20,6 +33,8 @@ import {
   resolveLogAnalyzerRecommendationKey,
 } from '../lib/logAnalyzerI18n';
 import type { MeshProtocol } from '../lib/types';
+import { Button } from './ui/Button';
+import { DocsSiteLink } from './ui/DocsSiteLink';
 
 export interface LogAnalyzeModalProps {
   isOpen: boolean;
@@ -47,15 +62,22 @@ export default function LogAnalyzeModal({
   entries,
   protocol,
 }: LogAnalyzeModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const dialogRef = useRef<HTMLDivElement>(null);
-
+  const summaryKey = logAnalyzeSummaryKey(protocol);
+  const aiEnabled = useAiSummaryStore((s) => s.status?.enabled ?? s.cachedEnabled);
+  const aiStatus = useAiSummaryStore((s) => s.status);
+  const aiSummary = useAiSummaryStore((s) => s.summaries[summaryKey]);
+  const canAiSummarize = aiReady(aiStatus);
+  const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'failed'>('idle');
+  const [aiCopyError, setAiCopyError] = useState(false);
   const result = useMemo(() => analyzeLogs(entries, protocol), [entries, protocol]);
   const timeRange = formatTimeRange(result.oldestTs, result.newestTs, use24HourTime);
   const dedupedRecs = dedupeRecommendations(result.categories);
+  const docsUrl = troubleshootingDocsUrl(protocol);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -67,6 +89,39 @@ export default function LogAnalyzeModal({
       document.removeEventListener('keydown', handleKey);
     };
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sync = () => {
+      setOnline(navigator.onLine);
+    };
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    sync();
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) return;
+    cancelSummary(summaryKey);
+  }, [isOpen, summaryKey]);
+
+  const runAiAnalysis = () => {
+    if (!canAiSummarize || !online || result.totalEntries === 0) return;
+    const messages = analysisResultToAiMessages(result, t);
+    void runSummary(summaryKey, {
+      requestId: crypto.randomUUID(),
+      conversationLabel: t('logAnalyzeModal.aiConversationLabel', { protocol }),
+      protocol,
+      surface: 'log',
+      locale: i18n.language || 'en',
+      messages,
+      scope: { kind: 'loaded' },
+    });
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -206,6 +261,44 @@ export default function LogAnalyzeModal({
             >
               {t('logAnalyzeModal.copyReport')}
             </button>
+            {aiEnabled ? (
+              canAiSummarize ? (
+                <Button
+                  size="sm"
+                  aria-label={t('logAnalyzeModal.aiAnalyze')}
+                  disabled={!online || result.totalEntries === 0 || aiSummary?.streaming === true}
+                  title={
+                    online
+                      ? t('logAnalyzeModal.aiPrivacyHint')
+                      : t('logAnalyzeModal.aiNeedsNetwork')
+                  }
+                  onClick={runAiAnalysis}
+                >
+                  {t('logAnalyzeModal.aiAnalyze')}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  aria-label={
+                    aiStatus?.engine
+                      ? t('logAnalyzeModal.aiFixEngine')
+                      : t('logAnalyzeModal.aiSetup')
+                  }
+                  onClick={() => {
+                    requestOpenSetting({ slot: 'App', id: 'app.aiProvider' });
+                  }}
+                >
+                  {aiStatus?.engine
+                    ? t('logAnalyzeModal.aiFixEngine')
+                    : t('logAnalyzeModal.aiSetup')}
+                </Button>
+              )
+            ) : null}
+            <DocsSiteLink
+              href={docsUrl}
+              labelKey="logAnalyzeModal.troubleshootingDocs"
+              aria-label={t('logAnalyzeModal.troubleshootingDocs')}
+            />
             {copyStatus === 'copied' && (
               <span role="status" className="text-ink-300 text-xs">
                 {t('logAnalyzeModal.copySuccess')}
@@ -218,6 +311,12 @@ export default function LogAnalyzeModal({
             )}
           </div>
           <p className="text-muted mt-1 text-xs">{t('logAnalyzeModal.copyHint')}</p>
+          {aiEnabled && canAiSummarize && !online ? (
+            <p className="text-muted mt-1 text-xs">{t('logAnalyzeModal.aiNeedsNetwork')}</p>
+          ) : null}
+          {aiEnabled && canAiSummarize ? (
+            <p className="text-muted mt-1 text-xs">{t('logAnalyzeModal.aiPrivacyHint')}</p>
+          ) : null}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
@@ -325,6 +424,93 @@ export default function LogAnalyzeModal({
               </ul>
             </div>
           )}
+
+          {aiSummary ? (
+            <section
+              className="border-ink-700 bg-deep-black mt-4 rounded-lg border p-3 text-sm"
+              aria-label={t('logAnalyzeModal.aiResultHeading')}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-ink-100 font-semibold">
+                  {t('logAnalyzeModal.aiResultHeading')}
+                </h3>
+                <span className="text-muted text-xs">
+                  {aiSummary.disclosure
+                    ? t('aiSummary.sentTo', { host: aiSummary.disclosure })
+                    : t('aiSummary.onDevice')}
+                </span>
+              </div>
+              <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="text-ink-100 my-2 whitespace-pre-wrap"
+              >
+                {aiSummary.error
+                  ? t(`aiSummary.error.${aiSummary.error}`)
+                  : aiSummary.text ||
+                    (aiSummary.phase === 'queued'
+                      ? t('aiSummary.queued')
+                      : aiSummary.phase === 'loadingModel'
+                        ? t('aiSummary.loadingModel')
+                        : t('logAnalyzeModal.aiWorking'))}
+              </div>
+              <p className="text-muted text-xs">{t('logAnalyzeModal.aiVerify')}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  aria-label={t('aiSummary.copy')}
+                  disabled={aiSummary.streaming || !!aiSummary.error || !aiSummary.text.trim()}
+                  onClick={() => {
+                    void writeClipboardText(aiSummary.text).then(
+                      () => {
+                        setAiCopyError(false);
+                      },
+                      () => {
+                        setAiCopyError(true);
+                      },
+                    );
+                  }}
+                >
+                  {t('aiSummary.copy')}
+                </Button>
+                {aiSummary.streaming ? (
+                  <Button
+                    size="sm"
+                    aria-label={t('aiSummary.cancel')}
+                    onClick={() => {
+                      cancelSummary(summaryKey);
+                    }}
+                  >
+                    {t('aiSummary.cancel')}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    aria-label={t('aiSummary.regenerate')}
+                    disabled={!online || !canAiSummarize}
+                    onClick={runAiAnalysis}
+                  >
+                    {t('aiSummary.regenerate')}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  aria-label={t('aiSummary.dismiss')}
+                  onClick={() => {
+                    dismissSummary(summaryKey);
+                  }}
+                >
+                  {t('aiSummary.dismiss')}
+                </Button>
+              </div>
+              {aiCopyError ? (
+                <p role="alert" className="mt-1 text-xs text-red-400">
+                  {t('aiSummary.copyFailed')}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
         </div>
       </div>
     </div>

@@ -439,6 +439,7 @@ export function mapAiError(
         'httpError',
         'invalidResponse',
         'cancelled',
+        'docsUnavailable',
       ].includes(message)
     )
       return message as AiSummaryErrorReason;
@@ -571,7 +572,10 @@ export async function runSummary(
     patch(key, id, { phase: undefined });
     signal.removeEventListener('abort', onAbort);
     signal.removeEventListener('abort', rejectAbort);
-    const multiPass = status.engine && shouldUseMultiPass(request.messages, status.engine, request);
+    const multiPass =
+      request.surface !== 'log' &&
+      status.engine &&
+      shouldUseMultiPass(request.messages, status.engine, request);
     signal = AbortSignal.any([
       controller.signal,
       AbortSignal.timeout(aiSummaryTimeoutMs(status.engine, status.timeoutSeconds)),

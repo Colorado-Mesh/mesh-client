@@ -53,7 +53,7 @@ export interface AiSummaryRequest {
   /** Conversation label shown to the model, e.g. "#general", "DM with KX4ABC", "Room: NodeChat". */
   conversationLabel: string;
   protocol: MeshProtocol;
-  surface: 'channel' | 'dm' | 'room' | 'rrc';
+  surface: 'channel' | 'dm' | 'room' | 'rrc' | 'log';
   /** UI locale (BCP-47) so the summary comes back in the user's language. */
   locale: string;
   messages: AiSummaryMessage[];
@@ -98,6 +98,8 @@ export type AiSummaryErrorReason =
   | 'invalidResponse'
   | 'repetitiveOutput'
   | 'cancelled'
+  /** Log Analyze with AI could not fetch docs-site troubleshooting material. */
+  | 'docsUnavailable'
   | 'error';
 
 export interface AiOsAiStatus {

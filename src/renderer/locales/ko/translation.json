@@ -2578,7 +2578,17 @@
     "evidence": "{{category}} 에 대한 증거 보기",
     "evidenceShown": "일치하는 항목이 {{total}} 개 중 {{shown}} 개 표시 중 가장 최신 항목이 먼저 표시됩니다.",
     "ignoredOtherProtocol": "다른 무선 프로토콜의 {{count}} 라인이 제외되었습니다.",
-    "protocolNote": "활성 무선 프로토콜을 사용합니다. 다른 무전기의 소유 라인은 제외되며, 앱 전체에서 공유되는 라인은 그대로 유지됩니다."
+    "protocolNote": "활성 무선 프로토콜을 사용합니다. 다른 무전기의 소유 라인은 제외되며, 앱 전체에서 공유되는 라인은 그대로 유지됩니다.",
+    "aiAnalyze": "AI로 분석하기",
+    "aiSetup": "로그 분석을 위한 AI 설정",
+    "aiFixEngine": "AI 엔진 수정",
+    "aiNeedsNetwork": "AI로 분석하려면 문제 해결 문서를 불러오기 위한 인터넷 연결이 필요합니다. 내장 분석 기능은 오프라인에서도 작동합니다.",
+    "aiPrivacyHint": "패키징된 결과를 AI 엔진으로 전송하고 공개 문제 해결 문서를 가져옵니다. 공유하기 전에 샘플을 검토하세요.",
+    "aiConversationLabel": "{{protocol}} 로그 분석",
+    "aiResultHeading": "AI 분류",
+    "aiWorking": "문서를 가져와 분석 중...",
+    "aiVerify": "AI 분류 결과를 소견 및 문서와 대조하여 확인하세요. 위의 휴리스틱 권장 사항은 오프라인 상태에서도 유효합니다.",
+    "troubleshootingDocs": "문제 해결 문서 ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8511,8 @@
       "invalidResponse": "엔진이 불완전하거나 지원되지 않는 응답을 반환했습니다.",
       "cancelled": "요약이 취소되었습니다.",
       "error": "요약할 수 없습니다. AI 설정을 확인하고 다시 시도하십시오.",
-      "repetitiveOutput": "모델이 반복되기 시작했습니다. 더 큰 모델 또는 더 짧은 범위를 시도하십시오."
+      "repetitiveOutput": "모델이 반복되기 시작했습니다. 더 큰 모델 또는 더 짧은 범위를 시도하십시오.",
+      "docsUnavailable": "문제 해결 문서를 불러올 수 없습니다. 인터넷 연결을 확인하고 AI로 분석을 다시 시도하세요."
     },
     "loadingModel": "이 장치에 모델 로드 중...",
     "readingMessages": "이 장치에서 메시지를 읽습니다. CPU 처리에는 몇 분 정도 걸릴 수 있습니다...",

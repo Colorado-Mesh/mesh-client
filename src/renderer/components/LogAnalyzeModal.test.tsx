@@ -6,6 +6,7 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import type { LogEntry } from '@/renderer/lib/logAnalyzer';
 import en from '@/renderer/locales/en/translation.json';
+import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 
 import LogAnalyzeModal from './LogAnalyzeModal';
 
@@ -21,6 +22,7 @@ const entries: LogEntry[] = [
 
 beforeEach(() => {
   vi.mocked(window.electronAPI.clipboard.writeText).mockResolvedValue(undefined);
+  useAiSummaryStore.setState({ status: null, cachedEnabled: false, summaries: {} });
 });
 
 describe('log analysis evidence and report', () => {
@@ -146,5 +148,95 @@ describe('log analysis evidence and report', () => {
     expect(screen.getByRole('button', { name: 'Copy troubleshooting report' })).toBeDisabled();
     await user.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('hides AI actions when AI is disabled and always links troubleshooting docs', () => {
+    render(<LogAnalyzeModal isOpen onClose={vi.fn()} entries={entries} protocol="meshtastic" />);
+    expect(screen.queryByRole('button', { name: en.logAnalyzeModal.aiAnalyze })).toBeNull();
+    expect(screen.queryByRole('button', { name: en.logAnalyzeModal.aiSetup })).toBeNull();
+    expect(
+      screen.getByRole('link', { name: en.logAnalyzeModal.troubleshootingDocs }),
+    ).toHaveAttribute('href', expect.stringContaining('/troubleshooting/'));
+  });
+
+  it('shows setup when AI is opted in but not ready', () => {
+    useAiSummaryStore.setState({
+      cachedEnabled: true,
+      status: {
+        enabled: true,
+        engine: null,
+        wireFormat: null,
+        baseUrl: '',
+        model: '',
+        hasApiKey: false,
+        allowRemote: false,
+        isRemote: false,
+        localEngine: { ready: false, modelId: null, downloading: false },
+        osAi: { available: false, platform: null },
+        mlxHelperAvailable: false,
+        mlxHelperStatus: 'unsupported',
+        mlxHelperReason: 'unsupported',
+        timeoutSeconds: 60,
+        maxCollectedMessages: 2000,
+      },
+    });
+    render(<LogAnalyzeModal isOpen onClose={vi.fn()} entries={entries} protocol="meshtastic" />);
+    expect(screen.getByRole('button', { name: en.logAnalyzeModal.aiSetup })).toBeInTheDocument();
+  });
+
+  it('shows Analyze with AI when the engine is ready', () => {
+    useAiSummaryStore.setState({
+      cachedEnabled: true,
+      status: {
+        enabled: true,
+        engine: 'os',
+        wireFormat: null,
+        baseUrl: '',
+        model: 'Apple Intelligence',
+        hasApiKey: false,
+        allowRemote: false,
+        isRemote: false,
+        localEngine: { ready: false, modelId: null, downloading: false },
+        osAi: { available: true, platform: 'apple-foundation-models' },
+        mlxHelperAvailable: false,
+        mlxHelperStatus: 'unsupported',
+        mlxHelperReason: 'unsupported',
+        timeoutSeconds: 60,
+        maxCollectedMessages: 2000,
+      },
+    });
+    render(<LogAnalyzeModal isOpen onClose={vi.fn()} entries={entries} protocol="meshtastic" />);
+    expect(screen.getByRole('button', { name: en.logAnalyzeModal.aiAnalyze })).toBeEnabled();
+  });
+
+  it('disables Analyze with AI when offline and keeps built-in findings', () => {
+    const onlineSpy = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    useAiSummaryStore.setState({
+      cachedEnabled: true,
+      status: {
+        enabled: true,
+        engine: 'os',
+        wireFormat: null,
+        baseUrl: '',
+        model: 'Apple Intelligence',
+        hasApiKey: false,
+        allowRemote: false,
+        isRemote: false,
+        localEngine: { ready: false, modelId: null, downloading: false },
+        osAi: { available: true, platform: 'apple-foundation-models' },
+        mlxHelperAvailable: false,
+        mlxHelperStatus: 'unsupported',
+        mlxHelperReason: 'unsupported',
+        timeoutSeconds: 60,
+        maxCollectedMessages: 2000,
+      },
+    });
+    render(<LogAnalyzeModal isOpen onClose={vi.fn()} entries={entries} protocol="meshtastic" />);
+    expect(screen.getByRole('button', { name: en.logAnalyzeModal.aiAnalyze })).toBeDisabled();
+    expect(screen.getByText(en.logAnalyzeModal.aiNeedsNetwork)).toBeInTheDocument();
+    expect(
+      screen.getByText(en.logAnalyzer.categories['database-persistence'].recommendation),
+    ).toBeInTheDocument();
+    onlineSpy.mockRestore();
   });
 });

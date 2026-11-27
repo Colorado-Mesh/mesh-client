@@ -2578,7 +2578,17 @@
     "evidence": "Ver pruebas de {{category}}",
     "evidenceShown": "Mostrando {{shown}} de {{total}} entradas coincidentes, la más reciente primero.",
     "ignoredOtherProtocol": "{{count}} líneas de otros protocolos de radio se excluyeron.",
-    "protocolNote": "Utiliza el protocolo de radio activo. Se excluyen las líneas que pertenecen a otra radio; se mantienen las líneas compartidas en toda la aplicación."
+    "protocolNote": "Utiliza el protocolo de radio activo. Se excluyen las líneas que pertenecen a otra radio; se mantienen las líneas compartidas en toda la aplicación.",
+    "aiAnalyze": "Analizar con IA",
+    "aiSetup": "Configurar la IA para el análisis de registros",
+    "aiFixEngine": "Reparar el motor de IA",
+    "aiNeedsNetwork": "La función «Analizar con IA» necesita una conexión a internet para cargar los documentos de resolución de problemas. El análisis integrado sigue funcionando sin conexión.",
+    "aiPrivacyHint": "Envía los resultados empaquetados a su motor de IA y busca documentos públicos de resolución de problemas. Revise las muestras antes de compartirlas.",
+    "aiConversationLabel": "{{protocol}} análisis de registros",
+    "aiResultHeading": "Triaje con IA",
+    "aiWorking": "Obteniendo documentos y analizando...",
+    "aiVerify": "Verifique el triaje de la IA con los hallazgos y los documentos. Las recomendaciones heurísticas anteriores siguen siendo válidas cuando se está sin conexión.",
+    "troubleshootingDocs": "Documentos de resolución de problemas ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8511,8 @@
       "invalidResponse": "El motor devolvió una respuesta incompleta o no admitida.",
       "cancelled": "Resumen cancelado.",
       "error": "No se ha podido resumir. Compruebe la configuración de IA y vuelva a intentarlo.",
-      "repetitiveOutput": "El modelo comenzó a repetirse. Prueba con un modelo más grande o de menor alcance."
+      "repetitiveOutput": "El modelo comenzó a repetirse. Prueba con un modelo más grande o de menor alcance.",
+      "docsUnavailable": "No se han podido cargar los documentos de resolución de problemas. Comprueba tu conexión a internet y vuelve a intentar «Analizar con IA»."
     },
     "loadingModel": "Cargando modelo en este dispositivo...",
     "readingMessages": "Leyendo mensajes en este dispositivo. El procesamiento de la CPU puede tardar unos minutos...",

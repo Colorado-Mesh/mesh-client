@@ -2578,7 +2578,17 @@
     "evidence": "Lihat bukti untuk {{category}}",
     "evidenceShown": "Menampilkan {{shown}} dari {{total}} entri yang cocok, terbaru terlebih dahulu.",
     "ignoredOtherProtocol": "{{count}} baris dari protokol radio lainnya dikecualikan.",
-    "protocolNote": "Menggunakan protokol radio aktif. Saluran yang dimiliki oleh radio lain dikecualikan; saluran bersama di seluruh aplikasi tetap ada."
+    "protocolNote": "Menggunakan protokol radio aktif. Saluran yang dimiliki oleh radio lain dikecualikan; saluran bersama di seluruh aplikasi tetap ada.",
+    "aiAnalyze": "Analisis dengan AI",
+    "aiSetup": "Siapkan AI untuk analisis log",
+    "aiFixEngine": "Perbaiki mesin AI",
+    "aiNeedsNetwork": "Analisis dengan AI memerlukan koneksi internet untuk memuat dokumen pemecahan masalah. Analisis bawaan masih berfungsi saat offline.",
+    "aiPrivacyHint": "Mengirim temuan yang dikemas ke mesin AI Anda dan mengambil dokumen pemecahan masalah publik. Tinjau sampel sebelum dibagikan.",
+    "aiConversationLabel": "Analisis log {{protocol}}",
+    "aiResultHeading": "Triase AI",
+    "aiWorking": "Mengambil dokumen dan menganalisis…",
+    "aiVerify": "Verifikasi triase AI terhadap temuan dan dokumen. Rekomendasi heuristik di atas tetap menjadi acuan ketika offline.",
+    "troubleshootingDocs": "Dokumen pemecahan masalah ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8511,8 @@
       "invalidResponse": "Mesin mengembalikan respons yang tidak lengkap atau tidak didukung.",
       "cancelled": "Ringkasan dibatalkan.",
       "error": "Tidak dapat meringkas. Periksa pengaturan AI dan coba lagi.",
-      "repetitiveOutput": "Model mulai berulang. Coba model yang lebih besar atau rentang yang lebih pendek."
+      "repetitiveOutput": "Model mulai berulang. Coba model yang lebih besar atau rentang yang lebih pendek.",
+      "docsUnavailable": "Tidak dapat memuat dokumen pemecahan masalah. Periksa koneksi internet Anda dan coba lagi Analisis dengan AI."
     },
     "loadingModel": "Memuat model pada perangkat ini...",
     "readingMessages": "Membaca pesan di perangkat ini. Pemrosesan CPU mungkin memakan waktu beberapa menit...",

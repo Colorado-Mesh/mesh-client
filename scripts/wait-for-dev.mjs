@@ -17,6 +17,10 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
   translation: path.join(projectRoot, 'dist-electron/main/translation-worker.js'),
   summaryPrompt: path.join(projectRoot, 'dist-electron/main/ai-summary-prompt.js'),
   followUpPrompt: path.join(projectRoot, 'dist-electron/main/ai-follow-up-prompt.js'),
+  summarizePromptPrepare: path.join(
+    projectRoot,
+    'dist-electron/main/ai-summarize-prompt-prepare.js',
+  ),
   localModels: path.join(projectRoot, 'dist-electron/main/ai-local-models.js'),
   nativeAiRuntime: path.join(projectRoot, 'dist-electron/main/ai-native-runtime.js'),
   identityHydration: path.join(projectRoot, 'dist-electron/main/identity-hydration.js'),

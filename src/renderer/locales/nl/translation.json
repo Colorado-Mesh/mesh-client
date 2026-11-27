@@ -2578,7 +2578,17 @@
     "evidence": "Bekijk bewijsmateriaal voor {{category}}",
     "evidenceShown": "Toont {{shown}} van {{total}} overeenkomende inzendingen, nieuwste eerst.",
     "ignoredOtherProtocol": "{{count}} regels van andere radioprotocollen zijn uitgesloten.",
-    "protocolNote": "Gebruikt het actieve radioprotocol. Lijnen die eigendom zijn van een andere radio worden uitgesloten; gedeelde app-brede lijnen blijven bestaan."
+    "protocolNote": "Gebruikt het actieve radioprotocol. Lijnen die eigendom zijn van een andere radio worden uitgesloten; gedeelde app-brede lijnen blijven bestaan.",
+    "aiAnalyze": "Analyseren met AI",
+    "aiSetup": "AI instellen voor loganalyse",
+    "aiFixEngine": "AI-engine repareren",
+    "aiNeedsNetwork": "Analyseren met AI vereist een internetverbinding om documenten voor probleemoplossing te laden. De ingebouwde analyse werkt nog steeds offline.",
+    "aiPrivacyHint": "Verstuurt verpakte bevindingen naar uw AI-engine en haalt openbare documenten voor probleemoplossing op. Bekijk voorbeelden voordat u ze deelt.",
+    "aiConversationLabel": "{{protocol}} loganalyse",
+    "aiResultHeading": "AI-triage",
+    "aiWorking": "Documenten ophalen en analyseren…",
+    "aiVerify": "Verifieer de AI-triage aan de hand van de bevindingen en documenten. Bovenstaande heuristische aanbevelingen blijven gezaghebbend wanneer ze offline zijn.",
+    "troubleshootingDocs": "Documenten voor probleemoplossing ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8511,8 @@
       "invalidResponse": "De motor heeft een onvolledig of niet-ondersteund antwoord geretourneerd",
       "cancelled": "Samenvatting geannuleerd.",
       "error": "Kon het niet samenvatten. Controleer de AI-instellingen en probeer het opnieuw.",
-      "repetitiveOutput": "Het model begon zich te herhalen. Probeer een groter model of een korter bereik."
+      "repetitiveOutput": "Het model begon zich te herhalen. Probeer een groter model of een korter bereik.",
+      "docsUnavailable": "Kan documenten voor probleemoplossing niet laden. Controleer uw internetverbinding en probeer Analyseren met AI opnieuw."
     },
     "loadingModel": "Model laden op dit apparaat...",
     "readingMessages": "Berichten lezen op dit apparaat. CPU-verwerking kan een paar minuten duren...",

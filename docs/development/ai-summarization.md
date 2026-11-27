@@ -98,6 +98,18 @@ Follow-ups are single-pass, share the renderer FIFO / rate limit / cancel / time
 on regenerate, dismiss, disable, or config change. Bundled WASM still reloads the model per
 generation (show the loading phase). Answers never overwrite Catch up summary text.
 
+## Log Analyze with AI
+
+The Log panel’s rule-based Analyze modal can offer **Analyze with AI** when Catch up AI is
+opted in and ready. That path uses the same `ai:summarize` IPC with `surface: 'log'` (single-pass;
+no follow-ups or multi-pass). Main allowlist-fetches troubleshooting markdown from
+`raw.githubusercontent.com/Colorado-Mesh/mesh-client/main/docs/` (same pages as the published
+MkDocs site), selects heading sections that match finding tokens under the engine prompt budget,
+and builds the prompt via sibling `ai-summarize-prompt-prepare.js`
+(`src/main/ai/summarizePromptPrepare.ts`, using `src/shared/aiLogAnalysisPrompt.ts`). Docs fetch
+failure or offline → `docsUnavailable`; the built-in analyzer remains available. See
+[Log analysis](../log-analysis.md).
+
 ## Data and runtime boundaries
 
 `src/shared/ai-types.ts` is the preload contract. Main services are under `src/main/ai/`;

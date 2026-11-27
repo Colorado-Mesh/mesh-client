@@ -2578,7 +2578,17 @@
     "evidence": "Ver evidências para {{category}}",
     "evidenceShown": "Mostrando {{shown}} de {{total}} entradas correspondentes, as mais recentes primeiro.",
     "ignoredOtherProtocol": "{{count}} linhas de outros protocolos de rádio foram excluídas.",
-    "protocolNote": "Usa o protocolo de rádio ativo. As linhas pertencentes a outro rádio são excluídas; as linhas compartilhadas em todo o aplicativo permanecem."
+    "protocolNote": "Usa o protocolo de rádio ativo. As linhas pertencentes a outro rádio são excluídas; as linhas compartilhadas em todo o aplicativo permanecem.",
+    "aiAnalyze": "Analisar com IA",
+    "aiSetup": "Configurar IA para análise de logs",
+    "aiFixEngine": "Corrigir o mecanismo de IA",
+    "aiNeedsNetwork": "A análise com IA precisa de uma conexão com a Internet para carregar os documentos de solução de problemas. A análise integrada ainda funciona offline.",
+    "aiPrivacyHint": "Envia resultados compactados para o seu mecanismo de IA e busca documentos públicos de solução de problemas. Analise as amostras antes de compartilhar.",
+    "aiConversationLabel": "{{protocol}} análise de log",
+    "aiResultHeading": "Triagem por IA",
+    "aiWorking": "Buscando documentos e analisando…",
+    "aiVerify": "Verifique a triagem da IA em relação às conclusões e aos documentos. As recomendações heurísticas acima permanecem confiáveis quando offline.",
+    "troubleshootingDocs": "Documentos de solução de problemas ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8511,8 @@
       "invalidResponse": "O motor retornou uma resposta incompleta ou sem suporte.",
       "cancelled": "Resumo cancelado.",
       "error": "Não foi possível resumir. Verifique as configurações de IA e tente novamente.",
-      "repetitiveOutput": "O modelo começou a se repetir. Experimente um modelo maior ou um intervalo mais curto."
+      "repetitiveOutput": "O modelo começou a se repetir. Experimente um modelo maior ou um intervalo mais curto.",
+      "docsUnavailable": "Não foi possível carregar os documentos de solução de problemas. Verifique sua conexão com a Internet e tente novamente Analisar com IA."
     },
     "loadingModel": "Carregando modelo neste dispositivo...",
     "readingMessages": "Ler mensagens neste dispositivo. O processamento da CPU pode levar alguns minutos...",

@@ -2578,7 +2578,17 @@
     "evidence": "Visualizza le prove per {{category}}",
     "evidenceShown": "Mostrando {{shown}} di {{total}} voci corrispondenti, prima le più recenti.",
     "ignoredOtherProtocol": "{{count}} righe provenienti da altri protocolli radio sono state escluse.",
-    "protocolNote": "Utilizza il protocollo radio attivo. Le linee di proprietà di un'altra radio sono escluse; le linee condivise a livello di app rimangono."
+    "protocolNote": "Utilizza il protocollo radio attivo. Le linee di proprietà di un'altra radio sono escluse; le linee condivise a livello di app rimangono.",
+    "aiAnalyze": "Analizza con l'IA",
+    "aiSetup": "Configura l'IA per l'analisi dei log",
+    "aiFixEngine": "Risolvi il problema del motore IA",
+    "aiNeedsNetwork": "La funzione \"Analizza con l'IA\" richiede una connessione a Internet per caricare i documenti di risoluzione dei problemi. L'analisi integrata funziona comunque offline.",
+    "aiPrivacyHint": "Invia i risultati elaborati al tuo motore di intelligenza artificiale e recupera i documenti pubblici per la risoluzione dei problemi. Rivedi gli esempi prima di condividerli.",
+    "aiConversationLabel": "{{protocol}} analisi dei registri",
+    "aiResultHeading": "Triage tramite IA",
+    "aiWorking": "Recupero dei documenti e analisi in corso…",
+    "aiVerify": "Confrontare il triage dell'IA con i risultati e la documentazione. Le raccomandazioni euristiche di cui sopra rimangono autorevoli anche offline.",
+    "troubleshootingDocs": "Documenti per la risoluzione dei problemi ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8511,8 @@
       "invalidResponse": "Il motore ha restituito una risposta incompleta o non supportata.",
       "cancelled": "Riepilogo annullato.",
       "error": "Impossibile riepilogare. Controlla le impostazioni AI e riprova.",
-      "repetitiveOutput": "Il modello ha iniziato a ripetersi. Prova un modello più grande o una gamma più corta."
+      "repetitiveOutput": "Il modello ha iniziato a ripetersi. Prova un modello più grande o una gamma più corta.",
+      "docsUnavailable": "Impossibile caricare i documenti per la risoluzione dei problemi. Controlla la connessione Internet e riprova ad analizzare con l'IA."
     },
     "loadingModel": "Caricamento del modello su questo dispositivo in corso...",
     "readingMessages": "Lettura dei messaggi su questo dispositivo. L'elaborazione della CPU potrebbe richiedere alcuni minuti...",

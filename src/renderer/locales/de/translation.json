@@ -2578,7 +2578,17 @@
     "evidence": "Beweise für {{category}} anzeigen",
     "evidenceShown": "{{shown}} von {{total}} passenden Einträgen werden angezeigt, die neueste zuerst.",
     "ignoredOtherProtocol": "{{count}} Zeilen aus anderen Funkprotokollen wurden ausgeschlossen.",
-    "protocolNote": "Verwendet das aktive Funkprotokoll. Leitungen, die einer anderen Funkstation gehören, werden ausgeschlossen; appübergreifend gemeinsam genutzte Leitungen bleiben erhalten."
+    "protocolNote": "Verwendet das aktive Funkprotokoll. Leitungen, die einer anderen Funkstation gehören, werden ausgeschlossen; appübergreifend gemeinsam genutzte Leitungen bleiben erhalten.",
+    "aiAnalyze": "Mit KI analysieren",
+    "aiSetup": "KI für die Protokollanalyse einrichten",
+    "aiFixEngine": "KI-Engine",
+    "aiNeedsNetwork": "Für die Analyse mit KI ist eine Internetverbindung erforderlich, um die Dokumente zur Fehlerbehebung zu laden. Die integrierte Analyse funktioniert auch offline.",
+    "aiPrivacyHint": "Sendet gepackte Ergebnisse an Ihre KI-Engine und ruft öffentliche Dokumente zur Fehlerbehebung ab. Überprüfen Sie die Beispiele, bevor Sie sie teilen.",
+    "aiConversationLabel": "{{protocol}} Protokollanalyse",
+    "aiResultHeading": "KI-Triage",
+    "aiWorking": "Dokumente werden abgerufen und analysiert …",
+    "aiVerify": "Überprüfen Sie die KI-Triage anhand der Befunde und Dokumente. Die oben genannten heuristischen Empfehlungen behalten auch offline ihre Gültigkeit.",
+    "troubleshootingDocs": "Dokumente zur Fehlerbehebung ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8511,8 @@
       "invalidResponse": "Der Motor gab eine unvollständige oder nicht unterstützte Antwort zurück.",
       "cancelled": "Zusammenfassung abgebrochen.",
       "error": "Konnte nicht zusammengefasst werden. Überprüfen Sie die KI-Einstellungen und versuchen Sie es erneut.",
-      "repetitiveOutput": "Das Modell begann sich zu wiederholen. Probieren Sie ein größeres Modell oder eine kürzere Reichweite aus."
+      "repetitiveOutput": "Das Modell begann sich zu wiederholen. Probieren Sie ein größeres Modell oder eine kürzere Reichweite aus.",
+      "docsUnavailable": "Die Dokumente zur Fehlerbehebung konnten nicht geladen werden. Überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut mit „Mit KI analysieren“."
     },
     "loadingModel": "Modell auf diesem Gerät wird geladen...",
     "readingMessages": "Lesen von Nachrichten auf diesem Gerät. Die CPU-Verarbeitung kann einige Minuten dauern...",

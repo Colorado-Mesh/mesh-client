@@ -2578,7 +2578,17 @@
     "evidence": "{{category}} için kanıtları görüntüleyin",
     "evidenceShown": "Eşleşen {{shown}}/{{total}} giriş gösteriliyor, önce en yeni.",
     "ignoredOtherProtocol": "{{count}} diğer radyo protokollerinden gelen hatlar hariç tutuldu.",
-    "protocolNote": "Aktif telsiz protokolünü kullanır. Başka bir telsize ait hatlar hariç tutulur; uygulama genelinde paylaşılan hatlar kalır."
+    "protocolNote": "Aktif telsiz protokolünü kullanır. Başka bir telsize ait hatlar hariç tutulur; uygulama genelinde paylaşılan hatlar kalır.",
+    "aiAnalyze": "Yapay zekâ ile analiz edin",
+    "aiSetup": "Günlük analizi için yapay zekâyı ayarlayın",
+    "aiFixEngine": "Yapay zekâ motorunu düzeltin",
+    "aiNeedsNetwork": "Yapay zekâ ile analiz etme özelliği, sorun giderme belgelerini yüklemek için internet bağlantısı gerektirir. Yerleşik analiz çevrim dışı olarak da çalışır.",
+    "aiPrivacyHint": "Paketlenmiş bulguları yapay zekâ motorunuza gönderir ve herkese açık sorun giderme belgelerini getirir. Paylaşmadan önce örnekleri inceleyin.",
+    "aiConversationLabel": "{{protocol}} günlük analizi",
+    "aiResultHeading": "YZ triyajı",
+    "aiWorking": "Belgeler alınıyor ve analiz ediliyor…",
+    "aiVerify": "Yapay zekâ triyajını bulgulara ve belgelere göre doğrulayın. Yukarıdaki sezgisel öneriler çevrim dışıyken de geçerliliğini korur.",
+    "troubleshootingDocs": "Sorun giderme belgeleri ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8511,8 @@
       "invalidResponse": "Motor eksik veya desteklenmeyen bir yanıt verdi.",
       "cancelled": "Özet iptal edildi.",
       "error": "Özetlenemedi. AI ayarlarını kontrol edin ve yeniden deneyin.",
-      "repetitiveOutput": "Model kendini tekrarlamaya başladı. Daha büyük bir model veya daha kısa bir aralık deneyin."
+      "repetitiveOutput": "Model kendini tekrarlamaya başladı. Daha büyük bir model veya daha kısa bir aralık deneyin.",
+      "docsUnavailable": "Sorun giderme belgeleri yüklenemedi. İnternet bağlantınızı kontrol edin ve Yapay Zekâ ile Analiz Et'i yeniden deneyin."
     },
     "loadingModel": "Model bu cihaza yükleniyor...",
     "readingMessages": "Bu cihazdaki mesajlar okunuyor. CPU'nun işlenmesi birkaç dakika sürebilir...",
