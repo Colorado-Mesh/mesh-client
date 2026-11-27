@@ -181,7 +181,7 @@ export default defineConfig({
             {
               // Keep TAK relay helpers out of App-*.js (1000 kB entry budget).
               name: 'tak-relay',
-              test: /[\\/]lib[\\/]tak[\\/]|[\\/](useTakInboundChat|takNodeFeed)\.[tj]sx?$/,
+              test: /(?:[\\/]lib[\\/]tak[\\/].*|[\\/](?:useTakInboundChat|takNodeFeed)\.[tj]sx?)$/,
               priority: 21,
             },
             {
