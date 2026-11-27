@@ -1,3 +1,8 @@
+# Workspace packages: the desktop app is the root project; `mobile/` is the Android/iOS app
+# (Capacitor), which consumes the desktop sources at build time without modifying them.
+packages:
+  - mobile
+
 # 12 hours. pnpm 11+ defaults to 1440; 0 disables the gate. #1304 set 0 so a
 # same-day undici/i18next refresh could install. Those versions are in the
 # lockfile now, so the age gate is back.

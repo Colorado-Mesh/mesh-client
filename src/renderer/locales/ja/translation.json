@@ -7631,12 +7631,7 @@
     "deleteAria": "{{name}}を削除",
     "stopUsing": "保存された場所の使用を停止する",
     "addLocation": "ロケーションを追加",
-    "coordsHintFormats": "座標またはマップリンクを貼り付けます： 10進数（ 39.7392、-104.9903 ）、度/分/秒、N/S/E/W、MGRS、またはGoogle、Apple、またはOpenStreetMapの共有リンク。",
-    "usePhoneLocation": "このスマートフォンの位置情報を使用",
-    "phoneLocationName": "このスマートフォン",
-    "phoneLocationFailed": "このスマートフォンの位置情報を取得できませんでした。システム設定で Mesh Client の位置情報へのアクセスを許可するか、位置を入力してください。",
-    "bodyUnknownPhone": "無線機が GPS を報告していません。ノード間の距離とルーティングのチェックを正確にするため、このスマートフォンの位置情報を使用するか、位置を入力してください。",
-    "enterManually": "手動で入力"
+    "coordsHintFormats": "座標またはマップリンクを貼り付けます： 10進数（ 39.7392、-104.9903 ）、度/分/秒、N/S/E/W、MGRS、またはGoogle、Apple、またはOpenStreetMapの共有リンク。"
   },
   "mqttProfiles": {
     "optionLabel": "保存済み： {{name}}",
@@ -9347,17 +9342,5 @@
     "tourLastHint": "プロトコルは、アプリ > プロトコルでいつでも変更できます。",
     "next": "次へ",
     "done": "完了"
-  },
-  "mobile": {
-    "starting": "Mesh Client を起動しています…",
-    "startFailed": "Mesh Client を起動できませんでした。",
-    "tryAgain": "再試行",
-    "backgroundTitle": "Mesh Client は接続中です",
-    "backgroundText": "無線機とネットワークの接続を維持しています。",
-    "chooseRadioTitle": "無線機を選択",
-    "chooseRadioMessage": "接続する USB デバイスを選択してください",
-    "noUsbDevice": "USB シリアルデバイスが接続されていません。USB OTG ケーブルで無線機を接続してください。",
-    "usbPermissionDenied": "USB の権限が拒否されました。",
-    "folderUnavailable": "モバイルではフォルダーを選択できません。"
   }
 }

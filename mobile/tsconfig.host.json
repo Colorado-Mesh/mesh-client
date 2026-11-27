@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.main.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable", "WebWorker.ImportScripts"],
+    "types": ["node", "vitest/globals"],
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "rootDir": ".."
+  },
+  "include": ["src/host/**/*", "src/native/**/*", "src/types/**/*", "../src/main/global.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

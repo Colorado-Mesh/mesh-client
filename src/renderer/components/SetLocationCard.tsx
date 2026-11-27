@@ -4,10 +4,8 @@ import { useTranslation } from 'react-i18next';
 
 import { parseLatLonPair } from '../lib/coordinateInput';
 import { formatCoordPair } from '../lib/coordUtils';
-import { errLikeToLogString } from '../lib/errLikeToLogString';
 import type { OurPosition } from '../lib/gpsSource';
 import type { LocationTrust } from '../lib/locationTrust';
-import { isMobileApp } from '../lib/mobilePlatform';
 import {
   activateSavedLocation,
   type SavedLocation,
@@ -157,61 +155,6 @@ export function SavedLocationForm({ approximatePosition, onSaved, onCancel }: Lo
   );
 }
 
-/**
- * Mobile app only: fill the location from the phone's own GPS (`gps:getFix` prefers the native
- * fix on mobile) and save it as "This phone".
- */
-function UsePhoneLocationButton({ onSaved }: { onSaved: (location: SavedLocation) => void }) {
-  const { t } = useTranslation();
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const fillFromPhone = async () => {
-    setBusy(true);
-    setFailed(false);
-    try {
-      const fix = await window.electronAPI.getGpsFix();
-      if ('status' in fix || fix.source === 'ip') {
-        setFailed(true);
-        return;
-      }
-      onSaved(
-        saveNewLocation({
-          name: t('locationPrompt.phoneLocationName'),
-          lat: fix.lat,
-          lon: fix.lon,
-          fixed: false,
-        }),
-      );
-    } catch (e) {
-      console.debug('[SetLocationCard] phone location failed ' + errLikeToLogString(e));
-      setFailed(true);
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <div className="space-y-1">
-      <button
-        type="button"
-        disabled={busy}
-        aria-busy={busy}
-        onClick={() => {
-          void fillFromPhone();
-        }}
-        aria-label={t('locationPrompt.usePhoneLocation')}
-        className={buttonClassName('primary', 'sm')}
-      >
-        {t('locationPrompt.usePhoneLocation')}
-      </button>
-      {failed && (
-        <p role="alert" className="text-label text-orange-300">
-          {t('locationPrompt.phoneLocationFailed')}
-        </p>
-      )}
-    </div>
-  );
-}
-
 export interface SetLocationCardProps {
   ourPosition: OurPosition | null | undefined;
   trust: LocationTrust;
@@ -265,9 +208,8 @@ export default function SetLocationCard({
     body = t('locationPrompt.bodyApproximate');
   } else {
     title = t('locationPrompt.titleUnknown');
-    body = t(isMobileApp() ? 'locationPrompt.bodyUnknownPhone' : 'locationPrompt.bodyUnknown');
+    body = t('locationPrompt.bodyUnknown');
   }
-  const mobile = isMobileApp();
 
   return (
     <section
@@ -349,31 +291,17 @@ export default function SetLocationCard({
                   ))}
                 </div>
               )}
-              {mobile && <UsePhoneLocationButton onSaved={selectLocation} />}
-              {mobile && !showForm ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(true);
-                  }}
-                  aria-label={t('locationPrompt.enterManually')}
-                  className={buttonClassName('ghost', 'sm')}
-                >
-                  {t('locationPrompt.enterManually')}
-                </button>
-              ) : (
-                <SavedLocationForm
-                  approximatePosition={trust === 'approximate' ? ourPosition : null}
-                  onSaved={selectLocation}
-                  onCancel={
-                    (trust === 'needsConfirm' && active) || mobile
-                      ? () => {
-                          setShowForm(false);
-                        }
-                      : undefined
-                  }
-                />
-              )}
+              <SavedLocationForm
+                approximatePosition={trust === 'approximate' ? ourPosition : null}
+                onSaved={selectLocation}
+                onCancel={
+                  trust === 'needsConfirm' && active
+                    ? () => {
+                        setShowForm(false);
+                      }
+                    : undefined
+                }
+              />
             </>
           )}
         </div>

@@ -7631,12 +7631,7 @@
     "deleteAria": "{{name}} löschen",
     "stopUsing": "Gespeicherten Standort nicht mehr verwenden",
     "addLocation": "Hinzufügen",
-    "coordsHintFormats": "Koordinaten oder einen Kartenlink einfügen: Dezimal (39.7392, -104.9903), Grad/Minuten/Sekunden mit N/S/E/W, MGRS oder einem Freigabe-Link von Google, Apple oder OpenStreetMap.",
-    "usePhoneLocation": "Standort dieses Telefons verwenden",
-    "phoneLocationName": "Dieses Telefon",
-    "phoneLocationFailed": "Der Standort dieses Telefons konnte nicht ermittelt werden. Erlaube Mesh Client in den Systemeinstellungen den Zugriff auf den Standort oder gib einen Standort ein.",
-    "bodyUnknownPhone": "Dein Funkgerät meldet kein GPS. Verwende den Standort dieses Telefons oder gib einen ein, damit Knotenentfernungen und Routing-Prüfungen stimmen.",
-    "enterManually": "Manuell eingeben"
+    "coordsHintFormats": "Koordinaten oder einen Kartenlink einfügen: Dezimal (39.7392, -104.9903), Grad/Minuten/Sekunden mit N/S/E/W, MGRS oder einem Freigabe-Link von Google, Apple oder OpenStreetMap."
   },
   "mqttProfiles": {
     "optionLabel": "Gespeichert: {{name}}",
@@ -9347,17 +9342,5 @@
     "tourLastHint": "Sie können die Protokolle jederzeit unter App > Protokolle ändern.",
     "next": "Weiter",
     "done": "Erledigt"
-  },
-  "mobile": {
-    "starting": "Mesh Client wird gestartet…",
-    "startFailed": "Mesh Client konnte nicht gestartet werden.",
-    "tryAgain": "Erneut versuchen",
-    "backgroundTitle": "Mesh Client ist verbunden",
-    "backgroundText": "Funk- und Netzwerkverbindungen bleiben offen.",
-    "chooseRadioTitle": "Funkgerät auswählen",
-    "chooseRadioMessage": "Wähle das USB-Gerät für die Verbindung",
-    "noUsbDevice": "Kein serielles USB-Gerät verbunden. Schließe das Funkgerät mit einem USB-OTG-Kabel an.",
-    "usbPermissionDenied": "Die USB-Berechtigung wurde verweigert.",
-    "folderUnavailable": "Ordner können auf Mobilgeräten nicht ausgewählt werden."
   }
 }

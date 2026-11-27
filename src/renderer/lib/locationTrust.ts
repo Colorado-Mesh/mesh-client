@@ -1,5 +1,4 @@
 import type { GpsSource, OurPosition } from './gpsSource';
-import { isMobileApp } from './mobilePlatform';
 import type { SavedLocation } from './savedLocations';
 import type { MeshNode } from './types';
 
@@ -29,11 +28,8 @@ export function getLocationTrust(
     case 'device':
       return 'trusted';
     case 'ip':
-      return 'approximate';
     case 'browser':
-      // Mobile app: `browser` is the phone's own GNSS fix (see src/mobile/host/overrides/gps.ts),
-      // which is precise. Desktop OS geolocation (Wi-Fi / IP based) stays approximate.
-      return isMobileApp() ? 'trusted' : 'approximate';
+      return 'approximate';
     case 'static':
       if (activeLocation?.fixed || (activeLocation && confirmedLocationId === activeLocation.id)) {
         return 'trusted';

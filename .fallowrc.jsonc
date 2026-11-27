@@ -2,27 +2,12 @@
   "$schema": "./node_modules/fallow/schema.json",
   "typeAware": {
     "enabled": true,
-    "projects": [
-      "tsconfig.json",
-      "tsconfig.main.json",
-      "tsconfig.e2e.json",
-      "tsconfig.mobile-host.json",
-    ],
+    "projects": ["tsconfig.json", "tsconfig.main.json", "tsconfig.e2e.json"],
   },
   "entry": [
     // Extra Vite HTML entries (src/renderer/*.html), not imported by the main renderer.
     "src/renderer/liveMapWindow.tsx",
     "src/renderer/liveTrafficPreview.tsx",
-    // Mobile app: Vite entry (src/mobile/index.html → main.tsx), the host worker bundled by
-    // scripts/build-mobile-host.mjs, and the module-alias targets that build swaps in for
-    // `electron`, Node built-ins, desktop-only packages, and overridden main modules.
-    "src/mobile/main.tsx",
-    "src/mobile/host/worker.ts",
-    "src/mobile/bridge/electronRenderer.ts",
-    "src/mobile/host/shims/**",
-    "src/mobile/host/overrides/**",
-    "vite.mobile.config.mts",
-    "capacitor.config.ts",
   ],
   "supportEntry": [
     // Loaded by path from the E2E Electron harness.
@@ -35,10 +20,6 @@
     // Loaded by path from electron-builder.yml (beforeBuild / beforePack); default export is the hook.
     "scripts/electron-builder-before-build.mjs",
     "scripts/electron-builder-before-pack.mjs",
-    // Mobile build / test tooling invoked by package scripts and Playwright.
-    "scripts/build-mobile.mjs",
-    "scripts/build-mobile-host.mjs",
-    "scripts/mobile-web-bridge.mjs",
   ],
   "ignorePatterns": [
     // MkDocs theme asset, not part of the app bundle.
@@ -46,6 +27,8 @@
     // Vendored third-party sources (Micron parser, translation engines).
     "src/renderer/lib/nomad/vendor/**",
     "src/main/translation/vendor/**",
+    // Mobile app workspace package: analysed by its own config (mobile/.fallowrc.jsonc).
+    "mobile/**",
   ],
   "ignoreDependencies": [
     // Direct production deps kept for packaged Windows/asar resolution; contract tests enforce them.
@@ -58,21 +41,6 @@
     "concurrently",
     // Imported by the vendored Micron parser (ignored above), not by first-party source.
     "dompurify",
-    // Capacitor native projects (mobile/android, mobile/ios): the CLI links these plugins into
-    // the Gradle / Swift package builds from package.json; JS reaches them by plugin name.
-    "@capacitor/android",
-    "@capacitor/ios",
-    "@capacitor-community/bluetooth-le",
-    "@capacitor/filesystem",
-    "@capacitor/geolocation",
-    "@capacitor/keyboard",
-    "@capacitor/local-notifications",
-    "@capacitor/share",
-    "@capacitor/splash-screen",
-    "@capacitor/status-bar",
-    // Node built-in replacements resolved by path in scripts/build-mobile-host.mjs.
-    "path-browserify",
-    "string_decoder",
   ],
   "ignoreBinaries": [
     // Provided by the host/CI image, not npm.

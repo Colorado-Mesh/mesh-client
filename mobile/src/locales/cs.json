@@ -1,0 +1,21 @@
+{
+  "mobile": {
+    "starting": "Spouštění Mesh Client…",
+    "startFailed": "Mesh Client se nepodařilo spustit.",
+    "tryAgain": "Zkusit znovu",
+    "backgroundTitle": "Mesh Client je připojen",
+    "backgroundText": "Rádio a síťová spojení zůstávají otevřená.",
+    "chooseRadioTitle": "Vyberte rádio",
+    "chooseRadioMessage": "Vyberte zařízení USB, které chcete připojit",
+    "noUsbDevice": "Není připojeno žádné sériové zařízení USB. Připojte rádio kabelem USB OTG.",
+    "usbPermissionDenied": "Oprávnění USB bylo zamítnuto.",
+    "folderUnavailable": "Výběr složky není v mobilní aplikaci k dispozici."
+  },
+  "locationPrompt": {
+    "usePhoneLocation": "Použít polohu tohoto telefonu",
+    "phoneLocationName": "Tento telefon",
+    "phoneLocationFailed": "Polohu tohoto telefonu se nepodařilo zjistit. Povolte aplikaci Mesh Client přístup k poloze v nastavení systému nebo polohu zadejte.",
+    "bodyUnknownPhone": "Vaše rádio nehlásí GPS. Použijte polohu tohoto telefonu nebo ji zadejte, aby byly vzdálenosti uzlů a kontroly směrování přesné.",
+    "enterManually": "Zadat ručně"
+  }
+}

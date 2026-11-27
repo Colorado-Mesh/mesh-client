@@ -7631,12 +7631,7 @@
     "deleteAria": "{{name}} verwijderen",
     "stopUsing": "Opgeslagen locatie niet meer gebruiken",
     "addLocation": "Locatie toevoegen",
-    "coordsHintFormats": "Plak coördinaten of een kaartlink: decimaal (39.7392, -104.9903), graden/minuten/seconden met N/S/E/W, Mgrs of een Google-, Apple- of OpenStreetMap-deellink.",
-    "usePhoneLocation": "Locatie van deze telefoon gebruiken",
-    "phoneLocationName": "Deze telefoon",
-    "phoneLocationFailed": "De locatie van deze telefoon kon niet worden bepaald. Sta locatietoegang toe voor Mesh Client in de systeeminstellingen of voer een locatie in.",
-    "bodyUnknownPhone": "Je radio meldt geen GPS. Gebruik de locatie van deze telefoon of voer er een in, zodat knooppuntafstanden en routeringscontroles kloppen.",
-    "enterManually": "Handmatig invoeren"
+    "coordsHintFormats": "Plak coördinaten of een kaartlink: decimaal (39.7392, -104.9903), graden/minuten/seconden met N/S/E/W, Mgrs of een Google-, Apple- of OpenStreetMap-deellink."
   },
   "mqttProfiles": {
     "optionLabel": "Opgeslagen: {{name}}",
@@ -9347,17 +9342,5 @@
     "tourLastHint": "Je kunt protocollen op elk moment wijzigen in App > Protocollen.",
     "next": "Volgende",
     "done": "Klaar"
-  },
-  "mobile": {
-    "starting": "Mesh Client wordt gestart…",
-    "startFailed": "Mesh Client kon niet starten.",
-    "tryAgain": "Opnieuw proberen",
-    "backgroundTitle": "Mesh Client is verbonden",
-    "backgroundText": "Radio- en netwerkverbindingen blijven open.",
-    "chooseRadioTitle": "Kies een radio",
-    "chooseRadioMessage": "Kies het USB-apparaat om te verbinden",
-    "noUsbDevice": "Er is geen serieel USB-apparaat verbonden. Sluit de radio aan met een USB-OTG-kabel.",
-    "usbPermissionDenied": "USB-toestemming is geweigerd.",
-    "folderUnavailable": "Een map kiezen is niet beschikbaar op mobiel."
   }
 }

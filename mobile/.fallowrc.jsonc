@@ -1,0 +1,56 @@
+{
+  // Fallow for the mobile workspace package (`pnpm -C mobile run lint:dead-code`). The desktop
+  // root config ignores mobile/**; desktop sources imported through `@/` are outside this
+  // project and treated as external.
+  "$schema": "../node_modules/fallow/schema.json",
+  "entry": ["src/main.tsx", "src/host/worker.ts"],
+  "supportEntry": [
+    // Tooling: build, audit and guard scripts, browser harness, configs.
+    "scripts/*.mjs",
+    "e2e/*.spec.ts",
+    "playwright.config.ts",
+    "capacitor.config.ts",
+    "vite.config.mts",
+    "vitest.config.mts",
+    // Swapped in by path from scripts/build-host.mjs (MOBILE_HOST_BUILTIN_SHIMS /
+    // MOBILE_MODULE_OVERRIDES) and scripts/desktop-overrides.mjs (RENDERER_OVERRIDES).
+    "src/host/shims/**",
+    "src/host/overrides/**",
+    "src/overrides/renderer/*.{ts,tsx}",
+  ],
+  // Desktop sources imported through the `@/` alias live outside this package.
+  "ignoreUnresolvedImports": ["@/**"],
+  "ignoreDependencies": [
+    // Native-only Capacitor plugins: registered by `cap sync` in android/ and ios/.
+    "@capacitor/android",
+    "@capacitor/ios",
+    "@capacitor/filesystem",
+    "@capacitor/keyboard",
+    "@capacitor/splash-screen",
+    "@capacitor/status-bar",
+    "@capacitor/share",
+    "@capacitor/local-notifications",
+    "@capacitor/geolocation",
+    "@capacitor-community/bluetooth-le",
+    // Browser stand-ins for Node built-ins, named by string in scripts/build-host.mjs.
+    "path-browserify",
+    "string_decoder",
+    // Bundled by the desktop modules the mobile build compiles.
+    "i18next",
+    "react-dom",
+    "readable-stream",
+  ],
+  "ignoreExports": [
+    // Read as text by scripts/check-log-ids.mjs.
+    { "file": "src/logMessageIds.ts", "exports": ["MOBILE_LOG_MESSAGE_IDS"] },
+    // The `ws` package exports the same class as default, `WebSocket` and the shim name.
+    { "file": "src/host/shims/pkg/ws.ts", "exports": ["*"] },
+  ],
+  // From @playwright/test and the root's fallow, both hoisted to the workspace root.
+  "ignoreBinaries": ["playwright", "fallow"],
+  "rules": {
+    // Shims implement Node / Electron module surfaces for code they do not see.
+    "unused-exports": "warn",
+    "unused-class-members": "warn",
+  },
+}

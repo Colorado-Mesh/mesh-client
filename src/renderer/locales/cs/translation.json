@@ -7699,12 +7699,7 @@
     "deleteAria": "Smazat {{name}}",
     "stopUsing": "Přestat používat uloženou polohu",
     "addLocation": "Přidat lokalitu",
-    "coordsHintFormats": "Vložte souřadnice nebo odkaz na mapu: decimální (39,7392, -104,9903), stupně/minuty/sekundy s odkazem na sdílení N/S/E/W, Mgrs nebo Google, Apple nebo OpenStreetMap.",
-    "usePhoneLocation": "Použít polohu tohoto telefonu",
-    "phoneLocationName": "Tento telefon",
-    "phoneLocationFailed": "Polohu tohoto telefonu se nepodařilo zjistit. Povolte aplikaci Mesh Client přístup k poloze v nastavení systému nebo polohu zadejte.",
-    "bodyUnknownPhone": "Vaše rádio nehlásí GPS. Použijte polohu tohoto telefonu nebo ji zadejte, aby byly vzdálenosti uzlů a kontroly směrování přesné.",
-    "enterManually": "Zadat ručně"
+    "coordsHintFormats": "Vložte souřadnice nebo odkaz na mapu: decimální (39,7392, -104,9903), stupně/minuty/sekundy s odkazem na sdílení N/S/E/W, Mgrs nebo Google, Apple nebo OpenStreetMap."
   },
   "mqttProfiles": {
     "optionLabel": "Uloženo: {{name}}",
@@ -9432,17 +9427,5 @@
     "tourLastHint": "Protokoly můžete kdykoli změnit v části Aplikace > Protokoly.",
     "next": "Následující",
     "done": "Hotovo"
-  },
-  "mobile": {
-    "starting": "Spouštění Mesh Client…",
-    "startFailed": "Mesh Client se nepodařilo spustit.",
-    "tryAgain": "Zkusit znovu",
-    "backgroundTitle": "Mesh Client je připojen",
-    "backgroundText": "Rádio a síťová spojení zůstávají otevřená.",
-    "chooseRadioTitle": "Vyberte rádio",
-    "chooseRadioMessage": "Vyberte zařízení USB, které chcete připojit",
-    "noUsbDevice": "Není připojeno žádné sériové zařízení USB. Připojte rádio kabelem USB OTG.",
-    "usbPermissionDenied": "Oprávnění USB bylo zamítnuto.",
-    "folderUnavailable": "Výběr složky není v mobilní aplikaci k dispozici."
   }
 }

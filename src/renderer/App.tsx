@@ -252,7 +252,6 @@ import { useRrcStartupAutoConnect } from './hooks/useRrcStartupAutoConnect';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useServiceAnnouncements } from './hooks/useServiceAnnouncements';
-import { useShellCompact } from './hooks/useShellLayout';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
 import { useTakContacts } from './hooks/useTakContacts';
 import { useTakInboundChat } from './hooks/useTakInboundChat';
@@ -351,6 +350,7 @@ import {
   TELEMETRY_PANEL_INDEX,
   TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
+import { SHELL_COMPACT_QUERY } from './lib/bottomNav';
 import { meshcoreChatMessageRoute, meshtasticChatMessageRoute } from './lib/chatMessageRoute';
 import { protocolMqttProvidesChatSend } from './lib/chatMqttHybridSend';
 import { playMessageNotification } from './lib/chatNotifications';
@@ -430,7 +430,6 @@ import {
   shouldAutoLaunchMeshtasticMqtt,
   shouldMaintainMeshtasticMqttConnection,
 } from './lib/meshtasticMqttLiveIngest';
-import { isMobileApp } from './lib/mobilePlatform';
 import { shouldAutoLaunchMeshcoreMqttAtStartup, tryAutoLaunchMqtt } from './lib/mqttAutoLaunch';
 import type { NavBadgeCounts } from './lib/navBadges';
 import {
@@ -806,7 +805,7 @@ function AppContent() {
   }, []);
   const nodeDetailPaneFits = useMediaQuery(NODE_DETAIL_PANE_MEDIA_QUERY);
   /** Phones and very narrow windows: bottom bar instead of the rail (future mobile builds). */
-  const shellCompact = useShellCompact();
+  const shellCompact = useMediaQuery(SHELL_COMPACT_QUERY);
   const [selectedPeerHash, setSelectedPeerHashState] = useState<string | null>(null);
   /** Same rule as nodes: picked from the Peers list or the map on a wide window shows in a pane. */
   const [peerDetailPaneHost, setPeerDetailPaneHost] = useState<DetailPaneHost | null>(null);
@@ -5653,8 +5652,7 @@ function AppContent() {
                   <div className="shrink-0">
                     <LanguageSelector />
                   </div>
-                  {/* Mobile apps are closed by the OS, not from inside the app (iOS HIG). */}
-                  {!isMobileApp() && <QuitButton />}
+                  <QuitButton />
                 </>
               }
             />

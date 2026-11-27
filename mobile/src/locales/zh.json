@@ -1,0 +1,21 @@
+{
+  "mobile": {
+    "starting": "正在启动 Mesh Client…",
+    "startFailed": "Mesh Client 无法启动。",
+    "tryAgain": "重试",
+    "backgroundTitle": "Mesh Client 已连接",
+    "backgroundText": "正在保持电台和网络连接。",
+    "chooseRadioTitle": "选择电台",
+    "chooseRadioMessage": "选择要连接的 USB 设备",
+    "noUsbDevice": "未连接 USB 串口设备。请用 USB OTG 线连接电台。",
+    "usbPermissionDenied": "USB 权限被拒绝。",
+    "folderUnavailable": "移动设备上无法选择文件夹。"
+  },
+  "locationPrompt": {
+    "usePhoneLocation": "使用此手机的位置",
+    "phoneLocationName": "此手机",
+    "phoneLocationFailed": "无法获取此手机的位置。请在系统设置中允许 Mesh Client 访问位置，或手动输入位置。",
+    "bodyUnknownPhone": "您的电台未报告 GPS。请使用此手机的位置或输入一个位置，以确保节点距离和路由检查准确。",
+    "enterManually": "手动输入"
+  }
+}

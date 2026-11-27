@@ -56,24 +56,6 @@ cargo build --release --features rns-stack
 
 Optional: `--features rns-stack,rns-serial,rns-ble,rns-rnode-tcp`
 
-### Mobile
-
-The sidecar lives in the library root (`src/lib.rs`, `mesh_client_reticulum::run`); `src/main.rs` is
-the executable for desktop and Android. Mobile builds use `rns-stack,rns-rnode-tcp`: no BLE
-(`btleplug`) and no USB serial (`serialport` is desktop-only in `Cargo.toml`), because the apps own
-those in native plugins.
-
-```bash
-node scripts/build-mobile-sidecar.mjs android   # NDK, API 24 → mobile/android/.../jniLibs/<abi>/libmesh_client_reticulum.so
-node scripts/build-mobile-sidecar.mjs ios       # macOS + Xcode → mobile/ios/App/MeshReticulum.xcframework
-node scripts/build-mobile-sidecar.mjs ios --check --features ''   # type-check the iOS target on any host
-```
-
-iOS cannot spawn processes, so [`ffi/`](ffi/) (separate package, C ABI in
-[`ffi/include/mesh_reticulum.h`](ffi/include/mesh_reticulum.h)) runs `run` on a background thread
-with the same argv, stdin bootstrap, output pipes and exit status. Its host tests drive the C ABI
-with real pipes: `cd ffi && cp ../Cargo.lock . && cargo test --target-dir ../target`.
-
 ## Dev
 
 ```bash

@@ -28,11 +28,7 @@ export default tseslint.config(
       'eslint.config.*',
       'vitest.config.mts',
       'vite.config.mts',
-      'vite.mobile.config.mts',
       '*.config.{ts,js,mjs,cjs}',
-      'dist-mobile/**',
-      'mobile/android/**',
-      'mobile/ios/**',
       'dist-electron/**',
       'release/**',
       'site/**',
@@ -50,12 +46,7 @@ export default tseslint.config(
     files: ['**/*.{ts,tsx,mts,cts}'],
     languageOptions: {
       parserOptions: {
-        project: [
-          './tsconfig.json',
-          './tsconfig.main.json',
-          './tsconfig.e2e.json',
-          './tsconfig.mobile-host.json',
-        ],
+        project: ['./tsconfig.json', './tsconfig.main.json', './tsconfig.e2e.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -154,8 +145,8 @@ export default tseslint.config(
   {
     files: ['**/*.{test,spec}.{ts,tsx}'],
     rules: {
-      '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
@@ -188,7 +179,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**/*.mjs', 'src/mobile/**/*.js'],
+    files: ['scripts/**/*.mjs'],
     languageOptions: {
       ...tseslint.configs.disableTypeChecked.languageOptions,
       ecmaVersion: 'latest',
@@ -292,30 +283,6 @@ export default tseslint.config(
       'electron/no-deprecated-props': 'error',
       'electron/no-deprecated-arguments': 'off',
       'electron/default-value-changed': 'warn',
-    },
-  },
-  // Mobile host shims emulate Node / Electron APIs for the unmodified main process: they need
-  // intentionally empty stubs (tray, menus, no-op setters) and talk to untyped JS (sqlite-wasm,
-  // Node-shaped objects). Scope the relaxations to the shim and override modules only.
-  {
-    files: [
-      'src/mobile/host/shims/**/*.ts',
-      'src/mobile/host/overrides/**/*.ts',
-      'src/mobile/host/globals.ts',
-    ],
-    rules: {
-      '@typescript-eslint/no-empty-function': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-extraneous-class': 'off',
-      '@typescript-eslint/no-invalid-void-type': 'off',
-      '@typescript-eslint/no-implied-eval': 'off',
-      '@typescript-eslint/no-this-alias': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
-      '@typescript-eslint/no-redundant-type-constituents': 'off',
     },
   },
   // Last: strictTypeChecked enables preserve-caught-error; ESLint may surface it under both names.

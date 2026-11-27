@@ -7631,12 +7631,7 @@
     "deleteAria": "Supprimer {{name}}",
     "stopUsing": "Arrêter d'utiliser l'emplacement enregistré",
     "addLocation": "Ajouter un lieu",
-    "coordsHintFormats": "Coller les coordonnées ou un lien de carte : décimal (39,7392, -104,9903), degrés/minutes/secondes avec N/S/E/W, MGRS ou un lien de partage Google, Apple ou OpenStreetMap.",
-    "usePhoneLocation": "Utiliser la position de ce téléphone",
-    "phoneLocationName": "Ce téléphone",
-    "phoneLocationFailed": "Impossible d'obtenir la position de ce téléphone. Autorisez l'accès à la localisation pour Mesh Client dans les réglages du système, ou saisissez une position.",
-    "bodyUnknownPhone": "Votre radio ne transmet pas de GPS. Utilisez la position de ce téléphone ou saisissez-en une pour que les distances entre nœuds et les contrôles de routage soient exacts.",
-    "enterManually": "Saisir manuellement"
+    "coordsHintFormats": "Coller les coordonnées ou un lien de carte : décimal (39,7392, -104,9903), degrés/minutes/secondes avec N/S/E/W, MGRS ou un lien de partage Google, Apple ou OpenStreetMap."
   },
   "mqttProfiles": {
     "optionLabel": "Enregistré : {{name}}",
@@ -9347,17 +9342,5 @@
     "tourLastHint": "Vous pouvez modifier les protocoles à tout moment dans Application > Protocoles.",
     "next": "Suivant",
     "done": "Effectué"
-  },
-  "mobile": {
-    "starting": "Démarrage de Mesh Client…",
-    "startFailed": "Mesh Client n'a pas pu démarrer.",
-    "tryAgain": "Réessayer",
-    "backgroundTitle": "Mesh Client est connecté",
-    "backgroundText": "Les liaisons radio et réseau restent ouvertes.",
-    "chooseRadioTitle": "Choisir une radio",
-    "chooseRadioMessage": "Choisissez l'appareil USB à connecter",
-    "noUsbDevice": "Aucun appareil série USB n'est connecté. Branchez la radio avec un câble USB OTG.",
-    "usbPermissionDenied": "L'autorisation USB a été refusée.",
-    "folderUnavailable": "Le choix d'un dossier n'est pas disponible sur mobile."
   }
 }
