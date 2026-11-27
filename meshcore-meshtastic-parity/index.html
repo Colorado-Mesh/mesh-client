@@ -4052,43 +4052,43 @@
 <td>LetsMesh</td>
 <td><code>mqtt-us-v1.letsmesh.net</code> or <code>mqtt-eu-v1.letsmesh.net</code></td>
 <td>443</td>
-<td><strong>Default for new users.</strong> <strong>WebSocket</strong> (<code>wss</code>, path <code>/ws</code>). Topic prefix <code>meshcore/test</code>. JWT auth; see <a href="#meshcore-mqtt-authentication">Authentication</a> below. Optional <strong>Packet logger</strong> publishes to <code>meshcore/packets</code>. See <a href="../letsmesh-mqtt-auth/"><code>letsmesh-mqtt-auth.md</code></a>.</td>
+<td><strong>Default for new users.</strong> <strong>WebSocket</strong> (<code>wss</code>, path <code>/ws</code>). User picks area IATA (no silent <code>meshcore/test</code> default). JWT auth; see <a href="#meshcore-mqtt-authentication">Authentication</a> below. Optional <strong>Packet logger</strong> publishes to <code>meshcore/packets</code>. See <a href="../letsmesh-mqtt-auth/"><code>letsmesh-mqtt-auth.md</code></a>.</td>
 </tr>
 <tr>
 <td>MeshMapper</td>
 <td><code>mqtt.meshmapper.net</code></td>
 <td>443</td>
-<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/ws</code>). Topic prefix <code>meshcore/test</code>.</td>
+<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/ws</code>). User picks area IATA.</td>
 </tr>
 <tr>
 <td>Colorado Mesh</td>
 <td><code>mqtt.meshcore.coloradomesh.org</code></td>
 <td>443</td>
-<td><strong>Colorado residents only.</strong> <strong>WebSocket</strong> (<code>wss</code>, path <code>/ws</code>). Topic prefix <code>meshcore/DEN</code>. Confirm on select; one-time stay-or-switch gate for existing Colorado users. JWT device-signing auth.</td>
+<td><strong>Colorado residents only.</strong> <strong>WebSocket</strong> (<code>wss</code>, path <code>/ws</code>). User picks area IATA (no silent <code>meshcore/DEN</code> default). Confirm on select; one-time stay-or-switch gate for existing Colorado users. JWT device-signing auth.</td>
 </tr>
 <tr>
 <td>Waev</td>
 <td><code>mqtt.waev.app</code></td>
 <td>443</td>
-<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/mqtt</code>). Topic prefix <code>meshcore/test</code>. JWT device-signing auth (broker enforces a short auth-token lifetime).</td>
+<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/mqtt</code>). User picks area IATA. JWT device-signing auth (broker enforces a short auth-token lifetime).</td>
 </tr>
 <tr>
 <td>Meshat.se</td>
 <td><code>meshcore-mqtt.meshat.se</code></td>
 <td>443</td>
-<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/mqtt</code>). Topic prefix <code>meshcore/test</code>. JWT device-signing auth.</td>
+<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/mqtt</code>). User picks area IATA. JWT device-signing auth.</td>
 </tr>
 <tr>
 <td>MeshCore.CA</td>
 <td><code>mqtt1.meshcore.ca</code> (Primary) or <code>mqtt2.meshcore.ca</code> (Backup)</td>
 <td>443</td>
-<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/mqtt</code>). Topic prefix <code>meshcore/test</code>. JWT device-signing auth. <strong>Primary/Backup</strong> broker toggle appears under the picker.</td>
+<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/mqtt</code>). User picks area IATA. JWT device-signing auth. <strong>Primary/Backup</strong> broker toggle appears under the picker.</td>
 </tr>
 <tr>
 <td>EastMesh</td>
 <td><code>mqtt2.eastmesh.au</code></td>
 <td>443</td>
-<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/mqtt</code>). Topic prefix <code>meshcore/test</code>. JWT device-signing auth.</td>
+<td><strong>WebSocket</strong> (<code>wss</code>, path <code>/mqtt</code>). User picks area IATA. JWT device-signing auth.</td>
 </tr>
 <tr>
 <td>Ripple Networks</td>
@@ -4104,7 +4104,7 @@
 </tr>
 </tbody>
 </table>
-<p>Topic prefixes for the device-signing presets (LetsMesh / MeshMapper / Colorado / Waev / Meshat.se / MeshCore.CA / EastMesh — and Custom when pointed at those hosts) must be <code>meshcore/{IATA}</code> (3 letters) or <code>meshcore/test</code> — validated in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreMqttTopicPrefix.ts"><code>meshcoreMqttTopicPrefix.ts</code></a>. Users can still edit fields after choosing a preset. On upgrade, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/connectionPanelStorageMigrations.ts"><code>connectionPanelStorageMigrations.ts</code></a> migrates stale Colorado Mesh port <strong>1883</strong> → <strong>443</strong>, bare topic <code>meshcore</code> → IATA, repairs invalid IATA shapes, seeds LetsMesh for new installs, and reconciles preset-owned fields before MQTT auto-launch (also runs from <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/main.tsx"><code>main.tsx</code></a> before React mount).</p>
+<p>Topic prefixes for the device-signing presets (LetsMesh / MeshMapper / Colorado / Waev / Meshat.se / MeshCore.CA / EastMesh — and Custom when pointed at those hosts) must be <code>meshcore/{IATA}</code> (3 letters) or <code>meshcore/test</code> — chosen from the searchable <strong>Area IATA</strong> picklist (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MeshcoreMqttIataSelect.tsx"><code>MeshcoreMqttIataSelect.tsx</code></a>; catalog in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreMqttIataCatalog.ts"><code>meshcoreMqttIataCatalog.ts</code></a>) and validated in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreMqttTopicPrefix.ts"><code>meshcoreMqttTopicPrefix.ts</code></a>. Presets do <strong>not</strong> invent <code>meshcore/DEN</code> or <code>meshcore/test</code>. The MeshCore MQTT Connect control stays clickable, but connect preparation shows a topic-prefix error and does not open a session when the IATA is missing or invalid. When GPS is available, the picklist scrolls to the nearest airport (highlight only — never auto-committed). On upgrade, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/connectionPanelStorageMigrations.ts"><code>connectionPanelStorageMigrations.ts</code></a> migrates stale Colorado Mesh port <strong>1883</strong> → <strong>443</strong>, clears bare topic <code>meshcore</code> <strong>only for IATA-scoped brokers</strong> (so an Area IATA must be chosen; non-IATA / Custom brokers keep the default <code>meshcore</code> prefix), uppercases valid IATA segments, seeds LetsMesh for new installs with an empty IATA-scoped prefix, and reconciles preset-owned transport fields before MQTT auto-launch (also runs from <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/main.tsx"><code>main.tsx</code></a> before React mount).</p>
 <h2 id="log-filtering">Log filtering<a class="headerlink" href="#log-filtering" title="Permanent link">&para;</a></h2>
 <p>MQTT log messages are prefixed for easy filtering: <strong><code>[Meshtastic MQTT]</code></strong> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a> and <strong><code>[MeshCore MQTT]</code></strong> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a>. The Log panel filter and analyzer patterns recognize these tags.</p>
 <h2 id="maintenance">Maintenance<a class="headerlink" href="#maintenance" title="Permanent link">&para;</a></h2>
@@ -4147,7 +4147,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 19, 2026 04:16:27 UTC">November 19, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 27, 2026 21:21:33 UTC">November 27, 2026</span>
   </span>
 
     
