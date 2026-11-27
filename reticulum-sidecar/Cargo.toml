@@ -6,6 +6,15 @@ description = "Headless Reticulum/LXMF daemon for mesh-client"
 license = "AGPL-3.0-or-later"
 rust-version = "1.88"
 
+# Library root holds the whole sidecar; `src/main.rs` is the desktop/Android executable and
+# `ffi/` (separate package) embeds the same `run` in-process on iOS. The crate name matches the
+# binary so tracing targets stay `mesh_client_reticulum::…`. Doctests off: the module tree never
+# ran any as a binary crate.
+[lib]
+name = "mesh_client_reticulum"
+path = "src/lib.rs"
+doctest = false
+
 [[bin]]
 name = "mesh-client-reticulum"
 path = "src/main.rs"
@@ -76,6 +85,13 @@ tokio = { version = "1", features = ["test-util"] }
 tower = { version = "0.5", features = ["util"] }
 
 [dependencies.rns-runtime]
+package = "rns-runtime"
+path = "../.rsstack/rsReticulum/crates/rns-runtime"
+optional = true
+
+# USB serial (serialport) on desktop only. Mobile apps own USB serial in their native plugins,
+# and serialport links IOKit on iOS. Same dependency as above; Cargo unions the features.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies.rns-runtime]
 package = "rns-runtime"
 path = "../.rsstack/rsReticulum/crates/rns-runtime"
 optional = true

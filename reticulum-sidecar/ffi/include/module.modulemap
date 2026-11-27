@@ -1,0 +1,4 @@
+module MeshReticulum {
+    header "mesh_reticulum.h"
+    export *
+}

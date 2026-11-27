@@ -1,0 +1,47 @@
+[package]
+name = "mesh-client-reticulum-ffi"
+version = "0.1.0"
+edition = "2024"
+description = "C ABI that runs the mesh-client Reticulum sidecar in-process (iOS cannot spawn processes)"
+license = "AGPL-3.0-or-later"
+rust-version = "1.88"
+publish = false
+
+# Standalone workspace so the desktop sidecar's Cargo.lock and lint policy (`unsafe_code =
+# "forbid"`) stay untouched. scripts/build-mobile-sidecar.mjs seeds this crate's gitignored
+# Cargo.lock from ../Cargo.lock, so every shared dependency resolves to the reviewed version.
+[workspace]
+
+[lib]
+name = "mesh_reticulum"
+path = "src/lib.rs"
+# staticlib for the iOS xcframework; rlib so host tests link the C ABI functions directly.
+crate-type = ["staticlib", "rlib"]
+doctest = false
+
+[features]
+default = []
+rns-stack = ["mesh-client-reticulum-sidecar/rns-stack"]
+rns-rnode-tcp = ["mesh-client-reticulum-sidecar/rns-rnode-tcp"]
+
+[dependencies]
+mesh-client-reticulum-sidecar = { path = "..", default-features = false }
+clap = "4"
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "fs", "macros", "sync"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[target.'cfg(target_vendor = "apple")'.dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints.rust]
+# The C ABI needs `#[unsafe(no_mangle)]`, raw C strings and raw fds; each use is allowed
+# locally with a SAFETY note.
+unsafe_code = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }

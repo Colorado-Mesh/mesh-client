@@ -90,3 +90,12 @@ Package.resolved
 # Mobile (Capacitor) web bundle and local spikes
 dist-mobile/
 .mobile-spike/
+
+# Mobile Reticulum sidecar build outputs (scripts/build-mobile-sidecar.mjs)
+mobile/android/app/src/main/jniLibs/*/libmesh_client_reticulum.so
+mobile/android/app/src/main/jniLibs/*/libmesh_client_reticulum.so.partial
+mobile/ios/App/MeshReticulum.xcframework/
+mobile/ios/App/MeshReticulum.xcframework.partial/
+# iOS in-process sidecar crate: Cargo.lock is seeded from reticulum-sidecar/Cargo.lock per build
+reticulum-sidecar/ffi/Cargo.lock
+reticulum-sidecar/ffi/target/
