@@ -3149,6 +3149,11 @@ export default function ConnectionPanel({
     if (duplicate) setMeshcoreFeedError(t('connectionPanel.meshcoreFeeds.duplicateWarning'));
   };
 
+  const closeMeshcoreBrokerEditor = () => {
+    setMeshcoreEditorTarget(null);
+    setMeshcoreEditorNonce((n) => n + 1);
+  };
+
   const addMeshcoreBroker = () => {
     setMeshcoreFeedError(null);
     if (meshcoreFeeds.length >= MAX_MESHCORE_MQTT_PUBLISH_FEEDS) {
@@ -3175,8 +3180,6 @@ export default function ConnectionPanel({
     });
     if (!feed) return;
     setMeshcoreFeeds((prev) => [...prev, feed]);
-    setMeshcoreEditorTarget(feed.id);
-    setMeshcoreEditorNonce((n) => n + 1);
   };
 
   const deleteMeshcoreFeedNow = (feed: MeshcoreMqttFeed) => {
@@ -3200,6 +3203,7 @@ export default function ConnectionPanel({
   };
 
   const connectMeshcoreBroker = (connectionId: string): void => {
+    closeMeshcoreBrokerEditor();
     if (connectionId === MESHCORE_MQTT_CHAT_CONNECTION_ID) {
       connectMeshcoreChatNow();
       return;
@@ -3859,17 +3863,16 @@ export default function ConnectionPanel({
         className="border-ink-800 border-t pt-4"
         bodyClassName="space-y-4 pt-3"
       >
+        <div className="flex justify-end">
+          <Button size="sm" onClick={closeMeshcoreBrokerEditor}>
+            {t('common.close')}
+          </Button>
+        </div>
         {meshcoreConnectionNameField}
         {meshcorePresetEditor}
         {mqttConnectionFields}
         <div className="flex justify-end">
-          <Button
-            size="sm"
-            onClick={() => {
-              setMeshcoreEditorTarget(null);
-              setMeshcoreEditorNonce((n) => n + 1);
-            }}
-          >
+          <Button size="sm" onClick={closeMeshcoreBrokerEditor}>
             {t('connectionPanel.meshcoreFeeds.done')}
           </Button>
         </div>

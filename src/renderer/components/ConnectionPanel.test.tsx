@@ -3482,7 +3482,7 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
     vi.restoreAllMocks();
   });
 
-  it('adds a connection and opens its editor', async () => {
+  it('adds a connection without opening the editor', async () => {
     const user = userEvent.setup();
     const { container } = renderPanel();
 
@@ -3492,6 +3492,9 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
     await user.click(screen.getByRole('button', { name: 'Add MQTT connection' }));
 
     expect(screen.getByText('New broker')).toBeInTheDocument();
+    expect(container.querySelector('details')?.open).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: 'Edit New broker' }));
     expect(container.querySelector('details')?.open).toBe(true);
     expect(screen.getByLabelText('Name')).toHaveValue('New broker');
     const preset = screen.getByRole('combobox', { name: 'Network Preset' });
@@ -3503,12 +3506,19 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
     expect(screen.getByText('Local analyzer')).toBeInTheDocument();
   });
 
-  it('opens the editor when adding a connection while connected', async () => {
+  it('exits the editor with Close or Done', async () => {
     const user = userEvent.setup();
-    const { container } = renderPanel('connected');
-    await user.click(screen.getByRole('button', { name: 'Add MQTT connection' }));
+    const { container } = renderPanel();
+
+    await user.click(screen.getByRole('button', { name: 'Edit mqtt-us-v1.letsmesh.net' }));
     expect(container.querySelector('details')?.open).toBe(true);
-    expect(screen.getByLabelText('Name')).toHaveValue('New broker');
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(container.querySelector('details')?.open).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: 'Edit mqtt-us-v1.letsmesh.net' }));
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    expect(container.querySelector('details')?.open).toBe(false);
   });
 
   it('edits a feed while connected and offers Reconnect only after a change', async () => {
