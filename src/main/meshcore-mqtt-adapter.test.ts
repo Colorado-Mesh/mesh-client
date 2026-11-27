@@ -408,6 +408,18 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
       expect(handler).not.toHaveBeenCalled();
     });
 
+    it('ignores a refresh aimed at a different broker', () => {
+      const expiresAt = Date.now() + 30 * 60 * 1000;
+      seedConnected(adapter, expiresAt);
+
+      adapter.updateToken('wrong-broker-token', expiresAt, 'other.example.com');
+      expect(adapter.getSettings()?.password).toBe(BASE_SETTINGS.password);
+      expect(adapter.getSettings()?.tokenExpiresAt).toBe(expiresAt);
+
+      adapter.updateToken('right-broker-token', expiresAt, BASE_SETTINGS.server);
+      expect(adapter.getSettings()?.password).toBe('right-broker-token');
+    });
+
     it('does not schedule when not connected', () => {
       const expiresAt = Date.now() + 60 * 60 * 1000;
 

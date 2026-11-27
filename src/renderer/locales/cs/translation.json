@@ -2026,7 +2026,8 @@
       "settingsHeading": "Nastavení připojení",
       "reconnect": "Znovu připojit",
       "reconnectAria": "Znovu připojit {{name}}",
-      "unnamedFeed": "Nepojmenovaný informační kanál"
+      "unnamedFeed": "Nepojmenovaný informační kanál",
+      "disconnectToEditChat": "Odpojte MQTT a upravte chatového brokera. Feedy analyzátoru zůstávají upravitelné, když jsou připojeny."
     }
   },
   "contactGroupsModal": {

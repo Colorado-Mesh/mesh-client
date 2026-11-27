@@ -9,7 +9,7 @@ import {
   meshcoreIdentityHasFullKeyPair,
   readMeshcoreIdentityAsync,
 } from './letsMeshJwt';
-import type { MeshcoreMqttFeed } from './meshcoreMqttFeeds';
+import { loadMeshcoreMqttFeeds, type MeshcoreMqttFeed } from './meshcoreMqttFeeds';
 import { type MeshcoreMqttPreset, usesMeshcoreDeviceSigningMqtt } from './meshcoreMqttPresets';
 import { prepareMeshcoreIataMqttTopicPrefix } from './meshcoreMqttTopicPrefix';
 import type { MQTTSettings } from './types';
@@ -74,10 +74,16 @@ export async function prepareMeshcoreMqttConnect(args: {
   }
   const identity = await readMeshcoreIdentityAsync();
   if (!identity) {
-    return fail(
-      'MeshCore MQTT needs an imported identity or a password',
-      'connectionPanel.meshcoreMqttIdentity.noIdentity',
-    );
+    // Manual credentials (v1_ username + broker token) still work without a radio identity.
+    if (!settings.password.trim()) {
+      return fail(
+        'MeshCore MQTT needs an imported identity or a password',
+        'connectionPanel.meshcoreMqttIdentity.noIdentity',
+      );
+    }
+    const manualErr = validateLetsMeshManualCredentials(settings);
+    if (manualErr) return fail(manualErr);
+    return { ok: true, settings };
   }
   const hasFullIdentity = Boolean(identity.private_key && identity.public_key);
 
@@ -86,6 +92,12 @@ export async function prepareMeshcoreMqttConnect(args: {
       return fail(
         'MeshCore identity is missing its public key',
         'connectionPanel.meshcoreMqttIdentity.publicKeyMissing',
+      );
+    }
+    if (!settings.password.trim()) {
+      return fail(
+        'MeshCore identity is missing its key pair',
+        'connectionPanel.meshcoreMqttIdentity.usernameBuildFailed',
       );
     }
     const manualErr = validateLetsMeshManualCredentials(settings);
@@ -108,8 +120,11 @@ export async function prepareMeshcoreMqttConnect(args: {
   return { ok: true, settings };
 }
 
-/** Prepare + connect one publish-only analyzer feed. */
-export async function connectMeshcoreMqttFeed(feed: MeshcoreMqttFeed): Promise<void> {
+/** Prepare + connect one publish-only analyzer feed. Returns false when the feed was deleted. */
+export async function connectMeshcoreMqttFeed(
+  feed: MeshcoreMqttFeed,
+  options?: { isStillCurrent?: () => boolean },
+): Promise<boolean> {
   const prepared = await prepareMeshcoreMqttConnect({
     preset: feed.preset,
     settings: feed.settings,
@@ -117,12 +132,24 @@ export async function connectMeshcoreMqttFeed(feed: MeshcoreMqttFeed): Promise<v
   if (!prepared.ok) {
     throw new Error(prepared.failure.message);
   }
+  // Identity/JWT prep can take seconds; do not connect a feed the user deleted meanwhile.
+  const stillCurrent =
+    options?.isStillCurrent ??
+    (() => {
+      const stored = loadMeshcoreMqttFeeds();
+      return stored.length === 0 || stored.some((current) => current.id === feed.id);
+    });
+  if (!stillCurrent()) {
+    console.debug('[meshcoreMqttConnect] feed removed before connect; skipping');
+    return false;
+  }
   await window.electronAPI.mqtt.connect({
     ...prepared.settings,
     mqttTransportProtocol: 'meshcore',
     connectionId: feed.id,
     role: 'feed',
   });
+  return true;
 }
 
 /**
@@ -137,8 +164,7 @@ export async function connectEnabledMeshcoreMqttFeeds(
   for (const feed of feeds) {
     if (!feed.enabled) continue;
     try {
-      await connectMeshcoreMqttFeed(feed);
-      connected += 1;
+      if (await connectMeshcoreMqttFeed(feed)) connected += 1;
     } catch (e) {
       failures.push({ message: e instanceof Error ? e.message : String(e) });
       console.warn(

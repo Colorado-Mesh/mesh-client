@@ -2002,7 +2002,8 @@
       "settingsHeading": "Bağlantı ayarları",
       "reconnect": "Yeniden bağlanınız",
       "reconnectAria": "{{name}} ile yeniden bağlantı kurun",
-      "unnamedFeed": "Adsız akış"
+      "unnamedFeed": "Adsız akış",
+      "disconnectToEditChat": "Sohbet aracısını düzenlemek için MQTT bağlantısını kesin. Analiz aracı beslemeleri bağlıyken düzenlenebilir durumda kalır."
     }
   },
   "contactGroupsModal": {

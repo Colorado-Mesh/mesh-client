@@ -17,6 +17,9 @@ export const MESHCORE_MQTT_CHAT_CONNECTION_ID = 'chat';
  */
 export const MAX_MESHCORE_MQTT_CONNECTIONS = 4;
 
+/** Bounds the renderer-supplied connection id (and the per-feed clientId setting key). */
+export const MESHCORE_MQTT_CONNECTION_ID_MAX_LENGTH = 64;
+
 /** Saved publish-feed limit (8 matches the number of built-in MeshCore broker presets). */
 export const MAX_MESHCORE_MQTT_PUBLISH_FEEDS = 8;
 

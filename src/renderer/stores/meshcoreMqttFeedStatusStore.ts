@@ -38,6 +38,13 @@ export const useMeshcoreMqttFeedStatusStore = create<MeshcoreMqttFeedStatusState
  * Status-bar aggregate: connected if any broker is up, then connecting, then error. Chat send
  * availability still checks the chat connection alone.
  */
+/** True when the chat broker or any analyzer feed can accept packet-log publishes. */
+export function isMeshcoreMqttPublishEligible(): boolean {
+  return (
+    aggregateMeshcoreMqttStatus(useMeshcoreMqttFeedStatusStore.getState().statuses) === 'connected'
+  );
+}
+
 export function aggregateMeshcoreMqttStatus(statuses: Record<string, MQTTStatus>): MQTTStatus {
   const values = Object.values(statuses);
   if (values.includes('connected')) return 'connected';

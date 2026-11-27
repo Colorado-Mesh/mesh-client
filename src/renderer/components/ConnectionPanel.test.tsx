@@ -3555,11 +3555,13 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
         .map((o) => o.textContent),
     ).toEqual(['Home mesh', 'Feed 0']);
 
-    // The full editor (name + presets + broker fields) is available while connected.
-    const preset = screen.getByRole('combobox', { name: 'Network Preset' });
-    expect(within(preset).getAllByRole('option')).toHaveLength(9);
+    // Chat settings stay read-only while connected; feeds are editable.
+    expect(screen.queryByRole('combobox', { name: 'Network Preset' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Disconnect MQTT to edit the chat broker/i)).toBeInTheDocument();
 
     await user.selectOptions(editor, 'feed-0');
+    const preset = screen.getByRole('combobox', { name: 'Network Preset' });
+    expect(within(preset).getAllByRole('option')).toHaveLength(9);
     const name = screen.getByLabelText('Name');
     await user.clear(name);
     await user.type(name, 'Denver analyzer');

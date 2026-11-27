@@ -326,7 +326,6 @@ import {
 } from '../lib/meshcoreLocallyDeletedContacts';
 import { trimMeshcoreChatMessages } from '../lib/meshcoreMessageMemoryWindow';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
-import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { mergeMeshcoreNeighborPage } from '../lib/meshcoreNeighborPageMerge';
 import { buildMeshcoreOpenReactionWire } from '../lib/meshcoreOpenReaction';
 import {
@@ -670,6 +669,7 @@ import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
 import {
   aggregateMeshcoreMqttStatus,
+  isMeshcoreMqttPublishEligible,
   useMeshcoreMqttFeedStatusStore,
 } from '../stores/meshcoreMqttFeedStatusStore';
 import {
@@ -2155,22 +2155,21 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const maybeAutoLaunchMeshcoreMqttAfterIdentity = useCallback(() => {
-    if (!readMeshcoreMqttSettingsFromStorage().autoLaunch) return;
     void (async () => {
-      const st = mqttStatusRef.current;
-      if (st === 'connected') return;
-      // Startup may have opened MQTT before RF identity/JWT was ready — replace stale session.
-      if (st === 'connecting') {
-        await window.electronAPI.mqtt.disconnect('meshcore').catch((e: unknown) => {
-          console.debug(
-            '[useMeshcoreRuntime] MQTT stale connecting session disconnect ' +
-              errLikeToLogString(e),
-          );
-        });
+      // Startup may have opened the chat session before RF identity/JWT was ready — replace only
+      // that stale session; enabled analyzer feeds keep running.
+      if (mqttStatusRef.current === 'connecting') {
+        await window.electronAPI.mqtt
+          .disconnect('meshcore', MESHCORE_MQTT_CHAT_CONNECTION_ID)
+          .catch((e: unknown) => {
+            console.debug(
+              '[useMeshcoreRuntime] MQTT stale connecting chat disconnect ' + errLikeToLogString(e),
+            );
+          });
         mqttStatusRef.current = 'disconnected';
         setMqttStatus('disconnected');
       }
-      if (mqttStatusRef.current !== 'disconnected') return;
+      // Handles chat auto-launch and enabled feeds independently.
       await tryAutoLaunchMqtt('meshcore');
     })().catch((e: unknown) => {
       console.warn(
@@ -2995,6 +2994,7 @@ export function useMeshcoreRuntime() {
       meshcoreWaitingMessagesPollRef,
       meshcoreConnectTypeRef,
       mqttStatusRef,
+      isMqttPublishEligible: isMeshcoreMqttPublishEligible,
       myNodeNumRef,
       nicknameMapRef,
       readNodes: readMeshcoreNodes,
@@ -5645,7 +5645,7 @@ export function useMeshcoreRuntime() {
           .getState()
           .renameMessage(heardIdentityId, provisionalHeardId, channelMsgId);
       }
-      if (mqttStatusRef.current === 'connected') {
+      if (isMeshcoreMqttPublishEligible()) {
         void window.electronAPI.mqtt
           .publishMeshcorePacketLog({
             origin: selfInfo?.name ?? 'mesh-client',

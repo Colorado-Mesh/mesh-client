@@ -2002,7 +2002,8 @@
       "settingsHeading": "Einstellung der Verbindung",
       "reconnect": "Erneut verbinden",
       "reconnectAria": "{{name}} erneut verbinden",
-      "unnamedFeed": "Unbenannter Feed"
+      "unnamedFeed": "Unbenannter Feed",
+      "disconnectToEditChat": "Trennen Sie MQTT , um den Chat-Broker zu bearbeiten. Analyzer-Feeds bleiben während der Verbindung bearbeitbar."
     }
   },
   "contactGroupsModal": {

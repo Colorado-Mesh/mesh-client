@@ -2002,7 +2002,8 @@
       "settingsHeading": "Paramètres de connexion",
       "reconnect": "Reconnecter",
       "reconnectAria": "Reconnecter {{name}}",
-      "unnamedFeed": "Flux sans nom"
+      "unnamedFeed": "Flux sans nom",
+      "disconnectToEditChat": "Déconnectez MQTT pour modifier le broker de chat. Les flux de l'analyseur restent modifiables lorsqu'ils sont connectés."
     }
   },
   "contactGroupsModal": {

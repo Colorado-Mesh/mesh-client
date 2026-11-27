@@ -1106,8 +1106,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
       connectionId: string,
     ): Promise<{ token: string; expiresAt: number } | null> =>
       ipcRenderer.invoke('mqtt:refreshMeshcoreToken', connectionId),
-    updateMeshcoreToken: (connectionId: string, token: string, expiresAt: number): Promise<void> =>
-      ipcRenderer.invoke('mqtt:updateMeshcoreToken', { connectionId, token, expiresAt }),
+    updateMeshcoreToken: (
+      connectionId: string,
+      serverHost: string,
+      token: string,
+      expiresAt: number,
+    ): Promise<void> =>
+      ipcRenderer.invoke('mqtt:updateMeshcoreToken', {
+        connectionId,
+        serverHost,
+        token,
+        expiresAt,
+      }),
     onRequestTokenRefresh: (
       cb: (payload: { connectionId: string; serverHost: string }) => void,
     ): (() => void) => {

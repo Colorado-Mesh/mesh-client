@@ -2002,7 +2002,8 @@
       "settingsHeading": "接続テストに失敗",
       "reconnect": "再接続",
       "reconnectAria": "{{name}}を再接続",
-      "unnamedFeed": "名前のないフィード"
+      "unnamedFeed": "名前のないフィード",
+      "disconnectToEditChat": "MQTTの接続を解除して、チャットブローカーを編集します。アナライザーフィードは、接続中は編集可能です。"
     }
   },
   "contactGroupsModal": {

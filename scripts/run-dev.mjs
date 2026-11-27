@@ -52,7 +52,7 @@ export function buildDevConcurrentlyArgs() {
   const mqttWaypointValidationBuild =
     'esbuild src/main/mqttPublishWaypointValidation.ts --bundle --platform=node --outfile=dist-electron/main/mqtt-publish-waypoint-validation.js --format=cjs --watch';
   const meshcoreMqttPoolBuild =
-    'esbuild src/main/meshcore-mqtt-pool.ts --bundle --platform=node --outfile=dist-electron/main/meshcore-mqtt-pool.js --format=cjs --watch';
+    'esbuild src/main/meshcore-mqtt-pool.ts --bundle --platform=node --outfile=dist-electron/main/meshcore-mqtt-pool.js --external:electron --external:mqtt --format=cjs --watch';
   const notificationSoundPlayWavBuild =
     'esbuild src/main/notificationSoundPlayWav.ts --bundle --platform=node --outfile=dist-electron/main/notification-sound-play-wav.js --format=cjs --watch';
   const nodeUpsertBuild =

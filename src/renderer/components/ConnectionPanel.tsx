@@ -632,6 +632,8 @@ export default function ConnectionPanel({
     loadMeshcoreMqttFeeds(),
   );
   const [meshcoreChatName, setMeshcoreChatName] = useState(() => loadMeshcoreMqttChatName());
+  const meshcoreFeedsRef = useRef(meshcoreFeeds);
+  meshcoreFeedsRef.current = meshcoreFeeds;
   const meshcoreChatLabel =
     meshcoreChatName.trim() || t('connectionPanel.meshcoreFeeds.chatOption');
   const [meshcoreEditorTarget, setMeshcoreEditorTarget] = useState<string>(
@@ -2992,14 +2994,16 @@ export default function ConnectionPanel({
     // Feed drops must not suppress the chat broker's connection-loss notice.
     window.electronAPI.mqtt.disconnect('meshcore', connectionId).catch((err: unknown) => {
       console.warn(
-        'mcL0409 [ConnectionPanel] mqtt.disconnect (feed) failed: ' + errLikeToLogString(err),
+        'mcL1512 [ConnectionPanel] mqtt.disconnect (feed) failed: ' + errLikeToLogString(err),
       );
     });
   };
 
   const connectMeshcoreFeedNow = (feed: MeshcoreMqttFeed) => {
     setMeshcoreFeedError(null);
-    void connectMeshcoreMqttFeed(feed).catch((e: unknown) => {
+    void connectMeshcoreMqttFeed(feed, {
+      isStillCurrent: () => meshcoreFeedsRef.current.some((current) => current.id === feed.id),
+    }).catch((e: unknown) => {
       setMeshcoreFeedError(e instanceof Error ? e.message : String(e));
       console.warn('mcL1511 [ConnectionPanel] feed connect failed ' + errLikeToLogString(e));
     });
@@ -3751,8 +3755,16 @@ export default function ConnectionPanel({
                 {t('connectionPanel.meshcoreFeeds.settingsHeading')}
               </p>
               {meshcoreConnectionNameField}
-              {meshcorePresetEditor}
-              {mqttConnectionFields}
+              {editingMeshcoreFeed ? (
+                <>
+                  {meshcorePresetEditor}
+                  {mqttConnectionFields}
+                </>
+              ) : (
+                <p className="text-muted text-xs">
+                  {t('connectionPanel.meshcoreFeeds.disconnectToEditChat')}
+                </p>
+              )}
             </div>
           )}
           {protocol === 'meshtastic' && mqttProfiles.length > 0 ? (

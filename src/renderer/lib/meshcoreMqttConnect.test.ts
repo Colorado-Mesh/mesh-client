@@ -92,6 +92,24 @@ describe('prepareMeshcoreMqttConnect', () => {
     }
   });
 
+  it('accepts manual credentials when no radio identity exists', async () => {
+    identityMocks.meshcoreIdentityHasFullKeyPair.mockReturnValue(false);
+    identityMocks.readMeshcoreIdentityAsync.mockResolvedValue(null);
+    const result = await prepareMeshcoreMqttConnect({
+      preset: 'meshmapper',
+      settings: {
+        ...deviceSigningSettings,
+        username: `v1_${'a'.repeat(64)}`,
+        password: 'broker-token',
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.settings.password).toBe('broker-token');
+      expect(result.settings.tokenExpiresAt).toBeUndefined();
+    }
+  });
+
   it('mints a JWT from a full identity', async () => {
     identityMocks.meshcoreIdentityHasFullKeyPair.mockReturnValue(true);
     identityMocks.readMeshcoreIdentityAsync.mockResolvedValue({
@@ -113,6 +131,18 @@ describe('prepareMeshcoreMqttConnect', () => {
       expect(result.settings.password).toBe('jwt-token');
       expect(result.settings.tokenExpiresAt).toBe(1234);
     }
+  });
+});
+
+describe('connectMeshcoreMqttFeed', () => {
+  it('does not send mqtt.connect when the feed was deleted during preparation', async () => {
+    const { connectMeshcoreMqttFeed } = await import('./meshcoreMqttConnect');
+    vi.mocked(window.electronAPI.mqtt.connect).mockClear();
+    const connected = await connectMeshcoreMqttFeed(feed({ id: 'deleted' }), {
+      isStillCurrent: () => false,
+    });
+    expect(connected).toBe(false);
+    expect(window.electronAPI.mqtt.connect).not.toHaveBeenCalled();
   });
 });
 

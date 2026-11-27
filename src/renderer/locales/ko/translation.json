@@ -2002,7 +2002,8 @@
       "settingsHeading": "연결 설정",
       "reconnect": "재접속",
       "reconnectAria": "{{name}} 다시 연결",
-      "unnamedFeed": "이름 없는 피드"
+      "unnamedFeed": "이름 없는 피드",
+      "disconnectToEditChat": "채팅 브로커를 편집하려면 MQTT 연결을 해제하세요. 분석기 피드는 연결된 동안 편집 가능 상태를 유지합니다."
     }
   },
   "contactGroupsModal": {

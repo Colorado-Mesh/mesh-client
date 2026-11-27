@@ -1300,7 +1300,12 @@ export interface ElectronAPI {
     refreshMeshcoreToken: (
       connectionId: string,
     ) => Promise<{ token: string; expiresAt: number } | null>;
-    updateMeshcoreToken: (connectionId: string, token: string, expiresAt: number) => Promise<void>;
+    updateMeshcoreToken: (
+      connectionId: string,
+      serverHost: string,
+      token: string,
+      expiresAt: number,
+    ) => Promise<void>;
     onRequestTokenRefresh: (
       cb: (payload: { connectionId: string; serverHost: string }) => void,
     ) => () => void;

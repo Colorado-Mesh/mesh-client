@@ -55,7 +55,6 @@ import {
 } from '../shared/meshcoreContactSanitize';
 import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
 import { meshcoreMessageChannelIndex } from '../shared/meshcoreMessageChannel';
-import { MESHCORE_MQTT_CHAT_CONNECTION_ID } from '../shared/meshcoreMqttConnections';
 import type { MeshProtocol } from '../shared/meshProtocol';
 import { MESH_PROTOCOL_SET } from '../shared/meshProtocol';
 import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
@@ -227,6 +226,11 @@ import {
   readMecpReceivedLogForExport,
 } from './mecp-received-log';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
+import {
+  normalizeOptionalMeshcoreConnectionId,
+  resolveMeshcoreConnectionId,
+  resolveMeshcoreConnectTarget,
+} from './meshcore-mqtt-connection-id';
 import type {
   MeshcoreMqttClientIdEvent,
   MeshcoreMqttErrorEvent,
@@ -3405,11 +3409,7 @@ ipcMain.handle('mqtt:connect', (event, settings) => {
     const mqttSettings = settings as MQTTSettings;
     if (mode === 'meshcore') {
       // Each broker keeps its own session: chat + publish-only analyzer feeds.
-      const connectionId =
-        typeof s.connectionId === 'string' && s.connectionId.trim()
-          ? s.connectionId.trim()
-          : MESHCORE_MQTT_CHAT_CONNECTION_ID;
-      const role = s.role === 'feed' ? 'feed' : 'chat';
+      const { connectionId, role } = resolveMeshcoreConnectTarget(s.connectionId, s.role);
       const clientId = resolveMqttBrokerClientId(mode, mqttSettings, connectionId);
       meshcoreMqttPool.connect(
         connectionId,
@@ -3438,11 +3438,15 @@ ipcMain.handle('mqtt:connect', (event, settings) => {
 ipcMain.handle('mqtt:disconnect', (event, protocol?: MeshProtocol, connectionId?: string) => {
   assertIpcSender(event, 'mqtt:disconnect');
   try {
-    console.debug('[IPC] mqtt:disconnect', protocol ?? 'all', connectionId ?? '');
+    const targetId = normalizeOptionalMeshcoreConnectionId(connectionId, 'mqtt:disconnect');
+    console.debug(
+      '[IPC] mqtt:disconnect',
+      protocol ?? 'all',
+      targetId ? sanitizeLogMessage(targetId) : '',
+    );
     if (!protocol || protocol === 'meshtastic') mqttManager.disconnect();
     if (!protocol || protocol === 'meshcore') {
-      if (typeof connectionId === 'string' && connectionId)
-        meshcoreMqttPool.disconnect(connectionId);
+      if (targetId) meshcoreMqttPool.disconnect(targetId);
       else meshcoreMqttPool.disconnect();
     }
     if (!protocol || protocol === 'meshcom') meshcomMqttAdapter.disconnect();
@@ -3487,8 +3491,9 @@ ipcMain.handle('mqtt:powerSuspend', (event) => {
 ipcMain.handle('mqtt:getClientId', (event, protocol?: MeshProtocol, connectionId?: string) => {
   assertIpcSender(event, 'mqtt:getClientId');
   try {
-    console.debug('[IPC] mqtt:getClientId', protocol, connectionId ?? '');
-    if (protocol === 'meshcore') return meshcoreMqttPool.getClientId(connectionId);
+    const targetId = normalizeOptionalMeshcoreConnectionId(connectionId, 'mqtt:getClientId');
+    console.debug('[IPC] mqtt:getClientId', protocol, targetId ? sanitizeLogMessage(targetId) : '');
+    if (protocol === 'meshcore') return meshcoreMqttPool.getClientId(targetId ?? undefined);
     if (protocol === 'meshcom') return meshcomMqttAdapter.getClientId();
     if (protocol === 'meshtastic') return mqttManager.getClientId();
     // Fallback: return whichever is connected
@@ -3506,13 +3511,7 @@ ipcMain.handle('mqtt:getClientId', (event, protocol?: MeshProtocol, connectionId
 const MQTT_MESHCORE_TOKEN_MAX_LENGTH = 8192;
 
 function assertMeshcoreConnectionId(connectionId: unknown, channel: string): string {
-  if (connectionId === undefined || connectionId === null || connectionId === '') {
-    return MESHCORE_MQTT_CHAT_CONNECTION_ID;
-  }
-  if (typeof connectionId !== 'string' || connectionId.length > 64) {
-    throw new Error(`${channel}: connectionId must be a string of at most 64 characters`);
-  }
-  return connectionId;
+  return resolveMeshcoreConnectionId(connectionId, channel);
 }
 
 ipcMain.handle('mqtt:refreshMeshcoreToken', (event, connectionId: unknown) => {
@@ -3533,11 +3532,21 @@ ipcMain.handle(
   'mqtt:updateMeshcoreToken',
   (
     event,
-    { connectionId, token, expiresAt }: { connectionId?: string; token: string; expiresAt: number },
+    {
+      connectionId,
+      serverHost,
+      token,
+      expiresAt,
+    }: { connectionId?: string; serverHost?: string; token: string; expiresAt: number },
   ) => {
     assertIpcSender(event, 'mqtt:updateMeshcoreToken');
     try {
       const id = assertMeshcoreConnectionId(connectionId, 'mqtt:updateMeshcoreToken');
+      if (serverHost !== undefined && (typeof serverHost !== 'string' || serverHost.length > 256)) {
+        throw new Error(
+          'mqtt:updateMeshcoreToken: serverHost must be a string of at most 256 characters',
+        );
+      }
       if (typeof token !== 'string' || token.length === 0) {
         throw new Error('mqtt:updateMeshcoreToken: token must be a non-empty string');
       }
@@ -3548,7 +3557,7 @@ ipcMain.handle(
         throw new Error('mqtt:updateMeshcoreToken: expiresAt must be a finite number');
       }
       console.debug('[IPC] mqtt:updateMeshcoreToken', sanitizeLogMessage(id), expiresAt);
-      meshcoreMqttPool.updateToken(id, token, expiresAt);
+      meshcoreMqttPool.updateToken(id, token, expiresAt, serverHost);
     } catch (err) {
       console.error(
         'mcL0094 [IPC] mqtt:updateMeshcoreToken failed:',

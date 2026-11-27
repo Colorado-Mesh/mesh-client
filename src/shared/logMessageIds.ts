@@ -1520,6 +1520,7 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1509: 'src/renderer/lib/meshcoreMqttFeeds.ts:credentialPersistFailed',
   mcL1510: 'src/renderer/lib/meshcoreMqttConnect.ts:feedConnectFailed',
   mcL1511: 'src/renderer/lib/meshcoreMqttConnect.ts:feedConnectSkipped',
+  mcL1512: 'src/renderer/components/ConnectionPanel.tsx:feedDisconnectFailed',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

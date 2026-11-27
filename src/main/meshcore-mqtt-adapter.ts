@@ -46,7 +46,7 @@ export interface MeshcorePacketLogArgs {
  * Analyzer feed topic tail (`meshcoretomqtt` layout). Publish-only feeds each own a topic prefix /
  * v1_ pubkey, so the topic is resolved per connection while the payload stays shared.
  */
-function meshcorePacketTopicTail(settings: MQTTSettings): string {
+export function meshcorePacketTopicTail(settings: MQTTSettings): string {
   const base = normalizePrefix(settings.topicPrefix || 'msh');
   const pubKey = /^v1_([0-9a-f]{64})$/i.exec(settings.username ?? '')?.[1]?.toUpperCase();
   return pubKey ? `${base}/${pubKey}/packets` : `${base}/meshcore/packets`;
@@ -175,11 +175,24 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     return { token: settings.password, expiresAt };
   }
 
-  updateToken(token: string, expiresAt: number): void {
-    if (this.lastSettings) {
-      this.lastSettings.password = token;
-      this.lastSettings.tokenExpiresAt = expiresAt;
+  /**
+   * Apply a refreshed JWT. `expectedServer` guards against a late refresh response landing on a
+   * session that has since switched brokers (or reused the same connection id).
+   */
+  updateToken(token: string, expiresAt: number, expectedServer?: string): void {
+    if (!this.lastSettings) {
+      this.clearTokenRefreshTimer();
+      return;
     }
+    if (expectedServer !== undefined && this.lastSettings.server !== expectedServer) {
+      console.debug(
+        '[MeshCore MQTT] ignoring token for a different broker',
+        sanitizeLogMessage(expectedServer),
+      );
+      return;
+    }
+    this.lastSettings.password = token;
+    this.lastSettings.tokenExpiresAt = expiresAt;
     this.clearTokenRefreshTimer();
     if (this.status === 'connected') {
       this.scheduleTokenRefresh();
@@ -290,6 +303,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.clearTokenRefreshTimer();
     this.clearConnectTimers();
     this.clearWssPing();
+    this.clearConnectionWatchdog();
     this.clearReconnectTimer();
     this.connectAbortByWatchdog = false;
     this.pendingReconnect = false;

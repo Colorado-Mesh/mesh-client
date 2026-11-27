@@ -39,6 +39,7 @@ export const DEV_ELECTRON_BUNDLE_PATHS = {
     projectRoot,
     'dist-electron/main/mqtt-publish-waypoint-validation.js',
   ),
+  meshcoreMqttPool: path.join(projectRoot, 'dist-electron/main/meshcore-mqtt-pool.js'),
   notificationSoundPlayWav: path.join(
     projectRoot,
     'dist-electron/main/notification-sound-play-wav.js',

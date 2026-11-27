@@ -4,7 +4,7 @@ import {
 } from '@/shared/meshcoreMqttConnections';
 
 import { errLikeToLogString } from './errLikeToLogString';
-import { MESHCORE_MQTT_DEFAULTS } from './meshcoreMqttDefaults';
+import { MESHCORE_MQTT_DEFAULTS, MESHCORE_MQTT_FEEDS_STORAGE_KEY } from './meshcoreMqttDefaults';
 import type { MeshcoreMqttPreset } from './meshcoreMqttPresets';
 import { parseStoredJson } from './parseStoredJson';
 import {
@@ -17,7 +17,7 @@ import {
 export { MESHCORE_MQTT_FEEDS_SECRET_KEY };
 import type { MQTTSettings } from './types';
 
-export const MESHCORE_MQTT_FEEDS_STORAGE_KEY = 'mesh-client:mqttFeeds:meshcore';
+export { MESHCORE_MQTT_FEEDS_STORAGE_KEY };
 export const MESHCORE_MQTT_FEED_NAME_MAX_LENGTH = 60;
 
 /** Publish-only packet-analyzer broker. The bidirectional chat broker stays in MQTT settings. */
@@ -169,7 +169,7 @@ export function persistMeshcoreMqttFeeds(
     } satisfies MeshcoreMqttFeedsDocument),
   );
   const previous = pendingSave ?? Promise.resolve();
-  pendingSave = previous
+  const tracked = previous
     .catch(() => undefined)
     .then(() => saveSecretsNow(limited))
     .catch((e: unknown) => {
@@ -178,8 +178,10 @@ export function persistMeshcoreMqttFeeds(
       );
     })
     .finally(() => {
-      pendingSave = null;
+      // A newer save may have replaced this one; only clear our own reference.
+      if (pendingSave === tracked) pendingSave = null;
     });
+  pendingSave = tracked;
 }
 
 /** Resolves once the latest credential write settles (tests / shutdown). */

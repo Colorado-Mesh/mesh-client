@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import type { MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import {
   MAX_MESHCORE_MQTT_CONNECTIONS,
+  MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS,
   MESHCORE_MQTT_CHAT_CONNECTION_ID,
   type MeshcoreMqttConnectionRole,
 } from '../shared/meshcoreMqttConnections';
@@ -13,6 +14,7 @@ import {
   MeshcoreMqttAdapter as MeshcoreMqttAdapterClass,
   meshcoreMqttPubKey,
   type MeshcorePacketLogArgs,
+  meshcorePacketTopicTail,
 } from './meshcore-mqtt-adapter';
 
 export type MeshcoreMqttRole = MeshcoreMqttConnectionRole;
@@ -64,12 +66,10 @@ function sameBroker(a: MQTTSettings | null, b: MQTTSettings): boolean {
 
 function samePacketTopic(a: MQTTSettings | null, b: MQTTSettings): boolean {
   if (!a) return false;
-  const tail = (s: MQTTSettings) => {
-    const base = (s.topicPrefix || 'msh').replace(/\/$/, '');
-    const pub = meshcoreMqttPubKey(s);
-    return pub ? `${base}/${pub}/packets` : `${base}/meshcore/packets`;
-  };
-  return a.meshcorePacketLoggerEnabled === true && tail(a) === tail(b);
+  return (
+    a.meshcorePacketLoggerEnabled === true &&
+    meshcorePacketTopicTail(a) === meshcorePacketTopicTail(b)
+  );
 }
 
 /**
@@ -94,15 +94,48 @@ export class MeshcoreMqttPool extends EventEmitter {
     return this.entries.get(connectionId)?.role ?? null;
   }
 
+  /** Sessions that still hold a socket or retry budget; terminal `error` entries do not. */
+  private activeSessionCount(excludeId?: string): number {
+    let count = 0;
+    for (const [id, entry] of this.entries) {
+      if (id === excludeId) continue;
+      if (entry.adapter.getStatus() !== 'error') count += 1;
+    }
+    return count;
+  }
+
+  private activeFeedCount(excludeId?: string): number {
+    let count = 0;
+    for (const [id, entry] of this.entries) {
+      if (id === excludeId) continue;
+      if (entry.role === 'feed' && entry.adapter.getStatus() !== 'error') count += 1;
+    }
+    return count;
+  }
+
   connect(
     connectionId: string,
     settings: MQTTSettings,
     options: { role: MeshcoreMqttRole; publishOnly?: boolean },
   ): void {
     const existing = this.entries.get(connectionId);
-    if (!existing && this.entries.size >= MAX_MESHCORE_MQTT_CONNECTIONS) {
+    // Replacing a live session or reconnecting a terminal-error entry both consume a slot.
+    const addsActiveSession = !existing || existing.adapter.getStatus() === 'error';
+    if (
+      addsActiveSession &&
+      this.activeSessionCount(connectionId) >= MAX_MESHCORE_MQTT_CONNECTIONS
+    ) {
       throw new Error(
         `MeshCore MQTT connection limit reached (${MAX_MESHCORE_MQTT_CONNECTIONS}). Disconnect another broker first.`,
+      );
+    }
+    if (
+      options.role === 'feed' &&
+      addsActiveSession &&
+      this.activeFeedCount(connectionId) >= MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS
+    ) {
+      throw new Error(
+        `MeshCore MQTT feed limit reached (${MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS} analyzer feeds). Disconnect another feed first.`,
       );
     }
     for (const [id, entry] of this.entries) {
@@ -123,8 +156,8 @@ export class MeshcoreMqttPool extends EventEmitter {
     const publishOnly = options.publishOnly === true;
     if (existing && (existing.publishOnly !== publishOnly || existing.role !== options.role)) {
       // Role changes switch subscribe behaviour, so the adapter must be recreated.
-      existing.adapter.removeAllListeners();
       existing.adapter.disconnect();
+      existing.adapter.removeAllListeners();
       this.entries.delete(connectionId);
     }
 
@@ -180,14 +213,15 @@ export class MeshcoreMqttPool extends EventEmitter {
     if (connectionId) {
       const entry = this.entries.get(connectionId);
       if (!entry) return;
-      entry.adapter.removeAllListeners();
+      // Emit the terminal disconnected status through the pool before dropping the forwarder.
       entry.adapter.disconnect();
+      entry.adapter.removeAllListeners();
       this.entries.delete(connectionId);
       return;
     }
     for (const entry of this.entries.values()) {
-      entry.adapter.removeAllListeners();
       entry.adapter.disconnect();
+      entry.adapter.removeAllListeners();
     }
     this.entries.clear();
   }
@@ -233,8 +267,13 @@ export class MeshcoreMqttPool extends EventEmitter {
     return entry.adapter.getTokenInfo(server);
   }
 
-  updateToken(connectionId: string, token: string, expiresAt: number): void {
-    this.entries.get(connectionId)?.adapter.updateToken(token, expiresAt);
+  updateToken(
+    connectionId: string,
+    token: string,
+    expiresAt: number,
+    expectedServer?: string,
+  ): void {
+    this.entries.get(connectionId)?.adapter.updateToken(token, expiresAt, expectedServer);
   }
 
   publishChat(envelope: MeshcoreMqttChatEnvelopeV1): void {

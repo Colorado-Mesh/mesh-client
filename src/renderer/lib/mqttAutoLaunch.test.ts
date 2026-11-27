@@ -12,6 +12,7 @@ describe('tryAutoLaunchMqtt', () => {
     localStorage.removeItem(MESHTASTIC_MQTT_SETTINGS_KEY);
     localStorage.removeItem('mesh-client:mqttSettings:meshcore');
     localStorage.removeItem('mesh-client:mqttPreset:meshcore');
+    localStorage.removeItem('mesh-client:mqttFeeds:meshcore');
     localStorage.removeItem(COLORADO_MQTT_REGION_ACK_KEY);
     localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
     vi.restoreAllMocks();
@@ -85,6 +86,112 @@ describe('tryAutoLaunchMqtt', () => {
     expect(connect).not.toHaveBeenCalled();
   });
 
+  const seedCustomFeed = (): void => {
+    localStorage.setItem(
+      'mesh-client:mqttFeeds:meshcore',
+      JSON.stringify({
+        version: 1,
+        feeds: [
+          {
+            id: 'feed-1',
+            name: 'Local analyzer',
+            preset: 'custom',
+            enabled: true,
+            settings: {
+              server: 'analyzer.local',
+              port: 1883,
+              username: '',
+              topicPrefix: 'meshcore/DEN',
+              useWebSocket: false,
+              tlsEnabled: false,
+              meshcorePacketLoggerEnabled: true,
+            },
+          },
+        ],
+      }),
+    );
+  };
+
+  it('connects enabled feeds when the chat auto-launch is off', async () => {
+    seedCustomFeed();
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'chat.local',
+        port: 1883,
+        topicPrefix: 'meshcore/DEN',
+        autoLaunch: false,
+        useWebSocket: false,
+        tlsEnabled: false,
+      }),
+    );
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockReset().mockResolvedValue(undefined);
+
+    await tryAutoLaunchMqtt('meshcore');
+
+    expect(connect).toHaveBeenCalledOnce();
+    expect(connect.mock.calls[0][0]).toMatchObject({
+      connectionId: 'feed-1',
+      role: 'feed',
+      mqttTransportProtocol: 'meshcore',
+    });
+  });
+
+  it('starts feeds when chat preparation fails', async () => {
+    seedCustomFeed();
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'meshmapper');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt.meshmapper.net',
+        port: 443,
+        topicPrefix: 'meshcore/DEN',
+        autoLaunch: true,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+      }),
+    );
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockReset().mockResolvedValue(undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await tryAutoLaunchMqtt('meshcore');
+
+    expect(connect).toHaveBeenCalledOnce();
+    expect(connect.mock.calls[0][0]).toMatchObject({ connectionId: 'feed-1', role: 'feed' });
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('auto-launch skipped'));
+  });
+
+  it('starts feeds when the chat connection is rejected', async () => {
+    seedCustomFeed();
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'chat.local',
+        port: 1883,
+        topicPrefix: 'meshcore/DEN',
+        autoLaunch: true,
+        useWebSocket: false,
+        tlsEnabled: false,
+      }),
+    );
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockReset().mockImplementation((settings) => {
+      if (settings.connectionId) return Promise.resolve();
+      return Promise.reject(new Error('chat down'));
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(tryAutoLaunchMqtt('meshcore')).resolves.toBeUndefined();
+
+    expect(connect).toHaveBeenCalledTimes(2);
+    expect(connect.mock.calls[1][0]).toMatchObject({ connectionId: 'feed-1', role: 'feed' });
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('auto-launch connect failed'));
+  });
+
   it('defers MeshCore Colorado auto-launch until region ack', async () => {
     localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
     localStorage.setItem(
@@ -113,6 +220,27 @@ describe('tryAutoLaunchMqtt', () => {
 
 describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
   const MESHCORE_KEY = 'mesh-client:mqttSettings:meshcore';
+
+  it('returns true when an analyzer feed is enabled even if chat auto-launch is off', async () => {
+    localStorage.setItem(
+      'mesh-client:mqttFeeds:meshcore',
+      JSON.stringify({
+        version: 1,
+        feeds: [
+          {
+            id: 'feed-1',
+            name: 'Feed',
+            preset: 'custom',
+            enabled: true,
+            settings: { server: 'analyzer.local', port: 1883, topicPrefix: 'meshcore/DEN' },
+          },
+        ],
+      }),
+    );
+    const { shouldAutoLaunchMeshcoreMqttAtStartup } = await import('./mqttAutoLaunch');
+    expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(true);
+    localStorage.removeItem('mesh-client:mqttFeeds:meshcore');
+  });
 
   afterEach(() => {
     localStorage.removeItem(MESHCORE_KEY);

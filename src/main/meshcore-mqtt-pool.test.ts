@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import { MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS } from '../shared/meshcoreMqttConnections';
 import {
   MAX_MESHCORE_MQTT_CONNECTIONS,
   MESHCORE_MQTT_CHAT_CONNECTION_ID,
@@ -75,6 +76,8 @@ describe('MeshcoreMqttPool', () => {
     vi.mocked(mqttModule.connect).mockClear();
     clients.length = 0;
     pool = new MeshcoreMqttPool();
+    // The pool forwards adapter errors as `error` events; keep the emitter from throwing.
+    pool.on('error', () => undefined);
     duplicateWarnings = [];
     pool.setDuplicateFeedWarningHandler((message) => duplicateWarnings.push(message));
   });
@@ -167,8 +170,8 @@ describe('MeshcoreMqttPool', () => {
     expect(duplicateWarnings[0]).toContain('meshcore/DEN');
   });
 
-  it(`caps simultaneous connections at ${MAX_MESHCORE_MQTT_CONNECTIONS}`, () => {
-    for (let i = 0; i < MAX_MESHCORE_MQTT_CONNECTIONS; i += 1) {
+  it(`caps analyzer feeds at ${MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS} and still allows chat`, () => {
+    for (let i = 0; i < MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS; i += 1) {
       pool.connect(
         `feed-${i}`,
         { ...BASE, server: `${i}.example.com` },
@@ -187,7 +190,99 @@ describe('MeshcoreMqttPool', () => {
           publishOnly: true,
         },
       );
+    }).toThrow(/feed limit/);
+
+    // The chat broker is a separate slot and still connects.
+    pool.connect(
+      MESHCORE_MQTT_CHAT_CONNECTION_ID,
+      { ...BASE, server: 'chat.example.com' },
+      {
+        role: 'chat',
+      },
+    );
+    expect(pool.getStatus(MESHCORE_MQTT_CHAT_CONNECTION_ID)).toBe('connecting');
+    expect(pool.isAnyConnected()).toBe(false);
+    expect(pool.getConnectionIds()).toHaveLength(MAX_MESHCORE_MQTT_CONNECTIONS);
+  });
+
+  it(`caps total sessions at ${MAX_MESHCORE_MQTT_CONNECTIONS}`, () => {
+    for (let i = 0; i < MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS; i += 1) {
+      pool.connect(
+        `feed-${i}`,
+        { ...BASE, server: `${i}.example.com` },
+        {
+          role: 'feed',
+          publishOnly: true,
+        },
+      );
+    }
+    pool.connect(
+      MESHCORE_MQTT_CHAT_CONNECTION_ID,
+      { ...BASE, server: 'chat.example.com' },
+      {
+        role: 'chat',
+      },
+    );
+    expect(() => {
+      pool.connect('extra-chat', { ...BASE, server: 'extra.example.com' }, { role: 'chat' });
     }).toThrow(/connection limit/);
+  });
+
+  it('does not let a terminal-error entry block new sessions, but reconnecting it needs capacity', () => {
+    // Wildcard prefix fails before a client exists, leaving a terminal `error` entry.
+    pool.connect(
+      'dead',
+      { ...BASE, server: 'dead.example.com', topicPrefix: 'meshcore/+' },
+      {
+        role: 'feed',
+        publishOnly: true,
+      },
+    );
+    expect(pool.getStatus('dead')).toBe('error');
+    pool.connect(
+      'feed-live',
+      { ...BASE, server: 'live.example.com' },
+      {
+        role: 'feed',
+        publishOnly: true,
+      },
+    );
+    expect(pool.getStatus('feed-live')).toBe('connecting');
+
+    for (let i = 0; i < MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS - 1; i += 1) {
+      pool.connect(
+        `fill-${i}`,
+        { ...BASE, server: `fill-${i}.example.com` },
+        {
+          role: 'feed',
+          publishOnly: true,
+        },
+      );
+    }
+    // Three live feeds hold the cap, so reviving the failed entry must be rejected.
+    expect(() => {
+      pool.connect(
+        'dead',
+        { ...BASE, server: 'dead.example.com' },
+        {
+          role: 'feed',
+          publishOnly: true,
+        },
+      );
+    }).toThrow(/feed limit/);
+    // The error entry is retained for the UI.
+    expect(pool.getStatus('dead')).toBe('error');
+  });
+
+  it('forwards a terminal disconnected status when a connection is torn down', () => {
+    const statuses: string[] = [];
+    pool.on('status', (event: { status: string; connectionId: string }) => {
+      if (event.connectionId === 'feed-1') statuses.push(event.status);
+    });
+    pool.connect('feed-1', { ...BASE }, { role: 'feed', publishOnly: true });
+    pool.disconnect('feed-1');
+    expect(statuses).toContain('disconnected');
+    expect(pool.getConnectionIds()).toEqual([]);
   });
 
   it('routes token refresh to the owning connection', () => {

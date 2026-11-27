@@ -1,10 +1,12 @@
+import { MESHCORE_MQTT_CHAT_CONNECTION_ID } from '@/shared/meshcoreMqttConnections';
+
+import { useMeshcoreMqttFeedStatusStore } from '../stores/meshcoreMqttFeedStatusStore';
 import { meshcoreMqttNeedsColoradoRegionAck } from './connectionPanelStorageMigrations';
 import { loadHiddenProtocols } from './enabledProtocols';
 import { errLikeToLogString } from './errLikeToLogString';
 import { meshcoreIdentityHasPrivateKey } from './letsMeshJwt';
 import { readMeshcomMqttSettingsFromStorage } from './meshcomMqttSettingsStorage';
-import { connectEnabledMeshcoreMqttFeeds, prepareMeshcoreMqttConnect } from './meshcoreMqttConnect';
-import { loadMeshcoreMqttFeeds } from './meshcoreMqttFeeds';
+import { hasEnabledMeshcoreMqttFeed } from './meshcoreMqttFeedFlags';
 import { readStoredMeshcoreMqttPreset, usesMeshcoreDeviceSigningMqtt } from './meshcoreMqttPresets';
 import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
 import { readMeshtasticMqttSettingsFromStorage } from './meshtasticMqttSettingsStorage';
@@ -17,6 +19,8 @@ import type { MeshProtocol, MQTTSettings } from './types';
  * Also defer while the Colorado Mesh region confirmation is unanswered.
  */
 export function shouldAutoLaunchMeshcoreMqttAtStartup(): boolean {
+  // Enabled analyzer feeds are independent of the chat broker's auto-launch toggle.
+  if (hasEnabledMeshcoreMqttFeed()) return true;
   const settings = readMeshcoreMqttSettingsFromStorage();
   if (!settings.autoLaunch) return false;
   if (meshcoreMqttNeedsColoradoRegionAck()) return false;
@@ -37,51 +41,67 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
     return;
   }
 
-  const settings =
-    prot === 'meshcore'
-      ? readMeshcoreMqttSettingsFromStorage()
-      : prot === 'meshcom'
+  if (prot !== 'meshcore') {
+    const settings =
+      prot === 'meshcom'
         ? readMeshcomMqttSettingsFromStorage()
         : readMeshtasticMqttSettingsFromStorage();
-  if (!settings.autoLaunch) return;
-
-  if (prot === 'meshcore' && meshcoreMqttNeedsColoradoRegionAck()) {
-    console.warn(
-      'mcL0977 [App] MQTT auto-launch deferred: Colorado Mesh region confirmation pending',
-    );
-    return;
-  }
-
-  const base =
-    prot === 'meshtastic' ? { ...MESHTASTIC_OFFICIAL_PRESET_DEFAULTS, ...settings } : settings;
-  const connectSettings: MQTTSettings = {
-    ...base,
-    mqttTransportProtocol:
-      prot === 'meshcore' ? 'meshcore' : prot === 'meshcom' ? 'meshcom' : 'meshtastic',
-  };
-
-  if (prot !== 'meshcore') {
+    if (!settings.autoLaunch) return;
+    const base =
+      prot === 'meshtastic' ? { ...MESHTASTIC_OFFICIAL_PRESET_DEFAULTS, ...settings } : settings;
+    const connectSettings: MQTTSettings = {
+      ...base,
+      mqttTransportProtocol: prot === 'meshcom' ? 'meshcom' : 'meshtastic',
+    };
     await window.electronAPI.mqtt.connect(connectSettings);
     return;
   }
 
-  // Chat broker first (it is the only bidirectional session), then enabled analyzer feeds.
-  const prepared = await prepareMeshcoreMqttConnect({
-    preset: readStoredMeshcoreMqttPreset(),
-    settings: connectSettings,
-  });
-  if (!prepared.ok) {
-    console.warn('mcL0978 [App] MQTT auto-launch skipped: ' + prepared.failure.message);
+  // MeshCore: chat honors autoLaunch + its gates; enabled feeds start independently so a chat
+  // prep/connect failure never blocks analyzer publishing. These modules stay out of the App
+  // entry chunk (loaded only when MeshCore actually auto-launches).
+  const settings = readMeshcoreMqttSettingsFromStorage();
+  const [
+    { connectEnabledMeshcoreMqttFeeds, prepareMeshcoreMqttConnect },
+    { loadMeshcoreMqttFeeds },
+  ] = await Promise.all([import('./meshcoreMqttConnect'), import('./meshcoreMqttFeeds')]);
+  const feeds = loadMeshcoreMqttFeeds();
+  const startFeeds = async (): Promise<void> => {
+    const { failures } = await connectEnabledMeshcoreMqttFeeds(feeds);
+    if (failures.length > 0) {
+      console.warn(`mcL0980 [App] ${failures.length} MeshCore MQTT feed(s) failed to auto-launch`);
+    }
+  };
+
+  const chatStatus =
+    useMeshcoreMqttFeedStatusStore.getState().statuses[MESHCORE_MQTT_CHAT_CONNECTION_ID];
+  const chatAlreadyActive = chatStatus === 'connected' || chatStatus === 'connecting';
+  if (!settings.autoLaunch || chatAlreadyActive) {
+    await startFeeds();
     return;
   }
+
+  if (meshcoreMqttNeedsColoradoRegionAck()) {
+    console.warn(
+      'mcL0977 [App] MQTT auto-launch deferred: Colorado Mesh region confirmation pending',
+    );
+    await startFeeds();
+    return;
+  }
+
+  const connectSettings: MQTTSettings = { ...settings, mqttTransportProtocol: 'meshcore' };
   try {
-    await window.electronAPI.mqtt.connect(prepared.settings);
+    const prepared = await prepareMeshcoreMqttConnect({
+      preset: readStoredMeshcoreMqttPreset(),
+      settings: connectSettings,
+    });
+    if (!prepared.ok) {
+      console.warn('mcL0978 [App] MQTT auto-launch skipped: ' + prepared.failure.message);
+    } else {
+      await window.electronAPI.mqtt.connect(prepared.settings);
+    }
   } catch (e) {
     console.warn('mcL0979 [App] MQTT auto-launch connect failed ' + errLikeToLogString(e));
-    return;
   }
-  const { failures } = await connectEnabledMeshcoreMqttFeeds(loadMeshcoreMqttFeeds());
-  if (failures.length > 0) {
-    console.warn(`mcL0980 [App] ${failures.length} MeshCore MQTT feed(s) failed to auto-launch`);
-  }
+  await startFeeds();
 }

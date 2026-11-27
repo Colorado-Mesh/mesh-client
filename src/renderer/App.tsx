@@ -4428,7 +4428,12 @@ function AppContent() {
             return;
           }
           const { token, expiresAt } = await generateLetsMeshAuthToken(identity, serverHost);
-          await window.electronAPI.mqtt.updateMeshcoreToken(connectionId, token, expiresAt);
+          await window.electronAPI.mqtt.updateMeshcoreToken(
+            connectionId,
+            serverHost,
+            token,
+            expiresAt,
+          );
         } catch (e) {
           console.warn('mcL0349 [App] token refresh failed ' + errLikeToLogString(e));
         }

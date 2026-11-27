@@ -203,6 +203,19 @@ describe('handleMeshcoreRfRx', () => {
     expect(publish).toHaveBeenCalledWith(expect.objectContaining({ snr: 3, rssi: -70 }));
   });
 
+  it('publishes an MQTT packet log when only an analyzer feed is connected', () => {
+    const { deps } = makeDeps({
+      mqttStatusRef: ref('disconnected' as const),
+      isMqttPublishEligible: () => true,
+    });
+    const publish = vi.mocked(window.electronAPI.mqtt.publishMeshcorePacketLog);
+    publish.mockClear();
+
+    handleMeshcoreRfRx({ lastSnr: 3, lastRssi: -70, raw: null }, deps);
+
+    expect(publish).toHaveBeenCalledTimes(1);
+  });
+
   it('does not publish an MQTT packet log when MQTT is disconnected', () => {
     const { deps } = makeDeps({ mqttStatusRef: ref('disconnected' as const) });
     const publish = vi.mocked(window.electronAPI.mqtt.publishMeshcorePacketLog);
