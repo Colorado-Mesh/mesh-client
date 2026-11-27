@@ -7,10 +7,14 @@ import { MESHCOM_MAX_TEXT_LEN } from '@/shared/meshcomConstants';
  */
 export const MESHCOM_SNIFFER_RAW_MAX_BYTES = MESHCOM_MAX_TEXT_LEN;
 
-/** Truncate capture bytes for the sniffer ring / expand hex (identity only). */
+/**
+ * Truncate capture bytes for the sniffer ring / expand hex (identity only).
+ * Uses {@link Uint8Array.slice} (copy) — not `subarray` — so the ring never retains a view
+ * into a larger NET Console / TCP line buffer.
+ */
 export function clampMeshcomSnifferRaw(raw: Uint8Array): Uint8Array {
   if (raw.byteLength <= MESHCOM_SNIFFER_RAW_MAX_BYTES) return raw;
-  return raw.subarray(0, MESHCOM_SNIFFER_RAW_MAX_BYTES);
+  return raw.slice(0, MESHCOM_SNIFFER_RAW_MAX_BYTES);
 }
 
 /** Compact KISS capture for the sniffer; never retains more than {@link MESHCOM_SNIFFER_RAW_MAX_BYTES}. */
