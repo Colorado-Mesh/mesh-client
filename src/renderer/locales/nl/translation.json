@@ -1999,10 +1999,10 @@
       "statusConnecting": "Verbinden",
       "statusError": "Fout",
       "statusDisconnected": "Off",
-      "settingsHeading": "Instellingen verbinding",
       "reconnect": "Opnieuw verbinding maken",
       "reconnectAria": "Opnieuw verbinden {{name}}",
-      "unnamedFeed": "Naamloze feed"
+      "unnamedFeed": "Naamloze feed",
+      "editSettingsFor": "{{name}}-instellingen bewerken"
     }
   },
   "contactGroupsModal": {

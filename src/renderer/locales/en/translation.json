@@ -2002,10 +2002,10 @@
       "statusConnecting": "Connecting",
       "statusError": "Error",
       "statusDisconnected": "Off",
-      "settingsHeading": "Connection settings",
       "reconnect": "Reconnect",
       "reconnectAria": "Reconnect {{name}}",
-      "unnamedFeed": "Unnamed feed"
+      "unnamedFeed": "Unnamed feed",
+      "editSettingsFor": "Edit {{name}} settings"
     },
     "hintMeshtasticBle1": "Ensure your Meshtastic device has Bluetooth enabled and is in range.",
     "hintMeshtasticBle2": "Click Connect to scan — a device picker will appear with discovered Meshtastic devices.",

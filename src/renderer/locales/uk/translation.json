@@ -2039,10 +2039,10 @@
       "statusConnecting": "Під'єднання",
       "statusError": "Помилка",
       "statusDisconnected": "Вимк.",
-      "settingsHeading": "Параметри з'єднання",
       "reconnect": "Повторно під'єднати",
       "reconnectAria": "Відновити підключення {{name}}",
-      "unnamedFeed": "Канал без назви"
+      "unnamedFeed": "Канал без назви",
+      "editSettingsFor": "Редагувати налаштування {{name}}"
     }
   },
   "contactGroupsModal": {

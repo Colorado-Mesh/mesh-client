@@ -2039,10 +2039,10 @@
       "statusConnecting": "Соедишггельный",
       "statusError": "Ошибка",
       "statusDisconnected": "Выкл.",
-      "settingsHeading": "Настройка сети",
       "reconnect": "повторное подключение",
       "reconnectAria": "Подключиться снова {{name}}",
-      "unnamedFeed": "Безымянный канал"
+      "unnamedFeed": "Безымянный канал",
+      "editSettingsFor": "Изменить настройки {{name}}"
     }
   },
   "contactGroupsModal": {

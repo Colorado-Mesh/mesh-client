@@ -2039,10 +2039,10 @@
       "statusConnecting": "Łączenie",
       "statusError": "Błąd",
       "statusDisconnected": "Wyłącz",
-      "settingsHeading": "Ustawienia połączenia",
       "reconnect": "Połącz ponownie",
       "reconnectAria": "Połącz ponownie {{name}}",
-      "unnamedFeed": "Nienazwany kanał"
+      "unnamedFeed": "Nienazwany kanał",
+      "editSettingsFor": "Edytuj ustawienia {{name}}"
     }
   },
   "contactGroupsModal": {

@@ -1999,10 +1999,10 @@
       "statusConnecting": "Connecting",
       "statusError": "오류",
       "statusDisconnected": "끄기",
-      "settingsHeading": "연결 설정",
       "reconnect": "재접속",
       "reconnectAria": "{{name}} 다시 연결",
-      "unnamedFeed": "이름 없는 피드"
+      "unnamedFeed": "이름 없는 피드",
+      "editSettingsFor": "{{name}} 설정 편집"
     }
   },
   "contactGroupsModal": {

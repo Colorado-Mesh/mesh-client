@@ -2023,10 +2023,10 @@
       "statusConnecting": "Připojovací",
       "statusError": "Chyba",
       "statusDisconnected": "Vypnuto",
-      "settingsHeading": "Nastavení připojení",
       "reconnect": "Znovu připojit",
       "reconnectAria": "Znovu připojit {{name}}",
-      "unnamedFeed": "Nepojmenovaný informační kanál"
+      "unnamedFeed": "Nepojmenovaný informační kanál",
+      "editSettingsFor": "Upravit nastavení {{name}}"
     }
   },
   "contactGroupsModal": {

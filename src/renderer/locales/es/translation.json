@@ -1999,10 +1999,10 @@
       "statusConnecting": "Conectando",
       "statusError": "Error",
       "statusDisconnected": "Apagado",
-      "settingsHeading": "Ajustes de conexión",
       "reconnect": "Reconectar",
       "reconnectAria": "Volver a conectar {{name}}",
-      "unnamedFeed": "Feed sin nombre"
+      "unnamedFeed": "Feed sin nombre",
+      "editSettingsFor": "Editar los ajustes de {{name}}"
     }
   },
   "contactGroupsModal": {

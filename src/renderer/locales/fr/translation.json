@@ -1999,10 +1999,10 @@
       "statusConnecting": "Connexion en cours",
       "statusError": "Erreur",
       "statusDisconnected": "Arrêt",
-      "settingsHeading": "Paramètres de connexion",
       "reconnect": "Reconnecter",
       "reconnectAria": "Reconnecter {{name}}",
-      "unnamedFeed": "Flux sans nom"
+      "unnamedFeed": "Flux sans nom",
+      "editSettingsFor": "Modifier les paramètres de {{name}}"
     }
   },
   "contactGroupsModal": {

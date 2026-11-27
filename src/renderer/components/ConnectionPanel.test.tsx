@@ -3536,6 +3536,9 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
       FEEDS_KEY,
       JSON.stringify({ version: 1, chatName: 'Home mesh', feeds: [seededFeed(0, true)] }),
     );
+    act(() => {
+      useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-0', 'connected');
+    });
     const user = userEvent.setup();
     render(
       <ConnectionPanel
@@ -3555,23 +3558,43 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
         .map((o) => o.textContent),
     ).toEqual(['Home mesh', 'Feed 0']);
 
+    // The connected view stays compact until the disclosure is opened.
+    expect(screen.queryByRole('combobox', { name: 'Network Preset' })).not.toBeInTheDocument();
+    const editButton = screen.getByRole('button', { name: 'Edit Home mesh settings' });
+    expect(editButton).toHaveAttribute('aria-expanded', 'false');
+    await user.click(editButton);
+    expect(editButton).toHaveAttribute('aria-expanded', 'true');
+
     // Every entry, including chat, exposes the same preset-backed editor while connected.
     const preset = screen.getByRole('combobox', { name: 'Network Preset' });
     expect(within(preset).getAllByRole('option')).toHaveLength(9);
     expect(screen.getByLabelText('Server')).toHaveValue('mqtt-us-v1.letsmesh.net');
-    expect(screen.getByRole('button', { name: /Reconnect Home mesh/i })).toBeInTheDocument();
+
+    // Reconnect only lights up once the settings change.
+    const chatReconnect = screen.getByRole('button', { name: /Reconnect Home mesh/i });
+    expect(chatReconnect).toBeDisabled();
+    const chatServer = screen.getByLabelText('Server');
+    await user.clear(chatServer);
+    await user.type(chatServer, 'chat.changed.local');
+    expect(chatReconnect).toBeEnabled();
 
     await user.selectOptions(editor, 'feed-0');
     expect(preset).toHaveValue('custom');
+    const feedReconnect = screen.getByRole('button', { name: /Reconnect Feed 0/i });
+    expect(feedReconnect).toBeDisabled();
     const name = screen.getByLabelText('Name');
     await user.clear(name);
     await user.type(name, 'Denver analyzer');
     expect(within(editor).getByRole('option', { name: 'Denver analyzer' })).toBeInTheDocument();
-
+    // Renaming alone is not a connection-settings change.
+    expect(feedReconnect).toBeDisabled();
     const server = screen.getByLabelText('Server');
     await user.clear(server);
     await user.type(server, 'analyzer.denver.local');
     expect(server).toHaveValue('analyzer.denver.local');
+    expect(feedReconnect).toBeEnabled();
+    // Chat dirtiness is tracked separately.
+    expect(chatReconnect).toBeEnabled();
 
     await user.selectOptions(preset, 'meshatse');
     expect(preset).toHaveValue('meshatse');

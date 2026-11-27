@@ -661,6 +661,22 @@ export default function ConnectionPanel({
   const [meshcoreFeedNameDraft, setMeshcoreFeedNameDraft] = useState('');
   const [meshcoreFeedError, setMeshcoreFeedError] = useState<string | null>(null);
   const meshcoreFeedStatuses = useMeshcoreMqttFeedStatusStore((s) => s.statuses);
+  // Reconnect applies edited settings, so only offer it when something actually changed.
+  const [meshcoreDirtyConnections, setMeshcoreDirtyConnections] = useState<Record<string, true>>(
+    {},
+  );
+  const [meshcoreEditorOpen, setMeshcoreEditorOpen] = useState(false);
+  const markMeshcoreDirty = useCallback((connectionId: string) => {
+    setMeshcoreDirtyConnections((prev) =>
+      prev[connectionId] ? prev : { ...prev, [connectionId]: true },
+    );
+  }, []);
+  const clearMeshcoreDirty = useCallback((connectionId: string) => {
+    setMeshcoreDirtyConnections((prev) => {
+      if (!prev[connectionId]) return prev;
+      return Object.fromEntries(Object.entries(prev).filter(([id]) => id !== connectionId));
+    });
+  }, []);
   // Bumped when a preset selection is cancelled (Ripple / Colorado confirm) so the controlled
   // <select> remounts and re-applies `meshcorePreset`, discarding the user's cancelled choice.
   const [meshcorePresetSelectNonce, setMeshcorePresetSelectNonce] = useState(0);
@@ -936,8 +952,9 @@ export default function ConnectionPanel({
 
   // Listen for MQTT events from main process (dual-mode: only errors for the active protocol)
   useEffect(() => {
-    return window.electronAPI.mqtt.onError(({ error, protocol: mqttProtocol }) => {
+    return window.electronAPI.mqtt.onError(({ error, protocol: mqttProtocol, connectionId }) => {
       if (mqttProtocol !== protocol) return;
+      if (connectionId) markMeshcoreDirty(connectionId);
       setMqttError(
         protocol === 'meshcore'
           ? translateMeshcoreUserMessage(t, meshcoreMqttUserFacingHint(error))
@@ -946,7 +963,7 @@ export default function ConnectionPanel({
             : meshtasticMqttErrorUserHint(error, t),
       );
     });
-  }, [protocol, t]);
+  }, [protocol, t, markMeshcoreDirty]);
   useEffect(() => {
     return window.electronAPI.mqtt.onWarning(({ warning, protocol: mqttProtocol }) => {
       if (mqttProtocol !== protocol) return;
@@ -1043,6 +1060,7 @@ export default function ConnectionPanel({
       const target = mqttEditTargetRef.current;
       if (!target) return;
       if (target.protocol === 'meshcore') {
+        markMeshcoreDirty(target.feedId ?? MESHCORE_MQTT_CHAT_CONNECTION_ID);
         if (target.feedId === null) {
           setMeshcoreMqttSettings(value);
           return;
@@ -1060,7 +1078,7 @@ export default function ConnectionPanel({
       if (target.protocol === 'meshcom') setMeshcomMqttSettings(value);
       else setMqttSettings(value);
     },
-    [setMeshcomMqttSettings, setMqttSettings, setMeshcoreMqttSettings],
+    [markMeshcoreDirty, setMeshcomMqttSettings, setMqttSettings, setMeshcoreMqttSettings],
   );
   const activeMqttTls = mqttUsesTls(activeMqttSettings);
   const { focusedIdentityId } = useActiveMeshIdentity(protocol);
@@ -3045,7 +3063,9 @@ export default function ConnectionPanel({
       }
       try {
         await window.electronAPI.mqtt.connect(prepared.settings);
+        clearMeshcoreDirty(MESHCORE_MQTT_CHAT_CONNECTION_ID);
       } catch (err: unknown) {
+        markMeshcoreDirty(MESHCORE_MQTT_CHAT_CONNECTION_ID);
         setMqttError(err instanceof Error ? err.message : String(err));
         console.warn('mcL0411 [ConnectionPanel] mqtt.connect failed: ' + errLikeToLogString(err));
       }
@@ -3217,6 +3237,7 @@ export default function ConnectionPanel({
                   <>
                     <Button
                       size="sm"
+                      disabled={status === 'connecting' || !meshcoreDirtyConnections[feed.id]}
                       aria-label={t('connectionPanel.meshcoreFeeds.reconnectAria', {
                         name: meshcoreFeedLabel(feed),
                       })}
@@ -3761,6 +3782,7 @@ export default function ConnectionPanel({
             {protocol === 'meshcore' && (
               <Button
                 size="sm"
+                disabled={!meshcoreDirtyConnections[MESHCORE_MQTT_CHAT_CONNECTION_ID]}
                 aria-label={t('connectionPanel.meshcoreFeeds.reconnectAria', {
                   name: meshcoreChatLabel,
                 })}
@@ -3816,13 +3838,28 @@ export default function ConnectionPanel({
             </LabelValue>
           </LabelValueGrid>
           {protocol === 'meshcore' && (
-            <div className="border-ink-800 space-y-4 border-t pt-4">
-              <p className="text-muted text-xs">
-                {t('connectionPanel.meshcoreFeeds.settingsHeading')}
-              </p>
-              {meshcoreConnectionNameField}
-              {meshcorePresetEditor}
-              {mqttConnectionFields}
+            <div className="border-ink-800 border-t pt-4">
+              <button
+                type="button"
+                aria-expanded={meshcoreEditorOpen}
+                onClick={() => {
+                  setMeshcoreEditorOpen((open) => !open);
+                }}
+                className="text-muted hover:text-ink-200 text-xs underline-offset-2 hover:underline"
+              >
+                {t('connectionPanel.meshcoreFeeds.editSettingsFor', {
+                  name: editingMeshcoreFeed
+                    ? meshcoreFeedLabel(editingMeshcoreFeed)
+                    : meshcoreChatLabel,
+                })}
+              </button>
+              {meshcoreEditorOpen && (
+                <div className="space-y-4 pt-3">
+                  {meshcoreConnectionNameField}
+                  {meshcorePresetEditor}
+                  {mqttConnectionFields}
+                </div>
+              )}
             </div>
           )}
           {protocol === 'meshtastic' && mqttProfiles.length > 0 ? (
