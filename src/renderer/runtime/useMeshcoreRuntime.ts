@@ -4976,6 +4976,8 @@ export function useMeshcoreRuntime() {
       serialRediscoveryStopRef.current?.();
       serialRediscoveryStopRef.current = null;
       resetMeshcoreRoomAutoLoginSingleFlight();
+      // Serial watchdog interval and unplug watch must not outlive the runtime.
+      stopMeshcoreSerialWatchdog();
       void teardownMeshcoreConnEventListeners({ driverDisconnect: true });
       const conn = connRef.current;
       connRef.current = null;
@@ -4985,7 +4987,7 @@ export function useMeshcoreRuntime() {
         });
       }
     };
-  }, [teardownMeshcoreConnEventListeners]);
+  }, [teardownMeshcoreConnEventListeners, stopMeshcoreSerialWatchdog]);
 
   handleMeshcoreConnectionLostRef.current = handleMeshcoreConnectionLost;
 
@@ -5296,11 +5298,26 @@ export function useMeshcoreRuntime() {
       }
       if (type === 'serial') {
         await prepareRfConnect('serial');
+        const autoConnectSetupGen = meshcoreSetupGenerationRef.current;
         let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
         const attachSerialSession = async () => {
           opened = await openMeshCoreTransport('serial', {
             portSignature: lastSerialPortId,
           });
+          // A newer connect superseded this open: release it without touching its params.
+          if (meshcoreSetupGenerationRef.current !== autoConnectSetupGen) {
+            await disconnectSupersededMeshcoreOpen(opened.driverIdentityId, 'serial');
+            throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+          }
+          // prepareRfConnect cleared the params; attachRfSession starts the serial watchdog
+          // and unplug watch only when they already say serial (as manual connect sets them).
+          // Like manual connect, they stay set if the attach fails: a reconnect started by a
+          // loss during initConn reads them.
+          meshcoreConnectionParamsRef.current = {
+            rfType: 'serial',
+            serialPortId: lastSerialPortId ?? localStorage.getItem(LAST_SERIAL_PORT_KEY),
+            serialPort: null,
+          };
           await attachRfSession(opened.driverIdentityId, 'serial');
           meshcoreConnectionParamsRef.current = {
             rfType: 'serial',
@@ -5330,6 +5347,11 @@ export function useMeshcoreRuntime() {
             await attachSerialSession();
           }
         } catch (err) {
+          // A newer connect owns the session (state, connRef, listeners, params): this stale
+          // attempt released its own open above and must not run the failure handler.
+          if (meshcoreSetupGenerationRef.current !== autoConnectSetupGen) {
+            throw err;
+          }
           const isSetupAbort = isMeshcoreSetupAbortError(err);
           if (!isSetupAbort) {
             const normalized = normalizeMeshCoreError(
