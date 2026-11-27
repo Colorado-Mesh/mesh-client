@@ -20,6 +20,7 @@ import { installCustomSchemeImages } from './bridge/customSchemes';
 import { sendLifecycle, startHost } from './bridge/hostClient';
 import { getPlugin, mobilePlatform } from './bridge/nativePlugins';
 import { installMobileI18n } from './i18nMobile';
+import { handleAndroidBack } from './platform/androidBack';
 import { setMobileAppPlatform } from './platform/mobilePlatform';
 import { installMobileSerial } from './serial/installMobileSerial';
 import { installMobileViewport } from './viewport/mobileViewport';
@@ -129,6 +130,14 @@ async function boot(): Promise<void> {
   void CapApp.addListener('resume', () => {
     sendLifecycle('resume');
     void reapplyBackgroundMode();
+  });
+  // Android only (iOS has no Back): close the top dialog, else background the app.
+  void CapApp.addListener('backButton', () => {
+    handleAndroidBack(() => {
+      void CapApp.minimizeApp().catch((e: unknown) => {
+        console.debug('[mobile] minimizeApp failed', e);
+      });
+    });
   });
   window.addEventListener('pagehide', () => {
     sendLifecycle('beforeQuit');
