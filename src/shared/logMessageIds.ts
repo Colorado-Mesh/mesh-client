@@ -1523,6 +1523,9 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1512: 'src/renderer/components/ConnectionPanel.tsx:feedDisconnectFailed',
   mcL1513: 'src/renderer/lib/meshcoreMqttFeeds.ts:credentialRollbackFailed',
   mcL1514: 'src/renderer/components/ConnectionPanel.tsx:feedPersistFailed',
+  mcL1515: 'src/main/index.ts:meshcom:openContactsImportFile',
+  mcL1516: 'src/renderer/runtime/useMeshcomRuntime.ts:importContacts save',
+  mcL1517: 'src/renderer/runtime/useMeshcomRuntime.ts:importContacts open file',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

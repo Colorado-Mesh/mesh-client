@@ -107,6 +107,10 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'channelSecurityBadges.', leafKeys: true },
   { prefix: 'meshcom.grc.notes.', leafKeys: true },
   { prefix: 'meshcom.grc.reach.', leafKeys: true },
+  { prefix: 'rawPacketLog.meshcomKind.', leafKeys: true },
+  { prefix: 'rawPacketLog.meshcomKindTooltip.', leafKeys: true },
+  { prefix: 'rawPacketLog.meshcomTransport.', leafKeys: true },
+  { prefix: 'rawPacketLog.meshcomTransportTooltip.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {

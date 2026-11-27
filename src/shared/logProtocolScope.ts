@@ -90,6 +90,7 @@ export const LOG_TAG_SCOPE: Readonly<Record<string, LogScope>> = Object.freeze({
   '[useMeshcomDeviceCommands]': { protocol: 'meshcom', surface: 'app' },
   '[meshcomSession]': { protocol: 'meshcom', surface: 'device' },
   '[meshcomGrcLocalChannels]': { protocol: 'meshcom', surface: 'app' },
+  '[meshcomContactImport]': { protocol: 'meshcom', surface: 'app' },
   '[BLE:meshcom]': { protocol: 'meshcom', surface: 'device' },
   '[GATT:meshcom]': { protocol: 'meshcom', surface: 'device' },
   '[IpcSidecarGattConnection:meshcom]': { protocol: 'meshcom', surface: 'device' },

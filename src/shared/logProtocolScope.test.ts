@@ -59,6 +59,7 @@ describe('logProtocolScope registry', () => {
     expect(resolveLogProtocol(line('[useMeshcomRuntime] connect failed'))).toBe('meshcom');
     expect(resolveLogProtocol(line('[MeshCom MQTT] CONNACK received'))).toBe('meshcom');
     expect(resolveLogProtocol(line('[meshcomGrcLocalChannels] persist failed'))).toBe('meshcom');
+    expect(resolveLogProtocol(line('[meshcomContactImport] JSON.parse failed'))).toBe('meshcom');
   });
 
   it('uses longest-prefix so ReticulumSidecar is not swallowed by Reticulum', () => {

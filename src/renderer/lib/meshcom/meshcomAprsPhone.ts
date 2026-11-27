@@ -5,6 +5,7 @@
  * Payload types: `:` text, `!` position, `@` special (e.g. HN), `A` (0x41) ACK.
  */
 
+import { parseMeshcomSrcPath } from './meshcomCallsign';
 import { resolveMeshcomDestination } from './meshcomChannel';
 import { parseAprsUncompressedPosition } from './meshcomKissCodec';
 
@@ -20,6 +21,8 @@ export interface MeshcomAprsPhoneText {
   text: string;
   hwId?: number;
   hopCount: number;
+  /** Digipeater callsigns after origin (normalized). */
+  digis: string[];
 }
 
 export interface MeshcomAprsPhonePosition {
@@ -35,6 +38,8 @@ export interface MeshcomAprsPhonePosition {
   comment: string;
   hwId?: number;
   hopCount: number;
+  /** Digipeater callsigns after origin (normalized). */
+  digis: string[];
 }
 
 export interface MeshcomAprsPhoneAck {
@@ -59,17 +64,8 @@ function readU32Le(buf: Uint8Array, offset: number): number {
   );
 }
 
-function pathHopCount(sourcePath: string): number {
-  const parts = sourcePath
-    .split(',')
-    .map((p) => p.trim())
-    .filter(Boolean);
-  return Math.max(0, parts.length - 1);
-}
-
 function sourceCallFromPath(sourcePath: string): string {
-  const first = sourcePath.split(',')[0]?.trim() ?? '';
-  return first;
+  return parseMeshcomSrcPath(sourcePath).origin;
 }
 
 /**
@@ -183,7 +179,7 @@ export function parseMeshcomAprsPhoneFrame(raw: Uint8Array): MeshcomAprsPhonePar
   );
 
   const hwId = i < raw.length ? raw[i] : undefined;
-  const hopCount = pathHopCount(sourcePath);
+  const { digis, hopCount } = parseMeshcomSrcPath(sourcePath);
   const destResolved = resolveMeshcomDestination(destCall);
 
   if (payloadType === 0x21 /* ! */) {
@@ -208,6 +204,7 @@ export function parseMeshcomAprsPhoneFrame(raw: Uint8Array): MeshcomAprsPhonePar
       comment: pos.comment,
       hwId,
       hopCount,
+      digis,
     };
   }
 
@@ -228,5 +225,6 @@ export function parseMeshcomAprsPhoneFrame(raw: Uint8Array): MeshcomAprsPhonePar
     text: payloadText,
     hwId,
     hopCount,
+    digis,
   };
 }

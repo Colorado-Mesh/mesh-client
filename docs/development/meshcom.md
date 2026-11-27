@@ -154,7 +154,15 @@ BLE HELLO `TYP` **MH** JSON and serial `--mheard` rows parse into `node_info` / 
 
 `MESHCOM_CAPABILITIES` in `BaseRadioProvider.ts`. Shared MeshCore-style panels are on where firmware supports them; Rooms BBS and MeshCore repeater admin stay off (`hasRoomServersPanel: false`, `modulesTabUsesRepeatersLabel: false`).
 
-**Map / live traffic:** MeshCom has SmartBeaconing (`--track`) for LoRa-APRS on the track frequency and mesh POS reports, but **no** MeshCore-style corescope / live packet animation stream. The Map tab uses the overview map (contacts with positions) only — live-traffic mode stays off (`hasRawPacketLog: false` so Stats/Sniffer do not appear or fall through to Meshtastic buffers). See [MeshMap](#meshmap-meshmapoevsvat) for the external map feed path.
+**Sniffer / Stats:** `hasRawPacketLog: true`. `MeshComProtocol` emits `meshcom_rx` at the same RX sites as chat ingest; `meshcomRawPacketSideEffects` fills a 2500-entry ring on `useMeshcomRuntime`. `App.tsx` branches `protocol === 'meshcom'` for Stats/Sniffer **before** the Meshtastic fall-through (`RawPacketLogPanel` / `PacketDistributionPanel` `variant: 'meshcom'`).
+
+**Map / live traffic:** Local-radio live traffic is on (`buildMeshcomLiveTrafficEvents` from the sniffer buffer). Digipeater callsigns resolve via `callsignToNodeId`; missing positions leave partial routes; gateway (`viaServer`) frames are labeled without Beacon/CoreScope. Overview + MeshMap link/`--sendpos` remain as before — see [MeshMap](#meshmap-meshmapoevsvat).
+
+**RF tab:** `hasRfStats: true`. Histograms use node SNR/RSSI; noise floor is RSSI−SNR estimate / empty only — firmware has no LocalStats. Node-detail RF “all OK” findings stay gated off overheard SNR alone (`supportsNodeRfDiagnosticFindings`).
+
+**Contact import:** Callsign JSON/CSV import is wired (`meshcomContactImport` + Nodes Import) **without** `hasContactImportExport` (that flag enables MeshCore QR/pubkey/offload). Export already uses callsign columns via `nodeExportRows`.
+
+**MHEARD / Graph:** `applyMeshcomMheardStations` sets `hopsAway` / `path` / `neighbors` so VIA stations hang under digipeater hubs. `hasOnDemandNodeStatus: true` runs MeshCom `--mheard` only (never MeshCore `requestRepeaterStatus`). `hasNeighborInfo` stays false.
 
 **Chat channels:** ALL (`*`, index 0) plus device listen / local / history GRC pills (named via ICSSW registry) — never MeshCore PSK channel pills.
 

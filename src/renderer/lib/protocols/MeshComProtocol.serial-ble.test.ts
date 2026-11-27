@@ -73,6 +73,7 @@ function makeHandle(
     kissTxWaiters: new Map(),
     deviceSettings: emptyMeshcomDeviceSettingsAccum(),
     deviceSettingsWaiters: [],
+    mheardInFlight: null,
     recentOutbound: [],
   };
 }

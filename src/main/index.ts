@@ -6212,6 +6212,39 @@ ipcMain.handle('meshcore:openJsonFile', async (event) => {
   }
 });
 
+ipcMain.handle('meshcom:openContactsImportFile', async (event) => {
+  assertIpcSender(event, 'meshcom:openContactsImportFile');
+  try {
+    if (!mainWindow) return null;
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Import MeshCom Contacts',
+      filters: [
+        { name: 'JSON / CSV', extensions: ['json', 'csv'] },
+        { name: 'JSON', extensions: ['json'] },
+        { name: 'CSV', extensions: ['csv'] },
+      ],
+      properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    const CONTACT_IMPORT_MAX_BYTES = 5 * 1024 * 1024;
+    try {
+      const buf = await readFileUpTo(result.filePaths[0], CONTACT_IMPORT_MAX_BYTES);
+      return buf.toString('utf-8');
+    } catch (err) {
+      if (err instanceof Error && err.message === 'File too large') {
+        throw new Error('File too large (max 5 MB)');
+      }
+      throw err;
+    }
+  } catch (err) {
+    console.error(
+      'mcL1515 [IPC] meshcom:openContactsImportFile failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
 ipcMain.handle(
   'db:updateMeshcoreMessageSender',
   (event, messageId: number, senderId: number, senderName: string) => {

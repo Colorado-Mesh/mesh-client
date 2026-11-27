@@ -1019,7 +1019,8 @@
       "relayNotReported": "Radyo, bu mesajı hangi düğümün ilettiğini bildirmedi.",
       "unavailableDirectOrRoom": "Güzergahlar yalnızca kanal mesajları için gösterilir.",
       "unavailableNotCaptured": "Güzergah mevcut değil: güzergahlar yalnızca bu oturumdan gelen son mesajlar için tutulur.",
-      "notRecorded": "Bu ağdaki paketler, hangilerini değil, kaç röle geçtiklerini kaydeder."
+      "notRecorded": "Bu ağdaki paketler, hangilerini değil, kaç röle geçtiklerini kaydeder.",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Okunmadı olarak işaretle",
     "deleteMessageLocal": "Yerelde sil",
@@ -5494,7 +5495,39 @@
     "senderKeyPrefix": "Gönderen anahtarı (ön ek):",
     "control": "Denetim:",
     "advertTs": "ADVERT zaman damgası:",
-    "advertLatLon": "ADVERT enlem/boylam:"
+    "advertLatLon": "ADVERT enlem/boylam:",
+    "meshcomKind": {
+      "msg": "Mesaj",
+      "pos": "POZ",
+      "tele": "Tele",
+      "ack": "Onay",
+      "other": "DİĞER"
+    },
+    "meshcomKindTooltip": {
+      "msg": "Kısa mesaj veya sohbet mesajı",
+      "pos": "Konum raporu",
+      "tele": "Telemetri (EXTUDP)",
+      "ack": "Teslimat veya yönlendirme onayı",
+      "other": "Diğer çerçeve türü"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SIRA",
+      "serverTooltip": "Sunucu veya ağ geçidi üzerinden iletilir (doğrudan RF meta verileri değildir)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP APRS çerçevesi",
+      "ble": "BLE telefon APRS bildirimi",
+      "serial": "Seri veya netconsole JSON satırı"
+    },
+    "meshcomLegendHint": "Satırlar gelen MeshCom trafiğini (EXTUDP, KISS, BLE APRS veya seri JSON) gösterir. Yol, kaynağı ve digipeater çağrı işaretlerini listeler.",
+    "meshcomTransportColumn": "Link",
+    "meshcomTransportColumnTooltip": "Bu çerçeve uygulamaya nasıl ulaştı (EXTUDP, KISS, BLE veya seri)?",
+    "meshcomPathColumnTooltip": "Varsa kaynak çağrı işareti ve digipeater yolu.",
+    "meshcomPathEmpty": "Bu çerçevede dijital tekrarlayıcı yolu yok."
   },
   "remoteAdmin": {
     "errors": {
@@ -9251,7 +9284,12 @@
       "removeGroupListenNotUpdated": "{{name}} burada gizlendi, ancak düğüm dinleme filtresi güncellenmedi (radyo komutları kullanılamıyor).",
       "removeGroupListenRadioChanged": "{{name}} burada gizlendi, ancak düğüm dinleme filtresi güncellenmedi (bağlı radyo değişti)."
     },
-    "netConsoleHint": "NET Konsolu TCP bağlantı noktası 2323'tür (düz metin LAN). Düğümde --netconsole'u etkinleştirin; HMAC oturum açması için isteğe bağlı --passwd."
+    "netConsoleHint": "NET Konsolu TCP bağlantı noktası 2323'tür (düz metin LAN). Düğümde --netconsole'u etkinleştirin; HMAC oturum açması için isteğe bağlı --passwd.",
+    "importInvalidJson": "Dosya okunamadı — geçersiz JSON.",
+    "importNoContactRows": "Dosya bir kişi listesi içermiyor.",
+    "importCsvEmpty": "CSV dosyasında kişi satırı yok.",
+    "importSkippedCallsign": "\"{{callsign}}\" atlandı: Geçersiz çağrı işareti.",
+    "importSaveFailed": "\"{{callsign}}\" veritabanına kaydedilemedi."
   },
   "meshcomDeviceCommands": {
     "description": "ICSSW düğüm komutlarını (--help, --settime, --setctry, …) Seri veya BLE üzerinden gönderin. Uygulamaya uygun komutlar, resmî MeshCom uygulamasıyla eşleşir; yalnızca seri bağlantı üzerinden verilen komutlar için bir USB konsol bağlantısı gerekir.",

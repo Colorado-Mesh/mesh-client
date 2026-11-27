@@ -34,6 +34,7 @@ import {
   diagnoseOtherNode,
   hasLocalStatsData,
   type RFDiagnosis,
+  supportsNodeRfDiagnosticFindings,
 } from '../lib/diagnostics/RFDiagnosticEngine';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { formatRelativeOrIsoDateTime } from '../lib/formatRelativeOrIsoDate';
@@ -1576,8 +1577,11 @@ function RFDiagnosticsSection({
   const getForeignLoraDetectionsList = useDiagnosticsStore((s) => s.getForeignLoraDetectionsList);
   const anomaliesMap = diagnosticRowsToRoutingMap(protocolDiagnosticRows);
 
-  // MeshCom (and any protocol without RF stats) must not show Meshtastic "no telemetry / all OK".
   if (!capabilities.hasRfStats) {
+    return null;
+  }
+  // MeshCom: RF tab uses overheard SNR/RSSI only — hide Meshtastic-style finding cards without CU/LocalStats.
+  if (!supportsNodeRfDiagnosticFindings(protocol, node, isOurNode)) {
     return null;
   }
 

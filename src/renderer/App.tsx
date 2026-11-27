@@ -351,7 +351,11 @@ import {
   TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
 import { SHELL_COMPACT_QUERY } from './lib/bottomNav';
-import { meshcoreChatMessageRoute, meshtasticChatMessageRoute } from './lib/chatMessageRoute';
+import {
+  meshcomChatMessageRoute,
+  meshcoreChatMessageRoute,
+  meshtasticChatMessageRoute,
+} from './lib/chatMessageRoute';
 import { protocolMqttProvidesChatSend } from './lib/chatMqttHybridSend';
 import { playMessageNotification } from './lib/chatNotifications';
 import { meshcoreMessageReceptionStats } from './lib/chatSignalReport';
@@ -469,7 +473,7 @@ import {
 import { queueBadgeColorClass } from './lib/queueBadgeColors';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import { usableRadioLongName } from './lib/radioSelfName';
-import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
+import type { MeshcomRawPacketEntry, ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { buildResendArgs } from './lib/reticulum/buildResendArgs';
 import { reticulumHashToNodeId } from './lib/reticulum/destHash';
 import {
@@ -5454,9 +5458,11 @@ function AppContent() {
             : undefined
         }
         onRequestRepeaterStatus={
-          detailModalCapabilities.hasOnDemandNodeStatus
-            ? meshcorePanelActions.requestRepeaterStatus
-            : undefined
+          detailModalProtocol === 'meshcom' && detailModalCapabilities.hasOnDemandNodeStatus
+            ? meshcomRuntime.requestMeshcomMheard
+            : detailModalProtocol === 'meshcore' && detailModalCapabilities.hasOnDemandNodeStatus
+              ? meshcorePanelActions.requestRepeaterStatus
+              : undefined
         }
         meshcoreNodeTelemetry={
           detailModalProtocol === 'meshcore' && selectedNode
@@ -5947,14 +5953,17 @@ function AppContent() {
                                               meshcoreRuntime.rawPackets,
                                               meshcoreRuntime.channels,
                                             )
-                                        : chatProtocol === 'meshtastic' &&
-                                            chatCapabilities.messageRouteDetail === 'lastRelay'
-                                          ? (message) =>
-                                              meshtasticChatMessageRoute(
-                                                message,
-                                                meshtasticRuntime.rawPackets,
-                                              )
-                                          : undefined
+                                        : chatProtocol === 'meshcom' &&
+                                            chatCapabilities.messageRouteDetail === 'floodPath'
+                                          ? (message) => meshcomChatMessageRoute(message)
+                                          : chatProtocol === 'meshtastic' &&
+                                              chatCapabilities.messageRouteDetail === 'lastRelay'
+                                            ? (message) =>
+                                                meshtasticChatMessageRoute(
+                                                  message,
+                                                  meshtasticRuntime.rawPackets,
+                                                )
+                                            : undefined
                                     }
                                     channels={chatChannelsForProtocol}
                                     channelSecurityByIndex={meshtasticChannelSecurityByIndex}
@@ -6521,9 +6530,11 @@ function AppContent() {
                                         capabilities.hasUserManagedContactGroups
                                       }
                                       onImportContacts={
-                                        capabilities.hasContactImportExport
-                                          ? meshcorePanelActions.importContacts
-                                          : undefined
+                                        protocol === 'meshcom'
+                                          ? meshcomPanelActions.importContacts
+                                          : capabilities.hasContactImportExport
+                                            ? meshcorePanelActions.importContacts
+                                            : undefined
                                       }
                                       onImportContactFromQr={
                                         capabilities.hasContactImportExport
@@ -6654,6 +6665,11 @@ function AppContent() {
                                           meshtasticPackets={
                                             mapProtocol === 'meshtastic'
                                               ? meshtasticRuntime.rawPackets
+                                              : undefined
+                                          }
+                                          meshcomPackets={
+                                            mapProtocol === 'meshcom'
+                                              ? (meshcomRuntime.rawPackets as MeshcomRawPacketEntry[])
                                               : undefined
                                           }
                                           pubKeyByNodeId={
@@ -7690,6 +7706,12 @@ function AppContent() {
                                     }
                                     getNodeLabel={rawPacketGetNodeLabel}
                                   />
+                                ) : protocol === 'meshcom' ? (
+                                  <PacketDistributionPanel
+                                    variant="meshcom"
+                                    packets={meshcomRuntime.rawPackets as MeshcomRawPacketEntry[]}
+                                    getNodeLabel={rawPacketGetNodeLabel}
+                                  />
                                 ) : capabilities.modulesTabUsesRepeatersLabel ? (
                                   <PacketDistributionPanel
                                     variant="meshcore"
@@ -7736,6 +7758,16 @@ function AppContent() {
                                     }}
                                     getNodeLabel={rawPacketGetNodeLabel}
                                   />
+                                ) : protocol === 'meshcom' ? (
+                                  <RawPacketLogPanel
+                                    variant="meshcom"
+                                    packets={meshcomRuntime.rawPackets as MeshcomRawPacketEntry[]}
+                                    onClear={() => {
+                                      void meshcomRuntime.clearRawPackets?.();
+                                    }}
+                                    getNodeLabel={rawPacketGetNodeLabel}
+                                    onNodeClick={setSelectedNodeId}
+                                  />
                                 ) : capabilities.modulesTabUsesRepeatersLabel ? (
                                   <RawPacketLogPanel
                                     variant="meshcore"
@@ -7773,7 +7805,11 @@ function AppContent() {
                         {activePanelIndex === RF_PANEL_INDEX ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
-                              <RFHistogramsPanel nodes={nodesForUi} myNodeId={activeSelfNodeNum} />
+                              <RFHistogramsPanel
+                                nodes={nodesForUi}
+                                myNodeId={activeSelfNodeNum}
+                                protocol={protocol}
+                              />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}

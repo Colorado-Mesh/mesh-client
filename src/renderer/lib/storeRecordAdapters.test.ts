@@ -146,6 +146,21 @@ describe('store record adapters (merge precedence)', () => {
     expect(messageRecordToChatMessage(record).rxHops).toBe(3);
   });
 
+  it('round-trips MeshCom rxPathCallsigns through MessageRecord', () => {
+    const msg: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'IK5NJM-11',
+      payload: 'via digi',
+      channel: 0,
+      timestamp: 1,
+      rxHops: 1,
+      rxPathCallsigns: ['IW5EIA-12'],
+    };
+    const record = chatMessageToMessageRecord(msg);
+    expect(record.rxPathCallsigns).toEqual(['IW5EIA-12']);
+    expect(messageRecordToChatMessage(record).rxPathCallsigns).toEqual(['IW5EIA-12']);
+  });
+
   it('round-trips Meshtastic node metrics between NodeRecord and MeshNode', () => {
     const record: NodeRecord = {
       nodeId: 1,

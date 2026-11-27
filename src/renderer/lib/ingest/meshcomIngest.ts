@@ -16,6 +16,7 @@ import {
 } from '../../stores/nodeStore';
 import { persistDbWrite } from '../dbPersistRetry';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
+import { applyMeshcomMheardStations } from '../meshcom/applyMeshcomMheardStations';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from '../meshcom/meshcomCallRegistry';
 import {
   isMeshcomNodeIdPlaceholderCallsign,
@@ -162,7 +163,20 @@ function handleTextMessage(
   if (channelIdx === -1 && toCallOrGroup) {
     registerMeshcomCallsign(toCallOrGroup);
   }
-  const path = event.payload.hopCount != null ? String(event.payload.hopCount) : null;
+  const fromCallForPath = fromCall || callsignFromNode(identityId, event.payload.from);
+  const digis = event.payload.rxPathCallsigns ?? [];
+  const hopCount = event.payload.hopCount;
+  // Origin-only only when digis empty and hops are known zero; unknown hops stay null / numeric.
+  const path =
+    digis.length > 0
+      ? fromCallForPath
+        ? [fromCallForPath, ...digis].join(',')
+        : digis.join(',')
+      : hopCount === 0 && fromCallForPath
+        ? fromCallForPath
+        : hopCount != null
+          ? String(hopCount)
+          : null;
 
   if (fromIsDurable) {
     persistContact(identityId, {
@@ -207,6 +221,10 @@ function handleNodeInfo(
   event: Extract<DomainEvent, { type: 'node_info' }>,
 ): void {
   const info = event.payload;
+  if (info.meshcomMheard) {
+    applyMeshcomMheardStations(identityId, [info.meshcomMheard], info.lastHeardAt ?? Date.now());
+    return;
+  }
   const callsign = normalizeMeshcomCallsign(info.longName ?? info.shortName ?? '');
   const nodeId = callsign ? registerMeshcomCallsign(callsign) : info.nodeId;
   if (!nodeId && !callsign) return;

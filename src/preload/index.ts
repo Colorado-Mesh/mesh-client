@@ -1649,6 +1649,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.off('meshcom:udp-disconnected', handler);
       },
     },
+    openContactsImportFile: (): Promise<string | null> =>
+      ipcRenderer.invoke('meshcom:openContactsImportFile'),
     tcp: {
       connect: (host: string, port: number) =>
         ipcRenderer.invoke('meshcom:tcp-connect', host, port),

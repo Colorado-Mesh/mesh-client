@@ -1019,7 +1019,8 @@
       "relayNotReported": "無線は、どのノードがこのメッセージを中継したかを報告しませんでした。",
       "unavailableDirectOrRoom": "ルートはチャンネルメッセージに対してのみ表示されます。",
       "unavailableNotCaptured": "ルートは利用できません：ルートは、このセッションからの最近のメッセージに対してのみ保持されます。",
-      "notRecorded": "このネットワーク上のパケットは、どのリレーを通過させたかではなく、どのリレーを通過させたかを記録します。"
+      "notRecorded": "このネットワーク上のパケットは、どのリレーを通過させたかではなく、どのリレーを通過させたかを記録します。",
+      "hopCallsign": "{{index}}。{{name}}"
     },
     "markUnread": "未読としてマークする",
     "deleteMessageLocal": "ローカルで削除",
@@ -5494,7 +5495,39 @@
     "senderKeyPrefix": "送信者キー（プレフィックス）:",
     "control": "制御:",
     "advertTs": "ADVERT タイムスタンプ:",
-    "advertLatLon": "ADVERT 緯度/経度:"
+    "advertLatLon": "ADVERT 緯度/経度:",
+    "meshcomKind": {
+      "msg": "グルタミン酸ナトリウム",
+      "pos": "POS",
+      "tele": "テレ",
+      "ack": "ACK",
+      "other": "その他"
+    },
+    "meshcomKindTooltip": {
+      "msg": "テキストまたはチャットメッセージ",
+      "pos": "位置情報レポート",
+      "tele": "テレメトリ（EXTUDP）",
+      "ack": "配達または経路の確認",
+      "other": "その他のフレームタイプ"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "シリアル（SERIAL）",
+      "serverTooltip": "サーバーまたはゲートウェイを介して中継（直接RFメタデータではありません）。"
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP APRSフレーム",
+      "ble": "BLE電話APRS通知",
+      "serial": "シリアルまたはnetconsoleのJSON行"
+    },
+    "meshcomLegendHint": "行には、受信MeshComトラフィック（EXTUDP、KISS、BLE APRS、またはシリアルJSON）が表示されます。パスには、発信元とディジピーターのコールサインが記載されています。",
+    "meshcomTransportColumn": "リンク",
+    "meshcomTransportColumnTooltip": "このフレームがアプリに到達した方法（EXTUDP、KISS、BLE、またはシリアル）。",
+    "meshcomPathColumnTooltip": "存在する場合、発信元のコールサインとデジピーターパス。",
+    "meshcomPathEmpty": "このフレームにデジピーターパスがありません。"
   },
   "remoteAdmin": {
     "errors": {
@@ -9251,7 +9284,12 @@
       "removeGroupListenNotUpdated": "{{name}}はここに非表示にされていましたが、ノードリスンフィルターは更新されていませんでした（無線コマンドは利用できません）。",
       "removeGroupListenRadioChanged": "{{name}}はここに非表示になっていましたが、ノードリスンフィルターは更新されていませんでした（接続された無線が変更されました）。"
     },
-    "netConsoleHint": "NETコンソールはTCPポート2323（プレーンテキストLAN）です。ノードで--netconsoleを有効にします。HMACログインにはオプションの--passwdを使用します。"
+    "netConsoleHint": "NETコンソールはTCPポート2323（プレーンテキストLAN）です。ノードで--netconsoleを有効にします。HMACログインにはオプションの--passwdを使用します。",
+    "importInvalidJson": "ファイルを読み込めませんでした — 無効なJSONです。",
+    "importNoContactRows": "ファイルに連絡先リストが含まれていません。",
+    "importCsvEmpty": "CSVファイルに連絡先の行がありません。",
+    "importSkippedCallsign": "「{{callsign}}」をスキップしました：無効なコールサインです。",
+    "importSaveFailed": "「{{callsign}}」をデータベースに保存できませんでした。"
   },
   "meshcomDeviceCommands": {
     "description": "ICSSWノードコマンド（--help、--settime、--setctry、…）をシリアルまたはBLE経由で送信します。アプリ対応コマンドは、公式のMeshComアプリと一致します。シリアル専用コマンドには、USBコンソールリンクが必要です。",

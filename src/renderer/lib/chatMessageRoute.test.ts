@@ -5,11 +5,16 @@ import { encodeMeshcoreGroupText } from '@/shared/meshcoreGroupText';
 import { meshcoreNodeHash } from '@/shared/meshcoreNodeHash';
 
 import en from '../locales/en/translation.json';
-import { meshcoreChatMessageRoute, meshtasticChatMessageRoute } from './chatMessageRoute';
+import {
+  meshcomChatMessageRoute,
+  meshcoreChatMessageRoute,
+  meshtasticChatMessageRoute,
+} from './chatMessageRoute';
 import {
   buildChatMessageRouteView,
   type ChatMessageRouteView,
   formatChatMessageRouteTooltip,
+  resolveMeshcomRouteHops,
   resolveMeshcoreRouteHops,
   resolveMeshtasticRelay,
 } from './chatMessageRouteView';
@@ -462,5 +467,81 @@ describe('buildChatMessageRouteView', () => {
     expect(
       buildChatMessageRouteView({ status: 'unavailable', reason: 'notCaptured' }, nodes),
     ).toEqual({ kind: 'unavailable', reason: 'notCaptured' });
+    expect(
+      buildChatMessageRouteView({ status: 'digipeaterPath', callsigns: ['IW5EIA-12'] }, nodes),
+    ).toEqual({
+      kind: 'floodPath',
+      hops: [{ hash: 'IW5EIA-12', name: 'IW5EIA-12', matchCount: 1 }],
+    });
+  });
+});
+
+describe('meshcomChatMessageRoute', () => {
+  it('returns digipeaterPath from rxPathCallsigns', () => {
+    expect(
+      meshcomChatMessageRoute({
+        rxPathCallsigns: ['IW5EIA-12'],
+        rxHops: 1,
+      }),
+    ).toEqual({ status: 'digipeaterPath', callsigns: ['IW5EIA-12'] });
+  });
+
+  it('falls back to unavailable when digis are missing', () => {
+    expect(meshcomChatMessageRoute({ rxHops: 2 })).toEqual({
+      status: 'unavailable',
+      reason: 'notCaptured',
+    });
+  });
+});
+
+describe('resolveMeshcomRouteHops', () => {
+  it('maps callsigns to floodPath hop labels', () => {
+    expect(resolveMeshcomRouteHops(['IW5EIA-12', 'OE1ABC-1'], new Map())).toEqual([
+      { hash: 'IW5EIA-12', name: 'IW5EIA-12', matchCount: 1 },
+      { hash: 'OE1ABC-1', name: 'OE1ABC-1', matchCount: 1 },
+    ]);
+  });
+});
+
+describe('formatChatMessageRouteTooltip MeshCom digipeater', () => {
+  const i18n = i18next.createInstance();
+  beforeAll(async () => {
+    await i18n.init({
+      lng: 'en',
+      resources: { en: { translation: en } },
+      interpolation: { escapeValue: false },
+    });
+  });
+  const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options);
+
+  it('lists digipeater callsigns without MeshCore hash parentheses', () => {
+    const view = buildChatMessageRouteView(
+      { status: 'digipeaterPath', callsigns: ['IW5EIA-12'] },
+      new Map(),
+    );
+    expect(
+      formatChatMessageRouteTooltip(t, {
+        hops: 1,
+        senderName: 'IK5NJM-11',
+        routeDetail: 'floodPath',
+        view,
+      }),
+    ).toBe(['Reached you in 1 hop', 'From IK5NJM-11', '1. IW5EIA-12', 'To you'].join('\n'));
+  });
+
+  it('keeps ambiguity warning when name equals hash but matchCount > 1', () => {
+    expect(
+      formatChatMessageRouteTooltip(t, {
+        hops: 1,
+        senderName: 'Base',
+        routeDetail: 'floodPath',
+        view: {
+          kind: 'floodPath',
+          hops: [{ hash: 'AB', name: 'AB', matchCount: 2 }],
+        },
+      }),
+    ).toBe(
+      ['Reached you in 1 hop', 'From Base', '1. AB or another repeater (AB)', 'To you'].join('\n'),
+    );
   });
 });

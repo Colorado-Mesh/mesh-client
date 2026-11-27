@@ -33,6 +33,15 @@ export const MESHCOM_MAX_MSG_ID_LEN = 128;
 export const MESHCOM_CONTACT_CAP_DEFAULT = 10_000;
 
 /**
+ * Max MeshNeighbor rows retained per relay from MHEARD VIA links.
+ * Matches Meshtastic's on-wire neighbor cap; contact-bucket trim alone does not bound this array.
+ */
+export const MESHCOM_RELAY_NEIGHBOR_CAP = 256;
+
+/** Max MHEARD stations applied in one applyMeshcomMheardStations call. */
+export const MESHCOM_MHEARD_APPLY_BURST_CAP = 512;
+
+/**
  * Max MeshCom GRC group id (ICSSW). Chat `channel_idx` is -1 (DM), 0 (ALL), or 1..this.
  * Not a Meshtastic/MeshCore 0–255 PSK slot index.
  */

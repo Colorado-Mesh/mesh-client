@@ -12,6 +12,7 @@ import {
 } from '../timeConstants';
 import type { IdentityId } from '../types';
 import { encodeMeshcomBleTimestamp, MESHCOM_BLE_HELLO } from './meshcomBleFrame';
+import { collectMeshcomMheardStations } from './meshcomCollectMheardStations';
 import { sendMeshcomDeviceCommand } from './meshcomDeviceCommands';
 import {
   emptyMeshcomDeviceSettingsAccum,
@@ -20,7 +21,6 @@ import {
   type MeshcomDeviceSettingsSnapshot,
   snapshotMeshcomDeviceSettings,
 } from './meshcomDeviceSettings';
-import { parseMeshcomMheardText } from './meshcomMheard';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -66,9 +66,7 @@ async function refreshViaSerialInfo(
     await sleep(MESHCOM_SERIAL_WX_COLLECT_MS);
     mergeMeshcomSerialWxText(handle.deviceSettings, lines.join('\n'));
     lines.length = 0;
-    await sendMeshcomDeviceCommand(handle, '--mheard');
-    await sleep(MESHCOM_SERIAL_WX_COLLECT_MS);
-    const stations = parseMeshcomMheardText(lines.join('\n'));
+    const stations = await collectMeshcomMheardStations(handle, identityId);
     if (stations.length > 0) mheard = stations;
   } finally {
     detach();

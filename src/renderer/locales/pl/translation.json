@@ -1055,7 +1055,8 @@
       "unavailableNotCaptured": "Trasa niedostępna: trasy są zachowywane tylko dla ostatnich wiadomości z tej sesji.",
       "notRecorded": "Pakiety w tej sieci rejestrują, ile przekaźników minęły, a nie które.",
       "reachedYouInHops_few": "Dotarło w {{count}} przeskokach",
-      "reachedYouInHops_many": "Dotarło w {{count}} przeskokach"
+      "reachedYouInHops_many": "Dotarło w {{count}} przeskokach",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Oznacz jako nieprzeczytane",
     "deleteMessageLocal": "Usuń lokalnie",
@@ -5578,7 +5579,39 @@
     "senderKeyPrefix": "Klucz nadawcy (prefiks):",
     "control": "Sterowanie:",
     "advertTs": "Znacznik czasu ADVERT:",
-    "advertLatLon": "Szer./dł. geogr. ADVERT:"
+    "advertLatLon": "Szer./dł. geogr. ADVERT:",
+    "meshcomKind": {
+      "msg": "MSG",
+      "pos": "POZ.",
+      "tele": "Tele",
+      "ack": "ZATW.",
+      "other": "INNE"
+    },
+    "meshcomKindTooltip": {
+      "msg": "Wiadomość SMS lub na czacie",
+      "pos": "Meldowanie położenia",
+      "tele": "Telemetria (EXTUDP)",
+      "ack": "Potwierdzenie dostarczenia lub przekierowania",
+      "other": "Inny typ ramy"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SZEREGOWY",
+      "serverTooltip": "Przekazywane przez serwer lub bramkę (nie są to bezpośrednie metadane RF)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "Ramka APRS KISS/TCP",
+      "ble": "BLE powiadomienie APRS na telefon",
+      "serial": "Wiersz JSON portu szeregowego lub konsoli sieciowej"
+    },
+    "meshcomLegendHint": "Wiersze pokazują ruch przychodzący MeshCom (EXTUDP, KISS, BLE APRS lub szeregowy JSON). Ścieżka zawiera listę znaków wywoławczych nadajnika i digipeatera.",
+    "meshcomTransportColumn": "Łącze",
+    "meshcomTransportColumnTooltip": "W jaki sposób ta ramka dotarła do aplikacji (EXTUDP, KISS, BLE lub szeregowa).",
+    "meshcomPathColumnTooltip": "Początkowy znak wywoławczy i ścieżka digipeatera, jeśli występują.",
+    "meshcomPathEmpty": "Brak ścieżki digipeatera w tej ramce."
   },
   "remoteAdmin": {
     "errors": {
@@ -9395,7 +9428,12 @@
       "removeGroupListenNotUpdated": "Element {{name}} był tutaj ukryty, ale filtr nasłuchu węzła nie został zaktualizowany (polecenia radiowe są niedostępne).",
       "removeGroupListenRadioChanged": "{{name}} był tutaj ukryty, ale filtr nasłuchu węzła nie został zaktualizowany (zmieniono podłączone radio)."
     },
-    "netConsoleHint": "Konsola sieciowa to TCP port 2323 (sieć LAN w formie zwykłego tekstu). Włącz --netconsole na węźle; opcjonalnie --passwd do logowania HMAC."
+    "netConsoleHint": "Konsola sieciowa to TCP port 2323 (sieć LAN w formie zwykłego tekstu). Włącz --netconsole na węźle; opcjonalnie --passwd do logowania HMAC.",
+    "importInvalidJson": "Nie udało się odczytać pliku – nieprawidłowy plik JSON.",
+    "importNoContactRows": "Plik nie zawiera listy kontaktów.",
+    "importCsvEmpty": "Plik CSV nie zawiera wierszy z danymi kontaktowymi.",
+    "importSkippedCallsign": "Pominięto „{{callsign}}”: nieprawidłowy znak wywoławczy.",
+    "importSaveFailed": "Nie udało się zapisać „{{callsign}}” w bazie danych."
   },
   "meshcomDeviceCommands": {
     "description": "Wysyłaj polecenia węzła ICSSW (--help, --settime, --setctry, …) przez port szeregowy lub BLE. Polecenia obsługiwane przez aplikację są zgodne z oficjalną aplikacją MeshCom; polecenia dostępne tylko przez port szeregowy wymagają połączenia z konsolą USB.",

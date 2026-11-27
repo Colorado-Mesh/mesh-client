@@ -18,6 +18,7 @@ export function useMeshcomPanelActions(runtime: MeshcomRuntime) {
       setOwner: runtime.setOwner,
       sendPositionToDevice: runtime.sendPositionToDevice,
       setNodeFavorited: runtime.setNodeFavorited,
+      importContacts: runtime.importContacts,
       // ProtocolRuntime types deleteNode optional; MeshCom always provides it.
       deleteNode: runtime.deleteNode as (nodeId: number) => Promise<void>,
       sendReaction: runtime.sendReaction,
@@ -32,6 +33,7 @@ export function useMeshcomPanelActions(runtime: MeshcomRuntime) {
       runtime.getFullNodeLabel,
       runtime.getPickerStyleNodeLabel,
       runtime.hydrateRawPackets,
+      runtime.importContacts,
       runtime.refreshMessagesFromDb,
       runtime.refreshNodesFromDb,
       runtime.refreshOurPosition,

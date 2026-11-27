@@ -1019,7 +1019,8 @@
       "relayNotReported": "收音机未报告哪个节点中继此消息。",
       "unavailableDirectOrRoom": "路由仅针对频道消息显示。",
       "unavailableNotCaptured": "路由不可用：路由仅保留用于来自此会话的最新消息。",
-      "notRecorded": "此网络上的数据包记录它们通过了多少个中继，而不是哪些中继。"
+      "notRecorded": "此网络上的数据包记录它们通过了多少个中继，而不是哪些中继。",
+      "hopCallsign": "{{index}}。{{name}}"
     },
     "markUnread": "标记未读",
     "deleteMessageLocal": "在本地删除",
@@ -5494,7 +5495,39 @@
     "senderKeyPrefix": "发件人密钥（前缀） ：",
     "control": "控制：",
     "advertTs": "ADVERT ts:",
-    "advertLatLon": "通告纬度/经度："
+    "advertLatLon": "通告纬度/经度：",
+    "meshcomKind": {
+      "msg": "消息",
+      "pos": "POS",
+      "tele": "长焦",
+      "ack": "确认",
+      "other": "其他"
+    },
+    "meshcomKindTooltip": {
+      "msg": "短信或聊天消息",
+      "pos": "位置报告",
+      "tele": "遥测（EXTUDP）",
+      "ack": "送达或路由确认",
+      "other": "其他车架类型"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "序号成功验证！",
+      "serverTooltip": "通过服务器或网关中继（非直接射频元数据）。"
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP APRS帧",
+      "ble": "BLE手机APRS通知",
+      "serial": "串行或 netconsole JSON 行"
+    },
+    "meshcomLegendHint": "行显示入站 MeshCom 流量（EXTUDP、KISS、BLE APRS 或串行 JSON）。路径列出了源和中继器的呼号。",
+    "meshcomTransportColumn": "链接",
+    "meshcomTransportColumnTooltip": "此帧是如何到达应用的（EXTUDP、KISS、BLE或串行）。",
+    "meshcomPathColumnTooltip": "起始呼号和数字中继器路径（若有）。",
+    "meshcomPathEmpty": "此帧上没有数字中继器路径。"
   },
   "remoteAdmin": {
     "errors": {
@@ -9251,7 +9284,12 @@
       "removeGroupListenNotUpdated": "{{name}}曾被隐藏在此处，但节点监听过滤器未更新（无线电命令不可用）。",
       "removeGroupListenRadioChanged": "{{name}}曾在此处隐藏，但节点监听筛选器未更新（已连接的无线电已更改）。"
     },
-    "netConsoleHint": "NET Console 是 TCP 端口 2323（明文 LAN）。在节点上启用 --netconsole；可选 --passwd 用于 HMAC 登录。"
+    "netConsoleHint": "NET Console 是 TCP 端口 2323（明文 LAN）。在节点上启用 --netconsole；可选 --passwd 用于 HMAC 登录。",
+    "importInvalidJson": "无法读取文件 — JSON 无效。",
+    "importNoContactRows": "该文件不包含联系人列表。",
+    "importCsvEmpty": "CSV 文件中没有联系人行。",
+    "importSkippedCallsign": "已跳过“{{callsign}}”：呼号无效。",
+    "importSaveFailed": "无法将“{{callsign}}”保存到数据库。"
   },
   "meshcomDeviceCommands": {
     "description": "通过串行或BLE发送ICSSW节点命令（--help、--settime、--setctry……）。适用于应用的命令与官方MeshCom应用相匹配；仅适用于串行端口的命令需要USB控制台链接。",

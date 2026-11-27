@@ -445,7 +445,7 @@ export const MESHCOM_CAPABILITIES: ProtocolCapabilities = {
   // Custom broker form + own saved-profile list (no Meshtastic/MeshCore network presets).
   hasMqttConnectionPanel: true,
   hasEnvironmentTelemetry: true,
-  hasRfStats: false,
+  hasRfStats: true,
   hasNeighborInfo: false,
   hasChannelConfig: false,
   hasModemPresets: false,
@@ -454,7 +454,7 @@ export const MESHCOM_CAPABILITIES: ProtocolCapabilities = {
   hasDistanceBasedHopAnomalies: false,
   hasBatteryTelemetry: true,
   hasRepeaterStatus: false,
-  hasOnDemandNodeStatus: false,
+  hasOnDemandNodeStatus: true,
   // BLE PIN is `--btcode` in MeshCom device commands — not Meshtastic BluetoothConfig.
   hasBluetoothConfig: false,
   hasDeviceRoleConfig: false,
@@ -494,7 +494,7 @@ export const MESHCOM_CAPABILITIES: ProtocolCapabilities = {
   hasCryptoOperations: false,
   // No MeshCore-style corescope / live packet sniffer on MeshCom firmware — keep off so
   // Stats/Sniffer do not fall through to Meshtastic/MeshCore packet buffers.
-  hasRawPacketLog: false,
+  hasRawPacketLog: true,
   nodeListTabUsesContactsLabel: true,
   nodeListTabUsesPeersLabel: false,
   modulesTabUsesRepeatersLabel: false,

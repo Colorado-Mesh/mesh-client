@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { RxPacketEntry } from './meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry, ReticulumRawPacketEntry } from './rawPacketLogConstants';
+import type {
+  MeshcomRawPacketEntry,
+  MeshtasticRawPacketEntry,
+  ReticulumRawPacketEntry,
+} from './rawPacketLogConstants';
 import {
+  sortMeshcomPackets,
   sortMeshcorePackets,
   sortMeshtasticPackets,
   sortReticulumPackets,
@@ -87,6 +92,34 @@ describe('rawPacketLogSort', () => {
       { column: 'hops', direction: 'desc' },
     );
     expect(sorted.map((p) => p.hopsAway ?? -1)).toEqual([4, 1, -1]);
+  });
+
+  it('sorts MeshCom packets by kind and treats null SNR as -999', () => {
+    const base = (
+      kind: MeshcomRawPacketEntry['kind'],
+      snr: number | null,
+    ): MeshcomRawPacketEntry => ({
+      ts: 1,
+      snr,
+      rssi: null,
+      kind,
+      transport: 'extudp',
+      originCallsign: 'N0CALL',
+      digis: [],
+      hopsAway: 0,
+      fromNodeId: null,
+      raw: new Uint8Array(),
+    });
+    const byKind = sortMeshcomPackets([base('pos', 1), base('msg', 1)], {
+      column: 'type',
+      direction: 'asc',
+    });
+    expect(byKind.map((p) => p.kind)).toEqual(['msg', 'pos']);
+    const bySnr = sortMeshcomPackets([base('msg', null), base('msg', 2)], {
+      column: 'snr',
+      direction: 'desc',
+    });
+    expect(bySnr.map((p) => p.snr)).toEqual([2, null]);
   });
 
   it('sorts Meshtastic packets by port label ascending', () => {
