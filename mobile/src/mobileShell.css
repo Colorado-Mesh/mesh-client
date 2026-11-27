@@ -143,8 +143,59 @@ html[data-mesh-mobile] [data-app-shell] {
   padding-right: env(safe-area-inset-right);
 }
 
-html[data-mesh-mobile][data-mobile-nav='rail'] [data-app-shell] {
+html[data-mesh-mobile][data-mobile-nav='rail'] [data-app-shell],
+html[data-mesh-mobile][data-mobile-side-column] [data-app-shell] {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/*
+ * iPhone Duo system side column (outer display, Split View): the bottom bar stands upright in the
+ * column the shell already leaves free (its safe-area padding), one uniform strip from the top of
+ * the screen, tabs at the bottom below the status bar and camera / Dynamic Island. The column
+ * geometry comes from mobile/src/viewport/mobileViewport.ts.
+ */
+html[data-mesh-mobile] [data-mobile-side-nav] {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  width: var(--mobile-side-column-width);
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav='right'] {
+  right: 0;
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav='left'] {
+  left: 0;
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav] > nav {
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  border-top-width: 0;
+  padding: var(--mobile-side-column-top) 0 calc(var(--mobile-side-column-bottom) + 0.5rem);
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav='right'] > nav {
+  border-left-width: 1px;
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav='left'] > nav {
+  border-right-width: 1px;
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav] > nav > button {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+/* Typing: the keyboard needs the column's height; navigation returns when it closes. */
+html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav] {
+  display: none;
 }
 
 /* Keep the keyboard from covering composers on WebViews that only shrink the visual viewport. */

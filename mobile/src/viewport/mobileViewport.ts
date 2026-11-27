@@ -6,7 +6,8 @@
  *
  * Publishes to `src/renderer/lib/mobileViewport.ts` and mirrors key values onto `<html>`:
  * `data-mobile-panes`, `data-mobile-width`, `data-mobile-posture`, `--mobile-keyboard-inset`,
- * `--mobile-fold-left|top|width|height`.
+ * `--mobile-fold-left|top|width|height`, and for the system side column (iPhone Duo)
+ * `data-mobile-side-column` (left | right) with `--mobile-side-column-width|top|bottom`.
  */
 import { getPlugin, listenPlugin } from '../bridge/nativePlugins';
 import {
@@ -14,6 +15,7 @@ import {
   type DevicePosture,
   type FoldRect,
   getMobileViewport,
+  type ScreenRect,
   setMobileViewport,
 } from '../platform/mobileViewport';
 
@@ -29,6 +31,8 @@ interface NativeFold {
 }
 
 let fold: FoldRect | null = null;
+/** Camera / Dynamic Island regions from native (iOS 27.1 occlusion reserved regions). */
+let occlusions: ScreenRect[] = [];
 let posture: DevicePosture = 'flat';
 let probe: HTMLDivElement | null = null;
 let keyboardInset = 0;
@@ -55,7 +59,8 @@ function insets(): { top: number; right: number; bottom: number; left: number } 
   };
 }
 
-function applyNativeFolds(folds: NativeFold[]): void {
+function applyNativeFolds(folds: NativeFold[], nativeOcclusions?: ScreenRect[]): void {
+  occlusions = Array.isArray(nativeOcclusions) ? nativeOcclusions : [];
   const f = folds[0];
   if (!f) {
     fold = null;
@@ -102,6 +107,13 @@ function update(): void {
     keyboardOpen,
     keyboardInset,
     previousPanes: prev.isMobile ? prev.panes : null,
+    sideColumn: {
+      viewportWidth: document.documentElement.clientWidth || window.innerWidth,
+      viewportHeight: layoutH,
+      insets: ins,
+      occlusions,
+    },
+    previousSideColumn: prev.isMobile ? prev.sideColumn : undefined,
   });
   setMobileViewport(next);
   const root = document.documentElement;
@@ -110,6 +122,19 @@ function update(): void {
   root.dataset.mobilePosture = next.posture;
   root.dataset.mobileNav = next.navRail ? 'rail' : 'bar';
   root.style.setProperty('--mobile-keyboard-inset', `${keyboardInset}px`);
+  if (next.keyboardOpen) root.dataset.mobileKeyboard = 'open';
+  else delete root.dataset.mobileKeyboard;
+  const column = next.sideColumn;
+  if (column) {
+    root.dataset.mobileSideColumn = column.edge;
+    root.style.setProperty('--mobile-side-column-width', `${column.width}px`);
+    root.style.setProperty('--mobile-side-column-top', `${column.top}px`);
+    root.style.setProperty('--mobile-side-column-bottom', `${column.bottom}px`);
+  } else {
+    delete root.dataset.mobileSideColumn;
+    for (const k of ['width', 'top', 'bottom'])
+      root.style.removeProperty(`--mobile-side-column-${k}`);
+  }
   if (fold) {
     root.style.setProperty('--mobile-fold-left', `${fold.left}px`);
     root.style.setProperty('--mobile-fold-top', `${fold.top}px`);
@@ -154,18 +179,19 @@ export function installMobileViewport(): void {
     });
   }
   const device = getPlugin('MeshDevice') as unknown as {
-    getFoldState?: () => Promise<{ folds: NativeFold[] }>;
+    getFoldState?: () => Promise<{ folds: NativeFold[]; occlusions?: ScreenRect[] }>;
   };
   void device
     .getFoldState?.()
     .then((r) => {
-      applyNativeFolds(r.folds);
+      applyNativeFolds(r.folds, r.occlusions);
     })
     .catch((e: unknown) => {
       console.debug('[mobile] fold state unavailable', e);
     });
   void listenPlugin('MeshDevice', 'foldChanged', (d) => {
-    applyNativeFolds((d as { folds: NativeFold[] }).folds);
+    const state = d as { folds: NativeFold[]; occlusions?: ScreenRect[] };
+    applyNativeFolds(state.folds, state.occlusions);
   }).catch((e: unknown) => {
     console.debug('[mobile] fold listener unavailable', e);
   });

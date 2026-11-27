@@ -17,6 +17,7 @@ const OVERRIDES_DIR = path.join(MOBILE_ROOT, 'src/overrides/renderer');
 /** Desktop module (repo-relative) → mobile wrapper (relative to src/overrides/renderer). */
 export const RENDERER_OVERRIDES = {
   'src/renderer/components/shell/QuitButton.tsx': 'QuitButton.tsx',
+  'src/renderer/components/shell/BottomNav.tsx': 'BottomNav.tsx',
   'src/renderer/lib/locationTrust.ts': 'locationTrust.ts',
   'src/renderer/components/SetLocationCard.tsx': 'SetLocationCard.tsx',
   'src/renderer/components/chat/ConversationLayout.tsx': 'ConversationLayout.tsx',

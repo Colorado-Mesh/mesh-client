@@ -10,10 +10,9 @@ import WebKit
 /// `<data container>/Documents/mesh-smoke.json` so pass/fail does not depend on log plumbing.
 /// It also logs `[mesh-smoke] …` lines to stderr and the unified log.
 ///
-/// The host worker logs `[mobile/host] main loaded (sqlite=…)` at debug level, which is not
-/// forwarded out of the worker; only warn/error are (`forwardConsole` in
-/// `mobile/src/host/worker.ts`). So the SQLite backend is taken from, in order: that line if it
-/// ever reaches the page console, the forwarded "OPFS SQLite pool unavailable" warning (memory
+/// The host worker relays `[mobile/host] main loaded (sqlite=…)` to the page console at info
+/// level (`mobile/src/host/worker.ts`). The SQLite backend is taken from, in order: that line,
+/// the forwarded "OPFS SQLite pool unavailable" warning (memory
 /// fallback; matched by text because its mcL id differs between the desktop and mobile ranges),
 /// or the presence of the OPFS SAH-pool directory (`mesh-sqlite`) the host creates on success.
 final class MeshSmokeProbe {
@@ -54,8 +53,15 @@ final class MeshSmokeProbe {
           panes: de.dataset.mobilePanes || null,
           width: de.dataset.mobileWidth || null,
           posture: de.dataset.mobilePosture || null,
-          fold: de.dataset.mobileFold || null
+          fold: de.dataset.mobileFold || null,
+          nav: de.dataset.mobileNav || null
         },
+        sideColumn: de.dataset.mobileSideColumn ? {
+          edge: de.dataset.mobileSideColumn,
+          width: de.style.getPropertyValue('--mobile-side-column-width'),
+          top: de.style.getPropertyValue('--mobile-side-column-top'),
+          bottom: de.style.getPropertyValue('--mobile-side-column-bottom')
+        } : null,
         title: document.title
       });
     })()
@@ -171,9 +177,22 @@ final class MeshSmokeProbe {
         timer = nil
         Task { @MainActor [weak self] in
             guard let self else { return }
-            let folds = (self.webView as? MeshWebView)?.currentFolds().map(\.dictionary) ?? []
+            // Display geometry as the page sees it (reserved regions, safe area, view size), so a
+            // run on the iPhone Duo simulator records the real side column and camera rectangles.
+            var geometry: [String: Any] = (self.webView as? MeshWebView)?.currentRegions().dictionary
+                ?? ["folds": [], "occlusions": []]
+            if let view = self.webView {
+                let insets = view.safeAreaInsets
+                geometry["safeArea"] = [
+                    "top": Double(insets.top), "right": Double(insets.right),
+                    "bottom": Double(insets.bottom), "left": Double(insets.left),
+                ]
+                geometry["viewSize"] = [
+                    "width": Double(view.bounds.width), "height": Double(view.bounds.height),
+                ]
+            }
             guard let webView = self.webView else {
-                self.finish(status: status, state: state, opfs: nil, folds: folds)
+                self.finish(status: status, state: state, opfs: nil, geometry: geometry)
                 return
             }
             webView.callAsyncJavaScript(Self.opfsScript, arguments: [:], in: nil, in: .page) { [weak self] result in
@@ -187,12 +206,12 @@ final class MeshSmokeProbe {
                 case .failure(let error):
                     opfs["error"] = error.localizedDescription
                 }
-                self?.finish(status: status, state: state, opfs: opfs, folds: folds)
+                self?.finish(status: status, state: state, opfs: opfs, geometry: geometry)
             }
         }
     }
 
-    private func finish(status: String, state: [String: Any], opfs: [String: Any]?, folds: [[String: Any]]) {
+    private func finish(status: String, state: [String: Any], opfs: [String: Any]?, geometry: [String: Any]) {
         guard !finished else { return }
         finished = true
         timer?.invalidate()
@@ -223,7 +242,7 @@ final class MeshSmokeProbe {
             "secureKeyBackend": MeshSecureKey.backend,
             "sidecarAvailable": MeshProcessPlugin.sidecarAvailable,
             "model": MeshDevicePlugin.hardwareModel(),
-            "folds": folds,
+            "geometry": geometry,
             "state": state,
             "opfs": opfs ?? [:],
             "console": console,

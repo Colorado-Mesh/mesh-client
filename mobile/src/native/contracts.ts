@@ -174,6 +174,24 @@ export interface NativeFoldFeature {
   separating: boolean;
 }
 
+/** A reserved rectangle in CSS px relative to the WebView (camera, Dynamic Island). */
+export interface NativeRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+/** Fold and occlusion geometry (`getFoldState`, `foldChanged`). */
+export interface NativeFoldState {
+  folds: NativeFoldFeature[];
+  /**
+   * iOS 27.1+: active occlusion reserved regions (camera / Dynamic Island; on the iPhone Duo outer
+   * display these sit in the system side column). Absent on Android and older iOS.
+   */
+  occlusions?: NativeRect[];
+}
+
 export interface MeshDevicePlugin {
   /**
    * 32-byte random key (hex) generated once and stored under hardware-backed protection
@@ -188,7 +206,7 @@ export interface MeshDevicePlugin {
     model?: string;
     osVersion?: string;
   }>;
-  getFoldState(): Promise<{ folds: NativeFoldFeature[] }>;
+  getFoldState(): Promise<NativeFoldState>;
   /** Keep the screen awake while a radio operation needs it (firmware flash, long transfers). */
   keepAwake(o: { enabled: boolean }): Promise<void>;
   /**
@@ -200,7 +218,7 @@ export interface MeshDevicePlugin {
 }
 
 export interface MeshDeviceEvents {
-  foldChanged: { folds: NativeFoldFeature[] };
+  foldChanged: NativeFoldState;
 }
 
 // ─── MeshUsbSerial (Android only) ──────────────────────────────────────────────

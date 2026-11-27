@@ -6,11 +6,41 @@
  */
 import { WebPlugin } from '@capacitor/core';
 
+import type { NativeFoldState } from '../../native/contracts';
 import { bridgeClient } from './webBridgeClient';
 
 const KEY = 'mesh-mobile:web-safe-storage-key';
+/**
+ * Browser harness only: fold and occlusion geometry a test sets before boot (localStorage JSON
+ * `NativeFoldState`), standing in for Jetpack WindowManager / iOS reserved regions.
+ */
+const GEOMETRY_KEY = 'mesh-mobile:web-device-geometry';
+/** Browser harness only: `window` event whose `detail` is a new `NativeFoldState`. */
+export const WEB_GEOMETRY_EVENT = 'mesh-mobile:device-geometry';
+
+function storedGeometry(): NativeFoldState {
+  try {
+    const raw = localStorage.getItem(GEOMETRY_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Partial<NativeFoldState>) : {};
+    return {
+      folds: Array.isArray(parsed.folds) ? parsed.folds : [],
+      ...(Array.isArray(parsed.occlusions) ? { occlusions: parsed.occlusions } : {}),
+    };
+  } catch (e) {
+    console.debug('[mobile/web] no stored device geometry', e);
+    return { folds: [] };
+  }
+}
 
 export class WebMeshDevice extends WebPlugin {
+  constructor() {
+    super();
+    window.addEventListener(WEB_GEOMETRY_EVENT, (event) => {
+      const state = (event as CustomEvent<NativeFoldState>).detail;
+      this.notifyListeners('foldChanged', state);
+    });
+  }
+
   getSecureKey(): Promise<{ keyHex: string }> {
     let hex: string;
     try {
@@ -41,8 +71,8 @@ export class WebMeshDevice extends WebPlugin {
     }
     return { appVersion: '0.0.0-web', sidecarAvailable, locale: navigator.language || 'en-US' };
   }
-  getFoldState(): Promise<{ folds: never[] }> {
-    return Promise.resolve({ folds: [] });
+  getFoldState(): Promise<NativeFoldState> {
+    return Promise.resolve(storedGeometry());
   }
   keepAwake(): Promise<void> {
     return Promise.resolve();

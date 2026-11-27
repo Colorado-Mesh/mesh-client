@@ -36,8 +36,8 @@ final class MainViewController: CAPBridgeViewController {
             webView.scrollView.backgroundColor = Self.backgroundColor
             webView.underPageBackgroundColor = Self.backgroundColor
         }
-        (webView as? MeshWebView)?.onFoldsChanged = { [weak plugin = devicePlugin] folds in
-            plugin?.foldsDidChange(folds)
+        (webView as? MeshWebView)?.onRegionsChanged = { [weak plugin = devicePlugin] regions in
+            plugin?.regionsDidChange(regions)
         }
 
         #if DEBUG

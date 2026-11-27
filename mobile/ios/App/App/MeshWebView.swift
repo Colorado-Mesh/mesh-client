@@ -25,6 +25,29 @@ struct MeshFoldFeature: Equatable {
     }
 }
 
+/// A reserved rectangle reported to JS (`NativeRect` in `mobile/src/native/contracts.ts`): the
+/// camera / Dynamic Island occlusion regions, in CSS px relative to the WebView.
+struct MeshRect: Equatable {
+    let left: Double
+    let top: Double
+    let right: Double
+    let bottom: Double
+
+    var dictionary: [String: Any] {
+        ["left": left, "top": top, "right": right, "bottom": bottom]
+    }
+}
+
+/// Folds and occlusion regions published together (`NativeFoldState`).
+struct MeshReservedRegions: Equatable {
+    let folds: [MeshFoldFeature]
+    let occlusions: [MeshRect]
+
+    var dictionary: [String: Any] {
+        ["folds": folds.map(\.dictionary), "occlusions": occlusions.map(\.dictionary)]
+    }
+}
+
 /// The Capacitor WebView (returned from `MainViewController.webView(with:configuration:)`).
 ///
 /// WKWebView exposes no fold or posture API to the page (no Viewport Segments / Device Posture),
@@ -34,9 +57,9 @@ struct MeshFoldFeature: Equatable {
 /// toolchains, or Xcode 27.0 which also ships Swift 6.4 but not the API (`mesh.xcconfig` sets
 /// `MESH_NO_RESERVED_REGIONS` there), compile the empty fallback and report no folds.
 final class MeshWebView: WKWebView {
-    /// Called on the main thread whenever the reported folds change.
-    var onFoldsChanged: (([MeshFoldFeature]) -> Void)?
-    private var lastFolds: [MeshFoldFeature] = []
+    /// Called on the main thread whenever the reported folds or occlusion regions change.
+    var onRegionsChanged: ((MeshReservedRegions) -> Void)?
+    private var lastRegions = MeshReservedRegions(folds: [], occlusions: [])
     private var lastSize: CGSize = .zero
 
     // Makes UIKit run updateConstraints(), where reserved-region reads are tracked.
@@ -65,6 +88,31 @@ final class MeshWebView: WKWebView {
         return []
     }
 
+    /// Active occlusion regions (camera, Dynamic Island) in CSS px. On the iPhone Duo outer
+    /// display they sit at the top of the system side column, which tells the page where that
+    /// column is and where its navigation may start. Main thread only.
+    func currentOcclusions() -> [MeshRect] {
+        #if compiler(>=6.4) && !MESH_NO_RESERVED_REGIONS
+        if #available(iOS 27.1, *) {
+            let zoom = max(Double(pageZoom), 0.01)
+            return reservedRegions(kind: .occlusion, options: []).map { region in
+                MeshRect(
+                    left: Double(region.frame.minX) / zoom,
+                    top: Double(region.frame.minY) / zoom,
+                    right: Double(region.frame.maxX) / zoom,
+                    bottom: Double(region.frame.maxY) / zoom
+                )
+            }
+        }
+        #endif
+        return []
+    }
+
+    /// Folds and occlusion regions together. Main thread only.
+    func currentRegions() -> MeshReservedRegions {
+        MeshReservedRegions(folds: currentFolds(), occlusions: currentOcclusions())
+    }
+
     override func updateConstraints() {
         // "UIKit tracks the regions you read in updateConstraints() and runs it again when the
         // regions change" (UIView.reservedRegions(kind:options:)), e.g. when the Duo folds.
@@ -88,9 +136,9 @@ final class MeshWebView: WKWebView {
     }
 
     private func publishFolds() {
-        let folds = currentFolds()
-        guard folds != lastFolds else { return }
-        lastFolds = folds
-        onFoldsChanged?(folds)
+        let regions = currentRegions()
+        guard regions != lastRegions else { return }
+        lastRegions = regions
+        onRegionsChanged?(regions)
     }
 }

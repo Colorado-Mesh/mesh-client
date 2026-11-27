@@ -52,8 +52,9 @@ public class MeshDevicePlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func getFoldState(_ call: CAPPluginCall) {
         let webView = self.webView
         Task { @MainActor in
-            let folds = (webView as? MeshWebView)?.currentFolds() ?? []
-            call.resolve(["folds": folds.map(\.dictionary)])
+            let regions = (webView as? MeshWebView)?.currentRegions()
+                ?? MeshReservedRegions(folds: [], occlusions: [])
+            call.resolve(regions.dictionary)
         }
     }
 
@@ -73,8 +74,8 @@ public class MeshDevicePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     /// Main thread, from `MeshWebView`.
-    func foldsDidChange(_ folds: [MeshFoldFeature]) {
-        let payload: [String: Any] = ["folds": folds.map(\.dictionary)]
+    func regionsDidChange(_ regions: MeshReservedRegions) {
+        let payload = regions.dictionary
         (deliveryQueue ?? DispatchQueue.main).async { [weak self] in
             self?.notifyListeners("foldChanged", data: payload)
         }

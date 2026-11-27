@@ -247,7 +247,10 @@ run_device() {
     key_backend="$(result_field "$dir/mesh-smoke.json" secureKeyBackend)"
     elapsed="$(result_field "$dir/mesh-smoke.json" elapsedMs)"
     log "Smoke result: status=$status sqlite=$sqlite ($evidence) secureKey=$key_backend elapsedMs=$elapsed"
-    log "Folds: $(result_field "$dir/mesh-smoke.json" folds)"
+    # Reserved regions (folds, camera / Dynamic Island), safe area and view size as UIKit reports
+    # them: the measured iPhone Duo geometry the page's side-column logic depends on.
+    log "Geometry: $(result_field "$dir/mesh-smoke.json" geometry)"
+    log "Side column: $(result_field "$dir/mesh-smoke.json" state.sideColumn)"
     log "Viewport: $(result_field "$dir/mesh-smoke.json" state.viewport) mobile=$(result_field "$dir/mesh-smoke.json" state.mobile)"
   else
     screenshot "$udid" "$dir/screenshot-final.png"
