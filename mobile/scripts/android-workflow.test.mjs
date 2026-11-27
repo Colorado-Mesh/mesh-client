@@ -52,7 +52,8 @@ describe('mobile-android workflow', () => {
 
   it('makes the harness fail, not skip, when the services it starts are missing', () => {
     const harness = step('web', 'Browser harness');
-    expect(harness.env.MOBILE_E2E_REQUIRE.split(',')).toEqual(['meshtasticd', 'tiles']);
+    expect(harness.env.MOBILE_E2E_REQUIRE.split(',')).toEqual(['meshtasticd', 'mqtt', 'tiles']);
+    expect(runs('web')).toMatch(/eclipse-mosquitto@sha256:[0-9a-f]{64}/);
     expect(runs('web')).toMatch(/meshtastic\/meshtasticd@sha256:[0-9a-f]{64}/);
     expect(step('sidecar', 'Reticulum harness spec').env.MOBILE_E2E_REQUIRE).toBe('sidecar');
   });

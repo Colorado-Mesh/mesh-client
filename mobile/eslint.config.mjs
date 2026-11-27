@@ -33,7 +33,7 @@ export default [
   },
   // Plain JS modules (preloadEntry.js) lint like the desktop's scripts: no type information.
   {
-    files: ['src/**/*.js'],
+    files: ['src/**/*.js', 'e2e/**/*.mjs'],
     languageOptions: desktopScriptsBlock.languageOptions,
     rules: desktopScriptsBlock.rules,
   },

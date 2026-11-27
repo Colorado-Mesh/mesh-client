@@ -44,7 +44,15 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-export async function startHarness(): Promise<Harness> {
+export interface HarnessOptions {
+  /**
+   * Bind the app's "all interfaces" UDP sockets to this loopback address, so a stand-in device can
+   * bind the same port on another loopback address (MeshCom EXTUDP: 1799 on both ends).
+   */
+  udpBindAddress?: string;
+}
+
+export async function startHarness(opts: HarnessOptions = {}): Promise<Harness> {
   if (!fs.existsSync(path.join(ROOT, 'index.html'))) {
     throw new Error('mobile/dist/ is missing — run `pnpm -C mobile run build` first');
   }
@@ -65,8 +73,8 @@ export async function startHarness(): Promise<Harness> {
   // ESM script; Playwright compiles specs as CommonJS, so load it dynamically.
   const { startMobileWebBridge } = (await import(
     pathToFileURL(path.resolve(import.meta.dirname, '../scripts/web-bridge.mjs')).href
-  )) as { startMobileWebBridge: (o: { port: number }) => unknown };
-  const bridge = startMobileWebBridge({ port: 0 }) as {
+  )) as { startMobileWebBridge: (o: { port: number; udpBindAddress?: string }) => unknown };
+  const bridge = startMobileWebBridge({ port: 0, udpBindAddress: opts.udpBindAddress }) as {
     address(): AddressInfo;
     close(cb?: () => void): void;
     once(e: string, cb: () => void): void;

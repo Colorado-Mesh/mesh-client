@@ -48,7 +48,7 @@ const unb64 = (s) => Buffer.from(s ?? '', 'base64');
  * Wire one bridge client: returns `handle(op, args)` and cleans up its resources on close.
  * @param {(event: string, data: unknown) => void} emit
  */
-export function createBridgeSession(emit, { sharedDir } = {}) {
+export function createBridgeSession(emit, { sharedDir, udpBindAddress } = {}) {
   const sockets = new Map();
   const procs = new Map();
   let sharedRoot = sharedDir ?? null;
@@ -165,9 +165,16 @@ export function createBridgeSession(emit, { sharedDir } = {}) {
     },
     async udpBind(a) {
       const s = udp.get(a.id);
+      // Test harness option: bind sockets that ask for every interface to one loopback address,
+      // so a stand-in device can bind the same well-known port on another loopback address
+      // (MeshCom EXTUDP uses 1799 on both ends). Native plugins never read this.
+      const address =
+        udpBindAddress && (a.address == null || a.address === '0.0.0.0')
+          ? udpBindAddress
+          : a.address;
       await new Promise((res, rej) => {
         s.once('error', rej);
-        s.bind(a.port ?? 0, a.address, () => {
+        s.bind(a.port ?? 0, address, () => {
           s.off('error', rej);
           res();
         });
@@ -404,6 +411,7 @@ export function startMobileWebBridge({
   port = 47800,
   host = '127.0.0.1',
   token = randomBytes(24).toString('hex'),
+  udpBindAddress = process.env.MESH_BRIDGE_UDP_BIND || undefined,
 } = {}) {
   const server = new WebSocketServer({
     port,
@@ -415,9 +423,12 @@ export function startMobileWebBridge({
   });
   server.bridgeToken = token;
   server.on('connection', (client) => {
-    const session = createBridgeSession((event, data) => {
-      if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ event, data }));
-    });
+    const session = createBridgeSession(
+      (event, data) => {
+        if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ event, data }));
+      },
+      { udpBindAddress },
+    );
     client.on('message', async (raw) => {
       let msg;
       try {
