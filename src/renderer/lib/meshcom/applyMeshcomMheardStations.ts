@@ -1,7 +1,11 @@
 /**
  * Apply MeshCom MHEARD rows to nodeStore (hops/path/neighbors) and durable SQLite contacts.
  */
-import { MESHCOM_CONTACT_CAP_DEFAULT } from '@/shared/meshcomConstants';
+import {
+  MESHCOM_CONTACT_CAP_DEFAULT,
+  MESHCOM_MHEARD_APPLY_BURST_CAP,
+  MESHCOM_RELAY_NEIGHBOR_CAP,
+} from '@/shared/meshcomConstants';
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import {
@@ -19,6 +23,12 @@ import { shouldApplyMeshcomContact } from './meshcomLocallyDeletedContacts';
 import type { MeshcomMheardStation } from './meshcomMheard';
 import { meshcomPersistIdentityId } from './meshcomPersistIdentity';
 
+/** Keep the freshest {@link MESHCOM_RELAY_NEIGHBOR_CAP} neighbors (by lastRxTime). */
+function pruneRelayNeighbors(list: MeshNeighbor[]): MeshNeighbor[] {
+  if (list.length <= MESHCOM_RELAY_NEIGHBOR_CAP) return list;
+  return [...list].sort((a, b) => b.lastRxTime - a.lastRxTime).slice(0, MESHCOM_RELAY_NEIGHBOR_CAP);
+}
+
 function mergeNeighborEntry(
   existing: MeshNeighbor[] | undefined,
   entry: MeshNeighbor,
@@ -30,7 +40,7 @@ function mergeNeighborEntry(
   } else {
     list.push(entry);
   }
-  return list;
+  return pruneRelayNeighbors(list);
 }
 
 function persistDurableMeshcomContact(
@@ -100,16 +110,44 @@ function stationLastHeardAt(heardAt: number, ageMin: number | undefined): number
  * - Tombstoned stations are skipped entirely. A tombstoned station's via relay is still updated
  *   when the relay itself is not tombstoned (relay is a separate heard contact).
  */
+/**
+ * Drop neighbor edges that point at nodes removed by the contact-cap trim so relay
+ * `neighbors` arrays cannot outlive the node bucket.
+ */
+function scrubNeighborsAfterTrim(identityId: IdentityId): void {
+  const bucket = useNodeStore.getState().nodes[identityId] ?? {};
+  const alive = new Set<number>();
+  for (const node of Object.values(bucket)) {
+    alive.add(node.nodeId);
+  }
+  const patches: NodeRecord[] = [];
+  for (const node of Object.values(bucket)) {
+    const neighbors = node.neighbors;
+    if (!neighbors?.length) continue;
+    const kept = neighbors.filter((n) => alive.has(n.nodeId));
+    if (kept.length === neighbors.length) continue;
+    patches.push({ nodeId: node.nodeId, neighbors: pruneRelayNeighbors(kept) });
+  }
+  if (patches.length > 0) {
+    upsertNodeRecordsForIdentity(identityId, patches);
+  }
+}
+
 export function applyMeshcomMheardStations(
   identityId: IdentityId,
   stations: readonly MeshcomMheardStation[],
   heardAt: number,
 ): void {
   if (stations.length === 0) return;
+  // Bound one-shot MH bursts (e.g. NET Console flood) before O(n) neighbor merges.
+  const batch =
+    stations.length > MESHCOM_MHEARD_APPLY_BURST_CAP
+      ? stations.slice(0, MESHCOM_MHEARD_APPLY_BURST_CAP)
+      : stations;
   const records: NodeRecord[] = [];
   const viaNeighborPatches = new Map<number, MeshNeighbor[]>();
 
-  for (const station of stations) {
+  for (const station of batch) {
     const callsign = normalizeMeshcomCallsign(station.callsign);
     if (!callsign || !shouldApplyMeshcomContact(callsign)) continue;
     const nodeId = stationNodeId(station);
@@ -196,4 +234,5 @@ export function applyMeshcomMheardStations(
 
   // Cap after both upserts so newly inserted stations count toward the limit.
   trimMeshcomIdentityNodes(identityId, MESHCOM_CONTACT_CAP_DEFAULT);
+  scrubNeighborsAfterTrim(identityId);
 }

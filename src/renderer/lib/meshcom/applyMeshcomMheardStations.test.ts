@@ -5,6 +5,11 @@ vi.mock('../dbPersistRetry', () => ({
   persistDbWrite: vi.fn(),
 }));
 
+import {
+  MESHCOM_MHEARD_APPLY_BURST_CAP,
+  MESHCOM_RELAY_NEIGHBOR_CAP,
+} from '@/shared/meshcomConstants';
+
 import { useNodeStore } from '../../stores/nodeStore';
 import { buildMeshPeerTopologyGraph, resolveMeshPeerRelayId } from '../buildMeshPeerTopologyGraph';
 import { nodeRecordsToMeshNodeMap } from '../storeRecordAdapters';
@@ -97,5 +102,33 @@ describe('applyMeshcomMheardStations', () => {
     applyMeshcomMheardStations(ID, [{ callsign: 'AGE-1', ageMin: 2 }], 1_700_000_120_000);
     const id = callsignToNodeId('AGE-1');
     expect(useNodeStore.getState().nodes[ID]?.[id]?.lastHeardAt).toBe(1_700_000_000_000);
+  });
+
+  it('caps relay neighbors and keeps the freshest entries under a VIA flood', () => {
+    const relayCall = 'FIXED-1';
+    const heardAt = 1_700_000_000_000;
+    const stations = Array.from({ length: MESHCOM_RELAY_NEIGHBOR_CAP + 40 }, (_, i) => ({
+      callsign: `N${String(i).padStart(5, '0')}-1`,
+      via: relayCall,
+      snr: 1,
+      ageMin: MESHCOM_RELAY_NEIGHBOR_CAP + 40 - i, // later stations are fresher
+    }));
+    applyMeshcomMheardStations(ID, stations, heardAt);
+    const relayId = callsignToNodeId(relayCall);
+    const neighbors = useNodeStore.getState().nodes[ID]?.[relayId]?.neighbors ?? [];
+    expect(neighbors.length).toBeLessThanOrEqual(MESHCOM_RELAY_NEIGHBOR_CAP);
+    const newestCall = `N${String(MESHCOM_RELAY_NEIGHBOR_CAP + 39).padStart(5, '0')}-1`;
+    const newestId = callsignToNodeId(newestCall);
+    expect(neighbors.some((n) => n.nodeId === newestId)).toBe(true);
+  });
+
+  it('applies at most MESHCOM_MHEARD_APPLY_BURST_CAP stations per call', () => {
+    const stations = Array.from({ length: MESHCOM_MHEARD_APPLY_BURST_CAP + 25 }, (_, i) => ({
+      callsign: `B${String(i).padStart(5, '0')}-1`,
+    }));
+    applyMeshcomMheardStations(ID, stations, 1_700_000_000_000);
+    const bucket = useNodeStore.getState().nodes[ID] ?? {};
+    expect(Object.keys(bucket).length).toBe(MESHCOM_MHEARD_APPLY_BURST_CAP);
+    expect(bucket[callsignToNodeId('B00512-1')]).toBeUndefined();
   });
 });
