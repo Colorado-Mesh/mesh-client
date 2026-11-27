@@ -69,6 +69,21 @@ export const INVARIANTS = [
     'name: CHAT_MACROS_STORAGE_KEY,\n      version: 1,',
     'the seeded value uses persist version 1',
   ],
+  [
+    'src/renderer/components/AppPanel.tsx',
+    '<div data-setting-anchor="app.window.closeToTray"',
+    'mobileShell.css hides this desktop-only row (no tray on phones)',
+  ],
+  [
+    'src/renderer/components/AppPanel.tsx',
+    '<div data-setting-anchor="app.updates.autoDownload"',
+    'mobileShell.css hides the Updates section holding this anchor (app stores update the app)',
+  ],
+  [
+    'src/renderer/components/AppPanel.tsx',
+    '<div data-setting-anchor="app.gps.savedLocations">',
+    'mobileShell.css sizes the saved location rows under this anchor',
+  ],
 ];
 
 const sha256 = (file) =>

@@ -11,7 +11,8 @@
     "src/renderer/components/shell/QuitButton.tsx": "a0d93be6af115b946d1b18b0ca45cb4c16ae68265f1ed3536d7d2b638a0c7f7e",
     "src/renderer/hooks/useMediaQuery.ts": "0593554c2ec5205eee32db00149709a3c40659f52b30c20989cf63bb55e398e9",
     "src/renderer/lib/bottomNav.ts": "059f0577831be43daffc9878cd63eb75e6526eb660a818c96d63de2ecd3c52ff",
-    "src/renderer/lib/locationTrust.ts": "f5548789dc33c6f452870c30e579db6247e4e66c0521e140af2f828707d250e3"
+    "src/renderer/lib/locationTrust.ts": "f5548789dc33c6f452870c30e579db6247e4e66c0521e140af2f828707d250e3",
+    "src/renderer/lib/settingsSearchEntries/app.ts": "0913224a7cf33ad8eefa11100b6f2299ea4f0280e8a3d7fa3694ddcc06ffbecb"
   },
   "electronSurface": [
     "BrowserWindow",

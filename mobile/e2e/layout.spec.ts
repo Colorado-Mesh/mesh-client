@@ -154,3 +154,37 @@ for (const width of [361, 375, 412]) {
     await context.close();
   });
 }
+
+// "Close to tray" and automatic update downloads do nothing on a phone (no tray; the app stores
+// update the app), so App settings leaves them out; "Prevent sleep" stays (it keeps the screen on).
+test('App settings leaves out the desktop-only options', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 412, height: 915 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 2,
+  });
+  const page = await context.newPage();
+  const boot = await bootApp(page, h);
+  await page.locator('[data-nav-section="more"]').click();
+  await page.getByRole('dialog').getByRole('button', { name: /^App/ }).first().click();
+  const preventSleep = page.locator('[data-setting-anchor="app.window.preventSleep"]');
+  await preventSleep.evaluate((el) => {
+    const details = el.closest('details');
+    if (details) details.open = true;
+  });
+  await expect(preventSleep).toBeVisible();
+  await expect(page.locator('[data-setting-anchor="app.window.closeToTray"]')).toBeHidden();
+  const updates = page.locator('details:has([data-setting-anchor="app.updates.autoDownload"])');
+  await expect(updates).toHaveCount(1);
+  await expect(updates).toBeHidden();
+  // The sections either side of Updates are still there.
+  await expect(
+    page.locator('details:has([data-setting-anchor="app.window.preventSleep"])'),
+  ).toBeVisible();
+  await expect(
+    page.locator('details:has([data-setting-anchor="app.appearance.reduceMotion"])'),
+  ).toBeVisible();
+  expect(unexpectedErrors(boot.pageErrors)).toEqual([]);
+  await context.close();
+});

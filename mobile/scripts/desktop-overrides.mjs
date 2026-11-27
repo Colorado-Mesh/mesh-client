@@ -23,6 +23,7 @@ export const RENDERER_OVERRIDES = {
   'src/renderer/components/chat/ConversationLayout.tsx': 'ConversationLayout.tsx',
   'src/renderer/lib/bottomNav.ts': 'bottomNav.ts',
   'src/renderer/hooks/useMediaQuery.ts': 'useMediaQuery.ts',
+  'src/renderer/lib/settingsSearchEntries/app.ts': 'settingsSearchApp.ts',
 };
 
 const byAbsolute = new Map(

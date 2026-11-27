@@ -240,6 +240,16 @@ html[data-mesh-mobile]
   min-width: fit-content;
 }
 
+/*
+ * App settings with no effect in the mobile apps (see overrides/renderer/settingsSearchApp.ts,
+ * which also drops them from the launcher search): the "Close to tray" row, and the whole Updates
+ * section, which holds only the automatic download option. Pinned by e2e/layout.spec.ts.
+ */
+html[data-mesh-mobile] [data-setting-anchor='app.window.closeToTray'],
+html[data-mesh-mobile] details:has([data-setting-anchor='app.updates.autoDownload']) {
+  display: none;
+}
+
 /* Keep the keyboard from covering composers on WebViews that only shrink the visual viewport. */
 html[data-mesh-mobile] [data-app-shell] main {
   scroll-padding-bottom: var(--mobile-keyboard-inset, 0px);
