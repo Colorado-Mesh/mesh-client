@@ -15,6 +15,9 @@ describe('useMeshcomRuntime serial reconnect (regression)', () => {
     expect(body).toContain('markSerialNeedsReselectExhausted');
     expect(body).toContain('MESHCOM_RECONNECT_MAX_ATTEMPTS');
     expect(body).toContain('isReconnectingRef.current = true');
+    // Failed opens must scheduleOwner again — not attemptReconnect→onLinkLost (strands).
+    expect(body).toContain('scheduleReconnectOwner');
+    expect(body).toMatch(/settled\.shouldSchedule\) \{\s*scheduleReconnectOwner\(\);/);
   });
 
   it('prepareRfConnect only resets reconnect budget when not preserving', () => {
@@ -32,6 +35,19 @@ describe('useMeshcomRuntime serial reconnect (regression)', () => {
     expect(body).toContain('allowPortPicker: false');
     expect(body).toContain('isMeshcomSerialNeedsReselectError');
     expect(body).toContain('markSerialNeedsReselectExhausted');
+  });
+
+  it('serial attach defers reconnect success until the board responds', () => {
+    const body = extractUseCallbackBody(RUNTIME_SOURCE, 'attachRfSession');
+    expect(body).not.toBe('');
+    expect(body).toContain('releaseSerialReconnectOwnerProvisional');
+    expect(body).toContain('markMeshcomReconnectSuccess');
+    expect(body).toMatch(/type === 'serial'[\s\S]*?releaseSerialReconnectOwnerProvisional\(\)/);
+    expect(body).toMatch(/snap\?\.callsign\?\.trim\(\)[\s\S]*?markMeshcomReconnectSuccess\(\)/);
+    // Must not reset the attempt budget on USB open alone for serial.
+    expect(body).not.toMatch(
+      /if \(type === 'serial'\) \{[\s\S]*?reconnectAttemptRef\.current = 0;/,
+    );
   });
 
   it('serial watchdog pauses while a reconnect owner is active', () => {
