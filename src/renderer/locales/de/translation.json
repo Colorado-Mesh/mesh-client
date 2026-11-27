@@ -9372,7 +9372,7 @@
     "confirmAddBody": "Dieser Server hört auf {{name}}, was sich nicht auf Ihrem Funkgerät befindet. Zum Kanal-Slot {{slot}} hinzufügen?",
     "pasteKeyBody": "Dieser Server hört auf {{name}}, einen Kanal mit eigenem Schlüssel. Fügen Sie den 32-stelligen Schlüssel ein, um ihn hinzuzufügen.",
     "keyLabel": "Kanalschlüssel",
-    "keyBadFormat": "Geben Sie den 32-stelligen Schlüssel ein, wobei Sie die Zeichen 0–9 und a–f verwenden.",
+    "keyBadFormat": "Geben Sie den 32-stelligen Schlüssel ein, wobei Sie die Zeichen 0-9 und a-f verwenden.",
     "keyWrongHash": "Dieser Schlüssel ist nicht der, mit dem dieser Server lauscht.",
     "errorInvalidUrl": "Die gespeicherte Serveradresse ist ungültig. Überprüfen Sie sie in den App-Einstellungen.",
     "errorNotPublic": "Der Server muss sich im öffentlichen Internet befinden.",
@@ -9389,6 +9389,7 @@
     "errorSlotsFull": "Alle Kanal-Slots sind belegt. Entfernen Sie einen Kanal und versuchen Sie es erneut.",
     "errorSendFailed": "Der Code konnte nicht gesendet werden. Überprüfen Sie die Funkverbindung und versuchen Sie es erneut.",
     "errorChannelTimeout": "Der Kanal wurde hinzugefügt, erschien aber nicht im Chat. Versuchen Sie es erneut.",
-    "errorAddFailed": "{{name}} konnte nicht zum Radio hinzugefügt werden."
+    "errorAddFailed": "{{name}} konnte nicht zum Radio hinzugefügt werden.",
+    "errorChanged": "Das Radio oder seine Kanäle wurden während der Überprüfung geändert, sodass nichts gesendet wurde. Versuchen Sie es erneut."
   }
 }

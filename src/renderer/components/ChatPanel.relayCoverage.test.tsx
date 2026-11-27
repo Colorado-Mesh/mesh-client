@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -468,6 +468,54 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
       'href',
       'https://rangecheck.example.org/share/s1',
     );
+  });
+
+  it('shows no reach check line under a failed bubble, and drops its entry', async () => {
+    const now = Date.now();
+    useReachCheckStore.setState({ entries: {} });
+    useReachCheckStore.getState().start(IDENTITY, 'out:1700000000000:abc', {
+      origin: 'https://rangecheck.example.org',
+      sessionId: 's1',
+      code: 'MHC-1A2B3C',
+      session: null,
+      state: 'polling',
+      startedAt: now,
+    });
+    render(
+      <ToastProvider>
+        <ChatPanel
+          messages={[
+            {
+              storeId: 'out:1700000000000:abc',
+              sender_id: 7,
+              sender_name: 'Me',
+              payload: 'MHC-1A2B3C',
+              channel: 0,
+              timestamp: now,
+              status: 'failed',
+            },
+          ]}
+          channels={[{ index: 0, name: 'cm-reach' }]}
+          myNodeNum={7}
+          onSend={vi.fn()}
+          onReact={vi.fn().mockResolvedValue(undefined)}
+          onResend={vi.fn()}
+          onNodeClick={vi.fn()}
+          isConnected
+          nodes={new Map()}
+          isActive
+          protocol="meshcore"
+          identityId={IDENTITY}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('MHC-1A2B3C')).toBeInTheDocument();
+    expect(screen.queryByText(/Reach check:/)).toBeNull();
+    await waitFor(() => {
+      expect(
+        useReachCheckStore.getState().entryFor(IDENTITY, 'out:1700000000000:abc'),
+      ).toBeUndefined();
+    });
   });
 
   it('shows Reticulum hops-only coverage inside ChatPanel status row', () => {

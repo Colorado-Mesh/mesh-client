@@ -6339,7 +6339,8 @@
     "errorSlotsFull": "All channel slots are in use. Remove a channel, then try again.",
     "errorSendFailed": "The code could not be sent. Check the radio connection and try again.",
     "errorChannelTimeout": "The channel was added but did not appear in Chat. Try again.",
-    "errorAddFailed": "{{name}} could not be added to the radio."
+    "errorAddFailed": "{{name}} could not be added to the radio.",
+    "errorChanged": "The radio or its channels changed during the check, so nothing was sent. Try again."
   },
   "rawPacketLog": {
     "filterPackets": "Filter packets",

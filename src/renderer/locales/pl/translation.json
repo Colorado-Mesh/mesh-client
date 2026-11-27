@@ -9520,7 +9520,7 @@
     "confirmAddBody": "Ten serwer nasłuchuje na {{name}}, który nie znajduje się w Twoim radiu. Dodać go do gniazda kanału {{slot}}?",
     "pasteKeyBody": "Ten serwer nasłuchuje na {{name}}, kanale z własnym kluczem. Wklej 32-znakowy klucz, aby go dodać.",
     "keyLabel": "Przycisk [ CHANNEL ] (KANAŁ)",
-    "keyBadFormat": "Wprowadź klucz składający się z 32 znaków, używając cyfr 0–9 i liter a–f.",
+    "keyBadFormat": "Wprowadź klucz składający się z 32 znaków, używając cyfr 0-9 i liter a-f.",
     "keyWrongHash": "Ten klucz nie jest kluczem, za pomocą którego nasłuchuje ten serwer.",
     "errorInvalidUrl": "Zapisany adres serwera jest nieprawidłowy. Sprawdź to w ustawieniach aplikacji.",
     "errorNotPublic": "Serwer musi znajdować się w publicznym Internecie.",
@@ -9537,6 +9537,7 @@
     "errorSlotsFull": "Wszystkie gniazda kanałów są zajęte. Usuń kanał, a następnie spróbuj ponownie.",
     "errorSendFailed": "Nie udało się wysłać kodu. Sprawdź połączenie radiowe i spróbuj ponownie.",
     "errorChannelTimeout": "Kanał został dodany, ale nie pojawił się na czacie. Spróbuj ponownie.",
-    "errorAddFailed": "Nie udało się dodać stacji {{name}} do radia."
+    "errorAddFailed": "Nie udało się dodać stacji {{name}} do radia.",
+    "errorChanged": "Radio lub jego kanały zostały zmienione podczas sprawdzania, więc nic nie zostało wysłane. Spróbuj ponownie."
   }
 }

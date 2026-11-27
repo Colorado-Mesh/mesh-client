@@ -9389,6 +9389,7 @@
     "errorSlotsFull": "Alle kanaalslots zijn in gebruik. Verwijder een kanaal en probeer het vervolgens opnieuw.",
     "errorSendFailed": "De code kon niet worden verzonden. Controleer de radioverbinding en probeer het opnieuw.",
     "errorChannelTimeout": "Het kanaal is toegevoegd, maar wordt niet weergegeven in Chat. Probeer het opnieuw.",
-    "errorAddFailed": "{{name}} kon niet aan de radio worden toegevoegd."
+    "errorAddFailed": "{{name}} kon niet aan de radio worden toegevoegd.",
+    "errorChanged": "De radio of de zenders ervan zijn tijdens de controle gewijzigd, dus er is niets verzonden. Probeer het opnieuw."
   }
 }

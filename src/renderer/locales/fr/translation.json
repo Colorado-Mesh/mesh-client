@@ -9389,6 +9389,7 @@
     "errorSlotsFull": "Tous les emplacements de chaînes sont utilisés. Supprimez un canal, puis réessayez.",
     "errorSendFailed": "Le code n’a pas pu être envoyé. Vérifiez la connexion radio et réessayez.",
     "errorChannelTimeout": "Le canal a été ajouté, mais n'est pas apparu dans le chat. Veuillez réessayer.",
-    "errorAddFailed": "{{name}} n’a pas pu être ajouté à la radio."
+    "errorAddFailed": "{{name}} n’a pas pu être ajouté à la radio.",
+    "errorChanged": "La radio ou ses canaux ont changé pendant la vérification, donc rien n'a été envoyé. Veuillez réessayer."
   }
 }

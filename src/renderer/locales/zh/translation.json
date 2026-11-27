@@ -9389,6 +9389,7 @@
     "errorSlotsFull": "所有频道插槽均已使用。请移除一个频道，然后重试。",
     "errorSendFailed": "无法发送代码。请检查无线电连接，然后重试。",
     "errorChannelTimeout": "频道已添加，但未显示在聊天中。请重试。",
-    "errorAddFailed": "{{name}}无法添加到收音机。"
+    "errorAddFailed": "{{name}}无法添加到收音机。",
+    "errorChanged": "检查期间，收音机或其频道发生了变化，因此未发送任何内容。请重试。"
   }
 }

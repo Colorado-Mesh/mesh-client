@@ -101,6 +101,10 @@ describe('ReachCheckDialog', () => {
     [{ kind: 'error', error: 'not_configured' }, 'This server has no test channel set up.'],
     [{ kind: 'error', error: 'no_observers' }, 'This server has no observers to check against'],
     [{ kind: 'error', error: 'invalid_response' }, 'The server answer was not understood.'],
+    [
+      { kind: 'error', error: 'changed' },
+      'The radio or its channels changed during the check, so nothing was sent. Try again.',
+    ],
   ] as [ReachCheckDialogState, string][])('explains %o', (state, text) => {
     const { onAnswer } = renderDialog(state);
     expect(screen.getByRole('dialog')).toHaveTextContent(text);

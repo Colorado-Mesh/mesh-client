@@ -74,6 +74,7 @@ function makeDeps(overrides: Partial<UseReachCheckDeps> = {}): UseReachCheckDeps
   };
   return {
     identityId: ID,
+    active: true,
     channels: [PUBLIC],
     channelIndexes: [0],
     setChannel: vi.fn(() => Promise.resolve()),
@@ -85,6 +86,14 @@ function makeDeps(overrides: Partial<UseReachCheckDeps> = {}): UseReachCheckDeps
     startPolling: vi.fn(),
     ...overrides,
   };
+}
+
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
 }
 
 beforeEach(() => {
@@ -193,7 +202,12 @@ describe('useReachCheck', () => {
     expect([index, name]).toEqual([1, '#cm-reach']);
     expect(bytesToHex(secret)).toBe(await meshcoreDeriveChannelKeyHexFromName('#cm-reach'));
     expect(deps.selectChannel).not.toHaveBeenCalled();
-    rerender({ ...deps, channelIndexes: [0, 1] });
+    // The runtime lists the saved channel, key included, in the same update that shows it in Chat.
+    rerender({
+      ...deps,
+      channels: [PUBLIC, await hashtagSource(1, '#cm-reach')],
+      channelIndexes: [0, 1],
+    });
     await waitFor(() => {
       expect(deps.sendOnChannel).toHaveBeenCalledWith('MHC-1A2B3C', 1);
     });
@@ -254,7 +268,14 @@ describe('useReachCheck', () => {
       expect(deps.setChannel).toHaveBeenCalledTimes(1);
     });
     expect(vi.mocked(deps.setChannel).mock.calls[0].slice(0, 2)).toEqual([1, 'ukmeshtest']);
-    rerender({ ...deps, channelIndexes: [0, 1] });
+    rerender({
+      ...deps,
+      channels: [
+        PUBLIC,
+        { index: 1, name: 'ukmeshtest', secret: hexToBytesExactOrThrow(goodKey, 16) },
+      ],
+      channelIndexes: [0, 1],
+    });
     await waitFor(() => {
       expect(deps.sendOnChannel).toHaveBeenCalledWith('MHC-1A2B3C', 1);
     });
@@ -430,5 +451,295 @@ describe('useReachCheck', () => {
         name: '#cm-reach',
       });
     });
+  });
+});
+
+describe('useReachCheck when the panel or the radio changes mid-flow', () => {
+  it('ends quietly, with no dialog, when the panel is left while the server answers', async () => {
+    const boot = deferred<ReachCheckResult<ReachCheckServerInfo>>();
+    const deps = makeDeps({
+      channels: [PUBLIC, await hashtagSource(1, '#cm-reach')],
+      channelIndexes: [0, 1],
+    });
+    vi.mocked(deps.api.bootstrap).mockReturnValue(boot.promise);
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    rerender({ ...deps, active: false });
+    await act(async () => {
+      boot.resolve({ ok: false, error: 'network' });
+      await boot.promise;
+    });
+    await waitFor(() => {
+      expect(result.current.busy).toBe(false);
+    });
+    expect(result.current.dialog).toBeNull();
+    expect(deps.api.createSession).not.toHaveBeenCalled();
+  });
+
+  it('sends nothing when the panel is left during the session request', async () => {
+    const created = deferred<ReachCheckResult<ReachCheckSession>>();
+    const deps = makeDeps({
+      channels: [PUBLIC, await hashtagSource(1, '#cm-reach')],
+      channelIndexes: [0, 1],
+    });
+    vi.mocked(deps.api.createSession).mockReturnValue(created.promise);
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(deps.api.createSession).toHaveBeenCalled();
+    });
+    rerender({ ...deps, active: false });
+    await act(async () => {
+      created.resolve({ ok: true, value: session() });
+      await created.promise;
+    });
+    await waitFor(() => {
+      expect(result.current.busy).toBe(false);
+    });
+    expect(deps.sendOnChannel).not.toHaveBeenCalled();
+    expect(result.current.dialog).toBeNull();
+    expect(Object.keys(useReachCheckStore.getState().entries)).toEqual([]);
+  });
+
+  it('shows no rate-limit message in a panel that was left during the session request', async () => {
+    const created = deferred<ReachCheckResult<ReachCheckSession>>();
+    const deps = makeDeps({
+      channels: [PUBLIC, await hashtagSource(1, '#cm-reach')],
+      channelIndexes: [0, 1],
+    });
+    vi.mocked(deps.api.createSession).mockReturnValue(created.promise);
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(deps.api.createSession).toHaveBeenCalled();
+    });
+    rerender({ ...deps, active: false });
+    await act(async () => {
+      created.resolve({ ok: false, error: 'rate_limited', retryAfterSeconds: 60 });
+      await created.promise;
+    });
+    await waitFor(() => {
+      expect(result.current.busy).toBe(false);
+    });
+    expect(result.current.dialog).toBeNull();
+  });
+
+  it('creates no session when the panel is left while the added channel is awaited', async () => {
+    const deps = makeDeps();
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(result.current.dialog?.kind).toBe('confirm-add');
+    });
+    act(() => {
+      result.current.answer({ kind: 'confirm' });
+    });
+    await waitFor(() => {
+      expect(deps.setChannel).toHaveBeenCalled();
+    });
+    rerender({ ...deps, active: false });
+    rerender({
+      ...deps,
+      active: false,
+      channels: [PUBLIC, await hashtagSource(1, '#cm-reach')],
+      channelIndexes: [0, 1],
+    });
+    await waitFor(() => {
+      expect(result.current.busy).toBe(false);
+    });
+    expect(deps.api.createSession).not.toHaveBeenCalled();
+    expect(deps.selectChannel).not.toHaveBeenCalled();
+    expect(result.current.dialog).toBeNull();
+  });
+
+  it('shows no failed-add message in a panel that was left during the add', async () => {
+    const save = deferred<undefined>();
+    const deps = makeDeps({
+      setChannel: vi.fn(() => save.promise.then(() => Promise.reject(new Error('timeout')))),
+    });
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(result.current.dialog?.kind).toBe('confirm-add');
+    });
+    act(() => {
+      result.current.answer({ kind: 'confirm' });
+    });
+    await waitFor(() => {
+      expect(deps.setChannel).toHaveBeenCalled();
+    });
+    rerender({ ...deps, active: false });
+    await act(async () => {
+      save.resolve(undefined);
+      await save.promise;
+    });
+    await waitFor(() => {
+      expect(result.current.busy).toBe(false);
+    });
+    expect(result.current.dialog).toBeNull();
+  });
+
+  it('closes an open step without adding anything when the panel is left', async () => {
+    const deps = makeDeps();
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(result.current.dialog?.kind).toBe('confirm-add');
+    });
+    rerender({ ...deps, active: false });
+    await waitFor(() => {
+      expect(result.current.dialog).toBeNull();
+    });
+    expect(result.current.busy).toBe(false);
+    expect(deps.setChannel).not.toHaveBeenCalled();
+  });
+
+  it('closes a final message when the panel is left', async () => {
+    const deps = makeDeps();
+    vi.mocked(deps.api.bootstrap).mockResolvedValue({ ok: false, error: 'network' });
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(result.current.dialog?.kind).toBe('error');
+    });
+    rerender({ ...deps, active: false });
+    await waitFor(() => {
+      expect(result.current.dialog).toBeNull();
+    });
+  });
+
+  it('refuses to write a slot the radio filled while the add was being confirmed', async () => {
+    const deps = makeDeps();
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(result.current.dialog).toEqual({ kind: 'confirm-add', name: '#cm-reach', index: 1 });
+    });
+    rerender({
+      ...deps,
+      channels: [PUBLIC, { index: 1, name: 'Ops', secret: new Uint8Array(16).fill(9) }],
+      channelIndexes: [0, 1],
+    });
+    act(() => {
+      result.current.answer({ kind: 'confirm' });
+    });
+    await waitFor(() => {
+      expect(result.current.dialog).toEqual({ kind: 'error', error: 'changed' });
+    });
+    expect(deps.setChannel).not.toHaveBeenCalled();
+    expect(deps.api.createSession).not.toHaveBeenCalled();
+  });
+
+  it('refuses to send when the test channel changed during the session request', async () => {
+    const created = deferred<ReachCheckResult<ReachCheckSession>>();
+    const deps = makeDeps({
+      channels: [PUBLIC, await hashtagSource(1, '#cm-reach')],
+      channelIndexes: [0, 1],
+    });
+    vi.mocked(deps.api.createSession).mockReturnValue(created.promise);
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(deps.api.createSession).toHaveBeenCalled();
+    });
+    rerender({
+      ...deps,
+      channels: [PUBLIC, { index: 1, name: '#cm-reach', secret: new Uint8Array(16).fill(7) }],
+    });
+    await act(async () => {
+      created.resolve({ ok: true, value: session() });
+      await created.promise;
+    });
+    await waitFor(() => {
+      expect(result.current.dialog).toEqual({ kind: 'error', error: 'changed' });
+    });
+    expect(deps.sendOnChannel).not.toHaveBeenCalled();
+  });
+
+  it('refuses to send when another radio connected during the session request', async () => {
+    const created = deferred<ReachCheckResult<ReachCheckSession>>();
+    const deps = makeDeps({
+      channels: [PUBLIC, await hashtagSource(1, '#cm-reach')],
+      channelIndexes: [0, 1],
+    });
+    vi.mocked(deps.api.createSession).mockReturnValue(created.promise);
+    const { result, rerender } = renderHook((props: UseReachCheckDeps) => useReachCheck(props), {
+      initialProps: deps,
+    });
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(deps.api.createSession).toHaveBeenCalled();
+    });
+    rerender({ ...deps, identityId: 'meshcore:bb' });
+    await act(async () => {
+      created.resolve({ ok: true, value: session() });
+      await created.promise;
+    });
+    await waitFor(() => {
+      expect(result.current.dialog).toEqual({ kind: 'error', error: 'changed' });
+    });
+    expect(deps.sendOnChannel).not.toHaveBeenCalled();
+    expect(Object.keys(useReachCheckStore.getState().entries)).toEqual([]);
+  });
+
+  it('sends nothing after the panel unmounts', async () => {
+    const created = deferred<ReachCheckResult<ReachCheckSession>>();
+    const deps = makeDeps({
+      channels: [PUBLIC, await hashtagSource(1, '#cm-reach')],
+      channelIndexes: [0, 1],
+    });
+    vi.mocked(deps.api.createSession).mockReturnValue(created.promise);
+    const { result, unmount } = renderHook(() => useReachCheck(deps));
+    act(() => {
+      result.current.run();
+    });
+    await waitFor(() => {
+      expect(deps.api.createSession).toHaveBeenCalled();
+    });
+    unmount();
+    await act(async () => {
+      created.resolve({ ok: true, value: session() });
+      await created.promise;
+    });
+    expect(deps.sendOnChannel).not.toHaveBeenCalled();
+    expect(Object.keys(useReachCheckStore.getState().entries)).toEqual([]);
   });
 });

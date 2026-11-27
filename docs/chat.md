@@ -292,7 +292,10 @@ When a check cannot run, a dialog says why:
 
 - **Browser check:** some servers (Cloudflare Turnstile) only give codes to a browser. mesh-client still prepares and opens the test channel, then offers to open the site so you can get a code there and send it yourself. There is no results line in that case.
 - **Same name, different key:** if your radio already has a channel with the test channel's name but another key, the server cannot read it, so mesh-client stops instead of sending. Fix or remove that channel first.
+- **Radio changed:** if the radio reconnects or its channel list changes while the check is starting, it stops without writing a channel or sending the code. Run it again.
 - **All channel slots in use**, **server not reachable**, **limiting new checks** (with a wait time) and **no test channel set up** stop the check with nothing sent.
+
+Leaving Chat or switching protocol while a check is starting ends it quietly, with nothing sent. If the radio fails to send the code, its bubble shows the failure and no results line appears.
 
 Only public `https://` servers are accepted. Reach check is MeshCore only, because the observers are MeshCore MQTT feeds.
 

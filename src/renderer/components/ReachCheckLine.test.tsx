@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -54,6 +54,19 @@ describe('ReachCheckLine', () => {
     expect(container).toBeEmptyDOMElement();
     rerender(<ReachCheckLine messageId={MSG} isOwn identityId={null} />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('drops the line and its entry when the code was not sent (bubble failed)', async () => {
+    startEntry({ session: session({ observedCount: 0 }) });
+    const { container, rerender } = render(
+      <ReachCheckLine messageId={MSG} isOwn identityId={ID} />,
+    );
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    rerender(<ReachCheckLine messageId={MSG} isOwn identityId={ID} failed />);
+    expect(container).toBeEmptyDOMElement();
+    await waitFor(() => {
+      expect(useReachCheckStore.getState().entryFor(ID, MSG)).toBeUndefined();
+    });
   });
 
   it('shows waiting before any observer has reported', () => {

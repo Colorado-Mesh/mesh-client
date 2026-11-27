@@ -43,6 +43,8 @@ function errorMessage(t: TFunction, state: ErrorState): string {
       return t('reachCheck.errorChannelTimeout');
     case 'add-failed':
       return t('reachCheck.errorAddFailed', { name: state.name ?? '' });
+    case 'changed':
+      return t('reachCheck.errorChanged');
   }
 }
 

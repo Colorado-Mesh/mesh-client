@@ -9459,7 +9459,7 @@
     "confirmAddBody": "Tento server naslouchá na {{name}}, což není na vašem rádiu. Přidat jej do slotu kanálu {{slot}}?",
     "pasteKeyBody": "Tento server naslouchá na {{name}}, kanálu s vlastním klíčem. Pro přidání vložte 32znakový klíč.",
     "keyLabel": "Klíč kanálu",
-    "keyBadFormat": "Zadejte 32znakový klíč pomocí znaků 0–9 a a–f.",
+    "keyBadFormat": "Zadejte 32znakový klíč pomocí znaků 0-9 a a-f.",
     "keyWrongHash": "Tento klíč není ten, který tento server poslouchá.",
     "errorInvalidUrl": "Uložená adresa serveru není platná. Zkontrolujte ji v nastavení aplikace.",
     "errorNotPublic": "Server musí být na veřejném internetu.",
@@ -9476,6 +9476,7 @@
     "errorSlotsFull": "Všechny sloty kanálů jsou obsazeny. Odeberte kanál a zkuste to znovu.",
     "errorSendFailed": "Kód se nepodařilo odeslat. Zkontrolujte rádiové připojení a zkuste to znovu.",
     "errorChannelTimeout": "Kanál byl přidán, ale neobjevil se v chatu. Zkuste to znovu.",
-    "errorAddFailed": "{{name}} nelze přidat do rádia."
+    "errorAddFailed": "{{name}} nelze přidat do rádia.",
+    "errorChanged": "Rádio nebo jeho kanály se během kontroly změnily, takže nic nebylo odesláno. Zkuste to znovu."
   }
 }

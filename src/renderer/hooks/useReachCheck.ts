@@ -6,6 +6,7 @@ import type { MeshcoreChatChannelSource } from '../lib/meshcoreConfiguredChatCha
 import {
   checkPastedReachCheckKey,
   planReachCheckChannel,
+  type ReachCheckChannelPlan,
 } from '../lib/reachCheck/reachCheckChannel';
 import { startReachCheckPolling } from '../lib/reachCheck/reachCheckPoller';
 import {
@@ -25,7 +26,8 @@ export type ReachCheckFlowError =
   | 'slots-full'
   | 'send-failed'
   | 'channel-timeout'
-  | 'add-failed';
+  | 'add-failed'
+  | 'changed';
 
 export type ReachCheckDialogState =
   | { kind: 'setup'; error?: ReachCheckServerInputError }
@@ -42,6 +44,11 @@ export type ReachCheckDialogAnswer =
 
 export interface UseReachCheckDeps {
   identityId: IdentityId | null;
+  /**
+   * False while this Chat panel is hidden or its protocol is switching (the composer is disabled).
+   * A check in progress then ends quietly: no dialog in a hidden panel, nothing sent.
+   */
+  active: boolean;
   /** Radio channels with their keys (MeshCore companion). */
   channels: readonly MeshcoreChatChannelSource[];
   /** Channel indexes Chat currently lists; an added channel is selected once it appears here. */
@@ -56,10 +63,16 @@ export interface UseReachCheckDeps {
   startPolling?: (sessionId: string) => void;
 }
 
+function planIndex(plan: ReachCheckChannelPlan): number | null {
+  return plan.kind === 'slots-full' ? null : plan.index;
+}
+
 /**
  * One-click MeshCore reach check: server address, bootstrap, test channel (match, add or paste
  * key), session, send, results entry. Nothing is transmitted before the session exists, and the
- * session is created only once the channel is ready.
+ * session is created only once the channel is ready. After every wait the flow checks that the
+ * panel is still shown (else it ends quietly) and that the same radio still has the planned slot
+ * (else it stops with "changed"), so a slot is never written or a code sent on another radio.
  */
 export function useReachCheck(deps: UseReachCheckDeps): {
   busy: boolean;
@@ -75,10 +88,27 @@ export function useReachCheck(deps: UseReachCheckDeps): {
   const channelWaitRef = useRef<{ index: number; resolve: (appeared: boolean) => void } | null>(
     null,
   );
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     depsRef.current = deps;
   });
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Leaving the panel answers an open step with Cancel, or closes a final message.
+  useEffect(() => {
+    if (deps.active) return;
+    const resolve = answerRef.current;
+    if (!resolve) return;
+    answerRef.current = null;
+    resolve({ kind: 'cancel' });
+  }, [deps.active]);
 
   useEffect(() => {
     const wait = channelWaitRef.current;
@@ -133,6 +163,9 @@ export function useReachCheck(deps: UseReachCheckDeps): {
       finish(null);
       return;
     }
+    /** False once the panel is hidden or unmounted: the flow then ends with no dialog. */
+    const shown = () => mountedRef.current && depsRef.current.active;
+    const sameRadio = () => depsRef.current.identityId === identityId;
 
     let origin = depsRef.current.getServerOrigin();
     if (!origin) {
@@ -155,12 +188,22 @@ export function useReachCheck(deps: UseReachCheckDeps): {
     }
 
     const boot = await depsRef.current.api.bootstrap(origin);
+    if (!shown()) {
+      finish(null);
+      return;
+    }
     if (!boot.ok) {
       finish({ kind: 'error', error: boot.error });
       return;
     }
     const server = boot.value;
     const plan = await planReachCheckChannel(depsRef.current.channels, server);
+    /** The same radio still plans the same kind of step at the same slot. */
+    const stillPlanned = async (kind: ReachCheckChannelPlan['kind'], slot: number) => {
+      if (!sameRadio()) return false;
+      const again = await planReachCheckChannel(depsRef.current.channels, server);
+      return again.kind === kind && planIndex(again) === slot;
+    };
 
     let index: number;
     let added: { name: string; secret: Uint8Array } | null = null;
@@ -200,14 +243,24 @@ export function useReachCheck(deps: UseReachCheckDeps): {
 
     if (added) {
       setDialog(null);
+      // The slot was chosen before the dialog; a reconnect or resync may have filled it since.
+      if (!(await stillPlanned(plan.kind, index))) {
+        finish({ kind: 'error', error: 'changed' });
+        return;
+      }
       try {
         await depsRef.current.setChannel(index, added.name, added.secret);
       } catch (e: unknown) {
         console.debug('[useReachCheck] add channel failed', e instanceof Error ? e.message : e);
-        finish({ kind: 'error', error: 'add-failed', name: added.name });
+        finish(shown() ? { kind: 'error', error: 'add-failed', name: added.name } : null);
         return;
       }
-      if (!(await waitForChannel(index))) {
+      const appeared = await waitForChannel(index);
+      if (!shown()) {
+        finish(null);
+        return;
+      }
+      if (!appeared) {
         finish({ kind: 'error', error: 'channel-timeout' });
         return;
       }
@@ -220,6 +273,12 @@ export function useReachCheck(deps: UseReachCheckDeps): {
     }
 
     const created = await depsRef.current.api.createSession(origin);
+    // The send goes out on whichever radio and slot are current, so both must still be the plan.
+    const readyToSend = created.ok && (await stillPlanned('ready', index));
+    if (!shown()) {
+      finish(null);
+      return;
+    }
     if (!created.ok) {
       finish(
         created.retryAfterSeconds === undefined
@@ -229,6 +288,10 @@ export function useReachCheck(deps: UseReachCheckDeps): {
       return;
     }
     const session = created.value;
+    if (!readyToSend) {
+      finish({ kind: 'error', error: 'changed' });
+      return;
+    }
     let messageId: string | undefined;
     try {
       messageId = await depsRef.current.sendOnChannel(session.code, index);
@@ -258,7 +321,9 @@ export function useReachCheck(deps: UseReachCheckDeps): {
     setBusy(true);
     void flow().catch((e: unknown) => {
       console.debug('[useReachCheck] flow failed', e instanceof Error ? e.message : e);
-      finish({ kind: 'error', error: 'network' });
+      finish(
+        mountedRef.current && depsRef.current.active ? { kind: 'error', error: 'network' } : null,
+      );
     });
   }, [finish, flow]);
 

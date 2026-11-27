@@ -35,12 +35,19 @@ function renderPanel(overrides: Record<string, unknown> = {}) {
     onSetMeshcoreChannel: vi.fn(() => Promise.resolve()),
     ...overrides,
   };
-  render(
+  const view = render(
     <ToastProvider>
       <ChatPanel {...(props as Parameters<typeof ChatPanel>[0])} />
     </ToastProvider>,
   );
-  return { onSend };
+  const rerenderWith = (more: Record<string, unknown>) => {
+    view.rerender(
+      <ToastProvider>
+        <ChatPanel {...{ ...props, ...more }} />
+      </ToastProvider>,
+    );
+  };
+  return { onSend, rerenderWith };
 }
 
 beforeEach(() => {
@@ -68,12 +75,60 @@ describe('ChatPanel reach check', () => {
     fireEvent.click(button);
     expect(await screen.findByRole('dialog', { name: 'Reach check' })).toBeInTheDocument();
     expect(screen.getByLabelText('Reach check server')).toHaveFocus();
-    expect(screen.getByRole('button', { name: 'Reach check' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Reach check' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).toBeNull();
     });
-    expect(screen.getByRole('button', { name: 'Reach check' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Reach check' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
+  });
+
+  it('keeps focus on the busy button when a step closes, and ignores clicks while busy', async () => {
+    vi.mocked(window.electronAPI.reachCheck.bootstrap).mockClear();
+    vi.mocked(window.electronAPI.reachCheck.bootstrap).mockReturnValue(
+      new Promise(() => undefined),
+    );
+    renderPanel({
+      reachCheckAvailable: true,
+      meshcoreChannelSources: [{ index: 0, name: 'Public', secret: new Uint8Array(16).fill(1) }],
+    });
+    const button = screen.getByRole('button', { name: 'Reach check' });
+    button.focus();
+    fireEvent.click(button);
+    const field = await screen.findByLabelText('Reach check server');
+    fireEvent.change(field, { target: { value: 'https://rangecheck.example.org' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save and run' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    const busyButton = screen.getByRole('button', { name: 'Reach check' });
+    expect(busyButton).toHaveFocus();
+    expect(busyButton).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(busyButton);
+    expect(window.electronAPI.reachCheck.bootstrap).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes an open step when App hides the panel (composer disabled)', async () => {
+    const { rerenderWith } = renderPanel({
+      reachCheckAvailable: true,
+      meshcoreChannelSources: [{ index: 0, name: 'Public', secret: new Uint8Array(16).fill(1) }],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Reach check' }));
+    expect(await screen.findByRole('dialog', { name: 'Reach check' })).toBeInTheDocument();
+    rerenderWith({
+      reachCheckAvailable: true,
+      meshcoreChannelSources: [{ index: 0, name: 'Public', secret: new Uint8Array(16).fill(1) }],
+      composerDisabled: true,
+    });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
   });
 
   it('sends the code on the test channel and shows the results line', async () => {

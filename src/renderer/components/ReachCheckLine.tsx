@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { type ReactElement, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { reachCheckKey, useReachCheckStore } from '@/renderer/lib/reachCheck/reachCheckStore';
@@ -8,6 +8,8 @@ export interface ReachCheckLineProps {
   messageId: string | undefined;
   isOwn: boolean;
   identityId: IdentityId | null | undefined;
+  /** The radio did not send the code (bubble failed): no line, and polling stops. */
+  failed?: boolean;
 }
 
 /**
@@ -18,11 +20,17 @@ export function ReachCheckLine({
   messageId,
   isOwn,
   identityId,
+  failed = false,
 }: ReachCheckLineProps): ReactElement | null {
   const { t } = useTranslation();
   const key = identityId && messageId ? reachCheckKey(identityId, messageId) : null;
   const entry = useReachCheckStore((s) => (key ? s.entries[key] : undefined));
-  if (!isOwn || !entry) return null;
+  const hasEntry = entry != null;
+  useEffect(() => {
+    // The poller finds no entry on its next tick and stops.
+    if (failed && hasEntry && key) useReachCheckStore.getState().remove(key);
+  }, [failed, hasEntry, key]);
+  if (!isOwn || !entry || failed) return null;
 
   const session = entry.session;
   let text: string;

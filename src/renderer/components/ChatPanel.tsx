@@ -2407,6 +2407,9 @@ function ChatPanel({
   const reachCheckChannelIndexes = useMemo(() => channels.map((c) => c.index), [channels]);
   const reachCheck = useReachCheck({
     identityId: identityId ?? null,
+    // App disables the composer while this panel is hidden or its protocol is switching; the
+    // reach check sends like a typed message, so it obeys the same guard.
+    active: !composerDisabled,
     channels: meshcoreChannelSources ?? EMPTY_MESHCORE_CHANNEL_SOURCES,
     channelIndexes: reachCheckChannelIndexes,
     setChannel: (index, name, secret) =>
@@ -4071,10 +4074,12 @@ function ChatPanel({
               <ChatToolbarTooltipButton
                 tooltip={t('reachCheck.toolbarHint')}
                 aria-label={t('reachCheck.toolbarButton')}
-                disabled={reachCheck.busy}
+                // aria-disabled, not disabled: the button keeps focus while a check runs, so
+                // closing a step returns keyboard focus here. A click while busy is ignored.
+                aria-disabled={reachCheck.busy || undefined}
                 aria-busy={reachCheck.busy || undefined}
                 onClick={reachCheck.run}
-                className={`${chatToolbarButtonClass()} disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`${chatToolbarButtonClass()} aria-disabled:cursor-not-allowed aria-disabled:opacity-50`}
               >
                 <Radar aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
               </ChatToolbarTooltipButton>
@@ -5478,6 +5483,7 @@ function ChatPanel({
                               messageId={relayCoverageMessageKey(msg)}
                               isOwn={isOwn}
                               identityId={identityId}
+                              failed={msg.status === 'failed'}
                             />
                           </div>
 
