@@ -5347,6 +5347,11 @@ export function useMeshcoreRuntime() {
             await attachSerialSession();
           }
         } catch (err) {
+          // A newer connect owns the session (state, connRef, listeners, params): this stale
+          // attempt released its own open above and must not run the failure handler.
+          if (meshcoreSetupGenerationRef.current !== autoConnectSetupGen) {
+            throw err;
+          }
           const isSetupAbort = isMeshcoreSetupAbortError(err);
           if (!isSetupAbort) {
             const normalized = normalizeMeshCoreError(
