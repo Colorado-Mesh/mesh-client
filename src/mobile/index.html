@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" data-mesh-mobile="pending">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover: the app pads itself with env(safe-area-inset-*) (notches, the
+         iPhone Duo trailing system column, Android gesture bars). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0f172a" />
+    <!-- Same policy as the desktop renderer, plus the Capacitor bridge origins and the host
+         worker. connect-src stays https/wss only; radio/MQTT traffic goes through native sockets. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; script-src-elem 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:* ws://localhost:* http://localhost:* https://localhost capacitor://localhost wss://* https://*; img-src 'self' data: blob: https: capacitor://localhost; media-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none';"
+    />
+    <title>Mesh Client</title>
+  </head>
+  <body class="bg-app-bg text-ink-100 overflow-hidden">
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

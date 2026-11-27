@@ -350,6 +350,7 @@ export default defineConfig({
             'src/shared/**/*.test.ts',
             'src/preload/**/*.test.ts',
             'src/architecture/**/*.test.ts',
+            'src/mobile/**/*.test.{ts,tsx}',
             'scripts/**/*.test.mjs',
             'vitest.harness.test.ts',
           ],

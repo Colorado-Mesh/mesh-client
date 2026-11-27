@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.main.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable", "WebWorker.ImportScripts"],
+    "types": ["node", "vitest/globals"]
+  },
+  "include": [
+    "src/mobile/host/**/*",
+    "src/mobile/native/**/*",
+    "src/mobile/types/**/*",
+    "src/main/global.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "dist-mobile"]
+}

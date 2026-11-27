@@ -1,0 +1,129 @@
+/*
+ * Mobile-only base styles (loaded only by src/mobile/main.tsx, never by the desktop renderer).
+ * Safe-area padding, dynamic viewport sizing, and the host message box.
+ */
+html[data-mesh-mobile] {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+html[data-mesh-mobile] body {
+  height: 100dvh;
+  min-height: 100dvh;
+  width: 100vw;
+  overscroll-behavior: none;
+}
+
+.mobile-boot {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: var(--color-app-bg, #0f172a);
+  color: var(--color-ink-100, #f1f5f9);
+  font-family: system-ui, sans-serif;
+  text-align: center;
+}
+
+.mobile-boot__mark {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background: var(--color-ink-700, #334155);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-boot__mark {
+    animation: mobile-boot-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes mobile-boot-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.mobile-boot__error {
+  max-width: 32rem;
+  white-space: pre-wrap;
+  font-size: 0.875rem;
+  color: var(--color-ink-300, #cbd5e1);
+}
+
+.mobile-boot button,
+.mobile-msgbox button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-ink-600, #475569);
+  background: var(--color-ink-800, #1e293b);
+  color: var(--color-ink-100, #f1f5f9);
+  font: inherit;
+}
+
+.mobile-boot button[data-default='true'],
+.mobile-msgbox button[data-default='true'] {
+  background: var(--color-brand-green, #38bdf8);
+  border-color: transparent;
+  color: var(--color-app-bg, #0f172a);
+  font-weight: 600;
+}
+
+.mobile-msgbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  background: rgb(2 6 23 / 0.6);
+}
+
+@media (min-width: 640px) {
+  .mobile-msgbox-backdrop {
+    align-items: center;
+  }
+}
+
+.mobile-msgbox {
+  width: min(28rem, 100%);
+  margin: 1rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: var(--color-ink-900, #0f172a);
+  border: 1px solid var(--color-ink-700, #334155);
+  color: var(--color-ink-100, #f1f5f9);
+  font-family: system-ui, sans-serif;
+}
+
+.mobile-msgbox h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.mobile-msgbox p {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--color-ink-300, #cbd5e1);
+  white-space: pre-wrap;
+}
+
+.mobile-msgbox-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

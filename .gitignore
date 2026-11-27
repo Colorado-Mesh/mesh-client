@@ -86,3 +86,7 @@ Package.resolved
 
 # Local OpenCode config
 /opencode.json
+
+# Mobile (Capacitor) web bundle and local spikes
+dist-mobile/
+.mobile-spike/
