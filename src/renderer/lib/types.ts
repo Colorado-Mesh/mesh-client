@@ -29,7 +29,15 @@ export type TransportStatus =
 /** Transport-specific connect parameters. Open union — additional protocols add their own variants. */
 export type TransportParams =
   | { type: 'ble'; peripheralId?: string }
-  | { type: 'serial'; portSignature?: string }
+  | {
+      type: 'serial';
+      portSignature?: string;
+      /**
+       * When false, Web Serial auto-reconnect must not call `requestPort()` (needs a user
+       * gesture). MeshCom serial auto-connect / reconnect sets this; manual Connect omits it.
+       */
+      allowPortPicker?: boolean;
+    }
   | { type: 'http'; host: string }
   | { type: 'tcp'; host: string }
   | { type: 'udp'; host: string }

@@ -38,12 +38,35 @@ export interface MeshComConnection {
   getSerialPort?(): SerialPort | null;
 }
 
+/** Thrown when auto serial open cannot use a granted port and must not open the picker. */
+export const MESHCOM_SERIAL_NEEDS_RESELECT = 'MeshCom serial port needs reselect';
+
+/** True when serial auto-open failed because a user must pick the port again. */
+export function isMeshcomSerialNeedsReselectError(err: unknown): boolean {
+  const message =
+    typeof err === 'string'
+      ? err
+      : typeof err === 'object' && err !== null && 'message' in err
+        ? String(err.message)
+        : '';
+  return (
+    message.includes(MESHCOM_SERIAL_NEEDS_RESELECT) ||
+    /Must be handling a user gesture/i.test(message) ||
+    /No port selected by the user/i.test(message)
+  );
+}
+
 export interface MeshComConnectionParams {
   transport: MeshComTransportKind;
   host?: string;
   peripheralId?: string;
   /** Gesture-free serial reconnect: Chromium portId or USB signature hint. */
   portSignature?: string | null;
+  /**
+   * When false, do not call `navigator.serial.requestPort()` (auto-reconnect / auto-connect).
+   * Default true (manual Connect may show the picker).
+   */
+  allowPortPicker?: boolean;
   /** Node `--passwd` for KISS auth / NET Console HMAC (empty = open access). */
   authPassword?: string;
 }
@@ -244,7 +267,10 @@ class WebSerialMeshComConnection implements MeshComConnection {
   private closed = false;
   private disconnectListener: ((event: Event) => void) | null = null;
 
-  constructor(private readonly portSignature?: string | null) {}
+  constructor(
+    private readonly portSignature?: string | null,
+    private readonly allowPortPicker = true,
+  ) {}
 
   async connect(): Promise<void> {
     if (!navigator.serial) {
@@ -255,9 +281,12 @@ class WebSerialMeshComConnection implements MeshComConnection {
     if (this.portSignature) {
       const ports = await navigator.serial.getPorts();
       // MeshCom-scoped portId only — never the shared USB signature (that can bind another
-      // protocol's / flasher device). Empty grants or no id match → chooser.
+      // protocol's / flasher device). Empty grants or no id match → chooser (manual only).
       if (ports.length === 0) {
         console.warn('mcL1503 [MeshComTransport] no granted serial ports — opening port picker');
+        if (!this.allowPortPicker) {
+          throw new Error(MESHCOM_SERIAL_NEEDS_RESELECT);
+        }
         port = await navigator.serial.requestPort();
       } else {
         const wantId = this.portSignature;
@@ -268,9 +297,14 @@ class WebSerialMeshComConnection implements MeshComConnection {
           port = match;
         } else {
           console.warn('mcL1502 [MeshComTransport] no matching serial port — opening port picker');
+          if (!this.allowPortPicker) {
+            throw new Error(MESHCOM_SERIAL_NEEDS_RESELECT);
+          }
           port = await navigator.serial.requestPort();
         }
       }
+    } else if (!this.allowPortPicker) {
+      throw new Error(MESHCOM_SERIAL_NEEDS_RESELECT);
     } else {
       port = await navigator.serial.requestPort();
     }
@@ -543,7 +577,10 @@ export async function createMeshComConnection(
       return conn;
     }
     case 'serial': {
-      const conn = new WebSerialMeshComConnection(params.portSignature);
+      const conn = new WebSerialMeshComConnection(
+        params.portSignature,
+        params.allowPortPicker !== false,
+      );
       await conn.connect();
       return conn;
     }
@@ -577,7 +614,11 @@ export function transportParamsToMeshCom(
     case 'netconsole':
       return { transport: 'netconsole', host: params.host, authPassword };
     case 'serial':
-      return { transport: 'serial', portSignature: params.portSignature };
+      return {
+        transport: 'serial',
+        portSignature: params.portSignature,
+        ...(params.allowPortPicker === false ? { allowPortPicker: false } : {}),
+      };
     case 'ble':
       return { transport: 'ble', peripheralId: params.peripheralId };
     default:

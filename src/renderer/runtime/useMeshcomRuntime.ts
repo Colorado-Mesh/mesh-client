@@ -44,6 +44,7 @@ import { lastHeardToUnixSeconds } from '../lib/nodeStatus';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { isMeshcomSerialNeedsReselectError } from '../lib/protocols/meshcom/MeshComTransport';
 import type { MeshComDeviceHandle } from '../lib/protocols/MeshComProtocol';
 import { ensureMeshcomProtocolLoaded } from '../lib/protocols/meshcomProtocolLoader';
 import { readRadioSelfPosition } from '../lib/radioSelfPosition';
@@ -124,7 +125,11 @@ const INITIAL_STATE: DeviceState = {
   status: 'disconnected',
   myNodeNum: 0,
   connectionType: null,
+  serialNeedsReselect: false,
 };
+
+/** Max MeshCom RF auto-reconnect attempts before exhausting (serial/BLE). */
+const MESHCOM_RECONNECT_MAX_ATTEMPTS = 8;
 
 const asyncNoop = async (): Promise<void> => {};
 
@@ -203,6 +208,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     serialPortId?: string | null;
   } | null>(null);
   const reconnectAttemptRef = useRef(0);
+  const isReconnectingRef = useRef(false);
+  const serialNeedsReselectRef = useRef(false);
   const rfReconnectRef = useRef(createRfReconnectController({ logTag: 'useMeshcomRuntime' }));
   const handleConnectionLostRef = useRef<() => void>(() => {});
   const refreshOurPositionGenerationRef = useRef(0);
@@ -326,19 +333,26 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   );
 
   const prepareRfConnect = useCallback(
-    async (type: MeshcomRfTransportType) => {
+    async (type: MeshcomRfTransportType, opts?: { preserveReconnectState?: boolean }) => {
       explicitDisconnectRef.current = false;
-      rfReconnectRef.current.cancel();
-      reconnectAttemptRef.current = 0;
+      if (!opts?.preserveReconnectState) {
+        rfReconnectRef.current.cancel();
+        reconnectAttemptRef.current = 0;
+        isReconnectingRef.current = false;
+        serialNeedsReselectRef.current = false;
+      }
       setState((prev) => ({
         ...prev,
         status: 'connecting',
         connectionType: toUiConnectionType(type),
         connectionLoss: false,
+        // Manual / fresh connect clears reselect; reconnect preserve keeps the latch until success.
+        serialNeedsReselect: opts?.preserveReconnectState ? prev.serialNeedsReselect : false,
       }));
       setConnection(resolveIdentityId(), {
         status: 'connecting',
         connectionType: toUiConnectionType(type),
+        ...(opts?.preserveReconnectState ? {} : { serialNeedsReselect: false }),
       });
     },
     [resolveIdentityId],
@@ -362,16 +376,20 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       setTelemetry([]);
       setSignalTelemetry([]);
       setEnvironmentTelemetry([]);
+      isReconnectingRef.current = false;
+      serialNeedsReselectRef.current = false;
       setState({
         status: 'disconnected',
         myNodeNum: 0,
         connectionType: null,
         firmwareVersion: undefined,
+        serialNeedsReselect: false,
       });
       setConnection(resolveIdentityId(), {
         status: 'disconnected',
         connectionType: null,
         firmwareVersion: undefined,
+        serialNeedsReselect: false,
       });
     },
     [detachIngest, resolveIdentityId],
@@ -396,6 +414,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       setConnection(resolveIdentityId(), {
         status: 'disconnected',
         connectionType: toUiConnectionType(type),
+        connectionLoss: true,
       });
     },
     [detachIngest, resolveIdentityId],
@@ -415,6 +434,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     }
   }, []);
 
+  const markMeshcomReconnectSuccessRef = useRef<() => void>(() => {});
   const onDeviceSettings = useCallback(
     (snap: MeshcomDeviceSettingsSnapshot) => {
       const identityId = identityIdRef.current;
@@ -435,6 +455,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           },
         });
         if (resolved) nodeId = resolved;
+        // Serial reconnect success is gated on board response (callsign), not USB open.
+        markMeshcomReconnectSuccessRef.current();
       }
       if (snap.batteryLevel != null || snap.voltage != null) {
         pushLocalTelemetry({
@@ -501,12 +523,51 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   );
   const serialWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const serialLastDataRef = useRef(0);
-  const isReconnectingRef = useRef(false);
 
   const stopMeshcomSerialWatchdog = useCallback(() => {
     if (serialWatchdogRef.current != null) {
       clearInterval(serialWatchdogRef.current);
       serialWatchdogRef.current = null;
+    }
+  }, []);
+
+  const markSerialNeedsReselectExhausted = useCallback(() => {
+    isReconnectingRef.current = false;
+    serialNeedsReselectRef.current = true;
+    rfReconnectRef.current.markExhausted();
+    stopMeshcomSerialWatchdog();
+    setState((prev) => ({
+      ...prev,
+      status: 'disconnected',
+      connectionType: 'serial',
+      connectionLoss: true,
+      serialNeedsReselect: true,
+    }));
+    setConnection(resolveIdentityId(), {
+      status: 'disconnected',
+      connectionType: 'serial',
+      connectionLoss: true,
+      serialNeedsReselect: true,
+    });
+  }, [resolveIdentityId, stopMeshcomSerialWatchdog]);
+
+  /**
+   * Board-proven reconnect success. Serial must not call this on USB open alone — wait for
+   * callsign/settings (or BLE HELLO path) so a silent board preserves the attempt budget.
+   */
+  const markMeshcomReconnectSuccess = useCallback(() => {
+    rfReconnectRef.current.markSuccess();
+    reconnectAttemptRef.current = 0;
+    isReconnectingRef.current = false;
+    serialNeedsReselectRef.current = false;
+  }, []);
+  markMeshcomReconnectSuccessRef.current = markMeshcomReconnectSuccess;
+
+  /** Release reconnect owner after a provisional serial attach without wiping attempt count. */
+  const releaseSerialReconnectOwnerProvisional = useCallback(() => {
+    isReconnectingRef.current = false;
+    if (rfReconnectRef.current.isReconnecting || rfReconnectRef.current.attemptActive) {
+      rfReconnectRef.current.endAttempt({ keepReconnecting: false });
     }
   }, []);
 
@@ -562,14 +623,22 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         status: 'configured',
         myNodeNum: getConnection(driverIdentityId)?.myNodeNum ?? 0,
         connectionType: toUiConnectionType(type),
+        serialNeedsReselect: false,
+        connectionLoss: false,
       });
       setConnection(driverIdentityId, {
         status: 'configured',
         connectionType: toUiConnectionType(type),
+        serialNeedsReselect: false,
+        connectionLoss: false,
       });
-      rfReconnectRef.current.markSuccess();
-      reconnectAttemptRef.current = 0;
-      isReconnectingRef.current = false;
+      if (type === 'serial') {
+        // USB open alone is not board-proven — keep attempt budget until callsign/settings.
+        releaseSerialReconnectOwnerProvisional();
+        serialNeedsReselectRef.current = false;
+      } else {
+        markMeshcomReconnectSuccess();
+      }
       // Recover orphaned id-* SQLite rows from older builds into the stable offline slot,
       // then hydrate into the live driver identity (Zustand merge is not enough).
       const persistId = meshcomPersistIdentityId();
@@ -590,9 +659,16 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       });
       if (type === 'serial' || type === 'ble') {
         // `--info`/`{HELLO}` + `--wx` land battery/weather into Telemetry via onDeviceSettings.
-        void refreshSettingsRef.current().catch((e: unknown) => {
-          console.warn('mcL1183 [useMeshcomRuntime] settings refresh ' + errLikeToLogString(e));
-        });
+        void refreshSettingsRef
+          .current()
+          .then((snap) => {
+            if (type === 'serial' && snap?.callsign?.trim()) {
+              markMeshcomReconnectSuccess();
+            }
+          })
+          .catch((e: unknown) => {
+            console.warn('mcL1183 [useMeshcomRuntime] settings refresh ' + errLikeToLogString(e));
+          });
       }
       if (type === 'serial') {
         startMeshcomSerialWatchdog(driverIdentityId);
@@ -626,7 +702,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     },
     [
       attachIngestForIdentity,
+      markMeshcomReconnectSuccess,
       maybeAutoSettime,
+      releaseSerialReconnectOwnerProvisional,
       startMeshcomSerialWatchdog,
       stopMeshcomSerialWatchdog,
     ],
@@ -696,8 +774,10 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
         const { openMeshComTransport } = await import('../hooks/openMeshComTransport');
         let opened: Awaited<ReturnType<typeof openMeshComTransport>> | undefined;
         try {
+          // Auto-connect has no user gesture — never fall back to requestPort().
           opened = await openMeshComTransport('serial', {
             portSignature: lastSerialPortId,
+            allowPortPicker: false,
           });
           connectionParamsRef.current = {
             rfType: 'serial',
@@ -706,6 +786,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           await attachRfSession(opened.driverIdentityId, 'serial');
         } catch (err) {
           await handleRfConnectFailure('serial', opened?.driverIdentityId);
+          if (isMeshcomSerialNeedsReselectError(err)) {
+            markSerialNeedsReselectExhausted();
+          }
           throw err;
         }
         return;
@@ -713,49 +796,105 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       const rfType: MeshcomRfTransportType = type;
       await connect(rfType, httpAddress);
     },
-    [attachRfSession, connect, handleRfConnectFailure, prepareRfConnect],
+    [
+      attachRfSession,
+      connect,
+      handleRfConnectFailure,
+      markSerialNeedsReselectExhausted,
+      prepareRfConnect,
+    ],
   );
 
   const attemptReconnect = useCallback(() => {
     const params = connectionParamsRef.current;
     if (!params || explicitDisconnectRef.current) return;
+    if (params.rfType === 'serial' && serialNeedsReselectRef.current) return;
+
+    /** Schedule the next owner run without onLinkLost — avoids stranding when already reconnecting. */
+    const scheduleReconnectOwner = () => {
+      rfReconnectRef.current.scheduleOwner(() => {
+        if (explicitDisconnectRef.current) return;
+        if (params.rfType === 'serial' && serialNeedsReselectRef.current) return;
+        const attempt = reconnectAttemptRef.current + 1;
+        reconnectAttemptRef.current = attempt;
+        isReconnectingRef.current = true;
+        rfReconnectRef.current.beginAttempt(attempt);
+        const run = async () => {
+          rfReconnectRef.current.beginOpening();
+          let openedDriverIdentityId: string | undefined;
+          try {
+            // Preserve attempt budget — prepareRfConnect without this resets to 0 and cancels
+            // the reconnect controller (reconnect storm on Windows Web Serial).
+            await prepareRfConnect(params.rfType, { preserveReconnectState: true });
+            const { openMeshComTransport } = await import('../hooks/openMeshComTransport');
+            const opened = await openMeshComTransport(params.rfType, {
+              blePeripheralId: params.blePeripheralId,
+              host:
+                params.rfType === 'udp' ||
+                params.rfType === 'tcp' ||
+                params.rfType === 'http' ||
+                params.rfType === 'netconsole'
+                  ? resolveHost(params.httpAddress)
+                  : undefined,
+              portSignature: params.rfType === 'serial' ? params.serialPortId : undefined,
+              allowPortPicker: params.rfType === 'serial' ? false : undefined,
+            });
+            openedDriverIdentityId = opened.driverIdentityId;
+            if (params.rfType === 'serial') {
+              connectionParamsRef.current = {
+                ...params,
+                serialPortId: persistOpenedMeshcomSerialPort(opened.handle, params.serialPortId),
+              };
+            }
+            await attachRfSession(opened.driverIdentityId, params.rfType);
+          } catch (err) {
+            console.warn(
+              `mcL1185 [useMeshcomRuntime] reconnect attempt=${attempt} ${errLikeToLogString(err)}`,
+            );
+            if (openedDriverIdentityId) {
+              await connectionDriver.disconnect(openedDriverIdentityId).catch((e: unknown) => {
+                console.debug('[useMeshcomRuntime] reconnect teardown ' + errLikeToLogString(e));
+              });
+            }
+            if (params.rfType === 'serial' && isMeshcomSerialNeedsReselectError(err)) {
+              markSerialNeedsReselectExhausted();
+              return;
+            }
+            const keepGoing = attempt < MESHCOM_RECONNECT_MAX_ATTEMPTS;
+            const settled = rfReconnectRef.current.endAttempt({ keepReconnecting: keepGoing });
+            if (!keepGoing) {
+              if (params.rfType === 'serial') {
+                markSerialNeedsReselectExhausted();
+              } else {
+                isReconnectingRef.current = false;
+                rfReconnectRef.current.markExhausted();
+              }
+              return;
+            }
+            // Owner schedules the next attempt (loraRfReconnectAttempt parity). Calling
+            // attemptReconnect → onLinkLost here returns shouldStartOwner:false and strands.
+            if (settled.shouldSchedule) {
+              scheduleReconnectOwner();
+            } else {
+              setTimeout(
+                () => {
+                  if (explicitDisconnectRef.current) return;
+                  if (params.rfType === 'serial' && serialNeedsReselectRef.current) return;
+                  scheduleReconnectOwner();
+                },
+                Math.min(30_000, 1000 * 2 ** Math.min(attempt, 5)),
+              );
+            }
+          }
+        };
+        void run();
+      });
+    };
+
     const lost = rfReconnectRef.current.onLinkLost();
     if (!lost.shouldStartOwner) return;
-    rfReconnectRef.current.scheduleOwner(() => {
-      if (explicitDisconnectRef.current) return;
-      const attempt = reconnectAttemptRef.current + 1;
-      reconnectAttemptRef.current = attempt;
-      rfReconnectRef.current.beginAttempt(attempt);
-      const run = async () => {
-        rfReconnectRef.current.beginOpening();
-        try {
-          if (params.rfType === 'serial') {
-            await connectAutomatic('serial', undefined, params.serialPortId);
-          } else {
-            await connect(params.rfType, params.httpAddress, params.blePeripheralId);
-          }
-        } catch (err) {
-          console.warn(
-            `mcL1185 [useMeshcomRuntime] reconnect attempt=${attempt} ${errLikeToLogString(err)}`,
-          );
-          const settled = rfReconnectRef.current.endAttempt({ keepReconnecting: attempt < 8 });
-          if (settled.shouldSchedule) {
-            handleConnectionLostRef.current();
-          } else if (attempt >= 8) {
-            rfReconnectRef.current.markExhausted();
-          } else {
-            setTimeout(
-              () => {
-                handleConnectionLostRef.current();
-              },
-              Math.min(30_000, 1000 * 2 ** Math.min(attempt, 5)),
-            );
-          }
-        }
-      };
-      void run();
-    });
-  }, [connect, connectAutomatic]);
+    scheduleReconnectOwner();
+  }, [attachRfSession, markSerialNeedsReselectExhausted, prepareRfConnect]);
 
   handleConnectionLostRef.current = attemptReconnect;
 
@@ -778,7 +917,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     console.debug('[useMeshcomRuntime] power resume — resetting reconnect budget');
     reconnectAttemptRef.current = 0;
     explicitDisconnectRef.current = false;
+    serialNeedsReselectRef.current = false;
     isReconnectingRef.current = true;
+    setState((prev) => (prev.serialNeedsReselect ? { ...prev, serialNeedsReselect: false } : prev));
     // Wake stagger is owned by usePowerRecovery (~12s); reconnect immediately when scheduled.
     handleConnectionLostRef.current();
   }, []);
