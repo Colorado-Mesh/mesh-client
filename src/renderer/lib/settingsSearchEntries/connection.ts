@@ -239,7 +239,7 @@ const connectionEntries: readonly SettingSearchEntry[] = [
   {
     id: 'connection.mqtt.meshcoreFeeds',
     slot: 'Connection',
-    labelKey: 'connectionPanel.meshcoreFeeds.editorLabel',
+    labelKey: 'connectionPanel.meshcoreFeeds.connectionsLabel',
     sectionKey: MQTT,
     keywords: ['mqtt', 'feed', 'analyzer', 'packet', 'meshmapper', 'broker', 'multiple brokers'],
     visible: hasMeshcoreMqtt,

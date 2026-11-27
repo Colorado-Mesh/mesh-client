@@ -255,7 +255,6 @@ import {
   FIELD_LABEL_CLASS,
   INPUT_CLASS,
   NOTICE_CLASS,
-  SELECT_CLASS,
   TEXTAREA_CLASS,
 } from './ui/formClasses';
 import { LabelValue, LabelValueGrid } from './ui/LabelValue';
@@ -660,11 +659,9 @@ export default function ConnectionPanel({
     (meshcorePreset === 'custom'
       ? meshcoreMqttSettings.server.trim() || t('connectionPanel.meshcoreFeeds.chatOption')
       : meshcorePresetLabel(t, meshcorePreset));
-  const [meshcoreEditorTarget, setMeshcoreEditorTarget] = useState<string>(
-    MESHCORE_MQTT_CHAT_CONNECTION_ID,
-  );
-  const [meshcoreFeedNameDraft, setMeshcoreFeedNameDraft] = useState('');
+  const [meshcoreEditorTarget, setMeshcoreEditorTarget] = useState<string | null>(null);
   const [meshcoreFeedError, setMeshcoreFeedError] = useState<string | null>(null);
+  const [meshcoreEditorNonce, setMeshcoreEditorNonce] = useState(0);
   const meshcoreFeedStatuses = useMeshcoreMqttFeedStatusStore((s) => s.statuses);
   // Reconnect applies edited settings, so only offer it when something actually changed.
   const [meshcoreDirtyConnections, setMeshcoreDirtyConnections] = useState<Record<string, boolean>>(
@@ -1039,7 +1036,9 @@ export default function ConnectionPanel({
 
   // The dropdown can point the editor at the chat broker or one analyzer feed.
   const editingMeshcoreFeed =
-    protocol === 'meshcore' && meshcoreEditorTarget !== MESHCORE_MQTT_CHAT_CONNECTION_ID
+    protocol === 'meshcore' &&
+    meshcoreEditorTarget !== null &&
+    meshcoreEditorTarget !== MESHCORE_MQTT_CHAT_CONNECTION_ID
       ? (meshcoreFeeds.find((feed) => feed.id === meshcoreEditorTarget) ?? null)
       : null;
   const activeMeshcorePreset: MeshcoreMqttPreset = editingMeshcoreFeed
@@ -3150,17 +3149,12 @@ export default function ConnectionPanel({
     if (duplicate) setMeshcoreFeedError(t('connectionPanel.meshcoreFeeds.duplicateWarning'));
   };
 
-  const addMeshcoreFeed = () => {
+  const addMeshcoreBroker = () => {
     setMeshcoreFeedError(null);
     if (meshcoreFeeds.length >= MAX_MESHCORE_MQTT_PUBLISH_FEEDS) {
       setMeshcoreFeedError(
         t('connectionPanel.meshcoreFeeds.savedLimit', { max: MAX_MESHCORE_MQTT_PUBLISH_FEEDS }),
       );
-      return;
-    }
-    const name = meshcoreFeedNameDraft.trim();
-    if (!name) {
-      setMeshcoreFeedError(t('connectionPanel.meshcoreFeeds.nameRequired'));
       return;
     }
     const preset: MeshcoreMqttPreset = 'meshmapper';
@@ -3175,148 +3169,223 @@ export default function ConnectionPanel({
     const chatPrefix = parseMeshcoreIataTopicPrefix(meshcoreMqttSettings.topicPrefix);
     if (chatPrefix.ok) seed.topicPrefix = chatPrefix.normalized;
     const feed = createMeshcoreMqttFeed({
-      name,
+      name: t('connectionPanel.meshcoreFeeds.newBrokerName'),
       preset,
       settings: { ...seed, meshcorePacketLoggerEnabled: true },
     });
     if (!feed) return;
     setMeshcoreFeeds((prev) => [...prev, feed]);
     setMeshcoreEditorTarget(feed.id);
-    setMeshcoreFeedNameDraft('');
+    setMeshcoreEditorNonce((n) => n + 1);
   };
 
   const deleteMeshcoreFeedNow = (feed: MeshcoreMqttFeed) => {
     meshcoreFeedAttemptRef.current[feed.id] = -1;
     if (meshcoreConnectionStatus(feed.id) !== 'disconnected') disconnectMeshcoreFeed(feed.id);
     setMeshcoreFeeds((prev) => deleteMeshcoreMqttFeed(prev, feed.id));
-    if (meshcoreEditorTarget === feed.id) setMeshcoreEditorTarget(MESHCORE_MQTT_CHAT_CONNECTION_ID);
+    if (meshcoreEditorTarget === feed.id) setMeshcoreEditorTarget(null);
   };
 
-  const meshcoreFeedsPanel =
+  const meshcoreStatusDotClass = (status: MQTTStatus): string => {
+    switch (status) {
+      case 'connected':
+        return 'bg-green-500';
+      case 'connecting':
+        return 'bg-orange-400';
+      case 'error':
+        return 'bg-red-500';
+      default:
+        return 'bg-ink-600';
+    }
+  };
+
+  const connectMeshcoreBroker = (connectionId: string): void => {
+    if (connectionId === MESHCORE_MQTT_CHAT_CONNECTION_ID) {
+      connectMeshcoreChatNow();
+      return;
+    }
+    const feed = meshcoreFeedsRef.current.find((current) => current.id === connectionId);
+    if (feed) connectMeshcoreFeedNow(feed);
+  };
+
+  const meshcoreBrokerRow = (args: {
+    id: string;
+    name: string;
+    isChat: boolean;
+    status: MQTTStatus;
+    settings: MQTTSettings;
+    feed?: MeshcoreMqttFeed;
+  }) => {
+    const { id, name, isChat, status, settings, feed } = args;
+    const dirty = meshcoreDirtyConnections[id];
+    const base = settings.topicPrefix.endsWith('/')
+      ? settings.topicPrefix
+      : `${settings.topicPrefix}/`;
+    const topic = isChat ? `${base}#` : meshcorePacketTopic(settings);
+    return (
+      <li
+        key={id}
+        className="border-ink-700 bg-ink-950/40 flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5"
+      >
+        <span className="flex min-w-0 flex-1 items-start gap-2">
+          <span
+            aria-hidden
+            className={`mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full ${meshcoreStatusDotClass(status)}`}
+          />
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span
+                className={`truncate ${status === 'disconnected' ? 'text-muted' : 'text-ink-200'}`}
+              >
+                {name}
+              </span>
+              <span className="border-ink-600 text-muted rounded-badge text-2xs border px-1.5">
+                {isChat
+                  ? t('connectionPanel.meshcoreFeeds.roleChat')
+                  : t('connectionPanel.meshcoreFeeds.roleFeed')}
+              </span>
+              <span className="text-muted text-2xs">{meshcoreFeedStatusLabel(status)}</span>
+            </span>
+            <span className="text-muted text-2xs mt-0.5 block truncate">
+              {settings.server}:{settings.port} · {topic}
+            </span>
+          </span>
+        </span>
+        <span className="flex flex-wrap items-center gap-3">
+          {status === 'connecting' ? (
+            <button
+              type="button"
+              className="text-xs text-orange-400 hover:underline"
+              aria-label={t('connectionPanel.meshcoreFeeds.cancelAria', { name })}
+              onClick={() => {
+                disconnectMeshcoreFeed(id);
+              }}
+            >
+              {t('connectionPanel.cancelMqttConnect')}
+            </button>
+          ) : status === 'connected' ? (
+            <>
+              {dirty ? (
+                <button
+                  type="button"
+                  className="text-xs text-sky-400 hover:underline"
+                  aria-label={t('connectionPanel.meshcoreFeeds.reconnectAria', { name })}
+                  onClick={() => {
+                    connectMeshcoreBroker(id);
+                  }}
+                >
+                  {t('connectionPanel.meshcoreFeeds.reconnect')}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="text-xs text-orange-400 hover:underline"
+                aria-label={t('connectionPanel.meshcoreFeeds.disconnectAria', { name })}
+                onClick={() => {
+                  disconnectMeshcoreFeed(id);
+                }}
+              >
+                {t('connectionPanel.meshcoreFeeds.disconnect')}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="text-xs text-green-400 hover:underline"
+              aria-label={t('connectionPanel.meshcoreFeeds.connectAria', { name })}
+              onClick={() => {
+                connectMeshcoreBroker(id);
+              }}
+            >
+              {t('connectionPanel.meshcoreFeeds.connect')}
+            </button>
+          )}
+          <button
+            type="button"
+            className="text-xs text-sky-400 hover:underline"
+            aria-label={t('connectionPanel.meshcoreFeeds.editAria', { name })}
+            onClick={() => {
+              setMeshcoreEditorTarget(id);
+              setMeshcoreEditorNonce((n) => n + 1);
+            }}
+          >
+            {t('connectionPanel.meshcoreFeeds.edit')}
+          </button>
+          <label className="text-ink-300 flex cursor-pointer items-center gap-1 text-xs">
+            <input
+              type="checkbox"
+              checked={isChat ? meshcoreMqttSettings.autoLaunch : (feed?.enabled ?? false)}
+              aria-label={t('connectionPanel.meshcoreFeeds.enabledAria', { name })}
+              onChange={(e) => {
+                if (isChat) {
+                  setMeshcoreMqttSettings((prev) => ({
+                    ...prev,
+                    autoLaunch: e.target.checked,
+                  }));
+                } else if (feed) {
+                  setMeshcoreFeedEnabled(feed, e.target.checked);
+                }
+              }}
+              className={CHECKBOX_CLASS}
+            />
+            {t('connectionPanel.meshcoreFeeds.autoConnect')}
+          </label>
+          {!isChat && feed ? (
+            <button
+              type="button"
+              className="text-xs text-red-400 hover:underline"
+              aria-label={t('connectionPanel.meshcoreFeeds.deleteAria', { name })}
+              onClick={() => {
+                deleteMeshcoreFeedNow(feed);
+              }}
+            >
+              {t('common.delete')}
+            </button>
+          ) : null}
+        </span>
+      </li>
+    );
+  };
+
+  const meshcoreBrokersPanel =
     protocol === 'meshcore' ? (
       <div data-setting-anchor="connection.mqtt.meshcoreFeeds" className="space-y-2">
-        <label htmlFor="meshcore-feed-editor" className="text-muted text-xs">
-          {t('connectionPanel.meshcoreFeeds.editorLabel')}
-        </label>
-        <select
-          id="meshcore-feed-editor"
-          value={meshcoreEditorTarget}
-          onChange={(e) => {
-            setMeshcoreFeedError(null);
-            setMeshcoreEditorTarget(e.target.value);
-          }}
-          className={SELECT_CLASS}
-        >
-          <option value={MESHCORE_MQTT_CHAT_CONNECTION_ID}>{meshcoreChatLabel}</option>
-          {meshcoreFeeds.map((feed) => (
-            <option key={feed.id} value={feed.id}>
-              {meshcoreFeedLabel(feed)}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p id="conn-meshcore-brokers" className="text-muted text-xs">
+            {t('connectionPanel.meshcoreFeeds.connectionsLabel')}
+          </p>
+          <Button
+            size="sm"
+            aria-label={t('connectionPanel.meshcoreFeeds.addConnectionAria')}
+            onClick={addMeshcoreBroker}
+          >
+            {t('connectionPanel.meshcoreFeeds.addConnection')}
+          </Button>
+        </div>
         {meshcoreFeedError && (
           <p role="status" className="text-xs text-orange-400">
             {meshcoreFeedError}
           </p>
         )}
-        <ul className="space-y-1" aria-label={t('connectionPanel.meshcoreFeeds.listLabel')}>
-          <li className="flex flex-wrap items-center gap-2 text-xs">
-            <span
-              aria-hidden
-              className={`inline-block h-2 w-2 rounded-full ${
-                meshcoreConnectionStatus(MESHCORE_MQTT_CHAT_CONNECTION_ID) === 'connected'
-                  ? 'bg-green-500'
-                  : meshcoreConnectionStatus(MESHCORE_MQTT_CHAT_CONNECTION_ID) === 'connecting'
-                    ? 'bg-orange-400'
-                    : meshcoreConnectionStatus(MESHCORE_MQTT_CHAT_CONNECTION_ID) === 'error'
-                      ? 'bg-red-500'
-                      : 'bg-ink-600'
-              }`}
-            />
-            <span className="text-ink-200">{meshcoreChatLabel}</span>
-            <span className="text-muted">
-              {meshcoreFeedStatusLabel(meshcoreConnectionStatus(MESHCORE_MQTT_CHAT_CONNECTION_ID))}
-            </span>
-          </li>
-          {meshcoreFeeds.map((feed) => {
-            const status = meshcoreConnectionStatus(feed.id);
-            return (
-              <li key={feed.id} className="flex flex-wrap items-center gap-2 text-xs">
-                <span
-                  aria-hidden
-                  className={`inline-block h-2 w-2 rounded-full ${
-                    status === 'connected'
-                      ? 'bg-green-500'
-                      : status === 'connecting'
-                        ? 'bg-orange-400'
-                        : status === 'error'
-                          ? 'bg-red-500'
-                          : 'bg-ink-600'
-                  }`}
-                />
-                <button
-                  type="button"
-                  className="text-ink-200 underline-offset-2 hover:underline"
-                  aria-label={t('connectionPanel.meshcoreFeeds.editAria', {
-                    name: meshcoreFeedLabel(feed),
-                  })}
-                  onClick={() => {
-                    setMeshcoreEditorTarget(feed.id);
-                  }}
-                >
-                  {meshcoreFeedLabel(feed)}
-                </button>
-                <span className="text-muted">{meshcoreFeedStatusLabel(status)}</span>
-                <label className="text-muted flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={feed.enabled}
-                    aria-label={t('connectionPanel.meshcoreFeeds.enabledAria', {
-                      name: meshcoreFeedLabel(feed),
-                    })}
-                    onChange={(e) => {
-                      setMeshcoreFeedEnabled(feed, e.target.checked);
-                    }}
-                    className={CHECKBOX_CLASS}
-                  />
-                  {t('connectionPanel.meshcoreFeeds.connectOnLaunch')}
-                </label>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  aria-label={t('connectionPanel.meshcoreFeeds.deleteAria', {
-                    name: meshcoreFeedLabel(feed),
-                  })}
-                  onClick={() => {
-                    deleteMeshcoreFeedNow(feed);
-                  }}
-                >
-                  {t('common.delete')}
-                </Button>
-              </li>
-            );
+        <ul className="space-y-1.5" aria-label={t('connectionPanel.meshcoreFeeds.listLabel')}>
+          {meshcoreBrokerRow({
+            id: MESHCORE_MQTT_CHAT_CONNECTION_ID,
+            name: meshcoreChatLabel,
+            isChat: true,
+            status: mqttStatus,
+            settings: meshcoreMqttSettings,
           })}
+          {meshcoreFeeds.map((feed) =>
+            meshcoreBrokerRow({
+              id: feed.id,
+              name: meshcoreFeedLabel(feed),
+              isChat: false,
+              status: meshcoreConnectionStatus(feed.id),
+              settings: feed.settings,
+              feed,
+            }),
+          )}
         </ul>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            value={meshcoreFeedNameDraft}
-            maxLength={MESHCORE_MQTT_FEED_NAME_MAX_LENGTH}
-            placeholder={t('connectionPanel.meshcoreFeeds.namePlaceholder')}
-            aria-label={t('connectionPanel.meshcoreFeeds.nameAria')}
-            onChange={(e) => {
-              setMeshcoreFeedNameDraft(e.target.value);
-            }}
-            className={`${INPUT_CLASS} min-w-0 flex-1`}
-          />
-          <Button
-            size="sm"
-            aria-label={t('connectionPanel.meshcoreFeeds.addAria')}
-            onClick={addMeshcoreFeed}
-          >
-            {t('connectionPanel.meshcoreFeeds.add')}
-          </Button>
-        </div>
         <p className="text-muted text-xs">
           {t('connectionPanel.meshcoreFeeds.help', {
             maxSaved: MAX_MESHCORE_MQTT_PUBLISH_FEEDS,
@@ -3778,22 +3847,41 @@ export default function ConnectionPanel({
     </>
   );
 
+  const meshcoreBrokerEditor =
+    protocol === 'meshcore' ? (
+      <SettingsCollapsible
+        key={`meshcore-broker-editor-${meshcoreEditorTarget ?? 'none'}-${meshcoreEditorNonce}`}
+        title={t('connectionPanel.meshcoreFeeds.editSettingsFor', {
+          name: editingMeshcoreFeed ? meshcoreFeedLabel(editingMeshcoreFeed) : meshcoreChatLabel,
+        })}
+        titleAs="span"
+        defaultOpen={meshcoreEditorTarget !== null}
+        className="border-ink-800 border-t pt-4"
+        bodyClassName="space-y-4 pt-3"
+      >
+        {meshcoreConnectionNameField}
+        {meshcorePresetEditor}
+        {mqttConnectionFields}
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={() => {
+              setMeshcoreEditorTarget(null);
+              setMeshcoreEditorNonce((n) => n + 1);
+            }}
+          >
+            {t('connectionPanel.meshcoreFeeds.done')}
+          </Button>
+        </div>
+      </SettingsCollapsible>
+    ) : null;
+
   /** Connected card summarises the broker selected in the dropdown. */
   const mqttSummarySettings = activeMqttSettings;
   const mqttSummaryTopic =
     protocol === 'meshcore' && editingMeshcoreFeed
       ? meshcorePacketTopic(editingMeshcoreFeed.settings)
       : `${mqttSummarySettings.topicPrefix.endsWith('/') ? mqttSummarySettings.topicPrefix : `${mqttSummarySettings.topicPrefix}/`}#`;
-  const selectedMeshcoreConnectionId = editingMeshcoreFeedId ?? MESHCORE_MQTT_CHAT_CONNECTION_ID;
-  const selectedMeshcoreStatus = meshcoreConnectionStatus(selectedMeshcoreConnectionId);
-  const selectedMeshcoreLabel = editingMeshcoreFeed
-    ? meshcoreFeedLabel(editingMeshcoreFeed)
-    : meshcoreChatLabel;
-  const selectedMeshcoreDirty = meshcoreDirtyConnections[selectedMeshcoreConnectionId];
-  const selectedMeshcoreCanReconnect =
-    selectedMeshcoreStatus !== 'connecting' &&
-    (selectedMeshcoreStatus !== 'connected' || selectedMeshcoreDirty);
-
   const mqttSection =
     mqttStatus === 'connected' ? (
       <Panel
@@ -3801,52 +3889,21 @@ export default function ConnectionPanel({
         actions={
           <>
             {mqttAuthDocsLink}
-            {protocol === 'meshcore' && (
-              <Button
-                size="sm"
-                disabled={!selectedMeshcoreCanReconnect}
-                aria-label={
-                  selectedMeshcoreStatus === 'connected'
-                    ? t('connectionPanel.meshcoreFeeds.reconnectAria', {
-                        name: selectedMeshcoreLabel,
-                      })
-                    : t('connectionPanel.meshcoreFeeds.connectAria', {
-                        name: selectedMeshcoreLabel,
-                      })
-                }
-                onClick={() => {
-                  if (editingMeshcoreFeed) connectMeshcoreFeedNow(editingMeshcoreFeed);
-                  else connectMeshcoreChatNow();
-                }}
-              >
-                {selectedMeshcoreStatus === 'connected'
-                  ? t('connectionPanel.meshcoreFeeds.reconnect')
-                  : t('connectionPanel.meshcoreFeeds.connect')}
-              </Button>
-            )}
             <Button
               data-setting-anchor="connection.mqtt.disconnect"
               variant="danger"
               size="sm"
               icon={<Unplug aria-hidden className={ICON_MD} size={16} />}
-              disabled={protocol === 'meshcore' && selectedMeshcoreStatus === 'disconnected'}
-              aria-label={
-                protocol === 'meshcore'
-                  ? t('connectionPanel.meshcoreFeeds.disconnectAria', {
-                      name: selectedMeshcoreLabel,
-                    })
-                  : undefined
-              }
               onClick={() => {
                 if (protocol === 'meshcore') {
-                  disconnectMeshcoreFeed(selectedMeshcoreConnectionId);
+                  disconnectMqtt('panel');
                   return;
                 }
                 disconnectMqtt('panel');
               }}
             >
               {protocol === 'meshcore'
-                ? t('connectionPanel.meshcoreFeeds.disconnect')
+                ? t('connectionPanel.meshcoreFeeds.disconnectAll')
                 : t('connectionPanel.disconnectMqtt')}
             </Button>
           </>
@@ -3859,7 +3916,7 @@ export default function ConnectionPanel({
             </div>
           )}
           {mqttWarning && <div className={NOTICE_CLASS.warn}>{mqttWarning}</div>}
-          {meshcoreFeedsPanel}
+          {meshcoreBrokersPanel}
           <LabelValueGrid>
             <LabelValue label={t('connectionPanel.server')} mono>
               {mqttSummarySettings.server}:{mqttSummarySettings.port}
@@ -3879,22 +3936,7 @@ export default function ConnectionPanel({
               {mqttSummaryTopic}
             </LabelValue>
           </LabelValueGrid>
-          {protocol === 'meshcore' && (
-            <SettingsCollapsible
-              title={t('connectionPanel.meshcoreFeeds.editSettingsFor', {
-                name: editingMeshcoreFeed
-                  ? meshcoreFeedLabel(editingMeshcoreFeed)
-                  : meshcoreChatLabel,
-              })}
-              titleAs="span"
-              className="border-ink-800 border-t pt-4"
-              bodyClassName="space-y-4 pt-3"
-            >
-              {meshcoreConnectionNameField}
-              {meshcorePresetEditor}
-              {mqttConnectionFields}
-            </SettingsCollapsible>
-          )}
+          {meshcoreBrokerEditor}
           {protocol === 'meshtastic' && mqttProfiles.length > 0 ? (
             <div data-setting-anchor="connection.mqtt.switchProfile" className="space-y-1">
               <p id="conn-meshtastic-live-profile" className="text-muted text-xs">
@@ -4101,10 +4143,9 @@ export default function ConnectionPanel({
               />
             </div>
           )}
-          {meshcoreFeedsPanel}
-          {meshcoreConnectionNameField}
-          {meshcorePresetEditor}
-          {mqttConnectionFields}
+          {meshcoreBrokersPanel}
+          {meshcoreBrokerEditor}
+          {protocol !== 'meshcore' && mqttConnectionFields}
           <div data-setting-anchor="connection.mqtt.maxRetries">
             <Stepper
               id="mqtt-max-retries"
@@ -4166,7 +4207,7 @@ export default function ConnectionPanel({
               </p>
             </div>
           )}
-          {!(protocol === 'meshcore' && editingMeshcoreFeed) && (
+          {protocol !== 'meshcore' && (
             <div
               data-setting-anchor="connection.mqtt.autoConnect"
               className="flex items-center gap-2"
@@ -4185,62 +4226,46 @@ export default function ConnectionPanel({
               </label>
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button
-              data-setting-anchor="connection.mqtt.connect"
-              variant="primary"
-              onClick={() => {
-                setMqttError(null);
-                if (protocol === 'meshcore') {
-                  if (editingMeshcoreFeed) connectMeshcoreFeedNow(editingMeshcoreFeed);
-                  else connectMeshcoreChatNow();
-                  return;
-                }
-                const committedPsks = commitChannelPskDraft();
-                const settings: Parameters<typeof window.electronAPI.mqtt.connect>[0] = {
-                  ...activeMqttSettings,
-                  channelPsks:
-                    protocol === 'meshtastic' && committedPsks.length > 0
-                      ? committedPsks
-                      : undefined,
-                  mqttTransportProtocol: protocol === 'meshcom' ? 'meshcom' : 'meshtastic',
-                };
-                window.electronAPI.mqtt.connect(settings).catch((err: unknown) => {
-                  const msg = err instanceof Error ? err.message : String(err);
-                  setMqttError(msg);
-                  console.warn(
-                    'mcL0411 [ConnectionPanel] mqtt.connect failed: ' + errLikeToLogString(err),
-                  );
-                });
-              }}
-              disabled={
-                (protocol === 'meshcore'
-                  ? selectedMeshcoreStatus === 'connecting'
-                  : mqttStatus === 'connecting') ||
-                (protocol === 'meshcore' &&
-                  isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings) &&
-                  !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok)
-              }
-            >
-              {t('connectionPanel.connectMqtt')}
-            </Button>
-            {(protocol === 'meshcore'
-              ? selectedMeshcoreStatus === 'connecting'
-              : mqttStatus === 'connecting') && (
+          {protocol !== 'meshcore' && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <Button
-                aria-label={t('connectionPanel.cancelMqttConnect')}
+                data-setting-anchor="connection.mqtt.connect"
+                variant="primary"
                 onClick={() => {
-                  if (protocol === 'meshcore') {
-                    disconnectMeshcoreFeed(selectedMeshcoreConnectionId);
-                    return;
-                  }
-                  disconnectMqtt('cancel');
+                  setMqttError(null);
+                  const committedPsks = commitChannelPskDraft();
+                  const settings: Parameters<typeof window.electronAPI.mqtt.connect>[0] = {
+                    ...activeMqttSettings,
+                    channelPsks:
+                      protocol === 'meshtastic' && committedPsks.length > 0
+                        ? committedPsks
+                        : undefined,
+                    mqttTransportProtocol: protocol === 'meshcom' ? 'meshcom' : 'meshtastic',
+                  };
+                  window.electronAPI.mqtt.connect(settings).catch((err: unknown) => {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    setMqttError(msg);
+                    console.warn(
+                      'mcL0411 [ConnectionPanel] mqtt.connect failed: ' + errLikeToLogString(err),
+                    );
+                  });
                 }}
+                disabled={mqttStatus === 'connecting'}
               >
-                {t('connectionPanel.cancelMqttConnect')}
+                {t('connectionPanel.connectMqtt')}
               </Button>
-            )}
-          </div>
+              {mqttStatus === 'connecting' && (
+                <Button
+                  aria-label={t('connectionPanel.cancelMqttConnect')}
+                  onClick={() => {
+                    disconnectMqtt('cancel');
+                  }}
+                >
+                  {t('connectionPanel.cancelMqttConnect')}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </Panel>
     );
