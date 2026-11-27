@@ -3796,7 +3796,9 @@ export default function ConnectionPanel({
                 disconnectMqtt('panel');
               }}
             >
-              {t('connectionPanel.disconnectMqtt')}
+              {protocol === 'meshcore'
+                ? t('connectionPanel.meshcoreFeeds.disconnect')
+                : t('connectionPanel.disconnectMqtt')}
             </Button>
           </>
         }
