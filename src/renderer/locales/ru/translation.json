@@ -1055,7 +1055,8 @@
       "unavailableNotCaptured": "Маршрут недоступен: маршруты сохраняются только для последних сообщений из этого сеанса.",
       "notRecorded": "Пакеты в этой сети записывают, сколько ретрансляторов они прошли, а не какие.",
       "reachedYouInHops_few": "Дошло за {{count}} хопа",
-      "reachedYouInHops_many": "Дошло за {{count}} хопов"
+      "reachedYouInHops_many": "Дошло за {{count}} хопов",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Отметить как непрочитанное",
     "deleteMessageLocal": "Удалить локально",
@@ -5578,7 +5579,39 @@
     "senderKeyPrefix": "Ключ отправителя (префикс):",
     "control": "Управление:",
     "advertTs": "Время ADVERT:",
-    "advertLatLon": "Широта/долгота ADVERT:"
+    "advertLatLon": "Широта/долгота ADVERT:",
+    "meshcomKind": {
+      "msg": "СООБЩ.",
+      "pos": "POS",
+      "tele": "ТЕЛЕСКОПИЧЕСКИЕ",
+      "ack": "ПОДТВ.",
+      "other": "ДРУГОЕ"
+    },
+    "meshcomKindTooltip": {
+      "msg": "SMS или сообщение в чате",
+      "pos": "Уведомление о местонахождении",
+      "tele": "Телеметрия (EXTUDP)",
+      "ack": "Подтверждение доставки или маршрутизации",
+      "other": "Другой тип рамы"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "СЕРИЙНЫЙ",
+      "serverTooltip": "Передача через сервер или шлюз (не прямые метаданные радиочастотной связи)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "Кадр APRS KISS/TCP",
+      "ble": "BLE уведомление APRS по телефону",
+      "serial": "Строка JSON для последовательного порта или netconsole"
+    },
+    "meshcomLegendHint": "В строках отображается входящий трафик MeshCom (EXTUDP, KISS, BLE APRS или последовательный JSON). В пути указаны позывные источника и диджипитера.",
+    "meshcomTransportColumn": "Ссылки",
+    "meshcomTransportColumnTooltip": "Как этот кадр попал в приложение (EXTUDP, KISS, BLE или последовательный порт).",
+    "meshcomPathColumnTooltip": "Исходный позывной и путь диджипитера, если имеются.",
+    "meshcomPathEmpty": "На этом кадре нет пути цифрового ретранслятора."
   },
   "remoteAdmin": {
     "errors": {
@@ -9395,7 +9428,12 @@
       "removeGroupListenNotUpdated": "{{name}} был скрыт здесь, но фильтр прослушивания узла не был обновлен (радиокоманды недоступны).",
       "removeGroupListenRadioChanged": "{{name}} был скрыт здесь, но фильтр прослушивания узла не был обновлен (подключенное радио изменилось)."
     },
-    "netConsoleHint": "NET Console — это TCP порт 2323 (LAN с передачей данных в открытом виде). Включите --netconsole на узле; необязательный параметр --passwd для входа с использованием HMAC."
+    "netConsoleHint": "NET Console — это TCP порт 2323 (LAN с передачей данных в открытом виде). Включите --netconsole на узле; необязательный параметр --passwd для входа с использованием HMAC.",
+    "importInvalidJson": "Не удалось прочитать файл — недопустимый JSON.",
+    "importNoContactRows": "Файл не содержит списка контактов.",
+    "importCsvEmpty": "В CSV-файле нет строк с контактами.",
+    "importSkippedCallsign": "Пропущено «{{callsign}}»: недопустимый позывной.",
+    "importSaveFailed": "Не удалось сохранить «{{callsign}}» в базе данных."
   },
   "meshcomDeviceCommands": {
     "description": "Отправляйте команды узла ICSSW (--help, --settime, --setctry, …) по последовательному интерфейсу или через BLE. Команды, поддерживаемые приложением, соответствуют официальному приложению MeshCom; для команд, доступных только через последовательный интерфейс, требуется подключение к консоли USB.",

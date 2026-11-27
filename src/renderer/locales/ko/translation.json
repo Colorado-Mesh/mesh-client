@@ -1019,7 +1019,8 @@
       "relayNotReported": "라디오는 이 메시지를 전달한 노드를 보고하지 않았습니다.",
       "unavailableDirectOrRoom": "경로는 채널 메시지에만 표시됩니다.",
       "unavailableNotCaptured": "라우트 사용 불가: 라우트는 이 세션의 최근 메시지에 대해서만 유지됩니다.",
-      "notRecorded": "이 네트워크의 패킷은 어떤 릴레이가 아닌 얼마나 많은 릴레이를 통과했는지 기록합니다."
+      "notRecorded": "이 네트워크의 패킷은 어떤 릴레이가 아닌 얼마나 많은 릴레이를 통과했는지 기록합니다.",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "읽지 않은 것으로 표시",
     "deleteMessageLocal": "로컬에서 삭제",
@@ -5494,7 +5495,39 @@
     "senderKeyPrefix": "발신자 키(접두사):",
     "control": "제어:",
     "advertTs": "ADVERT 타임스탬프:",
-    "advertLatLon": "ADVERT 위도/경도:"
+    "advertLatLon": "ADVERT 위도/경도:",
+    "meshcomKind": {
+      "msg": "MSG",
+      "pos": "POS",
+      "tele": "망원",
+      "ack": "ACK",
+      "other": "기타"
+    },
+    "meshcomKindTooltip": {
+      "msg": "문자 메시지 또는 채팅 메시지",
+      "pos": "위치 보고서",
+      "tele": "원격 측정(EXTUDP)",
+      "ack": "전달 또는 라우팅 확인",
+      "other": "기타 프레임 유형"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "시리얼",
+      "serverTooltip": "서버 또는 게이트웨이를 통해 중계(직접 RF 메타데이터 아님)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP APRS 프레임",
+      "ble": "BLE 전화 APRS 알림",
+      "serial": "직렬 또는 netconsole JSON 라인"
+    },
+    "meshcomLegendHint": "행에는 인바운드 MeshCom 트래픽(EXTUDP, KISS, BLE APRS 또는 직렬 JSON)이 표시됩니다. 경로에는 발신지 및 디지피터 호출 부호가 나열됩니다.",
+    "meshcomTransportColumn": "링크",
+    "meshcomTransportColumnTooltip": "이 프레임이 앱에 도달한 방식(EXTUDP, KISS, BLE 또는 직렬).",
+    "meshcomPathColumnTooltip": "발신 호출부호 및 디지피터 경로(있는 경우).",
+    "meshcomPathEmpty": "이 프레임에 디지피터 경로가 없습니다."
   },
   "remoteAdmin": {
     "errors": {
@@ -9251,7 +9284,12 @@
       "removeGroupListenNotUpdated": "{{name}}이(가) 여기에 숨겨졌지만 노드 수신 필터가 업데이트되지 않았습니다(무선 명령 사용 불가).",
       "removeGroupListenRadioChanged": "{{name}}이(가) 여기에 숨겨졌지만 노드 수신 필터가 업데이트되지 않았습니다(연결된 라디오 변경됨)."
     },
-    "netConsoleHint": "NET 콘솔은 TCP 포트 2323(일반 텍스트 LAN)입니다. 노드에서 --netconsole을 활성화합니다. HMAC 로그인을 위한 --passwd는 선택 사항입니다."
+    "netConsoleHint": "NET 콘솔은 TCP 포트 2323(일반 텍스트 LAN)입니다. 노드에서 --netconsole을 활성화합니다. HMAC 로그인을 위한 --passwd는 선택 사항입니다.",
+    "importInvalidJson": "파일을 읽을 수 없습니다. 유효하지 않은 JSON입니다.",
+    "importNoContactRows": "파일에 연락처 목록이 없습니다.",
+    "importCsvEmpty": "CSV 파일에 연락처 행이 없습니다.",
+    "importSkippedCallsign": "'{{callsign}}' 건너뜀: 유효하지 않은 콜사인입니다.",
+    "importSaveFailed": "데이터베이스에 \"{{callsign}}\"을(를) 저장할 수 없습니다."
   },
   "meshcomDeviceCommands": {
     "description": "직렬 또는 BLE을 통해 ICSSW 노드 명령(--help, --settime, --setctry, …)을 전송합니다. 앱에서 사용할 수 있는 명령은 공식 MeshCom 앱과 일치합니다. 직렬 전용 명령은 USB 콘솔 링크가 필요합니다.",

@@ -1,5 +1,9 @@
 import type { RxPacketEntry } from './meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry, ReticulumRawPacketEntry } from './rawPacketLogConstants';
+import type {
+  MeshcomRawPacketEntry,
+  MeshtasticRawPacketEntry,
+  ReticulumRawPacketEntry,
+} from './rawPacketLogConstants';
 
 export type RawPacketSortColumn = 'time' | 'type' | 'hops' | 'snr';
 export type RawPacketSortDirection = 'asc' | 'desc';
@@ -36,6 +40,30 @@ export function sortMeshcorePackets(
         return compareDirection(a.hopCount, b.hopCount, sort.direction);
       case 'snr':
         return compareDirection(a.snr, b.snr, sort.direction);
+      case 'time':
+      default:
+        return compareDirection(a.ts, b.ts, sort.direction);
+    }
+  });
+  return out;
+}
+
+export function sortMeshcomPackets(
+  packets: readonly MeshcomRawPacketEntry[],
+  sort: RawPacketSortState,
+): MeshcomRawPacketEntry[] {
+  const out = [...packets];
+  out.sort((a, b) => {
+    switch (sort.column) {
+      case 'type':
+        return compareString(a.kind, b.kind, sort.direction);
+      case 'hops':
+        return compareDirection(a.hopsAway, b.hopsAway, sort.direction);
+      case 'snr': {
+        const ah = a.snr ?? -999;
+        const bh = b.snr ?? -999;
+        return compareDirection(ah, bh, sort.direction);
+      }
       case 'time':
       default:
         return compareDirection(a.ts, b.ts, sort.direction);

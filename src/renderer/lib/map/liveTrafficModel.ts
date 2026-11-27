@@ -10,8 +10,9 @@ import {
 } from '@/shared/meshcoreRfPacketParse';
 
 import type { OurPosition } from '../gpsSource';
+import { callsignToNodeId } from '../meshcom/meshcomCallsign';
 import type { RxPacketEntry } from '../meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
+import type { MeshcomRawPacketEntry, MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import { MS_PER_MINUTE } from '../timeConstants';
 import type { MeshNode } from '../types';
 import { type LiveTrafficControlSubtype, liveTrafficControlSubtype } from './liveTrafficControl';
@@ -431,6 +432,70 @@ export function buildMeshtasticLiveTrafficEvents(
         ...meshtasticPacketMetadata(packet, index),
       };
     });
+}
+
+/**
+ * MeshCom local sniffer → map traffic. Digipeater callsigns resolve via {@link callsignToNodeId};
+ * missing positions leave null hops so the route stays `partial`. Gateway (`viaServer`) frames
+ * are labeled without forcing a local receiver segment.
+ */
+export function buildMeshcomLiveTrafficEvents(
+  packets: readonly MeshcomRawPacketEntry[],
+  index: LiveTrafficNodeIndex,
+  myNodeNum: number | null,
+  now: number,
+): LiveTrafficEvent[] {
+  const duplicateCounts = new Map<string, number>();
+  return recentPackets(packets, now).map((packet) => {
+    const origin = packet.fromNodeId == null ? null : (index.points.get(packet.fromNodeId) ?? null);
+    const digiPoints = packet.digis.map((call) => {
+      const nodeId = callsignToNodeId(call);
+      if (nodeId <= 0) return null;
+      return index.points.get(nodeId) ?? null;
+    });
+    const gateway = packet.viaServer === true;
+    const receiver =
+      !gateway && myNodeNum != null && myNodeNum > 0 ? (index.points.get(myNodeNum) ?? null) : null;
+    const route: (LiveTrafficPoint | null)[] = [origin, ...digiPoints];
+    if (!gateway) route.push(receiver);
+    const points = uniquePoints(route);
+    const segments = consecutiveSegments(route);
+    const allLocated = route.length > 0 && route.every((point) => point !== null);
+    const direct = !gateway && packet.digis.length === 0;
+    const routeStatus: LiveTrafficEvent['routeStatus'] = gateway
+      ? points.length > 0
+        ? 'partial'
+        : 'unlocated'
+      : direct && segments.length > 0
+        ? 'direct'
+        : allLocated && segments.length > 0
+          ? 'resolved'
+          : points.length > 0
+            ? 'partial'
+            : 'unlocated';
+    const kindLabel = gateway ? `${packet.kind}/gw` : packet.kind;
+    return {
+      id: eventId('cm', packet, duplicateCounts),
+      ts: packet.ts,
+      kind: kindLabel,
+      source: gateway ? 'unknown' : 'RF',
+      ...(!gateway && myNodeNum != null && myNodeNum > 0
+        ? { observerId: `radio:${myNodeNum}` }
+        : {}),
+      segments,
+      points,
+      routeStatus,
+      scopeCode: null,
+      returnScopeCode: null,
+      rssi: packet.rssi ?? 0,
+      snr: packet.snr ?? 0,
+      hopCount: packet.hopsAway,
+      senderLabel:
+        nodeLabel(packet.fromNodeId, index) ||
+        (packet.originCallsign.trim() ? packet.originCallsign : undefined),
+      ...(packet.kind === 'msg' ? { contentStatus: 'unavailable' as const } : {}),
+    };
+  });
 }
 
 /** Preserve geographic identity while drawing its nearest wrapped world copy. */

@@ -1019,7 +1019,8 @@
       "relayNotReported": "De radio heeft niet gemeld welk knooppunt dit bericht heeft doorgegeven.",
       "unavailableDirectOrRoom": "Routes worden alleen weergegeven voor kanaalberichten.",
       "unavailableNotCaptured": "Route niet beschikbaar: routes worden alleen bewaard voor recente berichten van deze sessie.",
-      "notRecorded": "Pakketten op dit netwerk registreren hoeveel relais ze hebben doorgegeven, niet welke."
+      "notRecorded": "Pakketten op dit netwerk registreren hoeveel relais ze hebben doorgegeven, niet welke.",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Markeer als ongelezen",
     "deleteMessageLocal": "Lokaal verwijderen",
@@ -5494,7 +5495,39 @@
     "senderKeyPrefix": "Afzendersleutel (voorvoegsel):",
     "control": "Besturing:",
     "advertTs": "ADVERT-tijdstempel:",
-    "advertLatLon": "ADVERT-breedte-/lengtegraad:"
+    "advertLatLon": "ADVERT-breedte-/lengtegraad:",
+    "meshcomKind": {
+      "msg": "MSG",
+      "pos": "POS",
+      "tele": "Tele",
+      "ack": "bevestiging",
+      "other": "OVERIGE"
+    },
+    "meshcomKindTooltip": {
+      "msg": "Sms- of chatbericht",
+      "pos": "Positiemelding",
+      "tele": "Telemetrie (EXTUDP)",
+      "ack": "Bevestiging van bezorging of routering",
+      "other": "Ander frametype"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SERIEEL",
+      "serverTooltip": "Doorgegeven via server of gateway (geen directe RF-metadata)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP APRS-frame",
+      "ble": "BLE telefoon APRS-melding",
+      "serial": "JSON-regel voor seriële console of netconsole"
+    },
+    "meshcomLegendHint": "Rijen tonen inkomend MeshCom-verkeer (EXTUDP, KISS, BLE APRS of seriële JSON). Pad geeft de oorsprong en de roepnamen van de digipeaters weer.",
+    "meshcomTransportColumn": "Link",
+    "meshcomTransportColumnTooltip": "Hoe dit frame de app heeft bereikt (EXTUDP, KISS, BLE of serieel).",
+    "meshcomPathColumnTooltip": "Oorspronkelijke roepnaam en digipeaterpad indien aanwezig.",
+    "meshcomPathEmpty": "Geen digipeaterpad op dit frame."
   },
   "remoteAdmin": {
     "errors": {
@@ -9251,7 +9284,12 @@
       "removeGroupListenNotUpdated": "{{name}} was hier verborgen, maar het luisterfilter van het knooppunt is niet bijgewerkt (radiocommando's niet beschikbaar).",
       "removeGroupListenRadioChanged": "{{name}} was hier verborgen, maar het luisterfilter van het knooppunt is niet bijgewerkt (aangesloten radio is gewijzigd)."
     },
-    "netConsoleHint": "NET Console is TCP poort 2323 (LAN in platte tekst). Schakel --netconsole in op het knooppunt; optioneel --passwd voor HMAC-login."
+    "netConsoleHint": "NET Console is TCP poort 2323 (LAN in platte tekst). Schakel --netconsole in op het knooppunt; optioneel --passwd voor HMAC-login.",
+    "importInvalidJson": "Kan het bestand niet lezen — ongeldige JSON.",
+    "importNoContactRows": "Het bestand bevat geen contactpersonenlijst.",
+    "importCsvEmpty": "Het CSV-bestand bevat geen contactrijen.",
+    "importSkippedCallsign": "‘{{callsign}}’ overgeslagen: ongeldige roepnaam.",
+    "importSaveFailed": "Kan \"{{callsign}}\" niet opslaan in de database."
   },
   "meshcomDeviceCommands": {
     "description": "Verstuur ICSSW-knooppuntopdrachten (--help, --settime, --setctry, …) via Seriële verbinding of BLE. Voor de app geschikte opdrachten komen overeen met de officiële MeshCom-app; opdrachten die alleen via seriële verbinding kunnen worden uitgevoerd, hebben een USB-consolelink nodig.",

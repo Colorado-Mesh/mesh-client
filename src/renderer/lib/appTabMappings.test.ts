@@ -153,11 +153,11 @@ describe('computeTabMappings', () => {
     expect(MESHCOM_CAPABILITIES.hasReticulumPeersList).toBe(false);
   });
 
-  it('omits Stats and Sniffer for MeshCom (no corescope / raw packet log)', () => {
+  it('shows Stats and Sniffer for MeshCom when raw packet log is enabled', () => {
     const tabs = computeTabMappings(identityT, 'meshcom', MESHCOM_CAPABILITIES);
-    expect(MESHCOM_CAPABILITIES.hasRawPacketLog).toBe(false);
-    expect(tabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Stats'));
-    expect(tabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Sniffer'));
+    expect(MESHCOM_CAPABILITIES.hasRawPacketLog).toBe(true);
+    expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf('Stats'));
+    expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf('Sniffer'));
   });
 
   it('shows Radio for MeshCom via hasMeshcomDeviceCommands', () => {
@@ -169,6 +169,12 @@ describe('computeTabMappings', () => {
     expect(
       tabs.displayTabLabels[tabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Radio'))],
     ).toBe('tabs.radio');
+  });
+
+  it('shows the RF histograms tab for MeshCom', () => {
+    const tabs = computeTabMappings(identityT, 'meshcom', MESHCOM_CAPABILITIES);
+    expect(MESHCOM_CAPABILITIES.hasRfStats).toBe(true);
+    expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf('RF'));
   });
 
   it('shows Meshtastic sidebar panels including Radio, Map, and Modules', () => {

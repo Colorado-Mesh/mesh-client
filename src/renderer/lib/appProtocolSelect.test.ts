@@ -39,8 +39,15 @@ describe('protocolRecord', () => {
 });
 
 describe('Stats / raw packet gating', () => {
-  it('MeshCom does not expose a raw packet log for the Stats panel', () => {
-    expect(MESHCOM_CAPABILITIES.hasRawPacketLog).toBe(false);
+  it('MeshCom exposes a raw packet log for Stats and Sniffer', () => {
+    expect(MESHCOM_CAPABILITIES.hasRawPacketLog).toBe(true);
     expect(MESHTASTIC_CAPABILITIES.hasRawPacketLog).toBe(true);
+  });
+});
+
+describe('RF histograms gating', () => {
+  it('MeshCom enables the RF tab via hasRfStats', () => {
+    expect(MESHCOM_CAPABILITIES.hasRfStats).toBe(true);
+    expect(RETICULUM_CAPABILITIES.hasRfStats).toBe(false);
   });
 });

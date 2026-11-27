@@ -151,6 +151,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
     ...(rxHops != null ? { rxHops } : {}),
+    ...(record.rxPathCallsigns?.length ? { rxPathCallsigns: [...record.rxPathCallsigns] } : {}),
     ...(record.rxPathHashSizeBytes === 1 ||
     record.rxPathHashSizeBytes === 2 ||
     record.rxPathHashSizeBytes === 3
@@ -530,6 +531,7 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     replyPreviewText: msg.replyPreviewText,
     replyPreviewSender: msg.replyPreviewSender,
     ...(msg.rxHops != null ? { rxHops: msg.rxHops } : {}),
+    ...(msg.rxPathCallsigns?.length ? { rxPathCallsigns: [...msg.rxPathCallsigns] } : {}),
     ...(msg.rxPathHashSizeBytes === 1 ||
     msg.rxPathHashSizeBytes === 2 ||
     msg.rxPathHashSizeBytes === 3

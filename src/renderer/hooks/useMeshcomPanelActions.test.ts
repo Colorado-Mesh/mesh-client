@@ -20,6 +20,7 @@ function fakeRuntime(overrides: Partial<MeshcomRuntime> = {}): MeshcomRuntime {
     sendReaction: vi.fn(),
     clearRawPackets: vi.fn(),
     hydrateRawPackets: vi.fn(),
+    importContacts: vi.fn(),
     deviceCommands: {} as MeshcomRuntime['deviceCommands'],
     ...overrides,
   } as MeshcomRuntime;

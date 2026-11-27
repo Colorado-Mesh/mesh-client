@@ -1,3 +1,4 @@
+import type { MeshcomMheardStation } from '../meshcom/meshcomMheard';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import type { TransportParams } from '../types';
 
@@ -13,6 +14,11 @@ export interface TextMessageEvent {
   rxSnr?: number;
   rxRssi?: number;
   hopCount?: number;
+  /**
+   * MeshCom digipeater callsigns after the origin in a comma-separated `src` path
+   * (e.g. `IW5EIA-12` from `IK5NJM-11,IW5EIA-12`). Origin is `from` / sender name.
+   */
+  rxPathCallsigns?: string[];
   /** MeshCore on-air path hash width (1/2/3 bytes) from the packed path_length byte. */
   pathHashSizeBytes?: 1 | 2 | 3;
   tapback?: boolean;
@@ -60,6 +66,8 @@ export interface NodeInfoEvent {
   airUtilTx?: number;
   /** MeshCom EXTUDP / HELLO firmware string when present on-air. */
   firmwareVersion?: string;
+  /** When set, MeshCom ingest applies MHEARD topology (hops/path/neighbors). */
+  meshcomMheard?: MeshcomMheardStation;
 }
 
 /** MeshCore path-updated push (event 129). */
@@ -408,6 +416,21 @@ export interface MeshtasticStoreForwardEvent {
   timestamp: number;
 }
 
+export interface MeshcomRxEvent {
+  ts: number;
+  snr: number | null;
+  rssi: number | null;
+  kind: 'msg' | 'pos' | 'tele' | 'ack' | 'other';
+  transport: 'extudp' | 'kiss' | 'ble' | 'serial';
+  originCallsign: string;
+  digis: string[];
+  hopsAway: number;
+  fromNodeId: number | null;
+  msgId?: number | string;
+  viaServer?: boolean;
+  raw: Uint8Array;
+}
+
 export interface MeshtasticRoutingAckEvent {
   /** Data.requestId — the outbound MeshPacket id being acknowledged. */
   requestId: number;
@@ -457,7 +480,8 @@ export type DomainEvent =
   | { type: 'meshcore_contact_deleted'; payload: MeshcoreContactDeletedEvent }
   | { type: 'meshcore_contacts_full'; payload: MeshcoreContactsFullEvent }
   | { type: 'meshcore_cli_response'; payload: MeshcoreCliResponseEvent }
-  | { type: 'meshcore_rf_rx'; payload: MeshcoreRfRxEvent };
+  | { type: 'meshcore_rf_rx'; payload: MeshcoreRfRxEvent }
+  | { type: 'meshcom_rx'; payload: MeshcomRxEvent };
 
 export type DomainEventType = DomainEvent['type'];
 

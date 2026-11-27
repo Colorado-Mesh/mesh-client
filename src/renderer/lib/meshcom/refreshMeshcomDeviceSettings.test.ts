@@ -10,6 +10,7 @@ describe('refreshMeshcomDeviceSettings', () => {
       connection: { write: vi.fn() },
       deviceSettings: { complete: false, call: null },
       deviceSettingsWaiters: [],
+      mheardInFlight: null,
     } as unknown as MeshComDeviceHandle;
     await expect(refreshMeshcomDeviceSettings(handle, 'meshcom:test')).rejects.toThrow(
       /Serial, BLE, or NET Console/,

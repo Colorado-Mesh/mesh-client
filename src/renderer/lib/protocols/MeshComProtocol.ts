@@ -35,6 +35,7 @@ import {
   MeshcomKissSession,
   parseMeshcomInfoField,
 } from '../meshcom/meshcomKissCodec';
+import type { MeshcomMheardStation } from '../meshcom/meshcomMheard';
 import { parseMeshcomMhJson } from '../meshcom/meshcomMheard';
 import {
   getMeshcomNodePasswd,
@@ -55,7 +56,13 @@ import {
   transportParamsToMeshCom,
 } from './meshcom/MeshComTransport';
 import { meshcomIdentitySignature } from './meshcomIdentitySignature';
-import type { DomainEvent, Protocol, SendMessageOptions, SendResult } from './Protocol';
+import type {
+  DomainEvent,
+  MeshcomRxEvent,
+  Protocol,
+  SendMessageOptions,
+  SendResult,
+} from './Protocol';
 import { UnsupportedOperation } from './Protocol';
 
 const unsupported = (op: string) => {
@@ -129,6 +136,8 @@ export interface MeshComDeviceHandle {
   deviceSettings: MeshcomDeviceSettingsAccum;
   /** Resolvers waiting for BLE `CONFFIN` (or serial collect finish). */
   deviceSettingsWaiters: (() => void)[];
+  /** While set, inbound TYP MH JSON is appended for on-demand `--mheard` (BLE). */
+  mheardInFlight: MeshcomMheardStation[] | null;
   /** Recent outbound text for TX-echo suppression (mutated by send/subscribe). */
   recentOutbound: MeshcomRecentOutbound[];
 }
@@ -425,6 +434,7 @@ function tryIngestSettingsJson(
   if (typ === 'MH') {
     const station = parseMeshcomMhJson(parsed);
     if (station) {
+      handle.mheardInFlight?.push(station);
       const nodeId = rememberCallsign(handle, station.callsign);
       const now = Date.now();
       emit({
@@ -437,6 +447,7 @@ function tryIngestSettingsJson(
           snr: station.snr,
           rssi: station.rssi,
           hwModel: meshcomHwLabel(station.hwId) || undefined,
+          meshcomMheard: station,
         },
       });
     }
@@ -478,6 +489,18 @@ function resolveDestinationCallsign(handle: MeshComDeviceHandle, opts: SendMessa
   return '*';
 }
 
+function emitMeshcomRx(emit: (event: DomainEvent) => void, entry: MeshcomRxEvent): void {
+  emit({ type: 'meshcom_rx', payload: entry });
+}
+
+function meshcomSerialOrExtUdpTransport(device: MeshComDeviceHandle): MeshcomRxEvent['transport'] {
+  return device.transport === 'serial' || device.transport === 'netconsole' ? 'serial' : 'extudp';
+}
+
+function kissFrameRawSnippet(frame: { src: string; dest: string; info: string }): Uint8Array {
+  return new TextEncoder().encode(`${frame.src}>${frame.dest}:${frame.info}`);
+}
+
 function textMessageToFromDest(
   handle: MeshComDeviceHandle,
   destRaw: string | undefined,
@@ -508,6 +531,19 @@ function emitPhoneAprsEvents(
     });
     const attr = parsed.attributionCall?.trim();
     const from = attr != null && attr.length > 0 ? rememberCallsign(handle, attr) : undefined;
+    emitMeshcomRx(emit, {
+      ts: now,
+      snr: null,
+      rssi: null,
+      kind: 'ack',
+      transport: 'ble',
+      originCallsign: attr ?? '',
+      digis: [],
+      hopsAway: 0,
+      fromNodeId: from ?? null,
+      msgId: parsed.ackMsgId,
+      raw: bytes,
+    });
     emit({
       type: 'meshtastic_routing_ack',
       payload: {
@@ -528,6 +564,20 @@ function emitPhoneAprsEvents(
     }
     const from = rememberCallsign(handle, parsed.sourceCall);
     const { to, channelIndex } = textMessageToFromDest(handle, parsed.destCall);
+    emitMeshcomRx(emit, {
+      ts: now,
+      snr: null,
+      rssi: null,
+      kind: 'msg',
+      transport: 'ble',
+      originCallsign: parsed.sourceCall,
+      digis: parsed.digis,
+      hopsAway: parsed.hopCount,
+      fromNodeId: from,
+      msgId: parsed.msgId,
+      viaServer: parsed.viaServer,
+      raw: bytes,
+    });
     emit({
       type: 'node_info',
       payload: {
@@ -549,6 +599,7 @@ function emitPhoneAprsEvents(
         channelIndex,
         timestamp: now,
         hopCount: parsed.hopCount,
+        ...(parsed.digis.length > 0 ? { rxPathCallsigns: parsed.digis } : {}),
         receivedVia: parsed.viaServer ? 'network' : 'rf',
       },
     });
@@ -556,6 +607,19 @@ function emitPhoneAprsEvents(
   }
   if (parsed.kind === 'position') {
     const from = rememberCallsign(handle, parsed.sourceCall);
+    emitMeshcomRx(emit, {
+      ts: now,
+      snr: null,
+      rssi: null,
+      kind: 'pos',
+      transport: 'ble',
+      originCallsign: parsed.sourceCall,
+      digis: parsed.digis,
+      hopsAway: parsed.hopCount,
+      fromNodeId: from,
+      msgId: parsed.msgId,
+      raw: bytes,
+    });
     emit({
       type: 'node_info',
       payload: {
@@ -591,13 +655,14 @@ function emitExtUdpEvents(
   handle: MeshComDeviceHandle,
   raw: Uint8Array,
   emit: (event: DomainEvent) => void,
+  transport: MeshcomRxEvent['transport'],
 ): void {
   const parsed = parseMeshcomExtUdp(raw);
   if (!parsed) return;
   const now = Date.now();
 
   if (parsed.type === 'msg') {
-    const { origin, hopCount } = parseMeshcomSrcPath(parsed.src);
+    const { origin, digis, hopCount } = parseMeshcomSrcPath(parsed.src);
     const sourceCall = origin || parsed.src;
     if (shouldDropLocalMeshcomText(handle, sourceCall, parsed.dst, parsed.msg, emit)) {
       const msgId = parseMeshcomInboundMsgId(parsed.msg_id);
@@ -606,6 +671,19 @@ function emitExtUdpEvents(
     }
     const from = rememberCallsign(handle, sourceCall);
     const { to, channelIndex } = textMessageToFromDest(handle, parsed.dst);
+    emitMeshcomRx(emit, {
+      ts: now,
+      snr: parsed.snr ?? null,
+      rssi: parsed.rssi ?? null,
+      kind: 'msg',
+      transport,
+      originCallsign: origin || sourceCall,
+      digis,
+      hopsAway: hopCount,
+      fromNodeId: from,
+      ...(parsed.msg_id != null ? { msgId: parsed.msg_id } : {}),
+      raw,
+    });
     if (origin) {
       emit({
         type: 'node_info',
@@ -634,6 +712,7 @@ function emitExtUdpEvents(
         rxSnr: parsed.snr,
         rxRssi: parsed.rssi,
         hopCount,
+        ...(digis.length > 0 ? { rxPathCallsigns: digis } : {}),
       },
     });
     return;
@@ -646,6 +725,20 @@ function emitExtUdpEvents(
     let longitude = parsed.long;
     if (latitude != null && parsed.lat_dir?.toUpperCase() === 'S') latitude = -latitude;
     if (longitude != null && parsed.long_dir?.toUpperCase() === 'W') longitude = -longitude;
+
+    const { digis: posDigis } = parseMeshcomSrcPath(parsed.src);
+    emitMeshcomRx(emit, {
+      ts: now,
+      snr: parsed.snr ?? null,
+      rssi: parsed.rssi ?? null,
+      kind: 'pos',
+      transport,
+      originCallsign: origin || parsed.src,
+      digis: posDigis,
+      hopsAway: hopCount,
+      fromNodeId: nodeId,
+      raw,
+    });
 
     emit({
       type: 'node_info',
@@ -692,9 +785,21 @@ function emitExtUdpEvents(
   }
 
   // Remaining inbound variant is `tele` (msg/pos returned above).
-  const { origin } = parseMeshcomSrcPath(parsed.src ?? '');
+  const { origin, digis: teleDigis, hopCount: teleHops } = parseMeshcomSrcPath(parsed.src ?? '');
   if (!origin && !parsed.src) return;
   const nodeId = rememberCallsign(handle, origin || parsed.src || '');
+  emitMeshcomRx(emit, {
+    ts: now,
+    snr: typeof parsed.snr === 'number' ? parsed.snr : null,
+    rssi: typeof parsed.rssi === 'number' ? parsed.rssi : null,
+    kind: 'tele',
+    transport,
+    originCallsign: origin || parsed.src || '',
+    digis: teleDigis,
+    hopsAway: teleHops,
+    fromNodeId: nodeId,
+    raw,
+  });
   emit({
     type: 'node_info',
     payload: {
@@ -873,12 +978,43 @@ function emitKissEvents(
             level: 0,
           },
         });
+        const snrAck = frame.meta?.snr ?? null;
+        const rssiAck = frame.meta?.rssi ?? null;
+        emitMeshcomRx(emit, {
+          ts: now,
+          snr: snrAck,
+          rssi: rssiAck,
+          kind: 'ack',
+          transport: 'kiss',
+          originCallsign: frame.src,
+          digis: [...frame.digis],
+          hopsAway: hopCount,
+          fromNodeId: from,
+          msgId: Number.isFinite(requestId) ? requestId : info.ackNumber,
+          viaServer: frame.meta?.gatewayRelay,
+          raw: kissFrameRawSnippet(frame),
+        });
         continue;
       }
       if (shouldDropLocalMeshcomText(handle, frame.src, info.addressee, info.text, emit)) {
         continue;
       }
       const { to, channelIndex } = textMessageToFromDest(handle, info.addressee);
+      const snrMsg = frame.meta?.snr ?? null;
+      const rssiMsg = frame.meta?.rssi ?? null;
+      emitMeshcomRx(emit, {
+        ts: now,
+        snr: snrMsg,
+        rssi: rssiMsg,
+        kind: 'msg',
+        transport: 'kiss',
+        originCallsign: frame.src,
+        digis: [...frame.digis],
+        hopsAway: hopCount,
+        fromNodeId: from,
+        viaServer: frame.meta?.gatewayRelay,
+        raw: kissFrameRawSnippet(frame),
+      });
       emit({
         type: 'node_info',
         payload: {
@@ -903,6 +1039,7 @@ function emitKissEvents(
           rxSnr: frame.meta?.snr,
           rxRssi: frame.meta?.rssi,
           hopCount,
+          ...(frame.digis.length > 0 ? { rxPathCallsigns: [...frame.digis] } : {}),
           receivedVia: frame.meta?.gatewayRelay ? 'network' : 'rf',
         },
       });
@@ -914,6 +1051,21 @@ function emitKissEvents(
         info.altitudeFt != null && Number.isFinite(info.altitudeFt)
           ? Math.round(info.altitudeFt * 0.3048)
           : undefined;
+      const snrPos = frame.meta?.snr ?? null;
+      const rssiPos = frame.meta?.rssi ?? null;
+      emitMeshcomRx(emit, {
+        ts: now,
+        snr: snrPos,
+        rssi: rssiPos,
+        kind: 'pos',
+        transport: 'kiss',
+        originCallsign: frame.src,
+        digis: [...frame.digis],
+        hopsAway: hopCount,
+        fromNodeId: from,
+        viaServer: frame.meta?.gatewayRelay,
+        raw: kissFrameRawSnippet(frame),
+      });
       emit({
         type: 'node_info',
         payload: {
@@ -973,6 +1125,7 @@ export const meshcomProtocol: Protocol = {
       kissTxWaiters: new Map(),
       deviceSettings: emptyMeshcomDeviceSettingsAccum(),
       deviceSettingsWaiters: [],
+      mheardInFlight: null,
       recentOutbound: [],
     };
   },
@@ -996,7 +1149,12 @@ export const meshcomProtocol: Protocol = {
         if (tryIngestSettingsJson(device, jsonCandidate, emit)) return;
         const parsed = parseMeshcomExtUdp(jsonCandidate);
         if (parsed) {
-          emitExtUdpEvents(device, new TextEncoder().encode(jsonCandidate), emit);
+          emitExtUdpEvents(
+            device,
+            new TextEncoder().encode(jsonCandidate),
+            emit,
+            meshcomSerialOrExtUdpTransport(device),
+          );
           return;
         }
         emitConsoleTextLine(device, trimmed, emit);
@@ -1007,7 +1165,7 @@ export const meshcomProtocol: Protocol = {
     const onData = (bytes: Uint8Array): void => {
       try {
         if (device.transport === 'udp') {
-          emitExtUdpEvents(device, bytes, emit);
+          emitExtUdpEvents(device, bytes, emit, 'extudp');
           return;
         }
         if (device.transport === 'tcp' && device.kissSession) {

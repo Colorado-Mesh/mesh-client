@@ -21,21 +21,31 @@ import { hydrateIdentityStoresFromDb } from '../lib/hydrateIdentityStoresFromDb'
 import { getIdentityNodeMap } from '../lib/identityStoreReads';
 import { resolveLastSerialPortId, saveLastConnection } from '../lib/lastConnectionStorage';
 import { canTransmitLocation } from '../lib/locationTransmit';
+import { applyMeshcomMheardStations } from '../lib/meshcom/applyMeshcomMheardStations';
 import { meshcomCallForNodeId, registerMeshcomCallsign } from '../lib/meshcom/meshcomCallRegistry';
-import { callsignToNodeId, normalizeMeshcomCallsign } from '../lib/meshcom/meshcomCallsign';
+import { normalizeMeshcomCallsign } from '../lib/meshcom/meshcomCallsign';
+import { collectMeshcomMheardStations } from '../lib/meshcom/meshcomCollectMheardStations';
 import { resolveMeshcomContactIdentity } from '../lib/meshcom/meshcomContactIdentity';
+import { parseMeshcomContactsImport } from '../lib/meshcom/meshcomContactImport';
 import type { MeshcomDeviceSettingsSnapshot } from '../lib/meshcom/meshcomDeviceSettings';
-import { markMeshcomLocallyDeletedContact } from '../lib/meshcom/meshcomLocallyDeletedContacts';
+import { meshcomHwLabel } from '../lib/meshcom/meshcomHwIds';
+import {
+  clearMeshcomLocallyDeletedContact,
+  markMeshcomLocallyDeletedContact,
+} from '../lib/meshcom/meshcomLocallyDeletedContacts';
 import { meshcomPersistIdentityId } from '../lib/meshcom/meshcomPersistIdentity';
+import { attachMeshcomRawPacketSideEffects } from '../lib/meshcom/meshcomRawPacketSideEffects';
 import { attachMeshcomRoutingAckSideEffects } from '../lib/meshcom/meshcomRoutingAckSideEffects';
 import { applyMeshcomSelfCallsign } from '../lib/meshcom/meshcomSelfCallsign';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
+import { lastHeardToUnixSeconds } from '../lib/nodeStatus';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { MeshComDeviceHandle } from '../lib/protocols/MeshComProtocol';
 import { ensureMeshcomProtocolLoaded } from '../lib/protocols/meshcomProtocolLoader';
 import { readRadioSelfPosition } from '../lib/radioSelfPosition';
+import type { MeshcomRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { createRfReconnectController } from '../lib/rfReconnectController';
 import { isSerialPostWakeUntrusted, noteSerialDeliveryFailure } from '../lib/serialDeliveryHealth';
 import {
@@ -115,7 +125,6 @@ const INITIAL_STATE: DeviceState = {
 };
 
 const asyncNoop = async (): Promise<void> => {};
-const syncNoop = (): void => {};
 
 function toUiConnectionType(type: MeshcomRfTransportType): ConnectionType {
   return type;
@@ -149,6 +158,9 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   refreshOurPosition: () => Promise<OurPosition | null>;
   setOwner: (opts: { longName: string; shortName: string; isLicensed: boolean }) => Promise<void>;
   sendPositionToDevice: (lat: number, lon: number, alt?: number) => Promise<void>;
+  importContacts: () => Promise<{ imported: number; skipped: number; errors: string[] }>;
+  /** On-demand `--mheard` for node detail / peer graph (Serial/BLE/NET Console). */
+  requestMeshcomMheard: (_nodeId: number) => Promise<void>;
 } {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -172,6 +184,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   const [telemetry, setTelemetry] = useState<TelemetryPoint[]>([]);
   const [signalTelemetry, setSignalTelemetry] = useState<TelemetryPoint[]>([]);
   const [environmentTelemetry, setEnvironmentTelemetry] = useState<EnvironmentTelemetryPoint[]>([]);
+  const [rawPackets, setRawPackets] = useState<MeshcomRawPacketEntry[]>([]);
+  const rawPacketsRef = useRef<MeshcomRawPacketEntry[]>([]);
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>('disconnected');
   const [mqttConnectionLoss, setMqttConnectionLoss] = useState(false);
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
@@ -203,6 +217,15 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     telemetryDetachRef.current?.();
     telemetryDetachRef.current = null;
   }, []);
+
+  const clearRawPackets = useCallback(() => {
+    setRawPackets([]);
+    rawPacketsRef.current = [];
+  }, []);
+
+  useLayoutEffect(() => {
+    rawPacketsRef.current = rawPackets;
+  }, [rawPackets]);
 
   const pushLocalTelemetry = useCallback((point: TelemetryPoint) => {
     setTelemetry((prev) => [...prev, point].slice(-MAX_TELEMETRY_POINTS));
@@ -283,12 +306,17 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       );
       // Sync attach so routing ACKs are registered before session becomes configured.
       const detachRoutingAck = attachMeshcomRoutingAckSideEffects(identityId);
+      const detachRawPackets = attachMeshcomRawPacketSideEffects(identityId, {
+        setRawPackets,
+        rawPacketsRef,
+      });
       const prevTelemetryDetach = telemetryDetachRef.current;
       telemetryDetachRef.current = () => {
         prevTelemetryDetach?.();
         detachSignal();
         detachSelfInfo();
         detachRoutingAck();
+        detachRawPackets();
       };
     },
     [detachIngest, pushEnvTelemetry, pushLocalTelemetry, state.myNodeNum],
@@ -437,19 +465,8 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
           recordEnvironmentReading('meshcom', identityId, nodeId, reading, 'rf');
         }
       }
-      if (snap.mheard) {
-        for (const st of snap.mheard) {
-          const heardId = callsignToNodeId(st.callsign);
-          if (!heardId) continue;
-          upsertNodeRecord(identityId, {
-            nodeId: heardId,
-            longName: st.callsign,
-            shortName: st.callsign.slice(0, 4),
-            rssi: st.rssi,
-            snr: st.snr,
-            lastHeardAt: snap.updatedAt,
-          });
-        }
+      if (snap.mheard?.length) {
+        applyMeshcomMheardStations(identityId, snap.mheard, snap.updatedAt);
       }
     },
     [pushEnvTelemetry, pushLocalTelemetry],
@@ -462,6 +479,23 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
   });
   const refreshSettingsRef = useRef(deviceCommands.refreshSettings);
   refreshSettingsRef.current = deviceCommands.refreshSettings;
+
+  const requestMeshcomMheard = useCallback(
+    // nodeId kept for NodeDetailModal callback shape; MHEARD refreshes the full heard list.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- see above
+    async (_nodeId: number): Promise<void> => {
+      const identityId = resolveIdentityId();
+      const handle = connectionDriver.getHandle(identityId) as MeshComDeviceHandle | null;
+      if (!handle) {
+        throw new Error('Not connected to MeshCom radio');
+      }
+      const stations = await collectMeshcomMheardStations(handle, identityId);
+      if (stations.length > 0) {
+        applyMeshcomMheardStations(identityId, stations, Date.now());
+      }
+    },
+    [resolveIdentityId],
+  );
   const serialWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const serialLastDataRef = useRef(0);
   const isReconnectingRef = useRef(false);
@@ -913,6 +947,101 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     [resolveIdentityId],
   );
 
+  const mapMeshcomImportParseError = useCallback(
+    (message: string): string => {
+      if (message === 'Invalid JSON') return t('meshcom.importInvalidJson');
+      if (message === 'JSON contains no array of contacts') return t('meshcom.importNoContactRows');
+      if (message === 'CSV has no data rows') return t('meshcom.importCsvEmpty');
+      return message;
+    },
+    [t],
+  );
+
+  const importContacts = useCallback(async (): Promise<{
+    imported: number;
+    skipped: number;
+    errors: string[];
+  }> => {
+    let raw: string | null;
+    try {
+      raw = await window.electronAPI.meshcom.openContactsImportFile();
+    } catch (e: unknown) {
+      console.warn('mcL1517 [useMeshcomRuntime] importContacts open file ' + errLikeToLogString(e));
+      return {
+        imported: 0,
+        skipped: 0,
+        errors: [e instanceof Error ? e.message : String(e)],
+      };
+    }
+    if (raw == null) {
+      return { imported: 0, skipped: 0, errors: [] };
+    }
+
+    const parsed = parseMeshcomContactsImport(raw);
+    const errors = parsed.errors.map(mapMeshcomImportParseError);
+    if (parsed.rows.length === 0) {
+      return { imported: 0, skipped: parsed.skipped, errors };
+    }
+
+    const sessionId = resolveIdentityId();
+    const persistId = meshcomPersistIdentityId();
+    let imported = 0;
+    let skipped = parsed.skipped;
+
+    for (const row of parsed.rows) {
+      clearMeshcomLocallyDeletedContact(row.callsign);
+      const nodeId = registerMeshcomCallsign(row.callsign);
+      if (!nodeId) {
+        skipped++;
+        errors.push(t('meshcom.importSkippedCallsign', { callsign: row.callsign }));
+        continue;
+      }
+      const { existing, syncIdentityIds } = resolveMeshcomContactIdentity(nodeId, sessionId);
+      const favorited = row.favorited ?? existing?.favorited ?? false;
+      const latitude = row.lat ?? existing?.latitude ?? null;
+      const longitude = row.lon ?? existing?.longitude ?? null;
+      const lastHeardAt =
+        row.last_heard ??
+        (existing?.lastHeardAt && existing.lastHeardAt > 0 ? existing.lastHeardAt : undefined);
+      const hwModel =
+        row.hw_id != null ? meshcomHwLabel(row.hw_id) || undefined : existing?.hwModel;
+
+      for (const id of syncIdentityIds) {
+        upsertNodeRecord(id, {
+          nodeId,
+          longName: row.callsign,
+          shortName: row.callsign.slice(0, 4),
+          latitude: latitude ?? undefined,
+          longitude: longitude ?? undefined,
+          favorited,
+          lastHeardAt,
+          hwModel,
+        });
+      }
+
+      try {
+        await window.electronAPI.db.saveMeshcomContact({
+          callsign: row.callsign,
+          identity_id: persistId,
+          node_id: nodeId >>> 0,
+          lat: latitude,
+          lon: longitude,
+          favorited: favorited ? 1 : 0,
+          hw_id: row.hw_id ?? null,
+          last_heard:
+            lastHeardAt != null && lastHeardAt > 0 ? lastHeardToUnixSeconds(lastHeardAt) : null,
+        });
+        imported++;
+      } catch (e: unknown) {
+        skipped++;
+        errors.push(t('meshcom.importSaveFailed', { callsign: row.callsign }));
+        console.warn('mcL1516 [useMeshcomRuntime] importContacts save ' + errLikeToLogString(e));
+      }
+    }
+
+    return { imported, skipped, errors };
+  }, [mapMeshcomImportParseError, resolveIdentityId, t]);
+
   const refreshMessagesFromDb = useCallback(async () => {
     await hydrateIdentityStoresFromDb('meshcom', resolveIdentityId(), { nodes: false });
   }, [resolveIdentityId]);
@@ -1109,7 +1238,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       nodes,
       deviceOwner,
       deviceLogs: [],
-      rawPackets: [],
+      rawPackets,
       queueStatus: null,
       ourPosition,
       gpsLoading,
@@ -1180,7 +1309,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       getNodes,
       getFullNodeLabel,
       getPickerStyleNodeLabel,
-      clearRawPackets: syncNoop,
+      clearRawPackets,
       hydrateRawPackets: asyncNoop,
       sendReaction: asyncNoop as ProtocolRuntime['sendReaction'],
     };
@@ -1191,11 +1320,14 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
       deleteNode,
       deviceCommands,
       refreshOurPosition,
+      requestMeshcomMheard,
       setOwner,
       sendPositionToDevice,
+      importContacts,
     };
   }, [
     attachRfSession,
+    clearRawPackets,
     connect,
     connectAutomatic,
     deviceCommands,
@@ -1207,6 +1339,7 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     getPickerStyleNodeLabel,
     gpsLoading,
     handleRfConnectFailure,
+    importContacts,
     setNodeFavorited,
     deleteNode,
     identityIdForStore,
@@ -1218,9 +1351,11 @@ export function useMeshcomRuntime(): ProtocolRuntime & {
     mqttStatus,
     ourPosition,
     prepareRfConnect,
+    rawPackets,
     refreshMessagesFromDb,
     refreshNodesFromDb,
     refreshOurPosition,
+    requestMeshcomMheard,
     requestRefresh,
     sendMessage,
     sendPositionToDevice,

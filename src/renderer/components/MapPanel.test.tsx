@@ -159,7 +159,7 @@ describe('MapPanel accessibility', () => {
     mockMapInstance.flyTo.mockClear();
   });
 
-  it.each(['meshcore', 'meshtastic'] as const)(
+  it.each(['meshcore', 'meshtastic', 'meshcom'] as const)(
     'opens traffic mode for %s and returns to the overview',
     async (protocol) => {
       const user = userEvent.setup();
@@ -171,6 +171,7 @@ describe('MapPanel accessibility', () => {
           protocol={protocol}
           meshcorePackets={protocol === 'meshcore' ? [] : undefined}
           meshtasticPackets={protocol === 'meshtastic' ? [] : undefined}
+          meshcomPackets={protocol === 'meshcom' ? [] : undefined}
         />,
       );
       expect(screen.queryByTestId('live-traffic-panel')).toBeNull();
@@ -231,7 +232,7 @@ describe('MapPanel accessibility', () => {
     expect(screen.queryByRole('link', { name: /Open MeshCom MeshMap/i })).toBeNull();
   });
 
-  it.each(['meshcore', 'meshtastic'] as const)(
+  it.each(['meshcore', 'meshtastic', 'meshcom'] as const)(
     'restores %s traffic mode after leaving the map without keeping its map DOM alive',
     async (protocol) => {
       const user = userEvent.setup();
@@ -242,6 +243,7 @@ describe('MapPanel accessibility', () => {
         protocol,
         meshcorePackets: protocol === 'meshcore' ? [] : undefined,
         meshtasticPackets: protocol === 'meshtastic' ? [] : undefined,
+        meshcomPackets: protocol === 'meshcom' ? [] : undefined,
       };
       const view = render(<MapPanel {...props} />);
       await user.click(screen.getByRole('button', { name: 'Live traffic' }));

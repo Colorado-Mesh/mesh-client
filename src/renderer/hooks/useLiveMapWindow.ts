@@ -83,7 +83,8 @@ export function useLiveMapWindow(
     sent.current = { nodes: null, pubKeys: null, at: 0 };
   }, [readyRevision]);
 
-  const { nodes, myNodeNum, meshcorePackets, meshtasticPackets, pubKeyByNodeId } = input;
+  const { nodes, myNodeNum, meshcorePackets, meshtasticPackets, meshcomPackets, pubKeyByNodeId } =
+    input;
   const lat = input.ourPosition?.lat;
   const lon = input.ourPosition?.lon;
   const source = input.ourPosition?.source;
@@ -93,7 +94,15 @@ export function useLiveMapWindow(
       const ourPosition: OurPosition | null =
         lat == null || lon == null || source == null ? null : { lat, lon, source };
       const snapshot = buildLiveMapSnapshot(
-        { nodes, myNodeNum, ourPosition, meshcorePackets, meshtasticPackets, pubKeyByNodeId },
+        {
+          nodes,
+          myNodeNum,
+          ourPosition,
+          meshcorePackets,
+          meshtasticPackets,
+          meshcomPackets,
+          pubKeyByNodeId,
+        },
         {
           nodes: sent.current.nodes !== nodes,
           pubKeys: sent.current.pubKeys !== (pubKeyByNodeId ?? null),
@@ -121,6 +130,7 @@ export function useLiveMapWindow(
     myNodeNum,
     meshcorePackets,
     meshtasticPackets,
+    meshcomPackets,
     pubKeyByNodeId,
     lat,
     lon,

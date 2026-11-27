@@ -1,4 +1,4 @@
-import type { MeshNode } from './types';
+import type { MeshNode, MeshProtocol } from './types';
 
 /**
  * RF-panel noise-floor helpers. A receiver noise floor is only meaningful inside the LoRa band
@@ -56,6 +56,11 @@ export function isElevatedNoiseFloor(value: number): boolean {
  * keeps it inside `meshcore_local_stats` — both are read here so the panel stays protocol-neutral
  * (no `protocol === 'meshcore'` branches; see AGENTS.md §1).
  */
+/** Live receiver noise-floor telemetry (Meshtastic `noise_floor`, MeshCore local stats). */
+function protocolSupportsLocalNoiseFloor(protocol: MeshProtocol | undefined): boolean {
+  return protocol === 'meshtastic' || protocol === 'meshcore';
+}
+
 export function readLocalNoiseFloor(node: MeshNode | undefined): LocalNoiseFloorReading | null {
   if (!node) return null;
   if (isPlausibleNoiseFloorDbm(node.noise_floor)) {
@@ -69,6 +74,16 @@ export function readLocalNoiseFloor(node: MeshNode | undefined): LocalNoiseFloor
     return { value: stats.noiseFloor, observedAt: stats.fetchedAt };
   }
   return null;
+}
+
+export function readLocalNoiseFloorForProtocol(
+  node: MeshNode | undefined,
+  protocol: MeshProtocol | undefined,
+): LocalNoiseFloorReading | null {
+  // Omit protocol → legacy behavior (read whatever telemetry is on the node).
+  // Explicit MeshCom (and other non-LocalStats protocols) → never invent a live floor.
+  if (protocol != null && !protocolSupportsLocalNoiseFloor(protocol)) return null;
+  return readLocalNoiseFloor(node);
 }
 
 /**

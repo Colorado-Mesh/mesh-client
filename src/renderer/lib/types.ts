@@ -471,6 +471,11 @@ export interface ChatMessage {
   replyPreviewSender?: string;
   /** RF-derived hops away for this receive when known (Meshtastic hopStart−hopLimit; MeshCore path hops). */
   rxHops?: number;
+  /**
+   * MeshCom digipeater callsigns after the origin (chat hop-pill route tooltip).
+   * Empty/absent when heard direct or path not stored.
+   */
+  rxPathCallsigns?: string[];
   /** MeshCore on-air path hash width (1/2/3 bytes) for this receive when known. */
   rxPathHashSizeBytes?: 1 | 2 | 3;
   /** Signal measurements recorded for this message's RF reception, not current node telemetry. */

@@ -1197,6 +1197,7 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toContain("'mcL0109 [IPC] app:setLoginItem failed:'");
     expect(INDEX_SOURCE).toContain("'mcL0112 [IPC] app:showEmojiPanel failed:'");
     expect(INDEX_SOURCE).toContain("'mcL0132 [IPC] meshcore:openJsonFile failed:'");
+    expect(INDEX_SOURCE).toContain("'mcL1515 [IPC] meshcom:openContactsImportFile failed:'");
   });
 
   it('guards fatal startup error dialog fallback', () => {
@@ -1284,6 +1285,9 @@ describe('Native Electron call guards (source contract)', () => {
   it('validates IPC sender for meshcore:openJsonFile and device-connected listeners', () => {
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('meshcore:openJsonFile'[\s\S]*?assertIpcSender\(event, 'meshcore:openJsonFile'\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('meshcom:openContactsImportFile'[\s\S]*?assertIpcSender\(event, 'meshcom:openContactsImportFile'\)/,
     );
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.on\('device-connected'[\s\S]*?validateIpcSender\(event\)/,

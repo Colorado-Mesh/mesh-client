@@ -524,6 +524,9 @@ class PacketRouter {
       rxSnr: event.payload.rxSnr,
       rxRssi: event.payload.rxRssi,
       hopCount: event.payload.hopCount,
+      ...(event.payload.rxPathCallsigns?.length
+        ? { rxPathCallsigns: [...event.payload.rxPathCallsigns] }
+        : {}),
       ...(event.payload.pathHashSizeBytes === 1 ||
       event.payload.pathHashSizeBytes === 2 ||
       event.payload.pathHashSizeBytes === 3

@@ -919,7 +919,7 @@ function NodeListPanel({
               {t('nodeListPanel.buttonRefresh')}
             </Button>
           ) : null}
-          {mode === 'meshcore' && onImportContacts ? (
+          {(mode === 'meshcore' || mode === 'meshcom') && onImportContacts ? (
             <Button
               size="sm"
               onClick={handleImport}

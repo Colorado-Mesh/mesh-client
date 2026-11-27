@@ -205,8 +205,21 @@ describe('NodeInfoBody', () => {
   it('hides RF Diagnostics when protocol hasRfStats is false', () => {
     const self = makeNode({
       node_id: 7,
+      long_name: '!abcdef12',
+      channel_utilization: 0.1,
+    });
+    render(<NodeInfoBody node={self} homeNode={self} protocol="reticulum" />);
+    expect(screen.queryByText('RF Diagnostics')).not.toBeInTheDocument();
+    expect(screen.queryByText('All RF diagnostics OK')).not.toBeInTheDocument();
+  });
+
+  it('MeshCom hides RF finding cards without LocalStats/CU even when hasRfStats is on', () => {
+    const self = makeNode({
+      node_id: 7,
       long_name: 'OE1SELF-1',
       channel_utilization: 0.1,
+      snr: 8,
+      rssi: -90,
     });
     render(<NodeInfoBody node={self} homeNode={self} protocol="meshcom" />);
     expect(screen.queryByText('RF Diagnostics')).not.toBeInTheDocument();

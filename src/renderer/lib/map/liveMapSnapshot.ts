@@ -2,7 +2,7 @@ import type { LiveMapProtocol } from '@/shared/liveMapWindow';
 
 import type { GpsSource, OurPosition } from '../gpsSource';
 import type { RxPacketEntry } from '../meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
+import type { MeshcomRawPacketEntry, MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import { LIVE_TRAFFIC_MAX_PACKETS, type LiveTrafficNode } from './liveTrafficModel';
 
 /** id, long name, short name, latitude, longitude, public key: what traffic geometry reads. */
@@ -20,6 +20,7 @@ export interface LiveMapSnapshot {
   pubKeys?: [number, Uint8Array][];
   meshcorePackets?: RxPacketEntry[];
   meshtasticPackets?: MeshtasticRawPacketEntry[];
+  meshcomPackets?: MeshcomRawPacketEntry[];
 }
 
 export interface LiveMapSnapshotInput {
@@ -28,6 +29,7 @@ export interface LiveMapSnapshotInput {
   ourPosition?: OurPosition | null;
   meshcorePackets?: readonly RxPacketEntry[];
   meshtasticPackets?: readonly MeshtasticRawPacketEntry[];
+  meshcomPackets?: readonly MeshcomRawPacketEntry[];
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
 }
 
@@ -42,11 +44,16 @@ export interface LiveMapWindowData {
   pubKeyByNodeId: ReadonlyMap<number, Uint8Array>;
   meshcorePackets?: readonly RxPacketEntry[];
   meshtasticPackets?: readonly MeshtasticRawPacketEntry[];
+  meshcomPackets?: readonly MeshcomRawPacketEntry[];
 }
 
-const PACKET_LOG: Record<LiveMapProtocol, 'meshcorePackets' | 'meshtasticPackets'> = {
+const PACKET_LOG: Record<
+  LiveMapProtocol,
+  'meshcorePackets' | 'meshtasticPackets' | 'meshcomPackets'
+> = {
   meshcore: 'meshcorePackets',
   meshtastic: 'meshtasticPackets',
+  meshcom: 'meshcomPackets',
 };
 
 export function emptyLiveMapWindowData(protocol: LiveMapProtocol): LiveMapWindowData {
@@ -86,6 +93,8 @@ export function buildLiveMapSnapshot(
     snapshot.meshcorePackets = input.meshcorePackets.slice(-LIVE_TRAFFIC_MAX_PACKETS);
   if (input.meshtasticPackets)
     snapshot.meshtasticPackets = input.meshtasticPackets.slice(-LIVE_TRAFFIC_MAX_PACKETS);
+  if (input.meshcomPackets)
+    snapshot.meshcomPackets = input.meshcomPackets.slice(-LIVE_TRAFFIC_MAX_PACKETS);
   return snapshot;
 }
 
@@ -169,5 +178,9 @@ export function applyLiveMapSnapshot(
     next.meshtasticPackets =
       (parsePackets(value.meshtasticPackets) as MeshtasticRawPacketEntry[] | undefined) ??
       current.meshtasticPackets;
+  if (current.meshcomPackets)
+    next.meshcomPackets =
+      (parsePackets(value.meshcomPackets) as MeshcomRawPacketEntry[] | undefined) ??
+      current.meshcomPackets;
   return next;
 }

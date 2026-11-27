@@ -1019,7 +1019,8 @@
       "relayNotReported": "La radio n'a pas signalé quel nœud a relayé ce message.",
       "unavailableDirectOrRoom": "Les itinéraires sont affichés pour les messages de canal uniquement.",
       "unavailableNotCaptured": "Itinéraire non disponible : les itinéraires sont conservés uniquement pour les messages récents de cette session.",
-      "notRecorded": "Les paquets sur ce réseau enregistrent combien de relais ils ont passés, pas lesquels."
+      "notRecorded": "Les paquets sur ce réseau enregistrent combien de relais ils ont passés, pas lesquels.",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Marquer non lu",
     "deleteMessageLocal": "Supprimer en local",
@@ -5494,7 +5495,39 @@
     "senderKeyPrefix": "Clé de l'expéditeur (préfixe) :",
     "control": "Commande :",
     "advertTs": "ANNONCE ts :",
-    "advertLatLon": "ANNONCE lat/lon :"
+    "advertLatLon": "ANNONCE lat/lon :",
+    "meshcomKind": {
+      "msg": "MSG",
+      "pos": "PDV",
+      "tele": "TELE",
+      "ack": "ACK",
+      "other": "AUTRE"
+    },
+    "meshcomKindTooltip": {
+      "msg": "SMS ou message de chat",
+      "pos": "Rapport de position",
+      "tele": "Télémétrie (EXTUDP)",
+      "ack": "Accusé de réception ou d’acheminement",
+      "other": "Autre type de cadre"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SERIAL",
+      "serverTooltip": "Relayé via un serveur ou une passerelle (pas de métadonnées RF directes)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "Trame APRS KISS/TCP",
+      "ble": "BLE notification APRS par téléphone",
+      "serial": "Ligne JSON série ou netconsole"
+    },
+    "meshcomLegendHint": "Les lignes indiquent le trafic MeshCom entrant (EXTUDP, KISS, BLE APRS ou JSON série). Le chemin répertorie les indicatifs d’origine et de digipeater.",
+    "meshcomTransportColumn": "Lien",
+    "meshcomTransportColumnTooltip": "Comment cette trame est arrivée dans l’application (EXTUDP, KISS, BLE ou série).",
+    "meshcomPathColumnTooltip": "Indicatif d’appel d’origine et chemin du digipeater, le cas échéant.",
+    "meshcomPathEmpty": "Aucun chemin de digipeater sur ce cadre."
   },
   "remoteAdmin": {
     "errors": {
@@ -9251,7 +9284,12 @@
       "removeGroupListenNotUpdated": "{{name}} était masqué ici, mais le filtre d’écoute des nœuds n’a pas été mis à jour (commandes radio indisponibles).",
       "removeGroupListenRadioChanged": "{{name}} était masqué ici, mais le filtre d’écoute des nœuds n’a pas été mis à jour (la radio connectée a changé)."
     },
-    "netConsoleHint": "La console NET est TCP port 2323 (LAN en texte brut). Activez --netconsole sur le nœud ; --passwd est facultatif pour la connexion HMAC."
+    "netConsoleHint": "La console NET est TCP port 2323 (LAN en texte brut). Activez --netconsole sur le nœud ; --passwd est facultatif pour la connexion HMAC.",
+    "importInvalidJson": "Impossible de lire le fichier : JSON non valide.",
+    "importNoContactRows": "Le fichier ne contient pas de liste de contacts.",
+    "importCsvEmpty": "Le fichier CSV ne contient aucune ligne de contact.",
+    "importSkippedCallsign": "« {{callsign}} » ignoré : indicatif d’appel non valide.",
+    "importSaveFailed": "Impossible d’enregistrer « {{callsign}} » dans la base de données."
   },
   "meshcomDeviceCommands": {
     "description": "Envoyez les commandes du nœud ICSSW (--help, --settime, --setctry, …) via la liaison série ou BLE. Les commandes compatibles avec l’application correspondent à celles de l’application officielle MeshCom ; les commandes uniquement série nécessitent un lien vers la console USB.",
