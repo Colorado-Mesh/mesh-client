@@ -4,7 +4,10 @@ import { axe } from 'vitest-axe';
 
 import joeyPreferences from '../../../e2e/fixtures/renderer-preferences.json';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
-import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
+import {
+  APP_SETTINGS_STORAGE_KEY,
+  setMeshcoreReachCheckServerUrl,
+} from '../lib/appSettingsStorage';
 import { FONT_SCALE_STORAGE_KEY } from '../lib/fontScale';
 import { GPS_SETTINGS_STORAGE_KEY } from '../lib/gpsSource';
 import { MESSAGE_RETENTION_KEYS } from '../lib/messageRetention';
@@ -1758,6 +1761,22 @@ describe('AppPanel: reach check server address', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(message);
     expect(input).toHaveAttribute('aria-invalid', 'true');
     expect(storedServer()).toBe('https://rangecheck.example.org');
+  });
+
+  it('shows an address the Chat setup dialog saves while the panel stays open', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ meshcoreReachCheckServerUrl: 'https://rangecheck.example.org' }),
+    );
+    renderPanel();
+    const input = screen.getByLabelText('Reach check server');
+    expect(input).toHaveValue('https://rangecheck.example.org');
+    act(() => {
+      setMeshcoreReachCheckServerUrl('https://healthcheck.example.net');
+    });
+    expect(input).toHaveValue('https://healthcheck.example.net');
+    fireEvent.blur(input);
+    expect(storedServer()).toBe('https://healthcheck.example.net');
   });
 
   it('clears the saved address when the field is emptied', () => {

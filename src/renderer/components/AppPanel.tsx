@@ -22,6 +22,7 @@ import type { SupportBundleMode } from '@/shared/support-bundle.types';
 import type { LocationFilter } from '../App';
 import {
   getAppSettingsRaw,
+  getMeshcoreReachCheckServerUrl,
   getOperationalAlertSettings,
   MECP_REPEAT_ALERT_MAX_MINUTES,
   mergeAppSetting,
@@ -465,6 +466,22 @@ export default function AppPanel({
     isMessageActionsBarBgVisible(),
   );
   const [fontScale, setFontScale] = useState<number>(loadFontScale);
+
+  // The Chat reach check setup dialog saves the server address too; follow it while App stays open.
+  useEffect(() => {
+    const syncReachCheckServer = () => {
+      const saved = getMeshcoreReachCheckServerUrl();
+      setSettings((prev) =>
+        prev.meshcoreReachCheckServerUrl === saved
+          ? prev
+          : { ...prev, meshcoreReachCheckServerUrl: saved },
+      );
+    };
+    window.addEventListener('mesh-client:appSettings', syncReachCheckServer);
+    return () => {
+      window.removeEventListener('mesh-client:appSettings', syncReachCheckServer);
+    };
+  }, []);
 
   const updateFontScale = useCallback((next: number) => {
     const clamped = clampFontScale(next);
