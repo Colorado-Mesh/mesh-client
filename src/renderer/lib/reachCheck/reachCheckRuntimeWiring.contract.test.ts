@@ -3,18 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { loadRuntimeSource } from '../sourceContractTestHelpers';
 
 describe('reach check runtime wiring (source contract)', () => {
-  it('clears reach check entries, and so their pollers, when the MeshCore identity disconnects', () => {
+  it('leaves reach check entries alone when the MeshCore link is torn down', () => {
+    // teardownMeshcoreConnEventListeners also runs for an OpenHop/pyMC quiet reopen before each
+    // user send, so clearing there removed a check's line and stopped its polling right after the
+    // code went out. A check now ends with its session; lines are keyed by identity.
     const source = loadRuntimeSource('useMeshcoreRuntime.ts');
-    const relayClear = source.indexOf(
-      'useRelayCoverageStore.getState().clearIdentity(coverageIdentity);',
-    );
-    const reachClear = source.indexOf(
-      'useReachCheckStore.getState().clearIdentity(coverageIdentity);',
-    );
-    expect(relayClear).toBeGreaterThan(-1);
-    expect(reachClear).toBeGreaterThan(relayClear);
-    // Same `if (coverageIdentity)` block: nothing but a comment between the two calls.
-    const between = source.slice(relayClear, reachClear).split('\n').slice(1, -1);
-    expect(between.every((line) => line.trim() === '' || line.trim().startsWith('//'))).toBe(true);
+    expect(source).toContain('useRelayCoverageStore.getState().clearIdentity(coverageIdentity);');
+    expect(source).not.toContain('useReachCheckStore');
   });
 });

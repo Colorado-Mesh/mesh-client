@@ -595,7 +595,6 @@ import {
   readRadioSelfPosition,
   recordRadioSelfPosition,
 } from '../lib/radioSelfPosition';
-import { useReachCheckStore } from '../lib/reachCheck/reachCheckStore';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import {
@@ -2897,8 +2896,6 @@ export function useMeshcoreRuntime() {
       if (coverageIdentity) {
         clearHeardRepeatWindow(coverageIdentity);
         useRelayCoverageStore.getState().clearIdentity(coverageIdentity);
-        // Reach check results poll per session; clearing the entries stops their pollers.
-        useReachCheckStore.getState().clearIdentity(coverageIdentity);
         clearMeshcoreRepeaterRouteEscalationForScope(coverageIdentity);
       }
       clearMeshcorePubKeyRegistry();
