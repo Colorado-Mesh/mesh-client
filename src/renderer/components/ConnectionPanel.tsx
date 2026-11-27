@@ -662,7 +662,7 @@ export default function ConnectionPanel({
   const [meshcoreFeedError, setMeshcoreFeedError] = useState<string | null>(null);
   const meshcoreFeedStatuses = useMeshcoreMqttFeedStatusStore((s) => s.statuses);
   // Reconnect applies edited settings, so only offer it when something actually changed.
-  const [meshcoreDirtyConnections, setMeshcoreDirtyConnections] = useState<Record<string, true>>(
+  const [meshcoreDirtyConnections, setMeshcoreDirtyConnections] = useState<Record<string, boolean>>(
     {},
   );
   const [meshcoreEditorOpen, setMeshcoreEditorOpen] = useState(false);
@@ -2981,11 +2981,14 @@ export default function ConnectionPanel({
   }
 
   // ─── Shared MQTT section ────────────────────────────────────────
-  const disconnectMqtt = (reason: string) => {
+  const disconnectMqtt = (reason: string, connectionId?: string) => {
     markMqttUserDisconnect();
     const mqttProtocol =
       protocol === 'meshcore' ? 'meshcore' : protocol === 'meshcom' ? 'meshcom' : 'meshtastic';
-    window.electronAPI.mqtt.disconnect(mqttProtocol).catch((err: unknown) => {
+    const request = connectionId
+      ? window.electronAPI.mqtt.disconnect(mqttProtocol, connectionId)
+      : window.electronAPI.mqtt.disconnect(mqttProtocol);
+    request.catch((err: unknown) => {
       console.warn(
         `mcL0409 [ConnectionPanel] mqtt.disconnect (${reason}) failed: ` + errLikeToLogString(err),
       );
@@ -3025,7 +3028,7 @@ export default function ConnectionPanel({
 
   const disconnectMeshcoreFeed = (connectionId: string) => {
     if (connectionId === MESHCORE_MQTT_CHAT_CONNECTION_ID) {
-      disconnectMqtt('feed-list');
+      disconnectMqtt('feed-list', MESHCORE_MQTT_CHAT_CONNECTION_ID);
       return;
     }
     // Feed drops must not suppress the chat broker's connection-loss notice.
@@ -3233,45 +3236,6 @@ export default function ConnectionPanel({
                   />
                   {t('connectionPanel.meshcoreFeeds.connectOnLaunch')}
                 </label>
-                {status === 'connected' || status === 'connecting' ? (
-                  <>
-                    <Button
-                      size="sm"
-                      disabled={status === 'connecting' || !meshcoreDirtyConnections[feed.id]}
-                      aria-label={t('connectionPanel.meshcoreFeeds.reconnectAria', {
-                        name: meshcoreFeedLabel(feed),
-                      })}
-                      onClick={() => {
-                        connectMeshcoreFeedNow(feed);
-                      }}
-                    >
-                      {t('connectionPanel.meshcoreFeeds.reconnect')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      aria-label={t('connectionPanel.meshcoreFeeds.disconnectAria', {
-                        name: feed.name,
-                      })}
-                      onClick={() => {
-                        disconnectMeshcoreFeed(feed.id);
-                      }}
-                    >
-                      {t('connectionPanel.meshcoreFeeds.disconnect')}
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    size="sm"
-                    aria-label={t('connectionPanel.meshcoreFeeds.connectAria', {
-                      name: meshcoreFeedLabel(feed),
-                    })}
-                    onClick={() => {
-                      connectMeshcoreFeedNow(feed);
-                    }}
-                  >
-                    {t('connectionPanel.meshcoreFeeds.connect')}
-                  </Button>
-                )}
                 <Button
                   size="sm"
                   variant="danger"
@@ -3769,8 +3733,17 @@ export default function ConnectionPanel({
     </>
   );
 
-  /** Connected card always summarises the chat broker, even while a feed is selected for editing. */
-  const mqttSummarySettings = protocol === 'meshcore' ? meshcoreMqttSettings : activeMqttSettings;
+  /** Connected card summarises the broker selected in the dropdown. */
+  const mqttSummarySettings = activeMqttSettings;
+  const selectedMeshcoreConnectionId = editingMeshcoreFeedId ?? MESHCORE_MQTT_CHAT_CONNECTION_ID;
+  const selectedMeshcoreStatus = meshcoreConnectionStatus(selectedMeshcoreConnectionId);
+  const selectedMeshcoreLabel = editingMeshcoreFeed
+    ? meshcoreFeedLabel(editingMeshcoreFeed)
+    : meshcoreChatLabel;
+  const selectedMeshcoreDirty = meshcoreDirtyConnections[selectedMeshcoreConnectionId];
+  const selectedMeshcoreCanReconnect =
+    selectedMeshcoreStatus !== 'connecting' &&
+    (selectedMeshcoreStatus !== 'connected' || selectedMeshcoreDirty);
 
   const mqttSection =
     mqttStatus === 'connected' ? (
@@ -3782,15 +3755,24 @@ export default function ConnectionPanel({
             {protocol === 'meshcore' && (
               <Button
                 size="sm"
-                disabled={!meshcoreDirtyConnections[MESHCORE_MQTT_CHAT_CONNECTION_ID]}
-                aria-label={t('connectionPanel.meshcoreFeeds.reconnectAria', {
-                  name: meshcoreChatLabel,
-                })}
+                disabled={!selectedMeshcoreCanReconnect}
+                aria-label={
+                  selectedMeshcoreStatus === 'connected'
+                    ? t('connectionPanel.meshcoreFeeds.reconnectAria', {
+                        name: selectedMeshcoreLabel,
+                      })
+                    : t('connectionPanel.meshcoreFeeds.connectAria', {
+                        name: selectedMeshcoreLabel,
+                      })
+                }
                 onClick={() => {
-                  connectMeshcoreChatNow();
+                  if (editingMeshcoreFeed) connectMeshcoreFeedNow(editingMeshcoreFeed);
+                  else connectMeshcoreChatNow();
                 }}
               >
-                {t('connectionPanel.meshcoreFeeds.reconnect')}
+                {selectedMeshcoreStatus === 'connected'
+                  ? t('connectionPanel.meshcoreFeeds.reconnect')
+                  : t('connectionPanel.meshcoreFeeds.connect')}
               </Button>
             )}
             <Button
@@ -3798,7 +3780,19 @@ export default function ConnectionPanel({
               variant="danger"
               size="sm"
               icon={<Unplug aria-hidden className={ICON_MD} size={16} />}
+              disabled={protocol === 'meshcore' && selectedMeshcoreStatus === 'disconnected'}
+              aria-label={
+                protocol === 'meshcore'
+                  ? t('connectionPanel.meshcoreFeeds.disconnectAria', {
+                      name: selectedMeshcoreLabel,
+                    })
+                  : undefined
+              }
               onClick={() => {
+                if (protocol === 'meshcore') {
+                  disconnectMeshcoreFeed(selectedMeshcoreConnectionId);
+                  return;
+                }
                 disconnectMqtt('panel');
               }}
             >
@@ -4193,7 +4187,10 @@ export default function ConnectionPanel({
               <Button
                 aria-label={t('connectionPanel.cancelMqttConnect')}
                 onClick={() => {
-                  disconnectMqtt('cancel');
+                  disconnectMqtt(
+                    'cancel',
+                    protocol === 'meshcore' ? MESHCORE_MQTT_CHAT_CONNECTION_ID : undefined,
+                  );
                 }}
               >
                 {t('connectionPanel.cancelMqttConnect')}

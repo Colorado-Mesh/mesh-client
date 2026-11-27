@@ -148,7 +148,7 @@ export class MeshcoreMqttPool extends EventEmitter {
       }
       if (options.publishOnly && samePacketTopic(other, settings)) {
         this.onDuplicateFeedWarning?.(
-          `Feed ${connectionId} publishes the same packets as ${id} (${settings.topicPrefix}).`,
+          `MeshCore MQTT: two brokers publish the same packet topic (${settings.topicPrefix}).`,
         );
       }
     }

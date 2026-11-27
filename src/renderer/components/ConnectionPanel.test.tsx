@@ -1268,7 +1268,7 @@ describe('ConnectionPanel MQTT cancel while connecting', () => {
     expect(mqttCard).toBeTruthy();
     const cancelBtn = within(mqttCard as HTMLElement).getByRole('button', { name: /^Cancel$/i });
     await user.click(cancelBtn);
-    expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshcore');
+    expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshcore', 'chat');
   });
 });
 
@@ -3569,35 +3569,73 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
     const preset = screen.getByRole('combobox', { name: 'Network Preset' });
     expect(within(preset).getAllByRole('option')).toHaveLength(9);
     expect(screen.getByLabelText('Server')).toHaveValue('mqtt-us-v1.letsmesh.net');
+    expect(screen.getAllByText('mqtt-us-v1.letsmesh.net:443').length).toBeGreaterThan(0);
 
     // Reconnect only lights up once the settings change.
-    const chatReconnect = screen.getByRole('button', { name: /Reconnect Home mesh/i });
-    expect(chatReconnect).toBeDisabled();
+    const headerReconnect = screen.getByRole('button', { name: /Reconnect Home mesh/i });
+    expect(headerReconnect).toBeDisabled();
     const chatServer = screen.getByLabelText('Server');
     await user.clear(chatServer);
     await user.type(chatServer, 'chat.changed.local');
-    expect(chatReconnect).toBeEnabled();
+    expect(headerReconnect).toBeEnabled();
 
     await user.selectOptions(editor, 'feed-0');
     expect(preset).toHaveValue('custom');
-    const feedReconnect = screen.getByRole('button', { name: /Reconnect Feed 0/i });
-    expect(feedReconnect).toBeDisabled();
+    // The connected summary follows the dropdown selection.
+    expect(screen.getAllByText('broker-0.local:1883').length).toBeGreaterThan(0);
+    // Header actions follow the selection too (feed is clean after switching).
+    const feedHeaderReconnect = screen.getByRole('button', { name: /^Reconnect Feed 0$/i });
+    expect(feedHeaderReconnect).toBeDisabled();
     const name = screen.getByLabelText('Name');
     await user.clear(name);
     await user.type(name, 'Denver analyzer');
     expect(within(editor).getByRole('option', { name: 'Denver analyzer' })).toBeInTheDocument();
     // Renaming alone is not a connection-settings change.
-    expect(feedReconnect).toBeDisabled();
+    expect(feedHeaderReconnect).toBeDisabled();
     const server = screen.getByLabelText('Server');
     await user.clear(server);
     await user.type(server, 'analyzer.denver.local');
     expect(server).toHaveValue('analyzer.denver.local');
-    expect(feedReconnect).toBeEnabled();
-    // Chat dirtiness is tracked separately.
-    expect(chatReconnect).toBeEnabled();
+    expect(feedHeaderReconnect).toBeEnabled();
 
     await user.selectOptions(preset, 'meshatse');
     expect(preset).toHaveValue('meshatse');
+  });
+
+  it('targets the selected broker from the connected header', () => {
+    localStorage.setItem(
+      FEEDS_KEY,
+      JSON.stringify({
+        version: 1,
+        chatName: 'Home mesh',
+        feeds: [seededFeed(0, true), seededFeed(1, true)],
+      }),
+    );
+    act(() => {
+      useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-0', 'connected');
+      useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-1', 'disconnected');
+    });
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="connected"
+        protocol="meshcore"
+      />,
+    );
+
+    const editor = screen.getByRole('combobox', { name: 'Broker to edit' });
+    // Connected, clean feed: Reconnect is disabled.
+    fireEvent.change(editor, { target: { value: 'feed-0' } });
+    expect(screen.getByRole('button', { name: /Reconnect Feed 0/i })).toBeDisabled();
+
+    // Disconnected feed: Connect is enabled and Disconnect is disabled.
+    fireEvent.change(editor, { target: { value: 'feed-1' } });
+    expect(screen.getByRole('button', { name: /^Connect Feed 1$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Disconnect Feed 1$/i })).toBeDisabled();
+    expect(screen.getAllByText('broker-1.local:1883').length).toBeGreaterThan(0);
   });
 
   it('names the chat entry after its preset instead of a hardcoded label', () => {
