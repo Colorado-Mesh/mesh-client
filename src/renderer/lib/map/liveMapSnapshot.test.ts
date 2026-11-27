@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { RxPacketEntry } from '../meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
+import type { MeshcomRawPacketEntry, MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import {
   applyLiveMapSnapshot,
   buildLiveMapSnapshot,
@@ -43,6 +43,24 @@ function meshtasticPacket(ts: number): MeshtasticRawPacketEntry {
     fromNodeId: 0x1234,
     portLabel: 'TEXT_MESSAGE_APP',
     viaMqtt: false,
+  };
+}
+
+function meshcomPacket(
+  ts: number,
+  raw: Uint8Array = new Uint8Array([9, 8, 7]),
+): MeshcomRawPacketEntry {
+  return {
+    ts,
+    snr: 5,
+    rssi: -95,
+    kind: 'msg',
+    transport: 'kiss',
+    originCallsign: 'IK5NJM-11',
+    digis: ['W0XYZ-1'],
+    hopsAway: 1,
+    fromNodeId: 0x1111,
+    raw,
   };
 }
 
@@ -106,6 +124,21 @@ describe('buildLiveMapSnapshot', () => {
     expect(snapshot.meshtasticPackets).toHaveLength(LIVE_TRAFFIC_MAX_PACKETS);
     expect(snapshot.meshtasticPackets?.[0].ts).toBe(50);
     expect(snapshot).not.toHaveProperty('meshcorePackets');
+  });
+
+  it('strips MeshCom capture bytes from live-map snapshots', () => {
+    const large = new Uint8Array(2048).fill(0x41);
+    const snapshot = buildLiveMapSnapshot(
+      input({
+        meshcorePackets: undefined,
+        meshcomPackets: [meshcomPacket(42, large)],
+      }),
+      { nodes: false, pubKeys: false },
+    );
+    expect(snapshot.meshcomPackets).toHaveLength(1);
+    expect(snapshot.meshcomPackets?.[0].originCallsign).toBe('IK5NJM-11');
+    expect(snapshot.meshcomPackets?.[0].digis).toEqual(['W0XYZ-1']);
+    expect(snapshot.meshcomPackets?.[0].raw.byteLength).toBe(0);
   });
 });
 

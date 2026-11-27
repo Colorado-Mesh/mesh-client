@@ -46,6 +46,7 @@ import {
   MeshcomSerialLineBuffer,
   meshcomSerialSendText,
 } from '../meshcom/meshcomSerial';
+import { clampMeshcomSnifferRaw, meshcomKissFrameRawSnippet } from '../meshcom/meshcomSnifferRaw';
 import { meshcomBodyBudgetBytes, truncateToWireBytes } from '../meshcom/meshcomWireLimits';
 import { sanitizeMeshcomWireLine } from '../meshcom/meshcomWireSanitize';
 import { MESHCOM_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -490,15 +491,14 @@ function resolveDestinationCallsign(handle: MeshComDeviceHandle, opts: SendMessa
 }
 
 function emitMeshcomRx(emit: (event: DomainEvent) => void, entry: MeshcomRxEvent): void {
-  emit({ type: 'meshcom_rx', payload: entry });
+  emit({
+    type: 'meshcom_rx',
+    payload: { ...entry, raw: clampMeshcomSnifferRaw(entry.raw) },
+  });
 }
 
 function meshcomSerialOrExtUdpTransport(device: MeshComDeviceHandle): MeshcomRxEvent['transport'] {
   return device.transport === 'serial' || device.transport === 'netconsole' ? 'serial' : 'extudp';
-}
-
-function kissFrameRawSnippet(frame: { src: string; dest: string; info: string }): Uint8Array {
-  return new TextEncoder().encode(`${frame.src}>${frame.dest}:${frame.info}`);
 }
 
 function textMessageToFromDest(
@@ -992,7 +992,7 @@ function emitKissEvents(
           fromNodeId: from,
           msgId: Number.isFinite(requestId) ? requestId : info.ackNumber,
           viaServer: frame.meta?.gatewayRelay,
-          raw: kissFrameRawSnippet(frame),
+          raw: meshcomKissFrameRawSnippet(frame),
         });
         continue;
       }
@@ -1013,7 +1013,7 @@ function emitKissEvents(
         hopsAway: hopCount,
         fromNodeId: from,
         viaServer: frame.meta?.gatewayRelay,
-        raw: kissFrameRawSnippet(frame),
+        raw: meshcomKissFrameRawSnippet(frame),
       });
       emit({
         type: 'node_info',
@@ -1064,7 +1064,7 @@ function emitKissEvents(
         hopsAway: hopCount,
         fromNodeId: from,
         viaServer: frame.meta?.gatewayRelay,
-        raw: kissFrameRawSnippet(frame),
+        raw: meshcomKissFrameRawSnippet(frame),
       });
       emit({
         type: 'node_info',

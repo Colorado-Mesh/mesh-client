@@ -68,6 +68,26 @@ export function emptyLiveMapWindowData(protocol: LiveMapProtocol): LiveMapWindow
 
 const GPS_SOURCES: readonly GpsSource[] = ['device', 'browser', 'ip', 'static'];
 
+/** Shared empty capture for MeshCom live-map IPC — traffic geometry never needs wire bytes. */
+const EMPTY_MESHCOM_SNAPSHOT_RAW = new Uint8Array(0);
+
+/**
+ * Pop-out live traffic only needs MeshCom metadata (callsigns, digis, SNR). Drop capture bytes so
+ * a clamped-but-still-large KISS snippet cannot amplify across every snapshot IPC.
+ */
+function meshcomPacketsForLiveMapSnapshot(
+  packets: readonly MeshcomRawPacketEntry[],
+): MeshcomRawPacketEntry[] {
+  return packets.slice(-LIVE_TRAFFIC_MAX_PACKETS).map((packet) =>
+    packet.raw.byteLength === 0
+      ? packet
+      : {
+          ...packet,
+          raw: EMPTY_MESHCOM_SNAPSHOT_RAW,
+        },
+  );
+}
+
 export function buildLiveMapSnapshot(
   input: LiveMapSnapshotInput,
   include: { nodes: boolean; pubKeys: boolean },
@@ -94,7 +114,7 @@ export function buildLiveMapSnapshot(
   if (input.meshtasticPackets)
     snapshot.meshtasticPackets = input.meshtasticPackets.slice(-LIVE_TRAFFIC_MAX_PACKETS);
   if (input.meshcomPackets)
-    snapshot.meshcomPackets = input.meshcomPackets.slice(-LIVE_TRAFFIC_MAX_PACKETS);
+    snapshot.meshcomPackets = meshcomPacketsForLiveMapSnapshot(input.meshcomPackets);
   return snapshot;
 }
 
