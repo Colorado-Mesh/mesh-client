@@ -46,4 +46,74 @@ describe('android back', () => {
     expect(handleAndroidBack(background)).toBe('background');
     expect(background).toHaveBeenCalledTimes(1);
   });
+
+  it('ignores an expanded disclosure that opens no popup (Hide macros)', () => {
+    const disclosure = document.createElement('button');
+    disclosure.setAttribute('aria-expanded', 'true');
+    document.body.append(disclosure);
+    const background = vi.fn();
+    expect(handleAndroidBack(background)).toBe('background');
+  });
+});
+
+describe('android back with a popup open', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** A trigger button whose popup closes on Escape, on a second press, or on neither. */
+  function popup(closesOn: { escape: boolean; press: boolean }) {
+    const trigger = document.createElement('button');
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'true');
+    const list = document.createElement('div');
+    list.setAttribute('role', 'listbox');
+    document.body.append(trigger, list);
+    const close = () => {
+      trigger.setAttribute('aria-expanded', 'false');
+      list.remove();
+    };
+    if (closesOn.escape) {
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+      });
+    }
+    const presses = vi.fn(() => {
+      if (closesOn.press) close();
+    });
+    trigger.addEventListener('click', presses);
+    return { trigger, presses };
+  }
+
+  it('closes a popup that listens for Escape, without pressing its trigger', async () => {
+    vi.useFakeTimers();
+    const { trigger, presses } = popup({ escape: true, press: true });
+    const background = vi.fn();
+    expect(handleAndroidBack(background)).toBe('closed-popup');
+    await vi.advanceTimersByTimeAsync(200);
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(presses).not.toHaveBeenCalled();
+    expect(background).not.toHaveBeenCalled();
+  });
+
+  it('presses the trigger of a popup that ignores Escape (the language picker)', async () => {
+    vi.useFakeTimers();
+    const { trigger, presses } = popup({ escape: false, press: true });
+    expect(handleAndroidBack(vi.fn())).toBe('closed-popup');
+    await vi.advanceTimersByTimeAsync(200);
+    expect(presses).toHaveBeenCalledTimes(1);
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('closes the popup before the dialog that holds it', () => {
+    const d = dialog({ role: 'dialog', 'aria-modal': 'true' });
+    const onDialogEscape = vi.fn();
+    d.addEventListener('keydown', onDialogEscape);
+    const { trigger } = popup({ escape: true, press: true });
+    d.append(trigger);
+    trigger.focus();
+    expect(handleAndroidBack(vi.fn())).toBe('closed-popup');
+    // The next press reaches the dialog.
+    expect(handleAndroidBack(vi.fn())).toBe('closed-dialog');
+  });
 });
