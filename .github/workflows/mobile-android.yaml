@@ -176,9 +176,12 @@ jobs:
         run: bash scripts/clone-ratspeak-stack.sh
 
       - name: Build the Android executables from the staged crate
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
-        run: node mobile/scripts/build-sidecar.mjs android --skip-clone
+        # ANDROID_NDK_LATEST_HOME is set by the runner image, so it is read in the shell (a
+        # workflow `env` expression would only see this file's env and resolve empty).
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          test -d "$ANDROID_NDK_HOME"
+          node mobile/scripts/build-sidecar.mjs android --skip-clone
 
       - name: iOS in-process library host tests (C ABI)
         run: |
