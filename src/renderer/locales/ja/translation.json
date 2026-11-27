@@ -2002,7 +2002,8 @@
       "reconnect": "再接続",
       "reconnectAria": "{{name}}を再接続",
       "unnamedFeed": "名前のないフィード",
-      "editSettingsFor": "{{name}}の設定を編集"
+      "editSettingsFor": "{{name}}の設定を編集",
+      "saveFailed": "ブローカー設定を保存できませんでした。ストレージ容量を確認して、もう一度お試しください。"
     }
   },
   "contactGroupsModal": {

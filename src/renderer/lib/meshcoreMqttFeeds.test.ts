@@ -66,7 +66,7 @@ describe('meshcoreMqttFeeds', () => {
         'feed-b',
       ),
     ];
-    persistMeshcoreMqttFeeds(feeds);
+    void persistMeshcoreMqttFeeds(feeds);
     await flushMeshcoreMqttFeedsSave();
 
     const raw = localStorage.getItem(MESHCORE_MQTT_FEEDS_STORAGE_KEY) ?? '';
@@ -80,12 +80,12 @@ describe('meshcoreMqttFeeds', () => {
     expect(loaded[0].enabled).toBe(false);
   });
 
-  it('drops invalid rows and caps the saved list', () => {
+  it('drops invalid rows and caps the saved list', async () => {
     const feeds: MeshcoreMqttFeed[] = [];
     for (let i = 0; i < MAX_MESHCORE_MQTT_PUBLISH_FEEDS + 3; i += 1) {
       feeds.push(makeFeed(`Feed ${i}`, { enabled: false }, `feed-${i}`));
     }
-    persistMeshcoreMqttFeeds(feeds);
+    await persistMeshcoreMqttFeeds(feeds);
     expect(loadMeshcoreMqttFeeds()).toHaveLength(MAX_MESHCORE_MQTT_PUBLISH_FEEDS);
 
     localStorage.setItem(

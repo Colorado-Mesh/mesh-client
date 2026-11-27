@@ -2002,7 +2002,8 @@
       "reconnect": "Reconectar",
       "reconnectAria": "Reconectar {{name}}",
       "unnamedFeed": "Feed sem nome",
-      "editSettingsFor": "Editar as configurações de {{name}}"
+      "editSettingsFor": "Editar as configurações de {{name}}",
+      "saveFailed": "Não foi possível salvar as configurações do corretor. Verifique o espaço de armazenamento e tente novamente."
     }
   },
   "contactGroupsModal": {

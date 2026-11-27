@@ -20,6 +20,17 @@ export type MeshcoreMqttConnectSettings = MQTTSettings & {
   role?: 'chat' | 'feed';
 };
 
+/** Structured preparation failure so the panel can translate `errorKey` instead of raw text. */
+export class MeshcoreMqttConnectError extends Error {
+  readonly failure: MeshcoreMqttConnectFailure;
+
+  constructor(failure: MeshcoreMqttConnectFailure) {
+    super(failure.message);
+    this.name = 'MeshcoreMqttConnectError';
+    this.failure = failure;
+  }
+}
+
 export interface MeshcoreMqttConnectFailure {
   /** i18n key when the caller can render a translated message. */
   errorKey?: string;
@@ -130,15 +141,13 @@ export async function connectMeshcoreMqttFeed(
     settings: feed.settings,
   });
   if (!prepared.ok) {
-    throw new Error(prepared.failure.message);
+    throw new MeshcoreMqttConnectError(prepared.failure);
   }
-  // Identity/JWT prep can take seconds; do not connect a feed the user deleted meanwhile.
+  // Startup attempts only connect feeds that are still saved and enabled. Identity/JWT prep can
+  // take seconds, so an explicit one-off connect supplies its own live attempt check.
   const stillCurrent =
     options?.isStillCurrent ??
-    (() => {
-      const stored = loadMeshcoreMqttFeeds();
-      return stored.length === 0 || stored.some((current) => current.id === feed.id);
-    });
+    (() => loadMeshcoreMqttFeeds().some((current) => current.id === feed.id && current.enabled));
   if (!stillCurrent()) {
     console.debug('[meshcoreMqttConnect] feed removed before connect; skipping');
     return false;
@@ -166,10 +175,12 @@ export async function connectEnabledMeshcoreMqttFeeds(
     try {
       if (await connectMeshcoreMqttFeed(feed)) connected += 1;
     } catch (e) {
-      failures.push({ message: e instanceof Error ? e.message : String(e) });
-      console.warn(
-        `mcL1510 [meshcoreMqttConnect] feed ${feed.name} connect failed ` + errLikeToLogString(e),
+      failures.push(
+        e instanceof MeshcoreMqttConnectError
+          ? e.failure
+          : { message: e instanceof Error ? e.message : String(e) },
       );
+      console.warn('mcL1510 [meshcoreMqttConnect] feed connect failed ' + errLikeToLogString(e));
     }
   }
   return { connected, failures };

@@ -2026,7 +2026,8 @@
       "reconnect": "Znovu připojit",
       "reconnectAria": "Znovu připojit {{name}}",
       "unnamedFeed": "Nepojmenovaný informační kanál",
-      "editSettingsFor": "Upravit nastavení {{name}}"
+      "editSettingsFor": "Upravit nastavení {{name}}",
+      "saveFailed": "Nastavení brokera se nepodařilo uložit. Zkontrolujte úložný prostor a zkuste to znovu."
     }
   },
   "contactGroupsModal": {

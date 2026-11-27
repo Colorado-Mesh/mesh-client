@@ -149,16 +149,55 @@ describe('connectMeshcoreMqttFeed', () => {
 describe('connectEnabledMeshcoreMqttFeeds', () => {
   beforeEach(() => {
     vi.mocked(window.electronAPI.mqtt.connect).mockClear();
+    localStorage.removeItem('mesh-client:mqttFeeds:meshcore');
   });
 
-  it('connects enabled feeds with their connection id and continues past a failure', async () => {
+  afterEach(() => {
+    localStorage.removeItem('mesh-client:mqttFeeds:meshcore');
+  });
+
+  it('continues past a failing feed and connects the later valid one', async () => {
+    // Startup connects read the saved list, so seed it (including the launch preference).
+    localStorage.setItem(
+      'mesh-client:mqttFeeds:meshcore',
+      JSON.stringify({
+        version: 1,
+        feeds: [
+          {
+            id: 'feed-bad',
+            name: 'bad',
+            preset: 'letsmesh',
+            enabled: true,
+            settings: {
+              ...deviceSigningSettings,
+              password: undefined,
+              topicPrefix: 'meshcore/usa1',
+            },
+          },
+          {
+            id: 'feed-good',
+            name: 'good',
+            preset: 'custom',
+            enabled: true,
+            settings: { ...customSettings, password: undefined },
+          },
+          {
+            id: 'feed-skipped',
+            name: 'skipped',
+            preset: 'custom',
+            enabled: false,
+            settings: { ...customSettings, password: undefined },
+          },
+        ],
+      }),
+    );
     const feeds = [
-      feed({ id: 'feed-good' }),
       feed({
         id: 'feed-bad',
         preset: 'letsmesh',
         settings: { ...deviceSigningSettings, topicPrefix: 'meshcore/usa1' },
       }),
+      feed({ id: 'feed-good' }),
       feed({ id: 'feed-skipped', enabled: false }),
     ];
 

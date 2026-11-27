@@ -2002,7 +2002,8 @@
       "reconnect": "Connessione",
       "reconnectAria": "Riconnetti {{name}}",
       "unnamedFeed": "Feed senza nome",
-      "editSettingsFor": "Modifica le impostazioni di {{name}}"
+      "editSettingsFor": "Modifica le impostazioni di {{name}}",
+      "saveFailed": "Impossibile salvare le impostazioni del broker. Controlla lo spazio di archiviazione e riprova."
     }
   },
   "contactGroupsModal": {

@@ -67,7 +67,13 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
   ] = await Promise.all([import('./meshcoreMqttConnect'), import('./meshcoreMqttFeeds')]);
   const feeds = loadMeshcoreMqttFeeds();
   const startFeeds = async (): Promise<void> => {
-    const { failures } = await connectEnabledMeshcoreMqttFeeds(feeds);
+    const statuses = useMeshcoreMqttFeedStatusStore.getState().statuses;
+    // Do not replace live sessions during startup; error/disconnected feeds still get a try.
+    const pendingFeeds = feeds.filter(
+      (feed) =>
+        feed.enabled && statuses[feed.id] !== 'connected' && statuses[feed.id] !== 'connecting',
+    );
+    const { failures } = await connectEnabledMeshcoreMqttFeeds(pendingFeeds);
     if (failures.length > 0) {
       console.warn(`mcL0980 [App] ${failures.length} MeshCore MQTT feed(s) failed to auto-launch`);
     }

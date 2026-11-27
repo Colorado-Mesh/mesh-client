@@ -2002,7 +2002,8 @@
       "reconnect": "재접속",
       "reconnectAria": "{{name}} 다시 연결",
       "unnamedFeed": "이름 없는 피드",
-      "editSettingsFor": "{{name}} 설정 편집"
+      "editSettingsFor": "{{name}} 설정 편집",
+      "saveFailed": "브로커 설정을 저장할 수 없습니다. 저장 공간을 확인하고 다시 시도하세요."
     }
   },
   "contactGroupsModal": {

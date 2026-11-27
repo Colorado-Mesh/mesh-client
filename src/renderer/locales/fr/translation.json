@@ -2002,7 +2002,8 @@
       "reconnect": "Reconnecter",
       "reconnectAria": "Reconnecter {{name}}",
       "unnamedFeed": "Flux sans nom",
-      "editSettingsFor": "Modifier les paramètres de {{name}}"
+      "editSettingsFor": "Modifier les paramètres de {{name}}",
+      "saveFailed": "Impossible d'enregistrer les paramètres du courtier. Vérifiez l'espace de stockage et réessayez."
     }
   },
   "contactGroupsModal": {

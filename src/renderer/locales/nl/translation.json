@@ -2002,7 +2002,8 @@
       "reconnect": "Opnieuw verbinding maken",
       "reconnectAria": "Opnieuw verbinden {{name}}",
       "unnamedFeed": "Naamloze feed",
-      "editSettingsFor": "{{name}}-instellingen bewerken"
+      "editSettingsFor": "{{name}}-instellingen bewerken",
+      "saveFailed": "Kon de brokerinstellingen niet opslaan. Controleer de opslagruimte en probeer het opnieuw."
     }
   },
   "contactGroupsModal": {

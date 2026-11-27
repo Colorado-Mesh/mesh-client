@@ -2002,7 +2002,8 @@
       "reconnect": "Reconectar",
       "reconnectAria": "Volver a conectar {{name}}",
       "unnamedFeed": "Feed sin nombre",
-      "editSettingsFor": "Editar los ajustes de {{name}}"
+      "editSettingsFor": "Editar los ajustes de {{name}}",
+      "saveFailed": "No se han podido guardar los ajustes del bróker. Compruebe el espacio de almacenamiento e inténtelo de nuevo."
     }
   },
   "contactGroupsModal": {

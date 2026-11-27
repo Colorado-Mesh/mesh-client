@@ -2042,7 +2042,8 @@
       "reconnect": "повторное подключение",
       "reconnectAria": "Подключиться снова {{name}}",
       "unnamedFeed": "Безымянный канал",
-      "editSettingsFor": "Изменить настройки {{name}}"
+      "editSettingsFor": "Изменить настройки {{name}}",
+      "saveFailed": "Не удалось сохранить настройки брокера. Проверьте объем памяти и повторите попытку."
     }
   },
   "contactGroupsModal": {

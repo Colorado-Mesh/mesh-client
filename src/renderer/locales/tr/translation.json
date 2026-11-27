@@ -2002,7 +2002,8 @@
       "reconnect": "Yeniden bağlanınız",
       "reconnectAria": "{{name}} ile yeniden bağlantı kurun",
       "unnamedFeed": "Adsız akış",
-      "editSettingsFor": "{{name}} ayarlarını düzenleyin"
+      "editSettingsFor": "{{name}} ayarlarını düzenleyin",
+      "saveFailed": "Broker ayarları kaydedilemedi. Depolama alanını kontrol edin ve tekrar deneyin."
     }
   },
   "contactGroupsModal": {

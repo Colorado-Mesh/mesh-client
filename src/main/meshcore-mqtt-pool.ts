@@ -8,6 +8,7 @@ import {
   type MeshcoreMqttConnectionRole,
 } from '../shared/meshcoreMqttConnections';
 import type { MeshcoreMqttChatEnvelopeV1 } from '../shared/meshcoreMqttEnvelope';
+import { mqttUsesTls } from '../shared/mqttTls';
 import { sanitizeLogMessage } from './log-service';
 import {
   buildMeshcorePacketLogPayload,
@@ -60,7 +61,10 @@ function sameBroker(a: MQTTSettings | null, b: MQTTSettings): boolean {
   return (
     a.server.trim().toLowerCase() === b.server.trim().toLowerCase() &&
     a.port === b.port &&
-    (a.username ?? '') === (b.username ?? '')
+    (a.username ?? '') === (b.username ?? '') &&
+    mqttUsesTls(a) === mqttUsesTls(b) &&
+    (a.useWebSocket === true) === (b.useWebSocket === true) &&
+    (a.wsPath ?? '/mqtt') === (b.wsPath ?? '/mqtt')
   );
 }
 
@@ -316,7 +320,18 @@ export class MeshcoreMqttPool extends EventEmitter {
   }
 
   handlePowerResume(): void {
-    for (const entry of this.entries.values()) entry.adapter.handlePowerResume();
+    for (const [id, entry] of this.entries) {
+      // A terminal-error entry did not count against the caps; only resume it when the active
+      // sessions leave room, otherwise keep the error so the UI can offer a manual retry.
+      if (entry.adapter.getStatus() === 'error') {
+        const canResume =
+          this.activeSessionCount(id) < MAX_MESHCORE_MQTT_CONNECTIONS &&
+          (entry.role !== 'feed' ||
+            this.activeFeedCount(id) < MAX_MESHCORE_MQTT_ENABLED_PUBLISH_FEEDS);
+        if (!canResume) continue;
+      }
+      entry.adapter.handlePowerResume();
+    }
   }
 
   private findChatEntry(): PoolEntry | undefined {

@@ -2002,7 +2002,8 @@
       "reconnect": "Erneut verbinden",
       "reconnectAria": "{{name}} erneut verbinden",
       "unnamedFeed": "Unbenannter Feed",
-      "editSettingsFor": "{{name}}-Einstellungen bearbeiten"
+      "editSettingsFor": "{{name}}-Einstellungen bearbeiten",
+      "saveFailed": "Die Broker-Einstellungen konnten nicht gespeichert werden. Überprüfen Sie den Speicherplatz und versuchen Sie es erneut."
     }
   },
   "contactGroupsModal": {

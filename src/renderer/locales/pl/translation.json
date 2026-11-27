@@ -2042,7 +2042,8 @@
       "reconnect": "Połącz ponownie",
       "reconnectAria": "Połącz ponownie {{name}}",
       "unnamedFeed": "Nienazwany kanał",
-      "editSettingsFor": "Edytuj ustawienia {{name}}"
+      "editSettingsFor": "Edytuj ustawienia {{name}}",
+      "saveFailed": "Nie udało się zapisać ustawień brokera. Sprawdź ilość dostępnej pamięci i spróbuj ponownie."
     }
   },
   "contactGroupsModal": {

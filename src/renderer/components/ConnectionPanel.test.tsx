@@ -3540,7 +3540,7 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
       useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-0', 'connected');
     });
     const user = userEvent.setup();
-    render(
+    const { container } = render(
       <ConnectionPanel
         state={disconnectedState}
         onConnect={vi.fn().mockResolvedValue(undefined)}
@@ -3558,12 +3558,13 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
         .map((o) => o.textContent),
     ).toEqual(['Home mesh', 'Feed 0']);
 
-    // The connected view stays compact until the disclosure is opened.
-    expect(screen.queryByRole('combobox', { name: 'Network Preset' })).not.toBeInTheDocument();
-    const editButton = screen.getByRole('button', { name: 'Edit Home mesh settings' });
-    expect(editButton).toHaveAttribute('aria-expanded', 'false');
-    await user.click(editButton);
-    expect(editButton).toHaveAttribute('aria-expanded', 'true');
+    // The connected view stays compact until the native disclosure is opened.
+    const details = container.querySelector('details');
+    expect(details).toBeInstanceOf(HTMLDetailsElement);
+    expect(details?.open).toBe(false);
+    expect(screen.getByText('Edit Home mesh settings')).toBeInTheDocument();
+    details!.open = true;
+    fireEvent(details!, new Event('toggle', { bubbles: true }));
 
     // Every entry, including chat, exposes the same preset-backed editor while connected.
     const preset = screen.getByRole('combobox', { name: 'Network Preset' });

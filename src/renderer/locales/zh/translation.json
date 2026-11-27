@@ -2002,7 +2002,8 @@
       "reconnect": "重新连接",
       "reconnectAria": "重新连接{{name}}",
       "unnamedFeed": "未命名订阅源",
-      "editSettingsFor": "编辑{{name}}设置"
+      "editSettingsFor": "编辑{{name}}设置",
+      "saveFailed": "无法保存经纪商设置。请检查存储空间，然后重试。"
     }
   },
   "contactGroupsModal": {

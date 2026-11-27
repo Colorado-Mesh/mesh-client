@@ -141,50 +141,64 @@ function toStored(feed: MeshcoreMqttFeed): StoredMeshcoreMqttFeed {
   return { ...feed, settings: settings as Omit<MQTTSettings, 'password'> };
 }
 
-async function saveSecretsNow(feeds: readonly MeshcoreMqttFeed[]): Promise<void> {
-  const limited = feeds.slice(0, MAX_MESHCORE_MQTT_PUBLISH_FEEDS);
+async function saveNow(
+  feeds: readonly MeshcoreMqttFeed[],
+  document: MeshcoreMqttFeedsDocument,
+): Promise<void> {
+  const previousMetadata = localStorage.getItem(MESHCORE_MQTT_FEEDS_STORAGE_KEY);
+  const previousSecrets = getCachedSecureSecret(MESHCORE_MQTT_FEEDS_SECRET_KEY);
   const passwords: Record<string, { password: string }> = {};
-  for (const feed of limited) passwords[feed.id] = { password: feed.settings.password };
-  if (limited.length === 0) await removeSecureSecret(MESHCORE_MQTT_FEEDS_SECRET_KEY);
-  else await setSecureSecret(MESHCORE_MQTT_FEEDS_SECRET_KEY, JSON.stringify(passwords));
+  for (const feed of feeds) passwords[feed.id] = { password: feed.settings.password };
+
+  try {
+    // Credentials first: metadata must never point at credentials that were not written.
+    if (feeds.length === 0) await removeSecureSecret(MESHCORE_MQTT_FEEDS_SECRET_KEY);
+    else await setSecureSecret(MESHCORE_MQTT_FEEDS_SECRET_KEY, JSON.stringify(passwords));
+    localStorage.setItem(MESHCORE_MQTT_FEEDS_STORAGE_KEY, JSON.stringify(document));
+  } catch (e) {
+    // Restore both halves so a failed write leaves the last saved list intact.
+    try {
+      if (previousSecrets == null) await removeSecureSecret(MESHCORE_MQTT_FEEDS_SECRET_KEY);
+      else await setSecureSecret(MESHCORE_MQTT_FEEDS_SECRET_KEY, previousSecrets);
+      if (previousMetadata == null) localStorage.removeItem(MESHCORE_MQTT_FEEDS_STORAGE_KEY);
+      else localStorage.setItem(MESHCORE_MQTT_FEEDS_STORAGE_KEY, previousMetadata);
+    } catch (rollbackError) {
+      console.warn(
+        'mcL1513 [meshcoreMqttFeeds] rollback failed ' + errLikeToLogString(rollbackError),
+      );
+    }
+    throw e instanceof Error ? e : new Error(String(e));
+  }
 }
 
 /**
- * Persist non-secret metadata synchronously and credentials via the secure service.
+ * Persist analyzer-feed metadata and credentials. The promise rejects when either write fails
+ * and the previous saved document is restored, so callers can keep the draft and retry.
  * Omit `chatName` to keep the stored chat-broker name unchanged.
  */
 export function persistMeshcoreMqttFeeds(
   feeds: readonly MeshcoreMqttFeed[],
   chatName?: string,
-): void {
+): Promise<void> {
   const limited = feeds.slice(0, MAX_MESHCORE_MQTT_PUBLISH_FEEDS);
   const storedChatName =
     chatName === undefined ? readStoredDocument()?.chatName : normalizeChatName(chatName);
-  localStorage.setItem(
-    MESHCORE_MQTT_FEEDS_STORAGE_KEY,
-    JSON.stringify({
-      version: FEEDS_DOCUMENT_VERSION,
-      ...(storedChatName ? { chatName: storedChatName } : {}),
-      feeds: limited.map(toStored),
-    } satisfies MeshcoreMqttFeedsDocument),
-  );
+  const document: MeshcoreMqttFeedsDocument = {
+    version: FEEDS_DOCUMENT_VERSION,
+    ...(storedChatName ? { chatName: storedChatName } : {}),
+    feeds: limited.map(toStored),
+  };
   const previous = pendingSave ?? Promise.resolve();
-  const tracked = previous
-    .catch(() => undefined)
-    .then(() => saveSecretsNow(limited))
-    .catch((e: unknown) => {
-      console.warn(
-        'mcL1509 [meshcoreMqttFeeds] credential persist failed ' + errLikeToLogString(e),
-      );
-    })
-    .finally(() => {
-      // A newer save may have replaced this one; only clear our own reference.
-      if (pendingSave === tracked) pendingSave = null;
-    });
+  const run = previous.catch(() => undefined).then(() => saveNow(limited, document));
+  const tracked = run.finally(() => {
+    // A newer save may have replaced this one; only clear our own reference.
+    if (pendingSave === tracked) pendingSave = null;
+  });
   pendingSave = tracked;
+  return tracked;
 }
 
-/** Resolves once the latest credential write settles (tests / shutdown). */
+/** Resolves once the latest credential write settles (tests / shutdown); rejects on failure. */
 export async function flushMeshcoreMqttFeedsSave(): Promise<void> {
   await pendingSave;
 }

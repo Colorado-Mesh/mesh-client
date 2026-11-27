@@ -2002,7 +2002,8 @@
       "reconnect": "Sambung ulang",
       "reconnectAria": "Sambungkan kembali {{name}}",
       "unnamedFeed": "Feed tanpa nama",
-      "editSettingsFor": "Edit pengaturan {{name}}"
+      "editSettingsFor": "Edit pengaturan {{name}}",
+      "saveFailed": "Tidak dapat menyimpan pengaturan broker. Periksa ruang penyimpanan dan coba lagi."
     }
   },
   "contactGroupsModal": {

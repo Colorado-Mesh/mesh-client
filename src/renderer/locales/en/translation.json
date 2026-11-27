@@ -2005,7 +2005,8 @@
       "reconnect": "Reconnect",
       "reconnectAria": "Reconnect {{name}}",
       "unnamedFeed": "Unnamed feed",
-      "editSettingsFor": "Edit {{name}} settings"
+      "editSettingsFor": "Edit {{name}} settings",
+      "saveFailed": "Could not save broker settings. Check storage space and try again."
     },
     "hintMeshtasticBle1": "Ensure your Meshtastic device has Bluetooth enabled and is in range.",
     "hintMeshtasticBle2": "Click Connect to scan — a device picker will appear with discovered Meshtastic devices.",
