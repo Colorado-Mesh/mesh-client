@@ -1019,7 +1019,8 @@
       "relayNotReported": "Das Funkgerät hat nicht gemeldet, welcher Knoten diese Nachricht weitergeleitet hat.",
       "unavailableDirectOrRoom": "Routen werden nur für Kanalnachrichten angezeigt.",
       "unavailableNotCaptured": "Route nicht verfügbar: Routen werden nur für die letzten Nachrichten aus dieser Sitzung aufbewahrt.",
-      "notRecorded": "Pakete in diesem Netzwerk zeichnen auf, wie viele Relays sie durchlaufen haben, nicht welche."
+      "notRecorded": "Pakete in diesem Netzwerk zeichnen auf, wie viele Relays sie durchlaufen haben, nicht welche.",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Als ungelesen markieren",
     "deleteMessageLocal": "Lokal löschen",
@@ -5494,7 +5495,39 @@
     "senderKeyPrefix": "Absenderschlüssel (Präfix):",
     "control": "Bedienung:",
     "advertTs": "ADVERT ts:",
-    "advertLatLon": "ANZEIGE lat/lon:"
+    "advertLatLon": "ANZEIGE lat/lon:",
+    "meshcomLegendHint": "Die Zeilen zeigen den eingehenden MeshCom-Datenverkehr (EXTUDP, KISS, BLE APRS oder serielles JSON). Der Pfad listet die Rufzeichen des Ursprungs und des Digipeaters auf.",
+    "meshcomTransportColumn": "Link",
+    "meshcomTransportColumnTooltip": "Wie dieser Frame die App erreicht hat (EXTUDP, KISS, BLE oder seriell).",
+    "meshcomPathColumnTooltip": "Ursprüngliches Rufzeichen und Digipeater-Pfad, falls vorhanden.",
+    "meshcomPathEmpty": "Kein Digipeater-Pfad in diesem Frame.",
+    "meshcomKind": {
+      "msg": "MSG",
+      "pos": "POS",
+      "tele": "TELE.",
+      "ack": "ACK",
+      "other": "SONSTIGE"
+    },
+    "meshcomKindTooltip": {
+      "msg": "SMS oder Chat-Nachricht",
+      "pos": "Positionsmeldung",
+      "tele": "Telemetrie (EXTUDP)",
+      "ack": "Bestätigung der Zustellung oder Weiterleitung",
+      "other": "anderer Rahmen"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SERIAL",
+      "serverTooltip": "Über Server oder Gateway weitergeleitet (keine direkten HF-Metadaten)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP APRS-Frame",
+      "ble": "BLE Telefon-APRS-Benachrichtigung",
+      "serial": "Serielle oder Netconsole-JSON-Zeile"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -9251,7 +9284,12 @@
       "removeGroupListenNotUpdated": "{{name}} wurde hier ausgeblendet, aber der Knoten-Abhörfilter wurde nicht aktualisiert (Funkbefehle nicht verfügbar).",
       "removeGroupListenRadioChanged": "{{name}} wurde hier ausgeblendet, aber der Knoten-Abhörfilter wurde nicht aktualisiert (angeschlossenes Funkgerät geändert)."
     },
-    "netConsoleHint": "NET-Konsole ist TCP Port 2323 (LAN im Klartext). Aktivieren Sie --netconsole auf dem Knoten; optional --passwd für die HMAC-Anmeldung."
+    "netConsoleHint": "NET-Konsole ist TCP Port 2323 (LAN im Klartext). Aktivieren Sie --netconsole auf dem Knoten; optional --passwd für die HMAC-Anmeldung.",
+    "importInvalidJson": "Die Datei konnte nicht gelesen werden – ungültige JSON-Datei.",
+    "importNoContactRows": "Die Datei enthält keine Kontaktliste.",
+    "importCsvEmpty": "Die CSV-Datei enthält keine Kontaktzeilen.",
+    "importSkippedCallsign": "„{{callsign}}“ übersprungen: Ungültiges Rufzeichen.",
+    "importSaveFailed": "„{{callsign}}“ konnte nicht in der Datenbank gespeichert werden."
   },
   "meshcomDeviceCommands": {
     "description": "Senden Sie ICSSW-Knotenbefehle (--help, --settime, --setctry, …) über Serial oder BLE. Für die App geeignete Befehle stimmen mit der offiziellen MeshCom-App überein; Befehle, die nur über die serielle Schnittstelle ausgeführt werden können, benötigen eine USB-Konsolenverbindung.",

@@ -25,6 +25,14 @@ describe('i18n-unused-keys', () => {
     expect(prefixes).toContain('meshcom.grc.reach.');
   });
 
+  it('registers MeshCom sniffer kind/transport dynamic prefixes', () => {
+    const prefixes = DYNAMIC_T_PREFIXES.map((e) => e.prefix);
+    expect(prefixes).toContain('rawPacketLog.meshcomKind.');
+    expect(prefixes).toContain('rawPacketLog.meshcomKindTooltip.');
+    expect(prefixes).toContain('rawPacketLog.meshcomTransport.');
+    expect(prefixes).toContain('rawPacketLog.meshcomTransportTooltip.');
+  });
+
   it('registers gamesPanel chess promoteTo and delivery dynamic prefixes', () => {
     const prefixes = DYNAMIC_T_PREFIXES.map((e) => e.prefix);
     expect(prefixes).toContain('gamesPanel.chess.promoteTo.');

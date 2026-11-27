@@ -7,6 +7,7 @@ import {
   isPlausibleNoiseFloorDbm,
   medianOf,
   readLocalNoiseFloor,
+  readLocalNoiseFloorForProtocol,
 } from './rfNoiseFloor';
 import type { MeshNode } from './types';
 
@@ -124,6 +125,12 @@ describe('rfNoiseFloor', () => {
         }),
       ),
     ).toEqual({ value: -108 }); // no observedAt when Meshtastic field omits it
+  });
+
+  it('readLocalNoiseFloorForProtocol skips MeshCom (estimate-only RF tab)', () => {
+    const n = node({ node_id: 1, noise_floor: -108 });
+    expect(readLocalNoiseFloorForProtocol(n, 'meshcom')).toBeNull();
+    expect(readLocalNoiseFloorForProtocol(n, 'meshtastic')).toEqual({ value: -108 });
   });
 
   it('estimateNoiseFloorDbm rejects zero / missing inputs', () => {

@@ -107,7 +107,7 @@ export function readLiveMapWindowState(statePath: string): StoredState {
     const raw = JSON.parse(fs.readFileSync(statePath, 'utf-8')) as unknown;
     if (!raw || typeof raw !== 'object') return {};
     const state: StoredState = {};
-    for (const protocol of ['meshtastic', 'meshcore'] as const) {
+    for (const protocol of ['meshtastic', 'meshcore', 'meshcom'] as const) {
       const entry = (raw as Record<string, unknown>)[protocol];
       if (isStoredWindow(entry)) state[protocol] = entry;
     }

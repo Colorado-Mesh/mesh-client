@@ -2,13 +2,15 @@ import { create, toBinary } from '@bufbuild/protobuf';
 import { Mesh, Portnums } from '@meshtastic/protobufs';
 import { describe, expect, it } from 'vitest';
 
+import { callsignToNodeId } from '../meshcom/meshcomCallsign';
 import type { RxPacketEntry } from '../meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
+import type { MeshcomRawPacketEntry, MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import type { MeshNode } from '../types';
 import { groupLiveTrafficEvents } from './liveTrafficGroups';
 import {
   buildLiveTrafficEvents,
   buildLiveTrafficNodeIndex,
+  buildMeshcomLiveTrafficEvents,
   buildMeshtasticLiveTrafficEvents,
   filterLiveTrafficEvents,
   LIVE_TRAFFIC_MAX_AGE_MS,
@@ -447,6 +449,103 @@ describe('MeshCore live traffic', () => {
       NOW,
     );
     expect(truncated.segments).toEqual([]);
+  });
+});
+
+function meshcomCapture(overrides: Partial<MeshcomRawPacketEntry> = {}): MeshcomRawPacketEntry {
+  return {
+    ts: NOW,
+    snr: 8,
+    rssi: -90,
+    kind: 'msg',
+    transport: 'extudp',
+    originCallsign: 'IK5NJM-11',
+    digis: [],
+    hopsAway: 0,
+    fromNodeId: callsignToNodeId('IK5NJM-11'),
+    raw: new Uint8Array(0),
+    ...overrides,
+  };
+}
+
+describe('MeshCom live traffic', () => {
+  it('draws digipeater hops when origin, digi, and receiver have coordinates', () => {
+    const originId = callsignToNodeId('IK5NJM-11');
+    const digiId = callsignToNodeId('IW5EIA-12');
+    const me = 99;
+    const [event] = buildMeshcomLiveTrafficEvents(
+      [meshcomCapture({ digis: ['IW5EIA-12'], hopsAway: 1, fromNodeId: originId })],
+      indexFor(
+        node(originId, { long_name: 'IK5NJM-11', latitude: 43.1, longitude: 11.2 }),
+        node(digiId, { long_name: 'IW5EIA-12', latitude: 43.2, longitude: 11.3 }),
+        node(me, { latitude: 43.3, longitude: 11.4 }),
+      ),
+      me,
+      NOW,
+    );
+    expect(event.routeStatus).toBe('resolved');
+    expect(event.hopCount).toBe(1);
+    expect(event.segments).toHaveLength(2);
+    expect(event.points.map((point) => point.nodeId)).toEqual([originId, digiId, me]);
+  });
+
+  it('keeps partial routes when a digipeater has no position', () => {
+    const originId = callsignToNodeId('IK5NJM-11');
+    const digiId = callsignToNodeId('IW5EIA-12');
+    const me = 99;
+    const [event] = buildMeshcomLiveTrafficEvents(
+      [meshcomCapture({ digis: ['IW5EIA-12'], hopsAway: 1, fromNodeId: originId })],
+      indexFor(
+        node(originId, { long_name: 'IK5NJM-11', latitude: 43.1, longitude: 11.2 }),
+        node(digiId, { long_name: 'IW5EIA-12', latitude: null, longitude: null }),
+        node(me, { latitude: 43.3, longitude: 11.4 }),
+      ),
+      me,
+      NOW,
+    );
+    expect(event.routeStatus).toBe('partial');
+    expect(event.points.map((point) => point.nodeId)).toEqual([originId, me]);
+  });
+
+  it('labels gateway frames without forcing a local receiver segment', () => {
+    const originId = callsignToNodeId('IK5NJM-11');
+    const [event] = buildMeshcomLiveTrafficEvents(
+      [
+        meshcomCapture({
+          viaServer: true,
+          fromNodeId: originId,
+          digis: [],
+          hopsAway: 0,
+        }),
+      ],
+      indexFor(node(originId, { long_name: 'IK5NJM-11', latitude: 43.1, longitude: 11.2 })),
+      99,
+      NOW,
+    );
+    expect(event.kind).toBe('msg/gw');
+    expect(event.source).toBe('unknown');
+    expect(event.observerId).toBeUndefined();
+    expect(event.routeStatus).toBe('partial');
+  });
+
+  it('preserves null MeshCom signal as non-finite while keeping measured zero', () => {
+    const originId = callsignToNodeId('IK5NJM-11');
+    const [missing] = buildMeshcomLiveTrafficEvents(
+      [meshcomCapture({ fromNodeId: originId, rssi: null, snr: null })],
+      indexFor(node(originId, { long_name: 'IK5NJM-11', latitude: 43.1, longitude: 11.2 })),
+      null,
+      NOW,
+    );
+    expect(Number.isFinite(missing.rssi)).toBe(false);
+    expect(Number.isFinite(missing.snr)).toBe(false);
+    const [zero] = buildMeshcomLiveTrafficEvents(
+      [meshcomCapture({ fromNodeId: originId, rssi: 0, snr: 0 })],
+      indexFor(node(originId, { long_name: 'IK5NJM-11', latitude: 43.1, longitude: 11.2 })),
+      null,
+      NOW,
+    );
+    expect(zero.rssi).toBe(0);
+    expect(zero.snr).toBe(0);
   });
 });
 

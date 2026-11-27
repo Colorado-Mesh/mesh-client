@@ -17,6 +17,7 @@ import {
   isMeshcomLegacyBroadcastPlaceholder,
   isMeshcomNodeIdPlaceholderCallsign,
   normalizeMeshcomCallsign,
+  parseMeshcomSrcPath,
 } from './meshcom/meshcomCallsign';
 import { isMeshcomGroupDest, resolveMeshcomDestination } from './meshcom/meshcomChannel';
 import { meshcomHwLabel } from './meshcom/meshcomHwIds';
@@ -73,6 +74,8 @@ export interface MeshcomDbMessageRow {
   to_call_or_group?: string | null;
   text?: string | null;
   channel_idx?: number | null;
+  /** Digipeater `src` path or legacy numeric hop-count string. */
+  path?: string | null;
   timestamp?: number | null;
   status?: string | null;
   rssi?: number | null;
@@ -130,6 +133,19 @@ export function rowsToMessageRecords(rows: MeshcomDbMessageRow[]): MessageRecord
       }
     }
     const ts = optionalNumber(row.timestamp) ?? Date.now();
+    const pathRaw = optionalString(row.path);
+    let rxHops: number | undefined;
+    let rxPathCallsigns: string[] | undefined;
+    if (pathRaw) {
+      if (/^\d+$/.test(pathRaw)) {
+        const hops = Number.parseInt(pathRaw, 10);
+        if (Number.isFinite(hops) && hops >= 0) rxHops = hops;
+      } else {
+        const parsed = parseMeshcomSrcPath(pathRaw);
+        rxHops = parsed.hopCount;
+        if (parsed.digis.length > 0) rxPathCallsigns = parsed.digis;
+      }
+    }
     return chatMessageToMessageRecord({
       storeId: meshcomRowStoreId(row, senderId, ts),
       id: optionalNumber(row.id),
@@ -144,6 +160,8 @@ export function rowsToMessageRecords(rows: MeshcomDbMessageRow[]): MessageRecord
       receivedVia: meshcomRowReceivedVia(row.received_via),
       rxRssi: optionalNumber(row.rssi),
       rxSnr: optionalNumber(row.snr),
+      ...(rxHops != null ? { rxHops } : {}),
+      ...(rxPathCallsigns ? { rxPathCallsigns } : {}),
     });
   });
 }

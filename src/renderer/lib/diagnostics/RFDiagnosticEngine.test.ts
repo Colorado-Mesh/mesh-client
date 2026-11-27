@@ -6,6 +6,7 @@ import {
   diagnoseConnectedNode,
   diagnoseOtherNode,
   resetCuSpikeCooldown,
+  supportsNodeRfDiagnosticFindings,
 } from './RFDiagnosticEngine';
 
 function baseNode(overrides: Partial<MeshNode> = {}): MeshNode {
@@ -117,6 +118,24 @@ describe('diagnoseConnectedNode', () => {
     expect(
       diagnoseConnectedNode(node, { capabilities: { hasRfStats: false } as never }),
     ).toHaveLength(0);
+  });
+});
+
+describe('supportsNodeRfDiagnosticFindings', () => {
+  it('requires MeshCom LocalStats for our node and CU for remotes', () => {
+    const overheard = baseNode({
+      channel_utilization: 0.1,
+      snr: 5,
+      rssi: -99,
+      num_packets_rx: undefined,
+      num_packets_rx_bad: undefined,
+      num_rx_dupe: undefined,
+    });
+    expect(supportsNodeRfDiagnosticFindings('meshcom', overheard, true)).toBe(false);
+    expect(supportsNodeRfDiagnosticFindings('meshcom', overheard, false)).toBe(true);
+    const withStats = baseNode({ num_packets_rx: 10, channel_utilization: 0.1 });
+    expect(supportsNodeRfDiagnosticFindings('meshcom', withStats, true)).toBe(true);
+    expect(supportsNodeRfDiagnosticFindings('meshtastic', overheard, true)).toBe(true);
   });
 });
 

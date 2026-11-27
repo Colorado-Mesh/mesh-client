@@ -9,6 +9,7 @@
 import { normalizeMeshcomCallsign } from './meshcomCallsign';
 import { parseMeshcomGrcListenList } from './meshcomGrcGroups';
 import { formatMeshcomInstalledFirmware } from './meshcomHwIds';
+import type { MeshcomMheardStation } from './meshcomMheard';
 
 /** Mutable accumulator while BLE config packets (or serial --info lines) arrive. */
 export interface MeshcomDeviceSettingsAccum {
@@ -91,13 +92,8 @@ export interface MeshcomDeviceSettingsSnapshot {
   temperatureOutC?: number;
   gasResistance?: number;
   co2Ppm?: number;
-  /** Stations from serial `--mheard` when collected during refresh. */
-  mheard?: readonly {
-    callsign: string;
-    rssi?: number;
-    snr?: number;
-    distanceKm?: number;
-  }[];
+  /** Stations from `--mheard` when collected during refresh (serial rows or BLE MH JSON). */
+  mheard?: readonly MeshcomMheardStation[];
   complete: boolean;
   updatedAt: number;
 }

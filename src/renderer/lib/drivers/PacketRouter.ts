@@ -524,6 +524,12 @@ class PacketRouter {
       rxSnr: event.payload.rxSnr,
       rxRssi: event.payload.rxRssi,
       hopCount: event.payload.hopCount,
+      // Always write the path (including []) so a later direct reception cannot keep an old digi route.
+      ...(event.payload.rxPathCallsigns != null
+        ? { rxPathCallsigns: [...event.payload.rxPathCallsigns] }
+        : protocolType === 'meshcom'
+          ? { rxPathCallsigns: [] }
+          : {}),
       ...(event.payload.pathHashSizeBytes === 1 ||
       event.payload.pathHashSizeBytes === 2 ||
       event.payload.pathHashSizeBytes === 3

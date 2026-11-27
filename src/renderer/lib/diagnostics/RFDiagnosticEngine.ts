@@ -1,7 +1,7 @@
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
-import type { DiagnosticTextI18n, MeshNode } from '../types';
+import type { DiagnosticTextI18n, MeshNode, MeshProtocol } from '../types';
 import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnostics';
 
 export interface RFDiagnosis {
@@ -220,6 +220,24 @@ export function diagnoseConnectedNode(
 /** True if the connected node has enough LocalStats data to run full RF diagnostics. */
 export function hasLocalStatsData(node: MeshNode): boolean {
   return node.num_packets_rx !== undefined || node.num_packets_rx_bad !== undefined;
+}
+
+/**
+ * Whether Node detail / connected-node RF finding engines should run for this protocol + node.
+ * MeshCom enables the RF histograms tab (SNR/RSSI) but lacks Meshtastic LocalStats / MeshCore RPC
+ * noise-floor telemetry — avoid empty "all OK" rows when only overheard SNR/RSSI is present.
+ */
+export function supportsNodeRfDiagnosticFindings(
+  protocol: MeshProtocol,
+  node: MeshNode,
+  isOurNode: boolean,
+): boolean {
+  if (protocol === 'meshtastic' || protocol === 'meshcore') return true;
+  if (protocol === 'meshcom') {
+    if (isOurNode) return hasLocalStatsData(node);
+    return node.channel_utilization != null || node.air_util_tx != null;
+  }
+  return false;
 }
 
 /**

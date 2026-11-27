@@ -55,6 +55,7 @@ import {
 import {
   buildLiveTrafficEvents,
   buildLiveTrafficNodeIndex,
+  buildMeshcomLiveTrafficEvents,
   buildMeshtasticLiveTrafficEvents,
   filterLiveTrafficEvents,
   LIVE_TRAFFIC_MAX_AGE_MS,
@@ -77,7 +78,10 @@ import {
   meshTilesAvailable,
 } from '@/renderer/lib/mapBasemapUtils';
 import type { RxPacketEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
-import type { MeshtasticRawPacketEntry } from '@/renderer/lib/rawPacketLogConstants';
+import type {
+  MeshcomRawPacketEntry,
+  MeshtasticRawPacketEntry,
+} from '@/renderer/lib/rawPacketLogConstants';
 import { useCustomMapSourcesStore } from '@/renderer/stores/customMapSourcesStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import type { MapViewport } from '@/renderer/stores/mapViewportStore';
@@ -101,6 +105,7 @@ const MAX_MAP_MARKERS = 400;
 const MAX_INSPECTOR_LOCATIONS = 32;
 const EMPTY_MESHCORE_PACKETS: readonly RxPacketEntry[] = [];
 const EMPTY_MESHTASTIC_PACKETS: readonly MeshtasticRawPacketEntry[] = [];
+const EMPTY_MESHCOM_PACKETS: readonly MeshcomRawPacketEntry[] = [];
 const EMPTY_EVENTS: readonly LiveTrafficEvent[] = [];
 const EMPTY_NODE_INDEX = buildLiveTrafficNodeIndex(new Map());
 const INITIAL_CENTER: [number, number] = [20, 0];
@@ -111,6 +116,7 @@ export interface LiveTrafficPanelProps {
   myNodeNum: number;
   meshcorePackets?: readonly RxPacketEntry[];
   meshtasticPackets?: readonly MeshtasticRawPacketEntry[];
+  meshcomPackets?: readonly MeshcomRawPacketEntry[];
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
   onNodeClick?: (id: number) => void;
   ourPosition?: OurPosition | null;
@@ -125,7 +131,8 @@ export interface LiveTrafficPanelProps {
 }
 
 function packetCategory(kind: string): 'message' | 'advert' | 'telemetry' | 'routing' | 'other' {
-  if (/TXT|TEXT|MESSAGE/i.test(kind)) return 'message';
+  // MeshCom sniffer kinds are `msg` / `msg/gw`; keep TXT|TEXT|MESSAGE for other protocols.
+  if (/^(msg(\/gw)?)$/i.test(kind) || /TXT|TEXT|MESSAGE/i.test(kind)) return 'message';
   if (/ADVERT|POSITION|NODEINFO/i.test(kind)) return 'advert';
   if (/TELEMETRY|STATUS/i.test(kind)) return 'telemetry';
   if (/ACK|TRACE|PATH|ROUT|REQ|RESP/i.test(kind)) return 'routing';
@@ -335,6 +342,7 @@ export default function LiveTrafficPanel({
   myNodeNum,
   meshcorePackets,
   meshtasticPackets,
+  meshcomPackets,
   pubKeyByNodeId,
   onNodeClick,
   ourPosition,
@@ -356,13 +364,15 @@ export default function LiveTrafficPanel({
   const savedBasemap = useMapLayerStore((state) => state.basemapId);
   const customMapSources = useCustomMapSourcesStore((state) => state.sources);
   const meshtastic = meshtasticPackets !== undefined;
-  // Regional feeds carry MeshCore observations only; Meshtastic always starts on its own radio.
+  const meshcom = meshcomPackets !== undefined;
+  // Regional feeds are MeshCore-only; Meshtastic/MeshCom stay on the local radio.
+  const localOnly = meshtastic || meshcom;
   const [trafficSource, setTrafficSource] = useState<'local' | RegionalFeedProvider>(() =>
-    meshtastic ? 'local' : (initialView?.trafficSource ?? 'local'),
+    localOnly ? 'local' : (initialView?.trafficSource ?? 'local'),
   );
   const regional = trafficSource !== 'local';
   const provider = trafficSource === 'corescope' ? 'corescope' : 'beacon';
-  const beacon = useBeaconTraffic(!meshtastic && regional, provider, active);
+  const beacon = useBeaconTraffic(!localOnly && regional, provider, active);
   const [paused, setPaused] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
@@ -394,7 +404,7 @@ export default function LiveTrafficPanel({
   /** The regional session this view connected, handed to the other window when it moves. */
   const [connectedFeed, setConnectedFeed] = useState<LiveMapView['feed']>(null);
   const [queuedFeed, setQueuedFeed] = useState<LiveMapView['feed']>(
-    meshtastic ? null : (initialView?.feed ?? null),
+    localOnly ? null : (initialView?.feed ?? null),
   );
   const consumedFeedKey = useRef<string | null>(null);
   const [seenNavView, setSeenNavView] = useState<LiveMapView | null>(null);
@@ -402,7 +412,7 @@ export default function LiveTrafficPanel({
     setSeenNavView(navView);
     setSavedViewport({ center: navView.center, zoom: navView.zoom });
     if (isValidMapBasemapId(navView.basemapId)) setBasemapId(navView.basemapId);
-    if (!meshtastic) {
+    if (!localOnly) {
       setTrafficSource(navView.trafficSource);
       const pushedFeed = navView.feed;
       const sameFeed =
@@ -456,8 +466,16 @@ export default function LiveTrafficPanel({
   const liveEvents = useMemo(() => {
     if (!active) return EMPTY_EVENTS;
     const now = refreshTime;
-    if (regional && !meshtastic)
+    if (regional && !localOnly)
       return beacon.events.filter((event) => now - event.ts <= LIVE_TRAFFIC_MAX_AGE_MS);
+    if (meshcom) {
+      return buildMeshcomLiveTrafficEvents(
+        meshcomPackets ?? EMPTY_MESHCOM_PACKETS,
+        index,
+        myNodeNum,
+        now,
+      );
+    }
     return meshtastic
       ? buildMeshtasticLiveTrafficEvents(
           meshtasticPackets ?? EMPTY_MESHTASTIC_PACKETS,
@@ -468,9 +486,12 @@ export default function LiveTrafficPanel({
       : buildLiveTrafficEvents(meshcorePackets ?? EMPTY_MESHCORE_PACKETS, index, myNodeNum, now);
   }, [
     active,
+    localOnly,
+    meshcom,
     meshtastic,
     meshcorePackets,
     meshtasticPackets,
+    meshcomPackets,
     index,
     myNodeNum,
     refreshTime,
@@ -487,7 +508,7 @@ export default function LiveTrafficPanel({
     return () => {
       cancelled = true;
     };
-  }, [active, meshcorePackets, meshtasticPackets, visible, beacon.events]);
+  }, [active, meshcorePackets, meshtasticPackets, meshcomPackets, visible, beacon.events]);
 
   useEffect(() => {
     ensureMapStyles();
@@ -511,9 +532,11 @@ export default function LiveTrafficPanel({
   }, [active, paused, visible, liveEvents.length]);
 
   const events = paused ? frozenEvents : liveEvents;
-  const localPacketLogCount = meshtastic
-    ? (meshtasticPackets?.length ?? 0)
-    : (meshcorePackets?.length ?? 0);
+  const localPacketLogCount = meshcom
+    ? (meshcomPackets?.length ?? 0)
+    : meshtastic
+      ? (meshtasticPackets?.length ?? 0)
+      : (meshcorePackets?.length ?? 0);
   const localEmptyCopy = liveTrafficLocalEmptyCopy(localPacketLogCount);
   const points = useMemo(
     () => (regional ? beacon.points : [...index.points.values()]),
@@ -537,22 +560,22 @@ export default function LiveTrafficPanel({
       groupLiveTrafficEvents(
         filterLiveTrafficEvents(liveEvents, {
           bounds,
-          scope: meshtastic || regional ? 'all' : parsedScope,
+          scope: localOnly || regional ? 'all' : parsedScope,
         }).filter((event) => kind === 'all' || packetCategory(event.kind) === kind),
         refreshTime,
       ),
-    [liveEvents, bounds, meshtastic, regional, parsedScope, kind, refreshTime],
+    [liveEvents, bounds, localOnly, regional, parsedScope, kind, refreshTime],
   );
   const frozenGroups = useMemo(
     () =>
       groupLiveTrafficEvents(
         filterLiveTrafficEvents(frozenEvents, {
           bounds,
-          scope: meshtastic || regional ? 'all' : parsedScope,
+          scope: localOnly || regional ? 'all' : parsedScope,
         }).filter((event) => kind === 'all' || packetCategory(event.kind) === kind),
         pausedAt,
       ),
-    [frozenEvents, bounds, meshtastic, regional, parsedScope, kind, pausedAt],
+    [frozenEvents, bounds, localOnly, regional, parsedScope, kind, pausedAt],
   );
   const filteredEvents = paused ? frozenGroups : canvasEvents;
   const trafficFocusPoints = useMemo(
@@ -717,7 +740,7 @@ export default function LiveTrafficPanel({
           >
             {t('liveTraffic.filters')}
           </Button>
-          {!meshtastic && (
+          {!localOnly && (
             <div className="flex items-center gap-1">
               <select
                 aria-label={t('liveTraffic.trafficSource')}
@@ -827,7 +850,7 @@ export default function LiveTrafficPanel({
       </header>
       {filtersOpen && (
         <div className="border-ink-700 bg-deep-black shadow-level-2 flex flex-wrap items-end gap-3 border-b px-4 py-3">
-          {!meshtastic && !regional && (
+          {!localOnly && !regional && (
             <label className="text-muted flex min-w-36 flex-1 flex-col gap-1 text-xs sm:flex-none">
               {t('liveTraffic.transportScope')}
               <input
@@ -953,7 +976,7 @@ export default function LiveTrafficPanel({
                 pinnedView={navView}
               />
               <LiveTrafficCanvas
-                key={`${meshtastic ? 'meshtastic' : 'meshcore'}:${trafficSource}`}
+                key={`${meshcom ? 'meshcom' : meshtastic ? 'meshtastic' : 'meshcore'}:${trafficSource}`}
                 skipInitialAnimation
                 events={canvasEvents}
                 inspectionEvents={paused ? frozenGroups : undefined}
@@ -1018,7 +1041,7 @@ export default function LiveTrafficPanel({
                 >
                   <p>
                     {t(
-                      meshtastic
+                      localOnly
                         ? 'liveTraffic.meshtasticDisclaimer'
                         : 'liveTraffic.animationDisclaimer',
                     )}
@@ -1242,7 +1265,7 @@ export default function LiveTrafficPanel({
                             })
                           : t('liveTraffic.noSignal')}
                       </dd>
-                      {!meshtastic && !regional && (
+                      {!localOnly && !regional && (
                         <>
                           <dt className="text-muted">{t('liveTraffic.transportScope')}</dt>
                           <dd className="font-mono">
@@ -1337,7 +1360,7 @@ export default function LiveTrafficPanel({
                     {selected.routeStatus !== 'estimated' && (
                       <p className="text-muted mt-3 text-xs leading-relaxed">
                         {t(
-                          meshtastic
+                          localOnly
                             ? 'liveTraffic.meshtasticInspector'
                             : 'liveTraffic.meshcoreInspector',
                         )}

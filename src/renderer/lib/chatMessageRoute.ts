@@ -31,6 +31,8 @@ export type ChatMessageRouteUnavailableReason =
 /** Capture lookup result before node names are resolved. */
 export type ChatMessageRouteLookup =
   | { status: 'floodPath'; hashes: string[] }
+  /** MeshCom digipeater callsigns (durable on the message; not RF capture hashes). */
+  | { status: 'digipeaterPath'; callsigns: string[] }
   | { status: 'lastRelay'; relayByte: number }
   | { status: 'unavailable'; reason: ChatMessageRouteUnavailableReason };
 
@@ -58,6 +60,21 @@ export function meshcoreChatMessageRoute(
   }
   const path = meshcoreMessageReceptionStats(message, packets, channels)?.path;
   return path ? { status: 'floodPath', hashes: path } : UNAVAILABLE_NOT_CAPTURED;
+}
+
+/**
+ * MeshCom digipeater path from the message itself (persisted `rxPathCallsigns`).
+ * Unlike MeshCore, DMs may include digis when the wire path carried them.
+ */
+export function meshcomChatMessageRoute(
+  message: Pick<ChatMessage, 'rxPathCallsigns' | 'rxHops'>,
+): ChatMessageRouteLookup {
+  const digis = message.rxPathCallsigns;
+  if (digis != null && digis.length > 0) {
+    return { status: 'digipeaterPath', callsigns: digis };
+  }
+  // Legacy hop-count-only rows (or direct): no digipeater list to show.
+  return UNAVAILABLE_NOT_CAPTURED;
 }
 
 /** Find the RF capture of a Meshtastic message by sender and packet id. */

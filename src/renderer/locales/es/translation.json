@@ -1019,7 +1019,8 @@
       "relayNotReported": "La radio no informó qué nodo transmitió este mensaje.",
       "unavailableDirectOrRoom": "Las rutas se muestran solo para mensajes de canal.",
       "unavailableNotCaptured": "Ruta no disponible: las rutas se mantienen solo para mensajes recientes de esta sesión.",
-      "notRecorded": "Los paquetes en esta red registran cuántos relés pasaron, no cuáles."
+      "notRecorded": "Los paquetes en esta red registran cuántos relés pasaron, no cuáles.",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Marcar como no leído",
     "deleteMessageLocal": "Borrar localmente",
@@ -5494,7 +5495,39 @@
     "senderKeyPrefix": "Clave del remitente (prefijo):",
     "control": "Unidad de control:",
     "advertTs": "ANUNCIO ts:",
-    "advertLatLon": "ANUNCIO lat/lon:"
+    "advertLatLon": "ANUNCIO lat/lon:",
+    "meshcomLegendHint": "Las filas muestran el tráfico entrante de MeshCom (EXTUDP, KISS, BLE APRS o JSON en serie). La ruta indica los indicativos de origen y de los digipeaters.",
+    "meshcomTransportColumn": "Enlaces",
+    "meshcomTransportColumnTooltip": "Cómo llegó esta trama a la aplicación (EXTUDP, KISS, BLE o serie).",
+    "meshcomPathColumnTooltip": "Indicativo de origen y ruta del digipeater, si están presentes.",
+    "meshcomPathEmpty": "No hay ruta de digipeater en este fotograma.",
+    "meshcomKind": {
+      "msg": "MSG",
+      "pos": "POS",
+      "tele": "TELE",
+      "ack": "CONFIRMACIÓN",
+      "other": "OTRA"
+    },
+    "meshcomKindTooltip": {
+      "msg": "Mensaje de texto o de chat",
+      "pos": "Comunicação de posição",
+      "tele": "Telemetría (EXTUDP)",
+      "ack": "Acuse de recibo o de envío",
+      "other": "Otro tipo de montura"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SERIAL",
+      "serverTooltip": "Transmitido a través de un servidor o una pasarela (no son metadatos de RF directos)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP trama APRS",
+      "ble": "BLE notificación APRS por teléfono",
+      "serial": "Línea JSON de puerto serie o netconsole"
+    }
   },
   "remoteAdmin": {
     "errors": {
@@ -9251,7 +9284,12 @@
       "removeGroupListenNotUpdated": "{{name}} estaba oculto aquí, pero el filtro de escucha de nodos no se actualizó (comandos de radio no disponibles).",
       "removeGroupListenRadioChanged": "{{name}} estaba oculto aquí, pero el filtro de escucha de nodos no se actualizó (la radio conectada cambió)."
     },
-    "netConsoleHint": "La consola NET es TCP puerto 2323 (LAN de texto sin cifrar). Habilite --netconsole en el nodo; --passwd es opcional para el inicio de sesión HMAC."
+    "netConsoleHint": "La consola NET es TCP puerto 2323 (LAN de texto sin cifrar). Habilite --netconsole en el nodo; --passwd es opcional para el inicio de sesión HMAC.",
+    "importInvalidJson": "No se ha podido leer el archivo: JSON no válido.",
+    "importNoContactRows": "El archivo no contiene una lista de contactos.",
+    "importCsvEmpty": "El archivo CSV no tiene filas de contactos.",
+    "importSkippedCallsign": "Se ha omitido «{{callsign}}»: indicativo inválido.",
+    "importSaveFailed": "No se ha podido guardar «{{callsign}}» en la base de datos."
   },
   "meshcomDeviceCommands": {
     "description": "Envíe comandos del nodo ICSSW (--help, --settime, --setctry, …) a través del puerto serie o de BLE. Los comandos compatibles con la aplicación coinciden con los de la aplicación oficial de MeshCom; los comandos exclusivos para conexión serie necesitan un enlace a la consola USB.",

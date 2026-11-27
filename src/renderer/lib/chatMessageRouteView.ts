@@ -120,6 +120,29 @@ export function resolveMeshtasticRelay(
   };
 }
 
+/**
+ * MeshCom digipeater hops are already callsigns. Prefer a matching contact's long/short name
+ * when present; otherwise use the callsign for both `name` and `hash` (hopCallsign line).
+ */
+export function resolveMeshcomRouteHops(
+  callsigns: readonly string[],
+  nodes: ReadonlyMap<number, MeshNode>,
+): ChatRouteHop[] {
+  const byCall = new Map<string, MeshNode>();
+  for (const node of nodes.values()) {
+    const longName = node.long_name.trim().toUpperCase();
+    const shortName = node.short_name.trim().toUpperCase();
+    if (longName) byCall.set(longName, node);
+    if (shortName && !byCall.has(shortName)) byCall.set(shortName, node);
+  }
+  return callsigns.map((callsign) => {
+    const key = callsign.trim().toUpperCase();
+    const node = byCall.get(key);
+    const name = nodeName(node) ?? callsign;
+    return { hash: callsign, name, matchCount: 1 };
+  });
+}
+
 /** Resolve names for a lookup result. */
 export function buildChatMessageRouteView(
   lookup: ChatMessageRouteLookup,
@@ -132,6 +155,8 @@ export function buildChatMessageRouteView(
         kind: 'floodPath',
         hops: resolveMeshcoreRouteHops(lookup.hashes, nodes, { myNodeNum: opts.myNodeNum }),
       };
+    case 'digipeaterPath':
+      return { kind: 'floodPath', hops: resolveMeshcomRouteHops(lookup.callsigns, nodes) };
     case 'lastRelay':
       return { kind: 'lastRelay', relay: resolveMeshtasticRelay(lookup.relayByte, nodes, opts) };
     case 'unavailable':
@@ -154,6 +179,11 @@ function hopLine(t: Translate, index: number, hop: ChatRouteHop): string {
   if (hop.name == null) return t('chatPanel.messageRoute.hopUnknown', { index, hash: hop.hash });
   if (hop.matchCount > 1) {
     return t('chatPanel.messageRoute.hopGuess', { index, name: hop.name, hash: hop.hash });
+  }
+  // MeshCom digipeaters: name and hash are the same callsign — no redundant "(CALL)".
+  // Only when unambiguous (matchCount === 1); never hide multi-match warnings.
+  if (hop.matchCount === 1 && hop.name === hop.hash) {
+    return t('chatPanel.messageRoute.hopCallsign', { index, name: hop.name });
   }
   return t('chatPanel.messageRoute.hopNamed', { index, name: hop.name, hash: hop.hash });
 }

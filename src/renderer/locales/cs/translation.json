@@ -1040,7 +1040,8 @@
       "unavailableNotCaptured": "Trasa není k dispozici: trasy jsou uchovávány pouze pro nedávné zprávy z této relace.",
       "notRecorded": "Pakety v této síti zaznamenávají, kolik relé prošly, ne které.",
       "reachedYouInHops_few": "Dorazilo k vám přes {{count}} skoky",
-      "reachedYouInHops_many": "Dorazilo k vám přes {{count}} skoku"
+      "reachedYouInHops_many": "Dorazilo k vám přes {{count}} skoku",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Označit jako nepřečtené",
     "deleteMessageLocal": "Smazat lokálně",
@@ -5540,7 +5541,39 @@
     "senderKeyPrefix": "Klíč odesílatele (prefix):",
     "control": "Řízení:",
     "advertTs": "Čas ADVERT:",
-    "advertLatLon": "Zem. šířka/délka ADVERT:"
+    "advertLatLon": "Zem. šířka/délka ADVERT:",
+    "meshcomKind": {
+      "msg": "ZPRÁVA",
+      "pos": "Prodejna",
+      "tele": "Tele",
+      "ack": "POTV.",
+      "other": "OSTATNÍ"
+    },
+    "meshcomKindTooltip": {
+      "msg": "SMS nebo zpráva v chatu",
+      "pos": "Správa o polohe",
+      "tele": "Telemetrie (EXTUDP)",
+      "ack": "Potvrzení o doručení nebo směrování",
+      "other": "Jiný typ rámu"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SÉRIOVÉ Č.",
+      "serverTooltip": "Přeneseno prostřednictvím serveru nebo brány (ne přímo metadata RF)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP snímek APRS",
+      "ble": "BLE telefonní oznámení APRS",
+      "serial": "Řádek JSON pro sériové připojení nebo netconsole"
+    },
+    "meshcomLegendHint": "Řádky zobrazují příchozí provoz MeshCom (EXTUDP, KISS, BLE APRS nebo sériový JSON). Cesta uvádí volací značky zdroje a digipeateru.",
+    "meshcomTransportColumn": "Odkaz",
+    "meshcomTransportColumnTooltip": "Jak se tento rámec dostal do aplikace (EXTUDP, KISS, BLE nebo sériové).",
+    "meshcomPathColumnTooltip": "Původní volací značka a trasa digipeateru, pokud jsou k dispozici.",
+    "meshcomPathEmpty": "V tomto snímku není žádná cesta digipeateru."
   },
   "remoteAdmin": {
     "errors": {
@@ -9336,7 +9369,12 @@
       "removeGroupListenNotUpdated": "{{name}} byl zde skryt, ale filtr poslechu uzlu nebyl aktualizován (rádiové příkazy nejsou k dispozici).",
       "removeGroupListenRadioChanged": "{{name}} byl zde skryt, ale filtr poslechu uzlu nebyl aktualizován (připojené rádio se změnilo)."
     },
-    "netConsoleHint": "NET Console je TCP port 2323 (nešifrovaná LAN). Povolte --netconsole na uzlu; volitelné --passwd pro přihlášení HMAC."
+    "netConsoleHint": "NET Console je TCP port 2323 (nešifrovaná LAN). Povolte --netconsole na uzlu; volitelné --passwd pro přihlášení HMAC.",
+    "importInvalidJson": "Soubor se nepodařilo přečíst – neplatný JSON.",
+    "importNoContactRows": "Soubor neobsahuje seznam kontaktů.",
+    "importCsvEmpty": "Soubor CSV neobsahuje žádné řádky s kontakty.",
+    "importSkippedCallsign": "Přeskočeno „{{callsign}}“: neplatná volací značka.",
+    "importSaveFailed": "„{{callsign}}“ se nepodařilo uložit do databáze."
   },
   "meshcomDeviceCommands": {
     "description": "Odesílejte příkazy uzlu ICSSW (--help, --settime, --setctry, …) přes sériové rozhraní nebo BLE. Příkazy kompatibilní s aplikací odpovídají oficiální aplikaci MeshCom; příkazy pouze pro sériové rozhraní vyžadují odkaz na konzoli USB.",

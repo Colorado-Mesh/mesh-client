@@ -15,6 +15,7 @@ import LiveTrafficPanel from './LiveTrafficPanel';
 const PROTOCOL_NAMES: Record<LiveMapProtocol, string> = {
   meshtastic: 'Meshtastic',
   meshcore: 'MeshCore',
+  meshcom: 'MeshCom',
 };
 
 /** Live traffic for one protocol in its own window; packets arrive from the main window. */
@@ -110,6 +111,7 @@ export function LiveMapWindow() {
         ourPosition={data.ourPosition}
         meshcorePackets={data.meshcorePackets}
         meshtasticPackets={data.meshtasticPackets}
+        meshcomPackets={data.meshcomPackets}
         pubKeyByNodeId={data.pubKeyByNodeId}
         onNodeClick={selectNode}
         initialView={init.view}

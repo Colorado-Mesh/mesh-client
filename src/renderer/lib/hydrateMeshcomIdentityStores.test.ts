@@ -186,6 +186,35 @@ describe('hydrateMeshcomIdentity', () => {
     expect(messageRecordToChatMessage(row).receivedVia).toBe('network');
   });
 
+  it('rowsToMessageRecords restores digipeater path and legacy hop-count path', () => {
+    const [withDigis, legacyHops] = rowsToMessageRecords([
+      {
+        msg_id: 'path-1',
+        from_call: 'IK5NJM-11',
+        to_call_or_group: '*',
+        text: 'hello',
+        channel_idx: 0,
+        path: 'IK5NJM-11,IW5EIA-12',
+        timestamp: 1,
+      },
+      {
+        msg_id: 'path-legacy',
+        from_call: 'OE1AAA-1',
+        to_call_or_group: '*',
+        text: 'old',
+        channel_idx: 0,
+        path: '2',
+        timestamp: 2,
+      },
+    ]);
+    const digiMsg = messageRecordToChatMessage(withDigis);
+    expect(digiMsg.rxHops).toBe(1);
+    expect(digiMsg.rxPathCallsigns).toEqual(['IW5EIA-12']);
+    const legacyMsg = messageRecordToChatMessage(legacyHops);
+    expect(legacyMsg.rxHops).toBe(2);
+    expect(legacyMsg.rxPathCallsigns).toBeUndefined();
+  });
+
   it('rowsToMessageRecords clears peer to for ALL/group and legacy NFFFFFFFF', () => {
     const allRows = rowsToMessageRecords([
       {

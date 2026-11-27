@@ -618,6 +618,7 @@ export function createElectronAPIMock(): ElectronAPI {
       openJsonFile: vi.fn().mockResolvedValue(null),
     },
     meshcom: {
+      openContactsImportFile: vi.fn().mockResolvedValue(null),
       udp: {
         connect: vi.fn().mockResolvedValue(undefined),
         write: vi.fn().mockResolvedValue(undefined),

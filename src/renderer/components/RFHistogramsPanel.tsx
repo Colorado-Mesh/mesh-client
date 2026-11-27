@@ -8,15 +8,16 @@ import {
   ESTIMATED_NOISE_FLOOR_BUCKETS,
   medianOf,
   NOISE_FLOOR_MIN_ESTIMATE_SAMPLES,
-  readLocalNoiseFloor,
+  readLocalNoiseFloorForProtocol,
 } from '../lib/rfNoiseFloor';
-import type { MeshNode } from '../lib/types';
+import type { MeshNode, MeshProtocol } from '../lib/types';
 import { RFNoiseFloorCard } from './RFNoiseFloorCard';
 
 export interface RFHistogramsPanelProps {
   nodes: Map<number, MeshNode>;
   /** Self node id for the active protocol (App.tsx already computes it). */
   myNodeId: number | null | undefined;
+  protocol?: MeshProtocol;
 }
 
 interface BucketDef {
@@ -108,11 +109,11 @@ function HistogramChart({
   );
 }
 
-export default function RFHistogramsPanel({ nodes, myNodeId }: RFHistogramsPanelProps) {
+export default function RFHistogramsPanel({ nodes, myNodeId, protocol }: RFHistogramsPanelProps) {
   const { t } = useTranslation();
 
   const selfNode = myNodeId != null ? nodes.get(myNodeId) : undefined;
-  const localReading = readLocalNoiseFloor(selfNode);
+  const localReading = readLocalNoiseFloorForProtocol(selfNode, protocol);
   useRfNoiseFloorHistory({
     enabled: localReading != null,
     nodeId: myNodeId,

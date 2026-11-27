@@ -46,7 +46,7 @@ import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
-import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
+import type { MeshcomRawPacketEntry, MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { routeWeightToColor, routeWeightToStroke } from '../lib/routeWeightUtils';
 import type { IdentityId, MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
@@ -572,6 +572,7 @@ export interface MapPanelProps {
   useFahrenheit?: boolean;
   meshcorePackets?: readonly RxPacketEntry[];
   meshtasticPackets?: readonly MeshtasticRawPacketEntry[];
+  meshcomPackets?: readonly MeshcomRawPacketEntry[];
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
 }
 
@@ -630,8 +631,16 @@ function MapPanel(props: MapPanelProps) {
     [isCurrentProtocol],
   );
   const supportsTraffic =
-    props.meshcorePackets !== undefined || props.meshtasticPackets !== undefined;
+    props.meshcorePackets !== undefined ||
+    props.meshtasticPackets !== undefined ||
+    props.meshcomPackets !== undefined;
   if (!supportsTraffic) return active ? <OverviewMapPanel {...props} showMapsDocs /> : null;
+  const liveMapProtocol =
+    props.meshcorePackets !== undefined
+      ? 'meshcore'
+      : props.meshcomPackets !== undefined
+        ? 'meshcom'
+        : 'meshtastic';
   return (
     <div
       data-panel-anchor="Map"
@@ -662,12 +671,13 @@ function MapPanel(props: MapPanelProps) {
         {(traffic || trafficVisited) && (
           <LiveTrafficWindowSlot
             active={active && traffic}
-            protocol={props.meshcorePackets !== undefined ? 'meshcore' : 'meshtastic'}
+            protocol={liveMapProtocol}
             nodes={props.nodes}
             myNodeNum={props.myNodeNum}
             ourPosition={props.ourPosition}
             meshcorePackets={props.meshcorePackets}
             meshtasticPackets={props.meshtasticPackets}
+            meshcomPackets={props.meshcomPackets}
             pubKeyByNodeId={props.pubKeyByNodeId}
             onNodeClick={props.onNodeClick}
             onWindowNodeClick={props.onLiveWindowNodeClick}

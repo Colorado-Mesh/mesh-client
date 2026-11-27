@@ -156,6 +156,16 @@ describe('RFHistogramsPanel', () => {
     expect(screen.getByText('No nodes observed yet')).toBeInTheDocument();
   });
 
+  it('MeshCom ignores live noise_floor on self (estimate-only)', () => {
+    const nodes = new Map<number, MeshNode>([
+      [SELF, makeNode({ node_id: SELF, noise_floor: -108, rssi: -95, snr: 6 })],
+      [2, makeNode({ node_id: 2, rssi: -98, snr: 4, hops_away: 1 })],
+    ]);
+    render(<RFHistogramsPanel nodes={nodes} myNodeId={SELF} protocol="meshcom" />);
+    expect(screen.getByTestId('rf-noise-floor-card')).toBeInTheDocument();
+    expect(screen.queryByText('-108 dBm')).not.toBeInTheDocument();
+  });
+
   it('has no axe violations on the live state', async () => {
     const nodes = new Map<number, MeshNode>([
       [
