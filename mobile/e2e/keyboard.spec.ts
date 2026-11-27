@@ -56,3 +56,35 @@ test('phone: the bottom bar steps aside while typing', async ({ browser }) => {
   expect(unexpectedErrors(boot.pageErrors)).toEqual([]);
   await context.close();
 });
+
+test('phone: the startup location strip folds away while typing', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 412, height: 915 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 2,
+  });
+  const page = await context.newPage();
+  const boot = await bootApp(page, h);
+  // A fresh profile has no position, so the strip asks where this phone is.
+  const strip = page.locator('div:has(> [data-mobile-location-prompt])');
+  const box = () =>
+    strip.evaluate((n) => ({
+      height: Math.round(n.getBoundingClientRect().height),
+      display: getComputedStyle(n).display,
+    }));
+  await expect.poll(async () => (await box()).height).toBeGreaterThan(40);
+
+  await page.evaluate(() => {
+    document.documentElement.dataset.mobileKeyboard = 'open';
+  });
+  // Folded, not removed (same reason as the bar: its accessibility nodes stay).
+  await expect.poll(box).toEqual({ height: 0, display: 'block' });
+
+  await page.evaluate(() => {
+    delete document.documentElement.dataset.mobileKeyboard;
+  });
+  await expect.poll(async () => (await box()).height).toBeGreaterThan(40);
+  expect(unexpectedErrors(boot.pageErrors)).toEqual([]);
+  await context.close();
+});

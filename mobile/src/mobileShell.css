@@ -209,6 +209,14 @@ html[data-mesh-mobile][data-mobile-keyboard='open']
   border-top-width: 0;
 }
 
+/* The startup location strip (its wrapper div above the panel) folds away the same way. */
+html[data-mesh-mobile][data-mobile-keyboard='open'] div:has(> [data-mobile-location-prompt]) {
+  max-height: 0;
+  overflow: hidden;
+  padding-block: 0;
+  border-bottom-width: 0;
+}
+
 html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav='right'] {
   transform: translateX(100%);
 }

@@ -28,7 +28,21 @@ import { useLocationPromptStore } from '@/renderer/stores/locationPromptStore';
 
 export * from '@/renderer/components/SetLocationCard';
 
+/**
+ * The startup strip above every panel is marked so `mobileShell.css` can fold it away while the
+ * keyboard is up: on a phone it would otherwise take about a third of what the keyboard leaves,
+ * and the conversation being typed into shrank to two lines. It returns when the keyboard closes.
+ */
 export default function SetLocationCard(props: SetLocationCardProps) {
+  if (props.variant !== 'startup') return <LocationCard {...props} />;
+  return (
+    <div data-mobile-location-prompt="">
+      <LocationCard {...props} />
+    </div>
+  );
+}
+
+function LocationCard(props: SetLocationCardProps) {
   const { t } = useTranslation();
   const headingId = useId();
   const saved = useSavedLocations();
