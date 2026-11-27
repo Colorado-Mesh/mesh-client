@@ -26,9 +26,27 @@ import {
   requestUi,
 } from '../hostChannel';
 import { mobileFetch } from './nativeFetch';
-import { MOBILE_PATHS } from './paths';
+import { mkdirSync } from './node/fs';
+import { EXPORTS_ROOT, MOBILE_PATHS } from './paths';
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * The UI's save dialog answers with a fresh folder under `/exports` per save (the file goes to
+ * the share sheet once written). On desktop the user picks a folder that already exists, so main
+ * writes without creating one; create it here, before main writes, or the write fails with ENOENT
+ * (chat export showed "Export failed" on Android).
+ * @internal exported for tests
+ */
+export function prepareExportTarget<T extends { canceled: boolean; filePath?: string }>(
+  result: T,
+): T {
+  const target = result.filePath;
+  if (!result.canceled && target?.startsWith(`${EXPORTS_ROOT}/`)) {
+    mkdirSync(target.slice(0, target.lastIndexOf('/')), { recursive: true });
+  }
+  return result;
+}
 
 const NON_CALLABLE_KEYS = new Set<PropertyKey>(['then', 'catch', 'finally', 'toJSON']);
 
@@ -651,9 +669,15 @@ export const dialog = withInertFallback(
       const opts = (args.length > 1 ? args[1] : args[0]) as Record<string, unknown> | undefined;
       return requestUi<OpenDialogResult>('dialog.open', opts ?? {});
     },
-    showSaveDialog: (...args: unknown[]): Promise<{ canceled: boolean; filePath?: string }> => {
+    showSaveDialog: async (
+      ...args: unknown[]
+    ): Promise<{ canceled: boolean; filePath?: string }> => {
       const opts = (args.length > 1 ? args[1] : args[0]) as Record<string, unknown> | undefined;
-      return requestUi('dialog.save', opts ?? {});
+      const result = await requestUi<{ canceled: boolean; filePath?: string }>(
+        'dialog.save',
+        opts ?? {},
+      );
+      return prepareExportTarget(result);
     },
     showMessageBox: (
       ...args: unknown[]
