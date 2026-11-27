@@ -2038,7 +2038,11 @@
       "statusConnected": "Подключено",
       "statusConnecting": "Соедишггельный",
       "statusError": "Ошибка",
-      "statusDisconnected": "Выкл."
+      "statusDisconnected": "Выкл.",
+      "settingsHeading": "Настройка сети",
+      "reconnect": "повторное подключение",
+      "reconnectAria": "Подключиться снова {{name}}",
+      "unnamedFeed": "Безымянный канал"
     }
   },
   "contactGroupsModal": {

@@ -1998,7 +1998,11 @@
       "statusConnected": "Bağlandı",
       "statusConnecting": "Bağlanıyor",
       "statusError": "Hata",
-      "statusDisconnected": "Kapalı"
+      "statusDisconnected": "Kapalı",
+      "settingsHeading": "Bağlantı ayarları",
+      "reconnect": "Yeniden bağlanınız",
+      "reconnectAria": "{{name}} ile yeniden bağlantı kurun",
+      "unnamedFeed": "Adsız akış"
     }
   },
   "contactGroupsModal": {

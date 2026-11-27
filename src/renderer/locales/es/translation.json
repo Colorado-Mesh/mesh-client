@@ -1998,7 +1998,11 @@
       "statusConnected": "Conectado",
       "statusConnecting": "Conectando",
       "statusError": "Error",
-      "statusDisconnected": "Apagado"
+      "statusDisconnected": "Apagado",
+      "settingsHeading": "Ajustes de conexión",
+      "reconnect": "Reconectar",
+      "reconnectAria": "Volver a conectar {{name}}",
+      "unnamedFeed": "Feed sin nombre"
     }
   },
   "contactGroupsModal": {

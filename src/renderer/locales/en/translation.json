@@ -1927,7 +1927,6 @@
     "wifiTcp": "WiFi/TCP (fast)",
     "tcpIp": "TCP/IP",
     "kissTcp": "KISS/TCP",
-    "netConsole": "NET Console",
     "deviceAddress": "Device Address",
     "deviceAddressPlaceholder": "meshtastic.local, 192.168.1.x, or [fd00::1]",
     "deviceAddressHint": "Enter hostname or IP address (without http://)",
@@ -2002,7 +2001,11 @@
       "statusConnected": "Connected",
       "statusConnecting": "Connecting",
       "statusError": "Error",
-      "statusDisconnected": "Off"
+      "statusDisconnected": "Off",
+      "settingsHeading": "Connection settings",
+      "reconnect": "Reconnect",
+      "reconnectAria": "Reconnect {{name}}",
+      "unnamedFeed": "Unnamed feed"
     },
     "hintMeshtasticBle1": "Ensure your Meshtastic device has Bluetooth enabled and is in range.",
     "hintMeshtasticBle2": "Click Connect to scan — a device picker will appear with discovered Meshtastic devices.",

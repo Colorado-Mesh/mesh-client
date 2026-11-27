@@ -145,6 +145,7 @@ import {
   canEnableMeshcoreMqttFeed,
   createMeshcoreMqttFeed,
   deleteMeshcoreMqttFeed,
+  loadMeshcoreMqttChatName,
   loadMeshcoreMqttFeeds,
   MESHCORE_MQTT_FEED_NAME_MAX_LENGTH,
   meshcoreFeedOverrideWarning,
@@ -630,6 +631,9 @@ export default function ConnectionPanel({
   const [meshcoreFeeds, setMeshcoreFeeds] = useState<MeshcoreMqttFeed[]>(() =>
     loadMeshcoreMqttFeeds(),
   );
+  const [meshcoreChatName, setMeshcoreChatName] = useState(() => loadMeshcoreMqttChatName());
+  const meshcoreChatLabel =
+    meshcoreChatName.trim() || t('connectionPanel.meshcoreFeeds.chatOption');
   const [meshcoreEditorTarget, setMeshcoreEditorTarget] = useState<string>(
     MESHCORE_MQTT_CHAT_CONNECTION_ID,
   );
@@ -827,8 +831,8 @@ export default function ConnectionPanel({
       meshcoreFeedsHydratedRef.current = true;
       return;
     }
-    persistMeshcoreMqttFeeds(meshcoreFeeds);
-  }, [meshcoreFeeds]);
+    persistMeshcoreMqttFeeds(meshcoreFeeds, meshcoreChatName);
+  }, [meshcoreFeeds, meshcoreChatName]);
 
   // One-time Colorado region gate for existing Colorado MQTT users (blocks auto-launch until ack)
   useEffect(() => {
@@ -2959,6 +2963,9 @@ export default function ConnectionPanel({
     ) : null;
 
   // ─── MeshCore analyzer feeds (publish-only extra brokers) ──────────
+  const meshcoreFeedLabel = (feed: MeshcoreMqttFeed): string =>
+    feed.name.trim() || t('connectionPanel.meshcoreFeeds.unnamedFeed');
+
   const meshcoreConnectionStatus = (connectionId: string): MQTTStatus =>
     connectionId === MESHCORE_MQTT_CHAT_CONNECTION_ID
       ? mqttStatus
@@ -3075,12 +3082,10 @@ export default function ConnectionPanel({
           }}
           className={SELECT_CLASS}
         >
-          <option value={MESHCORE_MQTT_CHAT_CONNECTION_ID}>
-            {t('connectionPanel.meshcoreFeeds.chatOption')}
-          </option>
+          <option value={MESHCORE_MQTT_CHAT_CONNECTION_ID}>{meshcoreChatLabel}</option>
           {meshcoreFeeds.map((feed) => (
             <option key={feed.id} value={feed.id}>
-              {feed.name}
+              {meshcoreFeedLabel(feed)}
             </option>
           ))}
         </select>
@@ -3103,7 +3108,7 @@ export default function ConnectionPanel({
                       : 'bg-ink-600'
               }`}
             />
-            <span className="text-ink-200">{t('connectionPanel.meshcoreFeeds.chatOption')}</span>
+            <span className="text-ink-200">{meshcoreChatLabel}</span>
             <span className="text-muted">
               {meshcoreFeedStatusLabel(meshcoreConnectionStatus(MESHCORE_MQTT_CHAT_CONNECTION_ID))}
             </span>
@@ -3127,12 +3132,14 @@ export default function ConnectionPanel({
                 <button
                   type="button"
                   className="text-ink-200 underline-offset-2 hover:underline"
-                  aria-label={t('connectionPanel.meshcoreFeeds.editAria', { name: feed.name })}
+                  aria-label={t('connectionPanel.meshcoreFeeds.editAria', {
+                    name: meshcoreFeedLabel(feed),
+                  })}
                   onClick={() => {
                     setMeshcoreEditorTarget(feed.id);
                   }}
                 >
-                  {feed.name}
+                  {meshcoreFeedLabel(feed)}
                 </button>
                 <span className="text-muted">{meshcoreFeedStatusLabel(status)}</span>
                 <label className="text-muted flex items-center gap-1">
@@ -3140,7 +3147,7 @@ export default function ConnectionPanel({
                     type="checkbox"
                     checked={feed.enabled}
                     aria-label={t('connectionPanel.meshcoreFeeds.enabledAria', {
-                      name: feed.name,
+                      name: meshcoreFeedLabel(feed),
                     })}
                     onChange={(e) => {
                       setMeshcoreFeedEnabled(feed, e.target.checked);
@@ -3150,22 +3157,35 @@ export default function ConnectionPanel({
                   {t('connectionPanel.meshcoreFeeds.connectOnLaunch')}
                 </label>
                 {status === 'connected' || status === 'connecting' ? (
-                  <Button
-                    size="sm"
-                    aria-label={t('connectionPanel.meshcoreFeeds.disconnectAria', {
-                      name: feed.name,
-                    })}
-                    onClick={() => {
-                      disconnectMeshcoreFeed(feed.id);
-                    }}
-                  >
-                    {t('connectionPanel.meshcoreFeeds.disconnect')}
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      aria-label={t('connectionPanel.meshcoreFeeds.reconnectAria', {
+                        name: meshcoreFeedLabel(feed),
+                      })}
+                      onClick={() => {
+                        connectMeshcoreFeedNow(feed);
+                      }}
+                    >
+                      {t('connectionPanel.meshcoreFeeds.reconnect')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      aria-label={t('connectionPanel.meshcoreFeeds.disconnectAria', {
+                        name: feed.name,
+                      })}
+                      onClick={() => {
+                        disconnectMeshcoreFeed(feed.id);
+                      }}
+                    >
+                      {t('connectionPanel.meshcoreFeeds.disconnect')}
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     size="sm"
                     aria-label={t('connectionPanel.meshcoreFeeds.connectAria', {
-                      name: feed.name,
+                      name: meshcoreFeedLabel(feed),
                     })}
                     onClick={() => {
                       connectMeshcoreFeedNow(feed);
@@ -3177,7 +3197,9 @@ export default function ConnectionPanel({
                 <Button
                   size="sm"
                   variant="danger"
-                  aria-label={t('connectionPanel.meshcoreFeeds.deleteAria', { name: feed.name })}
+                  aria-label={t('connectionPanel.meshcoreFeeds.deleteAria', {
+                    name: meshcoreFeedLabel(feed),
+                  })}
                   onClick={() => {
                     deleteMeshcoreFeedNow(feed);
                   }}
@@ -3216,6 +3238,458 @@ export default function ConnectionPanel({
         </p>
       </div>
     ) : null;
+
+  const meshcoreConnectionNameField =
+    protocol === 'meshcore' ? (
+      <div data-setting-anchor="connection.mqtt.meshcoreFeedName" className="space-y-1">
+        <label htmlFor="meshcore-feed-name" className="text-muted text-xs">
+          {t('connectionPanel.meshcoreFeeds.nameLabel')}
+        </label>
+        <input
+          id="meshcore-feed-name"
+          type="text"
+          value={editingMeshcoreFeed ? editingMeshcoreFeed.name : meshcoreChatName}
+          maxLength={MESHCORE_MQTT_FEED_NAME_MAX_LENGTH}
+          placeholder={meshcoreChatLabel}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (editingMeshcoreFeed) {
+              setMeshcoreFeeds((prev) =>
+                updateMeshcoreMqttFeed(prev, editingMeshcoreFeed.id, { name: value }),
+              );
+            } else {
+              setMeshcoreChatName(value);
+            }
+          }}
+          onBlur={(e) => {
+            const trimmed = e.currentTarget.value.trim();
+            if (editingMeshcoreFeed) {
+              setMeshcoreFeeds((prev) =>
+                updateMeshcoreMqttFeed(prev, editingMeshcoreFeed.id, { name: trimmed }),
+              );
+            } else {
+              setMeshcoreChatName(trimmed);
+            }
+          }}
+          className={INPUT_CLASS}
+        />
+      </div>
+    ) : null;
+
+  const meshcorePresetEditor =
+    protocol === 'meshcore' ? (
+      <>
+        {protocol === 'meshcore' && (
+          <div data-setting-anchor="connection.mqtt.meshcorePreset" className="space-y-1">
+            <p id="conn-meshcore-network-preset" className="text-muted text-xs">
+              {t('connectionPanel.networkPreset')}
+            </p>
+            <MqttNetworkPresetSelect
+              key={`meshcore-preset-${meshcoreEditorTarget}-${meshcorePresetSelectNonce}`}
+              id="conn-meshcore-network-preset-select"
+              labelledById="conn-meshcore-network-preset"
+              value={activeMeshcorePreset}
+              options={[
+                { value: 'letsmesh', label: t('connectionPanel.meshcorePreset.letsmesh') },
+                { value: 'meshmapper', label: t('connectionPanel.meshcorePreset.meshmapper') },
+                {
+                  value: 'coloradomesh',
+                  label: t('connectionPanel.meshcorePreset.coloradomesh'),
+                },
+                { value: 'waev', label: t('connectionPanel.meshcorePreset.waev') },
+                { value: 'meshatse', label: t('connectionPanel.meshcorePreset.meshatse') },
+                { value: 'meshcoreca', label: t('connectionPanel.meshcorePreset.meshcoreca') },
+                { value: 'eastmesh', label: t('connectionPanel.meshcorePreset.eastmesh') },
+                { value: 'ripple', label: t('connectionPanel.meshcorePreset.ripple') },
+                { value: 'custom', label: t('connectionPanel.meshcorePreset.custom') },
+              ]}
+              onSelect={(value) => {
+                const id = value as MeshcoreMqttPreset;
+                if (id === 'custom') {
+                  setActiveMeshcorePreset(id);
+                  return;
+                }
+                if (id === 'ripple') {
+                  if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) {
+                    // Cancelled: force the controlled select to snap back to the current preset.
+                    setMeshcorePresetSelectNonce((n) => n + 1);
+                    return;
+                  }
+                }
+                if (id === 'coloradomesh') {
+                  if (!window.confirm(t('connectionPanel.coloradoPresetConfirm'))) {
+                    setMeshcorePresetSelectNonce((n) => n + 1);
+                    return;
+                  }
+                  setRendererStorageItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+                }
+                setActiveMeshcorePreset(id);
+                const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                setActiveMqttSettings((prev) => ({
+                  ...applyMeshcoreMqttPreset(id, prev),
+                  username: fromIdentity || prev.username,
+                }));
+              }}
+            />
+            {activeMeshcorePreset === 'coloradomesh' && (
+              <p className="text-xs text-orange-400">{t('connectionPanel.coloradoServerNote')}</p>
+            )}
+            {activeMeshcorePreset === 'meshcoreca' && (
+              <div
+                data-setting-anchor="connection.mqtt.meshcoreCaBroker"
+                className="flex flex-wrap items-center gap-2 pt-1"
+                role="group"
+                aria-label={t('connectionPanel.meshcoreCaBroker')}
+              >
+                <span className="text-muted text-xs">{t('connectionPanel.broker')}</span>
+                <button
+                  type="button"
+                  aria-pressed={activeMqttSettings.server === MESHCORE_CA_HOST_PRIMARY}
+                  onClick={() => {
+                    const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                    setActiveMqttSettings((prev) => ({
+                      ...prev,
+                      server: MESHCORE_CA_HOST_PRIMARY,
+                      port: 443,
+                      useWebSocket: true,
+                      tlsEnabled: true,
+                      wsPath: '/mqtt',
+                      keepalive: 30,
+                      username: fromIdentity || prev.username,
+                    }));
+                  }}
+                  className={chipClass(activeMqttSettings.server === MESHCORE_CA_HOST_PRIMARY)}
+                >
+                  {t('connectionPanel.meshcoreCaPrimary')}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={activeMqttSettings.server === MESHCORE_CA_HOST_BACKUP}
+                  onClick={() => {
+                    const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                    setActiveMqttSettings((prev) => ({
+                      ...prev,
+                      server: MESHCORE_CA_HOST_BACKUP,
+                      port: 443,
+                      useWebSocket: true,
+                      tlsEnabled: true,
+                      wsPath: '/mqtt',
+                      keepalive: 30,
+                      username: fromIdentity || prev.username,
+                    }));
+                  }}
+                  className={chipClass(activeMqttSettings.server === MESHCORE_CA_HOST_BACKUP)}
+                >
+                  {t('connectionPanel.meshcoreCaBackup')}
+                </button>
+              </div>
+            )}
+            {activeMeshcorePreset === 'letsmesh' && (
+              <div
+                data-setting-anchor="connection.mqtt.letsMeshRegion"
+                className="flex flex-wrap items-center gap-2 pt-1"
+                role="group"
+                aria-label={t('connectionPanel.letsMeshRegion')}
+              >
+                <span className="text-muted text-xs">{t('connectionPanel.region')}</span>
+                <button
+                  type="button"
+                  aria-pressed={activeMqttSettings.server === LETSMESH_HOST_US}
+                  onClick={() => {
+                    const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                    setActiveMqttSettings((prev) => ({
+                      ...prev,
+                      server: LETSMESH_HOST_US,
+                      port: 443,
+                      useWebSocket: true,
+                      tlsEnabled: true,
+                      wsPath: '/ws',
+                      keepalive: 60,
+                      username: fromIdentity || prev.username,
+                    }));
+                  }}
+                  className={chipClass(activeMqttSettings.server === LETSMESH_HOST_US)}
+                >
+                  {t('connectionPanel.letsMeshRegionUs')}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={activeMqttSettings.server === LETSMESH_HOST_EU}
+                  onClick={() => {
+                    const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                    setActiveMqttSettings((prev) => ({
+                      ...prev,
+                      server: LETSMESH_HOST_EU,
+                      port: 443,
+                      useWebSocket: true,
+                      tlsEnabled: true,
+                      wsPath: '/ws',
+                      keepalive: 60,
+                      username: fromIdentity || prev.username,
+                    }));
+                  }}
+                  className={chipClass(activeMqttSettings.server === LETSMESH_HOST_EU)}
+                >
+                  {t('connectionPanel.letsMeshRegionEu')}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {protocol === 'meshcore' &&
+          usesMeshcoreDeviceSigningMqtt(activeMeshcorePreset, activeMqttSettings) &&
+          letsMeshPresetConfigurationDeviation(activeMqttSettings) && (
+            <div className={NOTICE_CLASS.warn}>
+              {meshcorePresetDeviationText(t, activeMeshcorePreset)}
+            </div>
+          )}
+        {protocol === 'meshcore' &&
+          usesMeshcoreDeviceSigningMqtt(activeMeshcorePreset, activeMqttSettings) && (
+            <div className={hasPrivateKey ? NOTICE_CLASS.success : NOTICE_CLASS.warn}>
+              {hasPrivateKey && readMeshcoreIdentity()?.public_key
+                ? t('connectionPanel.meshcoreMqttIdentity.hasPrivateKey')
+                : t('connectionPanel.meshcoreMqttIdentity.noPrivateKey')}
+            </div>
+          )}
+        {protocol === 'meshcore' &&
+          usesMeshcoreDeviceSigningMqtt(activeMeshcorePreset, activeMqttSettings) &&
+          hasPrivateKey &&
+          meshcoreClientKeyHex !== '' && (
+            <div className="space-y-1">
+              <span className={FIELD_LABEL_CLASS}>
+                {t('connectionPanel.meshcoreMqttIdentity.clientKey')}
+              </span>
+              <CopyField
+                value={meshcoreClientKeyHex}
+                display={shortenClientKey(meshcoreClientKeyHex)}
+                copyLabel={t('connectionPanel.meshcoreMqttIdentity.copyClientKey')}
+              />
+            </div>
+          )}
+        {protocol === 'meshcore' && editingMeshcoreFeed && (
+          <div className={`flex items-start gap-2 ${NOTICE_CLASS.info}`}>
+            <span className="leading-snug">
+              {t('connectionPanel.meshcoreFeeds.packetLoggerAlwaysOn', {
+                topic: `{topicPrefix}/meshcore/packets`,
+              })}
+            </span>
+          </div>
+        )}
+        {protocol === 'meshcore' && !editingMeshcoreFeed && (
+          <div
+            data-setting-anchor="connection.mqtt.meshcorePacketLogger"
+            className={`flex items-start gap-2 ${NOTICE_CLASS.info}`}
+          >
+            <input
+              type="checkbox"
+              id="meshcore-packet-logger"
+              checked={activeMqttSettings.meshcorePacketLoggerEnabled ?? false}
+              onChange={(e) => {
+                updateMqtt('meshcorePacketLoggerEnabled', e.target.checked);
+              }}
+              className={`${CHECKBOX_CLASS} mt-0.5`}
+            />
+            <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
+              {t('connectionPanel.meshcorePacketLogger.label', {
+                topic: `{topicPrefix}/meshcore/packets`,
+              })}
+            </label>
+          </div>
+        )}
+      </>
+    ) : null;
+
+  /** Shared MQTT broker fields (all protocols); the MeshCore preset/identity block is separate. */
+  const mqttConnectionFields = (
+    <>
+      <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
+        <div data-setting-anchor="connection.mqtt.server" className="space-y-1">
+          <label htmlFor="mqtt-server" className="text-muted text-xs">
+            {t('connectionPanel.server')}
+          </label>
+          <input
+            id="mqtt-server"
+            type="text"
+            value={activeMqttSettings.server}
+            onChange={(e) => {
+              updateMqtt('server', e.target.value);
+            }}
+            className={INPUT_CLASS}
+          />
+        </div>
+        <div data-setting-anchor="connection.mqtt.port" className="space-y-1">
+          <label htmlFor="mqtt-port" className="text-muted text-xs">
+            {t('connectionPanel.port')}
+          </label>
+          <input
+            id="mqtt-port"
+            type="number"
+            value={activeMqttSettings.port}
+            onChange={(e) => {
+              updateMqtt('port', clampTcpPort(e.target.value, 1883));
+            }}
+            className={INPUT_CLASS}
+          />
+        </div>
+      </div>
+      <div data-setting-anchor="connection.mqtt.tls" className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="mqtt-tls-enabled"
+          checked={
+            activeMqttSettings.tlsEnabled === true ||
+            (activeMqttSettings.tlsEnabled !== false && activeMqttTls)
+          }
+          onChange={(e) => {
+            updateMqtt('tlsEnabled', e.target.checked);
+          }}
+          className={CHECKBOX_CLASS}
+        />
+        <label htmlFor="mqtt-tls-enabled" className="text-body text-ink-200 cursor-pointer">
+          {t('connectionPanel.mqttTlsEnabled')}
+        </label>
+      </div>
+      {activeMqttTls && (
+        <div
+          data-setting-anchor="connection.mqtt.tlsInsecure"
+          className={`flex items-center gap-2 ${NOTICE_CLASS.warn}`}
+        >
+          <input
+            type="checkbox"
+            id="mqtt-tls-insecure"
+            checked={activeMqttSettings.tlsInsecure ?? false}
+            onChange={(e) => {
+              updateMqtt('tlsInsecure', e.target.checked);
+            }}
+            className={CHECKBOX_CLASS}
+          />
+          <label htmlFor="mqtt-tls-insecure" className="cursor-pointer text-xs text-orange-200">
+            {t('connectionPanel.mqttTlsInsecure')}
+          </label>
+        </div>
+      )}
+      <div data-setting-anchor="connection.mqtt.webSocket" className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="mqtt-websocket"
+          checked={activeMqttSettings.useWebSocket ?? false}
+          onChange={(e) => {
+            updateMqtt('useWebSocket', e.target.checked);
+          }}
+          className={CHECKBOX_CLASS}
+        />
+        <label htmlFor="mqtt-websocket" className="text-body text-ink-200 cursor-pointer">
+          {t('connectionPanel.useWebSocket')}{' '}
+          <span className="text-muted">{t('connectionPanel.wsRequired')}</span>
+        </label>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div data-setting-anchor="connection.mqtt.username" className="space-y-1">
+          <label htmlFor="mqtt-username" className="text-muted text-xs">
+            {t('connectionPanel.username')}
+          </label>
+          <input
+            id="mqtt-username"
+            type="text"
+            value={activeMqttSettings.username}
+            onChange={(e) => {
+              updateMqtt('username', e.target.value);
+            }}
+            className={INPUT_CLASS}
+          />
+        </div>
+        <div data-setting-anchor="connection.mqtt.password" className="space-y-1">
+          <label htmlFor="mqtt-password" className="text-muted text-xs">
+            {t('connectionPanel.password')}
+          </label>
+          <div className="relative">
+            <input
+              id="mqtt-password"
+              type={showMqttPassword ? 'text' : 'password'}
+              value={activeMqttSettings.password}
+              onChange={(e) => {
+                updateMqtt('password', e.target.value);
+              }}
+              className={`${INPUT_CLASS} pr-14`}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setShowMqttPassword((v) => !v);
+              }}
+              aria-label={
+                showMqttPassword
+                  ? t('connectionPanel.hidePassword')
+                  : t('connectionPanel.showPassword')
+              }
+              className="text-muted hover:text-ink-200 absolute top-1/2 right-2.5 -translate-y-1/2 text-xs"
+            >
+              {showMqttPassword
+                ? t('connectionPanel.hidePassword')
+                : t('connectionPanel.showPassword')}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div data-setting-anchor="connection.mqtt.topicPrefix" className="space-y-1">
+        <div className="flex items-center gap-1.5">
+          <label htmlFor="mqtt-topic-prefix" className="text-muted text-xs">
+            {t('connectionPanel.topicPrefix')}
+          </label>
+          <HelpTooltip
+            text={
+              protocol === 'meshtastic'
+                ? t('connectionPanel.topicPrefixHelp.meshtastic')
+                : protocol === 'meshcom'
+                  ? t('connectionPanel.topicPrefixHelp.meshcom')
+                  : isDeviceSigningMeshcorePreset(activeMeshcorePreset) ||
+                      isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings)
+                    ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
+                    : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
+            }
+          />
+        </div>
+        <input
+          id="mqtt-topic-prefix"
+          type="text"
+          value={activeMqttSettings.topicPrefix}
+          onChange={(e) => {
+            updateMqtt('topicPrefix', e.target.value, false);
+          }}
+          onBlur={() => {
+            if (protocol !== 'meshcore') return;
+            if (!isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings)) return;
+            const parsed = parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix);
+            if (parsed.ok && parsed.normalized !== activeMqttSettings.topicPrefix) {
+              updateMqtt('topicPrefix', parsed.normalized, false);
+            }
+          }}
+          className={INPUT_CLASS}
+          placeholder={t('connectionPanel.topicPrefixPlaceholder')}
+          aria-invalid={
+            protocol === 'meshcore' &&
+            isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings) &&
+            !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok
+          }
+        />
+        {protocol === 'meshcore' &&
+        isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings) &&
+        !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok ? (
+          <p className="text-xs text-orange-400" role="alert">
+            {t('connectionPanel.topicPrefixInvalidIata')}
+          </p>
+        ) : null}
+        {radioMqttRootDiverges ? (
+          <p className="text-xs text-orange-400" role="status">
+            {t('connectionPanel.radioMqttRootDivergesWarning', {
+              radioRoot: radioMqttRoot,
+              appPrefix: normalizeMeshtasticMqttTopicPrefix(activeMqttSettings.topicPrefix),
+            })}
+          </p>
+        ) : null}
+      </div>
+    </>
+  );
 
   /** Connected card always summarises the chat broker, even while a feed is selected for editing. */
   const mqttSummarySettings = protocol === 'meshcore' ? meshcoreMqttSettings : activeMqttSettings;
@@ -3271,6 +3745,16 @@ export default function ConnectionPanel({
               #
             </LabelValue>
           </LabelValueGrid>
+          {protocol === 'meshcore' && (
+            <div className="border-ink-800 space-y-4 border-t pt-4">
+              <p className="text-muted text-xs">
+                {t('connectionPanel.meshcoreFeeds.settingsHeading')}
+              </p>
+              {meshcoreConnectionNameField}
+              {meshcorePresetEditor}
+              {mqttConnectionFields}
+            </div>
+          )}
           {protocol === 'meshtastic' && mqttProfiles.length > 0 ? (
             <div data-setting-anchor="connection.mqtt.switchProfile" className="space-y-1">
               <p id="conn-meshtastic-live-profile" className="text-muted text-xs">
@@ -3478,430 +3962,9 @@ export default function ConnectionPanel({
             </div>
           )}
           {meshcoreFeedsPanel}
-          {protocol === 'meshcore' && editingMeshcoreFeed && (
-            <div data-setting-anchor="connection.mqtt.meshcoreFeedName" className="space-y-1">
-              <label htmlFor="meshcore-feed-name" className="text-muted text-xs">
-                {t('connectionPanel.meshcoreFeeds.nameLabel')}
-              </label>
-              <input
-                id="meshcore-feed-name"
-                type="text"
-                value={editingMeshcoreFeed.name}
-                maxLength={MESHCORE_MQTT_FEED_NAME_MAX_LENGTH}
-                onChange={(e) => {
-                  setMeshcoreFeeds((prev) =>
-                    updateMeshcoreMqttFeed(prev, editingMeshcoreFeed.id, {
-                      name: e.target.value,
-                    }),
-                  );
-                }}
-                className={INPUT_CLASS}
-              />
-            </div>
-          )}
-          {protocol === 'meshcore' && (
-            <div data-setting-anchor="connection.mqtt.meshcorePreset" className="space-y-1">
-              <p id="conn-meshcore-network-preset" className="text-muted text-xs">
-                {t('connectionPanel.networkPreset')}
-              </p>
-              <MqttNetworkPresetSelect
-                key={`meshcore-preset-${meshcorePresetSelectNonce}`}
-                id="conn-meshcore-network-preset-select"
-                labelledById="conn-meshcore-network-preset"
-                value={activeMeshcorePreset}
-                options={[
-                  { value: 'letsmesh', label: t('connectionPanel.meshcorePreset.letsmesh') },
-                  { value: 'meshmapper', label: t('connectionPanel.meshcorePreset.meshmapper') },
-                  {
-                    value: 'coloradomesh',
-                    label: t('connectionPanel.meshcorePreset.coloradomesh'),
-                  },
-                  { value: 'waev', label: t('connectionPanel.meshcorePreset.waev') },
-                  { value: 'meshatse', label: t('connectionPanel.meshcorePreset.meshatse') },
-                  { value: 'meshcoreca', label: t('connectionPanel.meshcorePreset.meshcoreca') },
-                  { value: 'eastmesh', label: t('connectionPanel.meshcorePreset.eastmesh') },
-                  { value: 'ripple', label: t('connectionPanel.meshcorePreset.ripple') },
-                  { value: 'custom', label: t('connectionPanel.meshcorePreset.custom') },
-                ]}
-                onSelect={(value) => {
-                  const id = value as MeshcoreMqttPreset;
-                  if (id === 'custom') {
-                    setActiveMeshcorePreset(id);
-                    return;
-                  }
-                  if (id === 'ripple') {
-                    if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) {
-                      // Cancelled: force the controlled select to snap back to the current preset.
-                      setMeshcorePresetSelectNonce((n) => n + 1);
-                      return;
-                    }
-                  }
-                  if (id === 'coloradomesh') {
-                    if (!window.confirm(t('connectionPanel.coloradoPresetConfirm'))) {
-                      setMeshcorePresetSelectNonce((n) => n + 1);
-                      return;
-                    }
-                    setRendererStorageItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
-                  }
-                  setActiveMeshcorePreset(id);
-                  const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                  setActiveMqttSettings((prev) => ({
-                    ...applyMeshcoreMqttPreset(id, prev),
-                    username: fromIdentity || prev.username,
-                  }));
-                }}
-              />
-              {activeMeshcorePreset === 'coloradomesh' && (
-                <p className="text-xs text-orange-400">{t('connectionPanel.coloradoServerNote')}</p>
-              )}
-              {activeMeshcorePreset === 'meshcoreca' && (
-                <div
-                  data-setting-anchor="connection.mqtt.meshcoreCaBroker"
-                  className="flex flex-wrap items-center gap-2 pt-1"
-                  role="group"
-                  aria-label={t('connectionPanel.meshcoreCaBroker')}
-                >
-                  <span className="text-muted text-xs">{t('connectionPanel.broker')}</span>
-                  <button
-                    type="button"
-                    aria-pressed={activeMqttSettings.server === MESHCORE_CA_HOST_PRIMARY}
-                    onClick={() => {
-                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                      setActiveMqttSettings((prev) => ({
-                        ...prev,
-                        server: MESHCORE_CA_HOST_PRIMARY,
-                        port: 443,
-                        useWebSocket: true,
-                        tlsEnabled: true,
-                        wsPath: '/mqtt',
-                        keepalive: 30,
-                        username: fromIdentity || prev.username,
-                      }));
-                    }}
-                    className={chipClass(activeMqttSettings.server === MESHCORE_CA_HOST_PRIMARY)}
-                  >
-                    {t('connectionPanel.meshcoreCaPrimary')}
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={activeMqttSettings.server === MESHCORE_CA_HOST_BACKUP}
-                    onClick={() => {
-                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                      setActiveMqttSettings((prev) => ({
-                        ...prev,
-                        server: MESHCORE_CA_HOST_BACKUP,
-                        port: 443,
-                        useWebSocket: true,
-                        tlsEnabled: true,
-                        wsPath: '/mqtt',
-                        keepalive: 30,
-                        username: fromIdentity || prev.username,
-                      }));
-                    }}
-                    className={chipClass(activeMqttSettings.server === MESHCORE_CA_HOST_BACKUP)}
-                  >
-                    {t('connectionPanel.meshcoreCaBackup')}
-                  </button>
-                </div>
-              )}
-              {activeMeshcorePreset === 'letsmesh' && (
-                <div
-                  data-setting-anchor="connection.mqtt.letsMeshRegion"
-                  className="flex flex-wrap items-center gap-2 pt-1"
-                  role="group"
-                  aria-label={t('connectionPanel.letsMeshRegion')}
-                >
-                  <span className="text-muted text-xs">{t('connectionPanel.region')}</span>
-                  <button
-                    type="button"
-                    aria-pressed={activeMqttSettings.server === LETSMESH_HOST_US}
-                    onClick={() => {
-                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                      setActiveMqttSettings((prev) => ({
-                        ...prev,
-                        server: LETSMESH_HOST_US,
-                        port: 443,
-                        useWebSocket: true,
-                        tlsEnabled: true,
-                        wsPath: '/ws',
-                        keepalive: 60,
-                        username: fromIdentity || prev.username,
-                      }));
-                    }}
-                    className={chipClass(activeMqttSettings.server === LETSMESH_HOST_US)}
-                  >
-                    {t('connectionPanel.letsMeshRegionUs')}
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={activeMqttSettings.server === LETSMESH_HOST_EU}
-                    onClick={() => {
-                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                      setActiveMqttSettings((prev) => ({
-                        ...prev,
-                        server: LETSMESH_HOST_EU,
-                        port: 443,
-                        useWebSocket: true,
-                        tlsEnabled: true,
-                        wsPath: '/ws',
-                        keepalive: 60,
-                        username: fromIdentity || prev.username,
-                      }));
-                    }}
-                    className={chipClass(activeMqttSettings.server === LETSMESH_HOST_EU)}
-                  >
-                    {t('connectionPanel.letsMeshRegionEu')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
-            <div data-setting-anchor="connection.mqtt.server" className="space-y-1">
-              <label htmlFor="mqtt-server" className="text-muted text-xs">
-                {t('connectionPanel.server')}
-              </label>
-              <input
-                id="mqtt-server"
-                type="text"
-                value={activeMqttSettings.server}
-                onChange={(e) => {
-                  updateMqtt('server', e.target.value);
-                }}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div data-setting-anchor="connection.mqtt.port" className="space-y-1">
-              <label htmlFor="mqtt-port" className="text-muted text-xs">
-                {t('connectionPanel.port')}
-              </label>
-              <input
-                id="mqtt-port"
-                type="number"
-                value={activeMqttSettings.port}
-                onChange={(e) => {
-                  updateMqtt('port', clampTcpPort(e.target.value, 1883));
-                }}
-                className={INPUT_CLASS}
-              />
-            </div>
-          </div>
-          <div data-setting-anchor="connection.mqtt.tls" className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="mqtt-tls-enabled"
-              checked={
-                activeMqttSettings.tlsEnabled === true ||
-                (activeMqttSettings.tlsEnabled !== false && activeMqttTls)
-              }
-              onChange={(e) => {
-                updateMqtt('tlsEnabled', e.target.checked);
-              }}
-              className={CHECKBOX_CLASS}
-            />
-            <label htmlFor="mqtt-tls-enabled" className="text-body text-ink-200 cursor-pointer">
-              {t('connectionPanel.mqttTlsEnabled')}
-            </label>
-          </div>
-          {activeMqttTls && (
-            <div
-              data-setting-anchor="connection.mqtt.tlsInsecure"
-              className={`flex items-center gap-2 ${NOTICE_CLASS.warn}`}
-            >
-              <input
-                type="checkbox"
-                id="mqtt-tls-insecure"
-                checked={activeMqttSettings.tlsInsecure ?? false}
-                onChange={(e) => {
-                  updateMqtt('tlsInsecure', e.target.checked);
-                }}
-                className={CHECKBOX_CLASS}
-              />
-              <label htmlFor="mqtt-tls-insecure" className="cursor-pointer text-xs text-orange-200">
-                {t('connectionPanel.mqttTlsInsecure')}
-              </label>
-            </div>
-          )}
-          <div data-setting-anchor="connection.mqtt.webSocket" className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="mqtt-websocket"
-              checked={activeMqttSettings.useWebSocket ?? false}
-              onChange={(e) => {
-                updateMqtt('useWebSocket', e.target.checked);
-              }}
-              className={CHECKBOX_CLASS}
-            />
-            <label htmlFor="mqtt-websocket" className="text-body text-ink-200 cursor-pointer">
-              {t('connectionPanel.useWebSocket')}{' '}
-              <span className="text-muted">{t('connectionPanel.wsRequired')}</span>
-            </label>
-          </div>
-          {protocol === 'meshcore' &&
-            usesMeshcoreDeviceSigningMqtt(activeMeshcorePreset, activeMqttSettings) &&
-            letsMeshPresetConfigurationDeviation(activeMqttSettings) && (
-              <div className={NOTICE_CLASS.warn}>
-                {meshcorePresetDeviationText(t, activeMeshcorePreset)}
-              </div>
-            )}
-          {protocol === 'meshcore' &&
-            usesMeshcoreDeviceSigningMqtt(activeMeshcorePreset, activeMqttSettings) && (
-              <div className={hasPrivateKey ? NOTICE_CLASS.success : NOTICE_CLASS.warn}>
-                {hasPrivateKey && readMeshcoreIdentity()?.public_key
-                  ? t('connectionPanel.meshcoreMqttIdentity.hasPrivateKey')
-                  : t('connectionPanel.meshcoreMqttIdentity.noPrivateKey')}
-              </div>
-            )}
-          {protocol === 'meshcore' &&
-            usesMeshcoreDeviceSigningMqtt(activeMeshcorePreset, activeMqttSettings) &&
-            hasPrivateKey &&
-            meshcoreClientKeyHex !== '' && (
-              <div className="space-y-1">
-                <span className={FIELD_LABEL_CLASS}>
-                  {t('connectionPanel.meshcoreMqttIdentity.clientKey')}
-                </span>
-                <CopyField
-                  value={meshcoreClientKeyHex}
-                  display={shortenClientKey(meshcoreClientKeyHex)}
-                  copyLabel={t('connectionPanel.meshcoreMqttIdentity.copyClientKey')}
-                />
-              </div>
-            )}
-          {protocol === 'meshcore' && editingMeshcoreFeed && (
-            <div className={`flex items-start gap-2 ${NOTICE_CLASS.info}`}>
-              <span className="leading-snug">
-                {t('connectionPanel.meshcoreFeeds.packetLoggerAlwaysOn', {
-                  topic: `{topicPrefix}/meshcore/packets`,
-                })}
-              </span>
-            </div>
-          )}
-          {protocol === 'meshcore' && !editingMeshcoreFeed && (
-            <div
-              data-setting-anchor="connection.mqtt.meshcorePacketLogger"
-              className={`flex items-start gap-2 ${NOTICE_CLASS.info}`}
-            >
-              <input
-                type="checkbox"
-                id="meshcore-packet-logger"
-                checked={activeMqttSettings.meshcorePacketLoggerEnabled ?? false}
-                onChange={(e) => {
-                  updateMqtt('meshcorePacketLoggerEnabled', e.target.checked);
-                }}
-                className={`${CHECKBOX_CLASS} mt-0.5`}
-              />
-              <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
-                {t('connectionPanel.meshcorePacketLogger.label', {
-                  topic: `{topicPrefix}/meshcore/packets`,
-                })}
-              </label>
-            </div>
-          )}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div data-setting-anchor="connection.mqtt.username" className="space-y-1">
-              <label htmlFor="mqtt-username" className="text-muted text-xs">
-                {t('connectionPanel.username')}
-              </label>
-              <input
-                id="mqtt-username"
-                type="text"
-                value={activeMqttSettings.username}
-                onChange={(e) => {
-                  updateMqtt('username', e.target.value);
-                }}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div data-setting-anchor="connection.mqtt.password" className="space-y-1">
-              <label htmlFor="mqtt-password" className="text-muted text-xs">
-                {t('connectionPanel.password')}
-              </label>
-              <div className="relative">
-                <input
-                  id="mqtt-password"
-                  type={showMqttPassword ? 'text' : 'password'}
-                  value={activeMqttSettings.password}
-                  onChange={(e) => {
-                    updateMqtt('password', e.target.value);
-                  }}
-                  className={`${INPUT_CLASS} pr-14`}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowMqttPassword((v) => !v);
-                  }}
-                  aria-label={
-                    showMqttPassword
-                      ? t('connectionPanel.hidePassword')
-                      : t('connectionPanel.showPassword')
-                  }
-                  className="text-muted hover:text-ink-200 absolute top-1/2 right-2.5 -translate-y-1/2 text-xs"
-                >
-                  {showMqttPassword
-                    ? t('connectionPanel.hidePassword')
-                    : t('connectionPanel.showPassword')}
-                </button>
-              </div>
-            </div>
-          </div>
-          <div data-setting-anchor="connection.mqtt.topicPrefix" className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <label htmlFor="mqtt-topic-prefix" className="text-muted text-xs">
-                {t('connectionPanel.topicPrefix')}
-              </label>
-              <HelpTooltip
-                text={
-                  protocol === 'meshtastic'
-                    ? t('connectionPanel.topicPrefixHelp.meshtastic')
-                    : protocol === 'meshcom'
-                      ? t('connectionPanel.topicPrefixHelp.meshcom')
-                      : isDeviceSigningMeshcorePreset(activeMeshcorePreset) ||
-                          isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings)
-                        ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
-                        : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
-                }
-              />
-            </div>
-            <input
-              id="mqtt-topic-prefix"
-              type="text"
-              value={activeMqttSettings.topicPrefix}
-              onChange={(e) => {
-                updateMqtt('topicPrefix', e.target.value, false);
-              }}
-              onBlur={() => {
-                if (protocol !== 'meshcore') return;
-                if (!isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings)) return;
-                const parsed = parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix);
-                if (parsed.ok && parsed.normalized !== activeMqttSettings.topicPrefix) {
-                  updateMqtt('topicPrefix', parsed.normalized, false);
-                }
-              }}
-              className={INPUT_CLASS}
-              placeholder={t('connectionPanel.topicPrefixPlaceholder')}
-              aria-invalid={
-                protocol === 'meshcore' &&
-                isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings) &&
-                !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok
-              }
-            />
-            {protocol === 'meshcore' &&
-            isIataScopedMeshcoreMqtt(activeMeshcorePreset, activeMqttSettings) &&
-            !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok ? (
-              <p className="text-xs text-orange-400" role="alert">
-                {t('connectionPanel.topicPrefixInvalidIata')}
-              </p>
-            ) : null}
-            {radioMqttRootDiverges ? (
-              <p className="text-xs text-orange-400" role="status">
-                {t('connectionPanel.radioMqttRootDivergesWarning', {
-                  radioRoot: radioMqttRoot,
-                  appPrefix: normalizeMeshtasticMqttTopicPrefix(activeMqttSettings.topicPrefix),
-                })}
-              </p>
-            ) : null}
-          </div>
+          {meshcoreConnectionNameField}
+          {meshcorePresetEditor}
+          {mqttConnectionFields}
           <div data-setting-anchor="connection.mqtt.maxRetries">
             <Stepper
               id="mqtt-max-retries"

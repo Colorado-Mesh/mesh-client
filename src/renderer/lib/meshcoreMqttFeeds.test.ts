@@ -105,11 +105,12 @@ describe('meshcoreMqttFeeds', () => {
 
   it('renames, updates and deletes by id', () => {
     let feeds = [makeFeed('One', {}, 'a'), makeFeed('Two', {}, 'b')];
+    // Raw draft text is preserved so spaces type naturally; the panel trims on blur.
     feeds = updateMeshcoreMqttFeed(feeds, 'a', { name: '  Renamed  ' });
-    expect(feeds[0].name).toBe('Renamed');
-    // A blank rename keeps the previous name.
+    expect(feeds[0].name).toBe('  Renamed  ');
+    // A blank draft is allowed while the name field is being edited.
     feeds = updateMeshcoreMqttFeed(feeds, 'a', { name: '   ' });
-    expect(feeds[0].name).toBe('Renamed');
+    expect(feeds[0].name).toBe('   ');
     feeds = deleteMeshcoreMqttFeed(feeds, 'a');
     expect(feeds.map((f) => f.id)).toEqual(['b']);
   });

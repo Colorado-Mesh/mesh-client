@@ -1998,7 +1998,11 @@
       "statusConnected": "Verbonden",
       "statusConnecting": "Verbinden",
       "statusError": "Fout",
-      "statusDisconnected": "Off"
+      "statusDisconnected": "Off",
+      "settingsHeading": "Instellingen verbinding",
+      "reconnect": "Opnieuw verbinding maken",
+      "reconnectAria": "Opnieuw verbinden {{name}}",
+      "unnamedFeed": "Naamloze feed"
     }
   },
   "contactGroupsModal": {

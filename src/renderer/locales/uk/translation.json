@@ -2038,7 +2038,11 @@
       "statusConnected": "У Грі",
       "statusConnecting": "Під'єднання",
       "statusError": "Помилка",
-      "statusDisconnected": "Вимк."
+      "statusDisconnected": "Вимк.",
+      "settingsHeading": "Параметри з'єднання",
+      "reconnect": "Повторно під'єднати",
+      "reconnectAria": "Відновити підключення {{name}}",
+      "unnamedFeed": "Канал без назви"
     }
   },
   "contactGroupsModal": {

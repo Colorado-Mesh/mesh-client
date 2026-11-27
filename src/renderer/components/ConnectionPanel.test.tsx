@@ -3531,6 +3531,59 @@ describe('ConnectionPanel MeshCore MQTT feeds', () => {
     expect(toggle.checked).toBe(false);
   });
 
+  it('edits broker name, preset and server while MQTT is connected', async () => {
+    localStorage.setItem(
+      FEEDS_KEY,
+      JSON.stringify({ version: 1, chatName: 'Home mesh', feeds: [seededFeed(0, true)] }),
+    );
+    const user = userEvent.setup();
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="connected"
+        protocol="meshcore"
+      />,
+    );
+
+    const editor = screen.getByRole('combobox', { name: 'Broker to edit' });
+    expect(
+      within(editor)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['Home mesh', 'Feed 0']);
+
+    // The full editor (name + presets + broker fields) is available while connected.
+    const preset = screen.getByRole('combobox', { name: 'Network Preset' });
+    expect(within(preset).getAllByRole('option')).toHaveLength(9);
+
+    await user.selectOptions(editor, 'feed-0');
+    const name = screen.getByLabelText('Name');
+    await user.clear(name);
+    await user.type(name, 'Denver analyzer');
+    expect(within(editor).getByRole('option', { name: 'Denver analyzer' })).toBeInTheDocument();
+
+    const server = screen.getByLabelText('Server');
+    await user.clear(server);
+    await user.type(server, 'analyzer.denver.local');
+    expect(server).toHaveValue('analyzer.denver.local');
+
+    await user.selectOptions(preset, 'meshatse');
+    expect(preset).toHaveValue('meshatse');
+  });
+
+  it('renames the chat connection', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    const name = screen.getByLabelText('Name');
+    await user.clear(name);
+    await user.type(name, 'Colorado chat');
+    const editor = screen.getByRole('combobox', { name: 'Broker to edit' });
+    expect(within(editor).getByRole('option', { name: 'Colorado chat' })).toBeInTheDocument();
+  });
+
   it('shows per-feed connection status from the status store', () => {
     localStorage.setItem(FEEDS_KEY, JSON.stringify({ version: 1, feeds: [seededFeed(0, true)] }));
     act(() => {

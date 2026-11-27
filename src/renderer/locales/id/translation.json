@@ -1998,7 +1998,11 @@
       "statusConnected": "Tersambung",
       "statusConnecting": "Sambungkan",
       "statusError": "Kesalahan",
-      "statusDisconnected": "Tidak aktif"
+      "statusDisconnected": "Tidak aktif",
+      "settingsHeading": "Pengaturan Koneksi",
+      "reconnect": "Sambung ulang",
+      "reconnectAria": "Sambungkan kembali {{name}}",
+      "unnamedFeed": "Feed tanpa nama"
     }
   },
   "contactGroupsModal": {

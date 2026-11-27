@@ -1998,7 +1998,11 @@
       "statusConnected": "已連線",
       "statusConnecting": "连接",
       "statusError": "错误",
-      "statusDisconnected": "关闭"
+      "statusDisconnected": "关闭",
+      "settingsHeading": "_基本概念必须具备操作型定义中青年是人生的黄金期",
+      "reconnect": "重新连接",
+      "reconnectAria": "重新连接{{name}}",
+      "unnamedFeed": "未命名订阅源"
     }
   },
   "contactGroupsModal": {

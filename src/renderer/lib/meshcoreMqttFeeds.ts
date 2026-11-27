@@ -39,6 +39,8 @@ interface StoredMeshcoreMqttFeed {
 
 interface MeshcoreMqttFeedsDocument {
   version: 1;
+  /** User-visible chat-broker name; blank means the localized default label. */
+  chatName?: string;
   feeds: StoredMeshcoreMqttFeed[];
 }
 
@@ -71,7 +73,20 @@ function readStoredDocument(): MeshcoreMqttFeedsDocument | null {
     'loadMeshcoreMqttFeeds',
   );
   if (!isRecord(parsed) || !Array.isArray(parsed.feeds)) return null;
-  return { version: FEEDS_DOCUMENT_VERSION, feeds: parsed.feeds as StoredMeshcoreMqttFeed[] };
+  return {
+    version: FEEDS_DOCUMENT_VERSION,
+    chatName: typeof parsed.chatName === 'string' ? parsed.chatName : undefined,
+    feeds: parsed.feeds as StoredMeshcoreMqttFeed[],
+  };
+}
+
+/** User-editable name for the chat broker (blank falls back to the localized label). */
+export function loadMeshcoreMqttChatName(): string {
+  return readStoredDocument()?.chatName ?? '';
+}
+
+function normalizeChatName(name: string): string {
+  return name.trim().slice(0, MESHCORE_MQTT_FEED_NAME_MAX_LENGTH);
 }
 
 function isStoredFeed(v: unknown): v is StoredMeshcoreMqttFeed {
@@ -134,13 +149,22 @@ async function saveSecretsNow(feeds: readonly MeshcoreMqttFeed[]): Promise<void>
   else await setSecureSecret(MESHCORE_MQTT_FEEDS_SECRET_KEY, JSON.stringify(passwords));
 }
 
-/** Persist non-secret metadata synchronously and credentials via the secure service. */
-export function persistMeshcoreMqttFeeds(feeds: readonly MeshcoreMqttFeed[]): void {
+/**
+ * Persist non-secret metadata synchronously and credentials via the secure service.
+ * Omit `chatName` to keep the stored chat-broker name unchanged.
+ */
+export function persistMeshcoreMqttFeeds(
+  feeds: readonly MeshcoreMqttFeed[],
+  chatName?: string,
+): void {
   const limited = feeds.slice(0, MAX_MESHCORE_MQTT_PUBLISH_FEEDS);
+  const storedChatName =
+    chatName === undefined ? readStoredDocument()?.chatName : normalizeChatName(chatName);
   localStorage.setItem(
     MESHCORE_MQTT_FEEDS_STORAGE_KEY,
     JSON.stringify({
       version: FEEDS_DOCUMENT_VERSION,
+      ...(storedChatName ? { chatName: storedChatName } : {}),
       feeds: limited.map(toStored),
     } satisfies MeshcoreMqttFeedsDocument),
   );
@@ -192,8 +216,12 @@ export function updateMeshcoreMqttFeed(
 ): MeshcoreMqttFeed[] {
   return feeds.map((feed) => {
     if (feed.id !== id) return feed;
-    const name = patch.name !== undefined ? normalizeFeedName(patch.name) : feed.name;
-    return { ...feed, ...patch, name: name || feed.name };
+    // Keep raw input (including trailing spaces) while the user is typing; trim on blur.
+    const name =
+      patch.name !== undefined
+        ? patch.name.slice(0, MESHCORE_MQTT_FEED_NAME_MAX_LENGTH)
+        : feed.name;
+    return { ...feed, ...patch, name };
   });
 }
 

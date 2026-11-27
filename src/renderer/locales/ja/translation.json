@@ -1998,7 +1998,11 @@
       "statusConnected": "接続済み",
       "statusConnecting": "接続",
       "statusError": "エラー",
-      "statusDisconnected": "オフ"
+      "statusDisconnected": "オフ",
+      "settingsHeading": "接続テストに失敗",
+      "reconnect": "再接続",
+      "reconnectAria": "{{name}}を再接続",
+      "unnamedFeed": "名前のないフィード"
     }
   },
   "contactGroupsModal": {

@@ -2022,7 +2022,11 @@
       "statusConnected": "Připojeno",
       "statusConnecting": "Připojovací",
       "statusError": "Chyba",
-      "statusDisconnected": "Vypnuto"
+      "statusDisconnected": "Vypnuto",
+      "settingsHeading": "Nastavení připojení",
+      "reconnect": "Znovu připojit",
+      "reconnectAria": "Znovu připojit {{name}}",
+      "unnamedFeed": "Nepojmenovaný informační kanál"
     }
   },
   "contactGroupsModal": {
