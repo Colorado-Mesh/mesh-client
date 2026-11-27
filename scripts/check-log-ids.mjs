@@ -4,7 +4,7 @@
  *
  * Phase A (always):
  *   - Registry keys in src/shared/logMessageIds.ts are unique and match /^mcL\d{4,}$/
- *   - Every mcL#### in src/main|renderer (non-test) is registered
+ *   - Every mcL#### in src/main|renderer|mobile (non-test) is registered
  *   - Every registry ID appears at least once as a string literal outside the registry map keys
  *   - logCaughtWarn / reportCaughtSeriousError / warnWithLogId / errorWithLogId first arg is a
  *     string literal mcL#### (or imported const used as first arg — we require literal for helpers)
@@ -28,6 +28,7 @@ const REGISTRY_PATH = joinUnderRoot(ROOT, 'src', 'shared', 'logMessageIds.ts');
 const SCAN_DIRS = [
   joinUnderRoot(ROOT, 'src', 'main'),
   joinUnderRoot(ROOT, 'src', 'renderer'),
+  joinUnderRoot(ROOT, 'src', 'mobile'),
   joinUnderRoot(ROOT, 'src', 'shared'),
 ];
 

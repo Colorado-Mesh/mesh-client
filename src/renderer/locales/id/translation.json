@@ -9347,5 +9347,17 @@
     "tourLastHint": "Anda dapat mengubah protokol kapan saja di Aplikasi > Protokol.",
     "next": "Berikutnya",
     "done": "Selesai"
+  },
+  "mobile": {
+    "starting": "Memulai Mesh Client…",
+    "startFailed": "Mesh Client tidak dapat dimulai.",
+    "tryAgain": "Coba lagi",
+    "backgroundTitle": "Mesh Client terhubung",
+    "backgroundText": "Menjaga tautan radio dan jaringan tetap terbuka.",
+    "chooseRadioTitle": "Pilih radio",
+    "chooseRadioMessage": "Pilih perangkat USB yang akan dihubungkan",
+    "noUsbDevice": "Tidak ada perangkat serial USB yang terhubung. Hubungkan radio dengan kabel USB OTG.",
+    "usbPermissionDenied": "Izin USB ditolak.",
+    "folderUnavailable": "Memilih folder tidak tersedia di seluler."
   }
 }

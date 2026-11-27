@@ -9347,5 +9347,17 @@
     "tourLastHint": "앱 > 프로토콜에서 언제든지 프로토콜을 변경할 수 있습니다.",
     "next": "다음",
     "done": "완료"
+  },
+  "mobile": {
+    "starting": "Mesh Client 시작 중…",
+    "startFailed": "Mesh Client를 시작할 수 없습니다.",
+    "tryAgain": "다시 시도",
+    "backgroundTitle": "Mesh Client가 연결되었습니다",
+    "backgroundText": "무전기 및 네트워크 연결을 유지하고 있습니다.",
+    "chooseRadioTitle": "무전기 선택",
+    "chooseRadioMessage": "연결할 USB 장치를 선택하세요",
+    "noUsbDevice": "연결된 USB 직렬 장치가 없습니다. USB OTG 케이블로 무전기를 연결하세요.",
+    "usbPermissionDenied": "USB 권한이 거부되었습니다.",
+    "folderUnavailable": "모바일에서는 폴더를 선택할 수 없습니다."
   }
 }

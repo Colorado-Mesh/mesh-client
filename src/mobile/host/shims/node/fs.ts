@@ -21,6 +21,7 @@
 import { Buffer } from 'buffer';
 import { createFsFromVolume, Volume } from 'memfs';
 
+import { isOpfsDirectPath, opfsDirect } from '../../opfsDirect';
 import { EXPORTS_ROOT, isPersistedPath, isSqliteManagedPath, MOBILE_PATHS } from '../paths';
 import { exportSqliteFile, importSqliteFile, sqliteFileExists, unlinkSqliteFile } from './sqlite';
 
@@ -53,9 +54,26 @@ function normalize(p: unknown): string | null {
   return null;
 }
 
+/** Paths mirrored to a real directory (the Reticulum sidecar's config, see sharedDir.ts). */
+export interface MirrorHook {
+  isMirrored(path: string): boolean;
+  push(path: string): void;
+}
+let mirrorHook: MirrorHook | null = null;
+let silent = 0;
+
+export function setMirrorHook(hook: MirrorHook): void {
+  mirrorHook = hook;
+}
+
 function markDirty(p: unknown): void {
+  if (silent > 0) return;
   const path = normalize(p);
   if (!path) return;
+  if (mirrorHook?.isMirrored(path)) {
+    mirrorHook.push(path);
+    return;
+  }
   if (path === EXPORTS_ROOT || path.startsWith(`${EXPORTS_ROOT}/`)) {
     pendingExports.add(path);
     scheduleExport();
@@ -100,7 +118,7 @@ async function deliverExports(): Promise<void> {
       mfs.rmSync(p, { force: true });
     } catch (e) {
       console.error(
-        `mcL9003 [mobile/fs] export delivery failed for ${p}: ${e instanceof Error ? e.message : String(e)}`,
+        `mcL1517 [mobile/fs] export delivery failed for ${p}: ${e instanceof Error ? e.message : String(e)}`,
       );
     }
   }
@@ -126,7 +144,7 @@ export async function flushFs(): Promise<void> {
       } catch (e) {
         dirty.add(p);
         console.error(
-          `mcL9004 [mobile/fs] persist failed for ${p} (${b.name}): ${e instanceof Error ? e.message : String(e)}`,
+          `mcL1518 [mobile/fs] persist failed for ${p} (${b.name}): ${e instanceof Error ? e.message : String(e)}`,
         );
       }
     }
@@ -151,7 +169,7 @@ export async function mountPersistence(b: PersistBackend): Promise<void> {
       }
     } catch (err) {
       console.error(
-        `mcL9005 [mobile/fs] could not restore ${e.path}: ${err instanceof Error ? err.message : String(err)}`,
+        `mcL1519 [mobile/fs] could not restore ${e.path}: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
   }
@@ -159,6 +177,61 @@ export async function mountPersistence(b: PersistBackend): Promise<void> {
 
 export function setExportSink(sink: (path: string, bytes: Uint8Array) => Promise<void>): void {
   exportSink = sink;
+}
+
+/** What a virtual path currently is. */
+export function virtualPathKind(path: string): 'file' | 'dir' | 'missing' {
+  const st = mfs.statSync(path, { throwIfNoEntry: false });
+  if (!st) return 'missing';
+  return st.isDirectory() ? 'dir' : 'file';
+}
+
+/** Bytes of a virtual file, or null when it does not exist. */
+export function readVirtualFile(path: string): Uint8Array | null {
+  try {
+    const st = mfs.statSync(path, { throwIfNoEntry: false });
+    if (!st?.isFile()) return null;
+    return new Uint8Array(mfs.readFileSync(path));
+  } catch {
+    return null; // catch-no-log-ok raced with a delete; caller treats as missing
+  }
+}
+
+/** Write without dirty tracking (content pulled from a mirror must not be pushed back). */
+export function writeVirtualSilently(path: string, bytes: Uint8Array): void {
+  silent += 1;
+  try {
+    mfs.mkdirSync(path.slice(0, path.lastIndexOf('/')) || '/', { recursive: true });
+    const current = readVirtualFile(path);
+    if (current && Buffer.from(current).equals(Buffer.from(bytes))) return;
+    mfs.writeFileSync(path, bytes);
+  } finally {
+    silent -= 1;
+  }
+}
+
+/** Remove files under `dir` matching `shouldRemove`, without dirty tracking. */
+export function removeVirtualSilently(dir: string, shouldRemove: (path: string) => boolean): void {
+  silent += 1;
+  try {
+    const walk = (d: string): void => {
+      let names: string[];
+      try {
+        names = mfs.readdirSync(d) as string[];
+      } catch {
+        return; // catch-no-log-ok directory does not exist yet
+      }
+      for (const name of names) {
+        const child = `${d}/${name}`;
+        const st = mfs.statSync(child, { throwIfNoEntry: false });
+        if (st?.isDirectory()) walk(child);
+        else if (st && shouldRemove(child)) mfs.rmSync(child, { force: true });
+      }
+    };
+    walk(dir);
+  } finally {
+    silent -= 1;
+  }
 }
 
 /** Place a user-picked file into the volume (dialog.showOpenDialog). */
@@ -369,6 +442,11 @@ function wrapPromise(
 ): (...a: any[]) => Promise<any> {
   const overlay = sqliteOverlaySync[`${name}Sync`];
   return async (...args: any[]) => {
+    const direct = (opfsDirect as Record<string, ((...a: any[]) => Promise<any>) | undefined>)[
+      name
+    ];
+    const p0 = normalize(args[0]);
+    if (direct && p0 && isOpfsDirectPath(p0)) return direct(...args);
     if (overlay) {
       const r = overlay(...args);
       if (r !== undefined) return r === null ? undefined : r;

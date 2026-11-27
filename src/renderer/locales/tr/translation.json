@@ -9347,5 +9347,17 @@
     "tourLastHint": "Protokolleri istediğiniz zaman Uygulama > Protokoller bölümünden değiştirebilirsiniz.",
     "next": "İleri",
     "done": "Bitti"
+  },
+  "mobile": {
+    "starting": "Mesh Client başlatılıyor…",
+    "startFailed": "Mesh Client başlatılamadı.",
+    "tryAgain": "Tekrar dene",
+    "backgroundTitle": "Mesh Client bağlı",
+    "backgroundText": "Telsiz ve ağ bağlantıları açık tutuluyor.",
+    "chooseRadioTitle": "Bir telsiz seçin",
+    "chooseRadioMessage": "Bağlanacak USB aygıtını seçin",
+    "noUsbDevice": "Bağlı USB seri aygıt yok. Telsizi bir USB OTG kablosuyla bağlayın.",
+    "usbPermissionDenied": "USB izni reddedildi.",
+    "folderUnavailable": "Mobilde klasör seçme kullanılamaz."
   }
 }

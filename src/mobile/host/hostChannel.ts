@@ -148,7 +148,7 @@ function runSend(channel: string, args: unknown[]): void {
       l(ipcEvent ?? {}, ...args);
     } catch (err) {
       console.error(
-        `mobile host: ipcMain.on('${channel}') listener threw: ${serializeError(err).message}`,
+        `mcL1533 [mobile/host] ipcMain.on('${channel}') listener threw: ${serializeError(err).message}`,
       );
     }
   }
@@ -236,7 +236,7 @@ export function handleUiMessage(msg: UiToHostMessage): void {
           l(msg.data);
         } catch (err) {
           console.error(
-            `mobile host: native listener ${msg.plugin}:${msg.event} threw: ${serializeError(err).message}`,
+            `mcL1534 [mobile/host] native listener ${msg.plugin}:${msg.event} threw: ${serializeError(err).message}`,
           );
         }
       }
@@ -247,7 +247,9 @@ export function handleUiMessage(msg: UiToHostMessage): void {
         try {
           l(msg.state);
         } catch (err) {
-          console.error(`mobile host: lifecycle listener threw: ${serializeError(err).message}`);
+          console.error(
+            `mcL1535 [mobile/host] lifecycle listener threw: ${serializeError(err).message}`,
+          );
         }
       }
       return;

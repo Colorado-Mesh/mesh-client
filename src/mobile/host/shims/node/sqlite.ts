@@ -356,7 +356,7 @@ export class DatabaseSyncShim {
         void memorySnapshotWriter?.(this.location, bytes);
       } catch (e) {
         console.error(
-          `mcL9001 [mobile/sqlite] final snapshot before close failed: ${e instanceof Error ? e.message : String(e)}`,
+          `mcL1515 [mobile/sqlite] final snapshot before close failed: ${e instanceof Error ? e.message : String(e)}`,
         );
       }
     }
@@ -420,7 +420,7 @@ export class DatabaseSyncShim {
       .catch((e: unknown) => {
         this.dirty = true;
         console.error(
-          `mcL9002 [mobile/sqlite] snapshot write failed (will retry): ${e instanceof Error ? e.message : String(e)}`,
+          `mcL1516 [mobile/sqlite] snapshot write failed (will retry): ${e instanceof Error ? e.message : String(e)}`,
         );
       })
       .finally(() => {

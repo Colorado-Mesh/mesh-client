@@ -7,6 +7,8 @@
  * getInfo, setSignals) so they run unmodified. iOS has no USB serial access for third-party
  * apps (OS-specific exception), so the polyfill is Android-only.
  */
+import i18n from '../../renderer/lib/i18n';
+import { serialPortClosed, serialPortOpened } from '../bridge/backgroundKeeper';
 import { getPlugin, listenPlugin } from '../bridge/nativePlugins';
 import { showMessage } from '../bridge/uiOps';
 import type { MeshUsbSerialPlugin, UsbSerialDevice } from '../native/contracts';
@@ -93,7 +95,7 @@ class MobileSerialPort extends EventTarget {
     const p = plugin();
     if (!grantedDevices.has(this.device.deviceId)) {
       const { granted } = await p.requestPermission({ deviceId: this.device.deviceId });
-      if (!granted) throw new DOMException('USB permission denied.', 'SecurityError');
+      if (!granted) throw new DOMException(i18n.t('mobile.usbPermissionDenied'), 'SecurityError');
       grantedDevices.add(this.device.deviceId);
     }
     const { portId } = await p.open({
@@ -105,6 +107,7 @@ class MobileSerialPort extends EventTarget {
     });
     this.portId = portId;
     portsById.set(portId, this);
+    serialPortOpened();
     this._readable = new ReadableStream<Uint8Array>({
       start: (c) => {
         this.reader = c;
@@ -126,6 +129,7 @@ class MobileSerialPort extends EventTarget {
     if (!id) return;
     this.portId = null;
     portsById.delete(id);
+    serialPortClosed();
     try {
       this.reader?.close();
     } catch {
@@ -180,7 +184,10 @@ class MobileSerialPort extends EventTarget {
   /** @internal */
   _onClosed(error?: string): void {
     const id = this.portId;
-    if (id) portsById.delete(id);
+    if (id) {
+      portsById.delete(id);
+      serialPortClosed();
+    }
     this.portId = null;
     try {
       if (error) this.reader?.error(new DOMException(error, 'NetworkError'));
@@ -228,10 +235,7 @@ class MobileSerial extends EventTarget {
         ),
     );
     if (matching.length === 0) {
-      throw new DOMException(
-        'No USB serial device is connected. Connect the radio with a USB OTG cable.',
-        'NotFoundError',
-      );
+      throw new DOMException(i18n.t('mobile.noUsbDevice'), 'NotFoundError');
     }
     let chosen = matching[0];
     if (matching.length > 1) {
@@ -242,9 +246,9 @@ class MobileSerial extends EventTarget {
           `USB ${d.vendorId.toString(16)}:${d.productId.toString(16)}`,
       );
       const { response } = await showMessage({
-        title: 'Choose a radio',
-        message: 'Choose the USB device to connect',
-        buttons: [...labels, 'Cancel'],
+        title: i18n.t('mobile.chooseRadioTitle'),
+        message: i18n.t('mobile.chooseRadioMessage'),
+        buttons: [...labels, i18n.t('common.cancel')],
         cancelId: labels.length,
       });
       if (response >= labels.length)
@@ -252,7 +256,7 @@ class MobileSerial extends EventTarget {
       chosen = matching[response];
     }
     const { granted } = await plugin().requestPermission({ deviceId: chosen.deviceId });
-    if (!granted) throw new DOMException('USB permission denied.', 'SecurityError');
+    if (!granted) throw new DOMException(i18n.t('mobile.usbPermissionDenied'), 'SecurityError');
     grantedDevices.add(chosen.deviceId);
     return this.portFor(chosen);
   }

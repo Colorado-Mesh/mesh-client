@@ -5,80 +5,40 @@
  * `scripts/mobile-web-bridge.mjs` (a Node process acting as the "native" side), so the exact
  * plugin contract the Android/iOS plugins implement is exercised end to end.
  *
- * Bridge URL: `globalThis.__MESH_WEB_BRIDGE__`, else localStorage `mesh-mobile:web-bridge`,
- * else `ws://127.0.0.1:47800`. Without a bridge, `httpRequest` falls back to `fetch`.
+ * Connection details: `webBridgeClient.ts`. Without a bridge, `httpRequest` falls back to `fetch`.
  */
 import { WebPlugin } from '@capacitor/core';
 
-const DEFAULT_BRIDGE = 'ws://127.0.0.1:47800';
+import { bridgeClient } from './webBridgeClient';
 
-function bridgeUrl(): string {
-  const g = (globalThis as { __MESH_WEB_BRIDGE__?: string }).__MESH_WEB_BRIDGE__;
-  if (g) return g;
-  try {
-    return localStorage.getItem('mesh-mobile:web-bridge') ?? DEFAULT_BRIDGE;
-  } catch {
-    return DEFAULT_BRIDGE; // catch-no-log-ok storage blocked
-  }
-}
+const NET_EVENTS = [
+  'tcpData',
+  'tcpEnd',
+  'tcpClose',
+  'tcpAccept',
+  'udpMessage',
+  'udpError',
+  'httpData',
+  'httpEnd',
+  'httpError',
+  'wsOpen',
+  'wsMessage',
+  'wsClose',
+  'wsError',
+];
 
 export class WebMeshNet extends WebPlugin {
-  private ws: WebSocket | null = null;
-  private opening: Promise<WebSocket> | null = null;
-  private nextId = 1;
-  private readonly pending = new Map<
-    number,
-    { resolve: (v: unknown) => void; reject: (e: Error) => void }
-  >();
-
-  private connect(): Promise<WebSocket> {
-    if (this.ws?.readyState === WebSocket.OPEN) return Promise.resolve(this.ws);
-    this.opening ??= new Promise<WebSocket>((resolve, reject) => {
-      const ws = new WebSocket(bridgeUrl());
-      ws.onopen = () => {
-        this.ws = ws;
-        this.opening = null;
-        resolve(ws);
-      };
-      ws.onerror = () => {
-        this.opening = null;
-        reject(new Error(`MeshNet web bridge unavailable at ${bridgeUrl()}`));
-      };
-      ws.onclose = () => {
-        this.ws = null;
-        for (const p of this.pending.values()) p.reject(new Error('MeshNet web bridge closed'));
-        this.pending.clear();
-      };
-      ws.onmessage = (ev) => {
-        const msg = JSON.parse(String(ev.data)) as {
-          id?: number;
-          ok?: boolean;
-          value?: unknown;
-          error?: string;
-          event?: string;
-          data?: unknown;
-        };
-        if (msg.event) {
-          this.notifyListeners(msg.event, msg.data);
-          return;
-        }
-        const p = msg.id !== undefined ? this.pending.get(msg.id) : undefined;
-        if (!p || msg.id === undefined) return;
-        this.pending.delete(msg.id);
-        if (msg.ok) p.resolve(msg.value);
-        else p.reject(new Error(msg.error ?? 'bridge error'));
-      };
-    });
-    return this.opening;
+  constructor() {
+    super();
+    for (const e of NET_EVENTS) {
+      bridgeClient.on(e, (data) => {
+        this.notifyListeners(e, data);
+      });
+    }
   }
 
-  private async call(op: string, args: unknown): Promise<unknown> {
-    const ws = await this.connect();
-    const id = this.nextId++;
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
-      ws.send(JSON.stringify({ id, op, args }));
-    });
+  private call(op: string, args: unknown): Promise<unknown> {
+    return bridgeClient.call(op, args);
   }
 
   tcpConnect(a: unknown) {

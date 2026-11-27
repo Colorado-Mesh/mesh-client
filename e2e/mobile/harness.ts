@@ -55,6 +55,7 @@ export async function startHarness(): Promise<Harness> {
     close(cb?: () => void): void;
     once(e: string, cb: () => void): void;
     clients: Set<{ terminate(): void }>;
+    bridgeToken: string;
   };
   await new Promise<void>((r) => {
     bridge.once('listening', r);
@@ -62,7 +63,7 @@ export async function startHarness(): Promise<Harness> {
   const bridgePort = bridge.address().port;
   return {
     url: `http://127.0.0.1:${port}/index.html`,
-    bridgeUrl: `ws://127.0.0.1:${bridgePort}`,
+    bridgeUrl: `ws://127.0.0.1:${bridgePort}/?token=${bridge.bridgeToken}`,
     close: () =>
       new Promise<void>((resolve) => {
         for (const c of bridge.clients) c.terminate();

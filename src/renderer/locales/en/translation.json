@@ -9347,5 +9347,17 @@
       "advanced": "Advanced console & filter"
     },
     "appEligible": "Serial / BLE"
+  },
+  "mobile": {
+    "starting": "Starting Mesh Client…",
+    "startFailed": "Mesh Client could not start.",
+    "tryAgain": "Try again",
+    "backgroundTitle": "Mesh Client is connected",
+    "backgroundText": "Keeping your radio and network links open.",
+    "chooseRadioTitle": "Choose a radio",
+    "chooseRadioMessage": "Choose the USB device to connect",
+    "noUsbDevice": "No USB serial device is connected. Connect the radio with a USB OTG cable.",
+    "usbPermissionDenied": "USB permission was denied.",
+    "folderUnavailable": "Choosing a folder is not available on mobile."
   }
 }

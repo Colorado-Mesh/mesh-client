@@ -9347,5 +9347,17 @@
     "tourLastHint": "Sie können die Protokolle jederzeit unter App > Protokolle ändern.",
     "next": "Weiter",
     "done": "Erledigt"
+  },
+  "mobile": {
+    "starting": "Mesh Client wird gestartet…",
+    "startFailed": "Mesh Client konnte nicht gestartet werden.",
+    "tryAgain": "Erneut versuchen",
+    "backgroundTitle": "Mesh Client ist verbunden",
+    "backgroundText": "Funk- und Netzwerkverbindungen bleiben offen.",
+    "chooseRadioTitle": "Funkgerät auswählen",
+    "chooseRadioMessage": "Wähle das USB-Gerät für die Verbindung",
+    "noUsbDevice": "Kein serielles USB-Gerät verbunden. Schließe das Funkgerät mit einem USB-OTG-Kabel an.",
+    "usbPermissionDenied": "Die USB-Berechtigung wurde verweigert.",
+    "folderUnavailable": "Ordner können auf Mobilgeräten nicht ausgewählt werden."
   }
 }

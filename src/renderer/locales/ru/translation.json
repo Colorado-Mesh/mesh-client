@@ -9491,5 +9491,17 @@
     "tourLastHint": "Вы можете изменить протоколы в любое время в разделе «Приложение > Протоколы».",
     "next": "Далее",
     "done": "Готово"
+  },
+  "mobile": {
+    "starting": "Запуск Mesh Client…",
+    "startFailed": "Не удалось запустить Mesh Client.",
+    "tryAgain": "Повторить",
+    "backgroundTitle": "Mesh Client подключён",
+    "backgroundText": "Радио- и сетевые соединения остаются открытыми.",
+    "chooseRadioTitle": "Выберите рацию",
+    "chooseRadioMessage": "Выберите USB-устройство для подключения",
+    "noUsbDevice": "Не подключено ни одного последовательного USB-устройства. Подключите рацию кабелем USB OTG.",
+    "usbPermissionDenied": "Доступ к USB запрещён.",
+    "folderUnavailable": "Выбор папки недоступен на мобильных устройствах."
   }
 }

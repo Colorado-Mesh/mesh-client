@@ -13,6 +13,8 @@ import { EventEmitter } from 'events';
 import { Readable, Writable } from 'readable-stream';
 
 import { callNative, onNativeEvent } from '../../hostChannel';
+import { linkClosed, linkOpened } from '../../linkTracker';
+import { flushSharedPushes, mapSharedArg, startSharedPull, stopSharedPull } from '../../sharedDir';
 
 const SIDECAR_BASENAME = /(^|\/)mesh-client-reticulum(\.exe)?$/;
 const procs = new Map<string, ChildProcessShim>();
@@ -49,6 +51,12 @@ export class ChildProcessShim extends EventEmitter {
   readonly spawnfile: string;
   readonly spawnargs: string[];
   private readonly id: string;
+  private linkCounted = false;
+  /** Resolves once the native process exists; stdin traffic waits for it (main writes the
+   * bootstrap credential right after spawn()). Rejects when the spawn fails. */
+  private readonly spawned: Promise<void>;
+  private markSpawned: () => void = () => {};
+  private failSpawn: (e: Error) => void = () => {};
 
   constructor(
     command: string,
@@ -59,7 +67,15 @@ export class ChildProcessShim extends EventEmitter {
     this.id = `p${nextId++}`;
     this.spawnfile = command;
     this.spawnargs = [command, ...args];
+    this.spawned = new Promise<void>((resolve, reject) => {
+      this.markSpawned = resolve;
+      this.failSpawn = reject;
+    });
+    this.spawned.catch(() => {
+      // Surfaced through the 'error' event; stdin writes fail with EPIPE.
+    });
     const id = this.id;
+    const spawned = this.spawned;
     this.stdin = new Writable({
       write(chunk: unknown, enc: BufferEncoding, cb: (e?: Error | null) => void) {
         const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string, enc);
@@ -67,28 +83,34 @@ export class ChildProcessShim extends EventEmitter {
           cb(new Error('EPIPE'));
           return;
         }
-        callNative('MeshProcess', 'writeStdin', { id, dataB64: buf.toString('base64') }).then(
-          () => {
-            cb();
-          },
-          (e: unknown) => {
-            cb(e instanceof Error ? e : new Error(String(e)));
-          },
-        );
+        spawned
+          .then(() =>
+            callNative('MeshProcess', 'writeStdin', { id, dataB64: buf.toString('base64') }),
+          )
+          .then(
+            () => {
+              cb();
+            },
+            (e: unknown) => {
+              cb(e instanceof Error ? e : new Error(String(e)));
+            },
+          );
       },
       final(cb: (e?: Error | null) => void) {
         if (!native) {
           cb();
           return;
         }
-        callNative('MeshProcess', 'closeStdin', { id }).then(
-          () => {
-            cb();
-          },
-          () => {
-            cb();
-          },
-        );
+        spawned
+          .then(() => callNative('MeshProcess', 'closeStdin', { id }))
+          .then(
+            () => {
+              cb();
+            },
+            () => {
+              cb();
+            },
+          );
       },
     });
     this.stdio = [this.stdin, this.stdout, this.stderr];
@@ -114,30 +136,45 @@ export class ChildProcessShim extends EventEmitter {
     procs.set(this.id, this);
     const env: Record<string, string> = {};
     for (const [k, v] of Object.entries(opts.env ?? {})) if (typeof v === 'string') env[k] = v;
-    callNative<{ pid: number }>('MeshProcess', 'spawn', {
-      id: this.id,
-      program: 'reticulum-sidecar',
-      args,
-      env,
-    }).then(
-      (r) => {
-        this.pid = r.pid;
-        this.emit('spawn');
-      },
-      (e: unknown) => {
-        procs.delete(this.id);
-        const err = Object.assign(e instanceof Error ? e : new Error(String(e)), {
-          code: 'ENOENT',
-        });
-        this.emit('error', err);
-        this._onExit(-2, null);
-      },
-    );
+    // Main's config edits must reach the real directory before the sidecar reads it.
+    flushSharedPushes()
+      .then(() =>
+        callNative<{ pid: number }>('MeshProcess', 'spawn', {
+          id: this.id,
+          program: 'reticulum-sidecar',
+          args: args.map(mapSharedArg),
+          env,
+        }),
+      )
+      .then(
+        (r) => {
+          this.pid = r.pid;
+          this.linkCounted = true;
+          linkOpened('reticulum');
+          startSharedPull();
+          this.markSpawned();
+          this.emit('spawn');
+        },
+        (e: unknown) => {
+          procs.delete(this.id);
+          const err = Object.assign(e instanceof Error ? e : new Error(String(e)), {
+            code: 'ENOENT',
+          });
+          this.failSpawn(err);
+          this.emit('error', err);
+          this._onExit(-2, null);
+        },
+      );
   }
 
   /** @internal */
   _onExit(code: number | null, signal: string | null): void {
     if (this.exitCode !== null || this.signalCode !== null) return;
+    if (this.linkCounted) {
+      this.linkCounted = false;
+      linkClosed('reticulum');
+      stopSharedPull();
+    }
     procs.delete(this.id);
     this.exitCode = code;
     this.signalCode = signal;

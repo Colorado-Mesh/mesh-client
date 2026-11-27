@@ -11,8 +11,11 @@ import './mobileShell.css';
 
 import { App as CapApp } from '@capacitor/app';
 
+import i18n from '../renderer/lib/i18n';
+import { ensureLocaleLoaded } from '../renderer/lib/localeResources';
 import { setMobileAppPlatform } from '../renderer/lib/mobilePlatform';
 import { RENDERER_INDEX_URL } from '../shared/rendererOrigin';
+import { installCustomSchemeImages } from './bridge/customSchemes';
 import { sendLifecycle, startHost } from './bridge/hostClient';
 import { getPlugin, mobilePlatform } from './bridge/nativePlugins';
 import { installMobileSerial } from './serial/installMobileSerial';
@@ -36,7 +39,7 @@ function renderBootScreen(message?: string, onRetry?: () => void): void {
   wrap.appendChild(mark);
   const status = document.createElement('p');
   status.setAttribute('role', message ? 'alert' : 'status');
-  status.textContent = message ? 'Mesh Client could not start.' : 'Starting Mesh Client…';
+  status.textContent = message ? i18n.t('mobile.startFailed') : i18n.t('mobile.starting');
   wrap.appendChild(status);
   if (message) {
     const detail = document.createElement('pre');
@@ -48,8 +51,8 @@ function renderBootScreen(message?: string, onRetry?: () => void): void {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.default = 'true';
-    b.textContent = 'Try again';
-    b.setAttribute('aria-label', 'Try again');
+    b.textContent = i18n.t('mobile.tryAgain');
+    b.setAttribute('aria-label', i18n.t('mobile.tryAgain'));
     b.addEventListener('click', onRetry);
     wrap.appendChild(b);
   }
@@ -60,7 +63,19 @@ async function boot(): Promise<void> {
   const platform = mobilePlatform();
   setMobileAppPlatform(platform);
   installMobileViewport();
+  await ensureLocaleLoaded(i18n, i18n.language).catch((e: unknown) => {
+    console.debug('[mobile] boot locale load failed', e);
+  });
   renderBootScreen();
+  // OPFS is best-effort storage; ask the WebView to keep it (radio history, keys, settings).
+  void navigator.storage?.persist?.().then(
+    (persisted) => {
+      console.debug(`[mobile] persistent storage ${persisted ? 'granted' : 'not granted'}`);
+    },
+    (e: unknown) => {
+      console.debug('[mobile] persistent storage request failed', e);
+    },
+  );
 
   const device = getPlugin('MeshDevice') as unknown as {
     getSecureKey(): Promise<{ keyHex: string }>;
@@ -97,6 +112,7 @@ async function boot(): Promise<void> {
   // The preload reports Node's process.platform; mobile maps Android→linux, iOS→darwin.
   (window.electronAPI as unknown as { getPlatform: () => string }).getPlatform = () => nodePlatform;
   installMobileSerial(platform);
+  installCustomSchemeImages();
 
   await import('../renderer/main');
 }
@@ -104,7 +120,7 @@ async function boot(): Promise<void> {
 function start(): void {
   boot().catch((err: unknown) => {
     const msg = err instanceof Error ? (err.stack ?? err.message) : String(err);
-    console.error(`[mobile] boot failed: ${msg}`);
+    console.error(`mcL1536 [mobile] boot failed: ${msg}`);
     renderBootScreen(err instanceof Error ? err.message : String(err), () => {
       location.reload();
     });

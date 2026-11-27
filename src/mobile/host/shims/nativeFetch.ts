@@ -11,7 +11,7 @@
  */
 import { Buffer } from 'buffer';
 
-import { callNative, getBootConfig, onNativeEvent } from '../hostChannel';
+import { callNative, onNativeEvent } from '../hostChannel';
 
 interface HttpStartResult {
   status: number;
@@ -70,8 +70,10 @@ function installListeners(): void {
 
 function shouldUseWebFetch(url: URL): boolean {
   if (url.protocol === 'data:' || url.protocol === 'blob:') return true;
-  if (typeof location !== 'undefined' && url.origin === location.origin) return true;
-  return getBootConfig().mobilePlatform === 'web';
+  // Bundled assets (same origin) load from the WebView. Everything else goes through MeshNet,
+  // including in the browser harness, where the web MeshNet tunnels to the bridge (and falls back
+  // to fetch when no bridge is running).
+  return typeof location !== 'undefined' && url.origin === location.origin;
 }
 
 async function bodyToBytes(body: BodyInit | null | undefined): Promise<Uint8Array | null> {

@@ -25,8 +25,15 @@ import {
   setBootConfig,
   setIpcEventFactory,
 } from './hostChannel';
+import { enableOpfsDirect } from './opfsDirect';
 import { type HostBootConfig, serializeError, type UiToHostMessage } from './protocol';
-import { createIpcEvent, markAppReady, onPrimaryWindowLoaded } from './shims/electron';
+import { initSharedDir, isMirroredPath, queueSharedPush } from './sharedDir';
+import {
+  createIpcEvent,
+  handleProtocolRequest,
+  markAppReady,
+  onPrimaryWindowLoaded,
+} from './shims/electron';
 import { mobileFetch } from './shims/nativeFetch';
 import {
   ensureBaseDirectories,
@@ -34,6 +41,7 @@ import {
   mountPersistence,
   type PersistBackend,
   setExportSink,
+  setMirrorHook,
   writeImportedFile,
 } from './shims/node/fs';
 import {
@@ -95,7 +103,7 @@ async function initSqlite(wasmUrl: string): Promise<'opfs-sahpool' | 'memory'> {
     return 'opfs-sahpool';
   } catch (e) {
     console.warn(
-      `mcL9006 [mobile/host] OPFS SQLite pool unavailable, using in-memory databases with snapshots: ${e instanceof Error ? e.message : String(e)}`,
+      `mcL1520 [mobile/host] OPFS SQLite pool unavailable, using in-memory databases with snapshots: ${e instanceof Error ? e.message : String(e)}`,
     );
     setSqliteRuntime({ sqlite3, pool: null });
     return 'memory';
@@ -132,6 +140,8 @@ async function boot(
   const sqliteMode = await initSqlite(config.wasmUrl);
   const backend = await choosePersistence(config);
   if (backend) await mountPersistence(backend);
+  // Large tile caches bypass the in-memory volume when OPFS is available.
+  if (backend?.name === 'opfs') enableOpfsDirect();
   ensureBaseDirectories();
 
   if (sqliteMode === 'memory') {
@@ -159,6 +169,12 @@ async function boot(
   }
 
   if (config.sidecarAvailable) {
+    setMirrorHook({ isMirrored: isMirroredPath, push: queueSharedPush });
+    await initSharedDir().catch((e: unknown) => {
+      console.error(
+        `mcL1525 [mobile/host] Reticulum shared directory unavailable: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    });
     // `resolveSidecarBinaryPath()` checks the bundled resources path; the native plugin runs it.
     writeImportedFile(
       `${MOBILE_PATHS.app}/resources/reticulum-sidecar/mesh-client-reticulum`,
@@ -184,6 +200,21 @@ async function boot(
     return path;
   });
 
+  // Custom schemes main serves (`mesh-tiles:`, `mesh-weather:`): the WebView cannot load them,
+  // so the UI resolves image URLs through this handler (see bridge/customSchemes.ts).
+  registerInvokeHandler('__mobile:protocolFetch', async (_event, url) => {
+    if (typeof url !== 'string' || !/^mesh-(tiles|weather):\/\//.test(url)) {
+      throw new Error('unsupported scheme');
+    }
+    const res = await handleProtocolRequest(url);
+    if (!res) return { status: 404, contentType: '', bytes: new Uint8Array(0) };
+    return {
+      status: res.status,
+      contentType: res.headers.get('content-type') ?? '',
+      bytes: new Uint8Array(await res.arrayBuffer()),
+    };
+  });
+
   setIpcEventFactory(createIpcEvent);
   onPrimaryWindowLoaded(() => {
     postToUi({ t: 'ready' });
@@ -203,7 +234,7 @@ self.onmessage = (ev: MessageEvent<UiToHostMessage>) => {
     boot(msg.config as HostBootConfig & { wasmUrl: string; sidecarAvailable: boolean }).catch(
       (err: unknown) => {
         console.error(
-          `mcL9007 [mobile/host] boot failed: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
+          `mcL1521 [mobile/host] boot failed: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
         );
         postToUi({ t: 'bootFailed', error: serializeError(err) });
       },

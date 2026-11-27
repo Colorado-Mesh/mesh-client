@@ -9347,5 +9347,17 @@
     "tourLastHint": "您可以随时在“应用”>“协议”中更改协议。",
     "next": "下一頁",
     "done": "完成"
+  },
+  "mobile": {
+    "starting": "正在启动 Mesh Client…",
+    "startFailed": "Mesh Client 无法启动。",
+    "tryAgain": "重试",
+    "backgroundTitle": "Mesh Client 已连接",
+    "backgroundText": "正在保持电台和网络连接。",
+    "chooseRadioTitle": "选择电台",
+    "chooseRadioMessage": "选择要连接的 USB 设备",
+    "noUsbDevice": "未连接 USB 串口设备。请用 USB OTG 线连接电台。",
+    "usbPermissionDenied": "USB 权限被拒绝。",
+    "folderUnavailable": "移动设备上无法选择文件夹。"
   }
 }

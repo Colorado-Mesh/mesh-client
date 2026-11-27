@@ -9347,5 +9347,17 @@
     "tourLastHint": "Je kunt protocollen op elk moment wijzigen in App > Protocollen.",
     "next": "Volgende",
     "done": "Klaar"
+  },
+  "mobile": {
+    "starting": "Mesh Client wordt gestart…",
+    "startFailed": "Mesh Client kon niet starten.",
+    "tryAgain": "Opnieuw proberen",
+    "backgroundTitle": "Mesh Client is verbonden",
+    "backgroundText": "Radio- en netwerkverbindingen blijven open.",
+    "chooseRadioTitle": "Kies een radio",
+    "chooseRadioMessage": "Kies het USB-apparaat om te verbinden",
+    "noUsbDevice": "Er is geen serieel USB-apparaat verbonden. Sluit de radio aan met een USB-OTG-kabel.",
+    "usbPermissionDenied": "USB-toestemming is geweigerd.",
+    "folderUnavailable": "Een map kiezen is niet beschikbaar op mobiel."
   }
 }

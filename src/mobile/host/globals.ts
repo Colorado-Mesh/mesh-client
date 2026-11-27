@@ -5,7 +5,11 @@
 import { Buffer } from 'buffer';
 import { EventEmitter } from 'events';
 
+import { installBase64Url } from './bufferBase64Url';
+
 const start = performance.now();
+
+installBase64Url();
 
 function hrtime(prev?: [number, number]): [number, number] {
   const t = performance.now();
@@ -42,7 +46,7 @@ const stdio = (level: 'debug' | 'error') => ({
   write(chunk: unknown): boolean {
     const s = typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk as Uint8Array);
     if (level === 'debug') console.debug(s.replace(/\n$/, ''));
-    else console.error(s.replace(/\n$/, ''));
+    else console.error('mcL1537 [mobile/stderr]', s.replace(/\n$/, ''));
     return true;
   },
   on(): void {},

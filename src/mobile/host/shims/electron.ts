@@ -593,16 +593,44 @@ class PowerMonitorShim extends EventEmitter {
 
 export const powerMonitor = new PowerMonitorShim();
 
+/**
+ * App lifecycle → Electron window/power events.
+ *
+ * Switching apps is not system sleep: links stay up in the background (the UI enables the
+ * Android foreground service while any link is live, see `linkTracker.ts`), so `pause` only hides
+ * the window. `powerMonitor` suspend/resume fire when the OS actually froze this worker — detected
+ * as a gap in a periodic timer — so main and the renderer run their wake recovery (MQTT and radio
+ * reconnect) only after a real freeze.
+ */
+const FREEZE_TICK_MS = 5_000;
+const FREEZE_GAP_MS = 30_000;
+let lastTick = Date.now();
+
+/** @internal exported for tests */
+export function checkForFreeze(now: number = Date.now()): boolean {
+  const gap = now - lastTick;
+  lastTick = now;
+  if (gap < FREEZE_GAP_MS) return false;
+  console.debug(
+    `[mobile/power] worker was frozen for ${Math.round(gap / 1000)}s; running wake recovery`,
+  );
+  powerMonitor.emit('suspend');
+  powerMonitor.emit('resume');
+  return true;
+}
+
+setInterval(() => {
+  checkForFreeze();
+}, FREEZE_TICK_MS);
+
 onLifecycle((state) => {
   if (state === 'pause') {
     uiVisible = false;
     primaryWindow?.emit('hide');
-    // Mobile apps are suspended in the background; mirror desktop sleep handling so MQTT and
-    // radio runtimes run their suspend/resume recovery paths.
-    powerMonitor.emit('suspend');
+    primaryWindow?.emit('blur');
   } else if (state === 'resume') {
     uiVisible = true;
-    powerMonitor.emit('resume');
+    checkForFreeze();
     primaryWindow?.emit('show');
     primaryWindow?.emit('focus');
   } else {

@@ -10,6 +10,8 @@
  */
 import { Capacitor } from '@capacitor/core';
 
+import i18n from '../../renderer/lib/i18n';
+import { setWorkerLinksActive } from './backgroundKeeper';
 import { getPlugin, mobilePlatform } from './nativePlugins';
 
 export interface UiOpDeps {
@@ -61,8 +63,8 @@ async function openDialog(
     await showMessage({
       type: 'info',
       title: typeof opts.title === 'string' ? opts.title : 'Choose folder',
-      message: 'Choosing a folder is not available on mobile.',
-      buttons: ['OK'],
+      message: i18n.t('mobile.folderUnavailable'),
+      buttons: [i18n.t('common.close')],
     });
     return { canceled: true, filePaths: [] };
   }
@@ -186,7 +188,7 @@ export function showMessage(
     }
     const row = document.createElement('div');
     row.className = 'mobile-msgbox-buttons';
-    const buttons = opts.buttons?.length ? opts.buttons : ['OK'];
+    const buttons = opts.buttons?.length ? opts.buttons : [i18n.t('common.close')];
     const cancelId = typeof opts.cancelId === 'number' ? opts.cancelId : buttons.length - 1;
     const finish = (response: number) => {
       document.removeEventListener('keydown', onKey, true);
@@ -303,7 +305,16 @@ export async function runUiOp(op: string, args: unknown[], deps: UiOpDeps): Prom
       return undefined;
     case 'clearStorageData':
       return clearStorageData();
-    case 'keepAwake':
+    case 'backgroundLinks':
+      setWorkerLinksActive(Boolean((args[0] as { active?: boolean } | undefined)?.active));
+      return undefined;
+    case 'keepAwake': {
+      const device = getPlugin('MeshDevice') as unknown as {
+        keepAwake?: (o: { enabled: boolean }) => Promise<void>;
+      };
+      await device.keepAwake?.({ enabled: Boolean(args[0]) });
+      return undefined;
+    }
     case 'badge':
       return undefined;
     case 'shareFile':

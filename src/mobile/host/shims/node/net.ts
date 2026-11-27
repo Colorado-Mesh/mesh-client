@@ -14,6 +14,7 @@ import { Duplex } from 'readable-stream';
 
 import { isValidIpv4Literal, isValidIpv6Literal } from '../../../../shared/ipLiteral';
 import { callNative, onNativeEvent } from '../../hostChannel';
+import { linkClosed, linkOpened } from '../../linkTracker';
 
 export interface ConnectResult {
   localAddress?: string;
@@ -115,6 +116,8 @@ export class Socket extends Duplex {
   private noDelay = true;
   private keepAlive: { enable: boolean; delay: number } = { enable: false, delay: 0 };
   private writeChain: Promise<void> = Promise.resolve();
+  /** Counted as a live link for background-mode purposes (see linkTracker). */
+  private linkCounted = false;
 
   constructor() {
     super({ allowHalfOpen: false });
@@ -198,6 +201,8 @@ export class Socket extends Duplex {
         this.pending = false;
         this.applyInfo(info);
         this.touch();
+        this.linkCounted = true;
+        linkOpened('tcp');
         this.emit('connect');
         if (opts.tls) this.emit('secureConnect');
         this.emit('ready');
@@ -272,6 +277,10 @@ export class Socket extends Duplex {
 
   override _destroy(err: Error | null, cb: (err: Error | null) => void): void {
     this.clearIdle();
+    if (this.linkCounted) {
+      this.linkCounted = false;
+      linkClosed('tcp');
+    }
     const id = this.nativeId;
     this.nativeId = null;
     if (id) {

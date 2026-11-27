@@ -6,6 +6,8 @@
  */
 import { WebPlugin } from '@capacitor/core';
 
+import { bridgeClient } from './webBridgeClient';
+
 const KEY = 'mesh-mobile:web-safe-storage-key';
 
 export class WebMeshDevice extends WebPlugin {
@@ -28,12 +30,16 @@ export class WebMeshDevice extends WebPlugin {
     }
     return Promise.resolve({ keyHex: hex });
   }
-  getInfo(): Promise<{ appVersion: string; sidecarAvailable: boolean; locale: string }> {
-    return Promise.resolve({
-      appVersion: '0.0.0-web',
-      sidecarAvailable: false,
-      locale: navigator.language || 'en-US',
-    });
+  async getInfo(): Promise<{ appVersion: string; sidecarAvailable: boolean; locale: string }> {
+    let sidecarAvailable = false;
+    try {
+      sidecarAvailable =
+        ((await bridgeClient.call('procInfo', {})) as { sidecarAvailable?: boolean })
+          .sidecarAvailable === true;
+    } catch (e) {
+      console.debug('[mobile/web] no bridge; Reticulum sidecar unavailable', e);
+    }
+    return { appVersion: '0.0.0-web', sidecarAvailable, locale: navigator.language || 'en-US' };
   }
   getFoldState(): Promise<{ folds: never[] }> {
     return Promise.resolve({ folds: [] });

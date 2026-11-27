@@ -14,10 +14,23 @@ async function nativeLookup(hostname: string, family?: number): Promise<LookupAd
   const fam = isIP(hostname);
   if (fam) return [{ address: hostname, family: fam }];
   if (hostname === 'localhost') return [{ address: '127.0.0.1', family: 4 }];
-  const r = await callNative<{ addresses: LookupAddress[] }>('MeshNet', 'dnsLookup', {
-    hostname,
-    family: family ?? 0,
-  });
+  let r: { addresses: LookupAddress[] };
+  try {
+    r = await callNative<{ addresses: LookupAddress[] }>('MeshNet', 'dnsLookup', {
+      hostname,
+      family: family ?? 0,
+    });
+  } catch (e) {
+    // Native layers report getaddrinfo failures as text; restore Node's err.code.
+    const message = e instanceof Error ? e.message : String(e);
+    const code =
+      /\b(ENOTFOUND|EAI_AGAIN|EAI_NONAME|ENODATA|ETIMEOUT)\b/.exec(message)?.[1] ?? 'ENOTFOUND';
+    throw Object.assign(new Error(`getaddrinfo ${code} ${hostname}`), {
+      code: code === 'EAI_NONAME' ? 'ENOTFOUND' : code,
+      hostname,
+      syscall: 'getaddrinfo',
+    });
+  }
   const list = r.addresses.filter((a) => !family || a.family === family);
   if (list.length === 0) {
     throw Object.assign(new Error(`getaddrinfo ENOTFOUND ${hostname}`), {

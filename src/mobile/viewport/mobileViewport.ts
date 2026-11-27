@@ -32,6 +32,8 @@ let fold: FoldRect | null = null;
 let posture: DevicePosture = 'flat';
 let probe: HTMLDivElement | null = null;
 let keyboardInset = 0;
+/** Keyboard state from @capacitor/keyboard (native resize shrinks the layout viewport itself). */
+let nativeKeyboardOpen = false;
 let scheduled = false;
 
 function insets(): { top: number; right: number; bottom: number; left: number } {
@@ -79,8 +81,13 @@ function update(): void {
   const layoutH = window.innerHeight;
   const visibleH = vv ? vv.height : layoutH;
   // Keyboard: the visual viewport shrinks below the layout viewport (Android M139+, iOS).
-  keyboardInset = Math.max(0, Math.round(layoutH - visibleH - (vv?.offsetTop ?? 0)));
-  const keyboardOpen = keyboardInset > 120;
+  const visualInset = Math.max(0, Math.round(layoutH - visibleH - (vv?.offsetTop ?? 0)));
+  // With `Keyboard.resize: 'native'` / adjustResize the layout viewport itself shrinks, so the
+  // visual-viewport gap stays ~0; the Capacitor Keyboard events are the reliable signal there.
+  // Native resize already removes the keyboard from the layout viewport, so the inset stays the
+  // visual-viewport gap; the plugin only reports that the keyboard is open.
+  keyboardInset = visualInset;
+  const keyboardOpen = nativeKeyboardOpen || visualInset > 120;
   const ins = insets();
   const prev = getMobileViewport();
   const next = computeMobileViewport({
@@ -133,6 +140,19 @@ export function installMobileViewport(): void {
   window.addEventListener('orientationchange', schedule);
   window.visualViewport?.addEventListener('resize', schedule);
   window.visualViewport?.addEventListener('scroll', schedule);
+  for (const [event, open] of [
+    ['keyboardWillShow', true],
+    ['keyboardDidShow', true],
+    ['keyboardWillHide', false],
+    ['keyboardDidHide', false],
+  ] as const) {
+    void listenPlugin('Keyboard', event, () => {
+      nativeKeyboardOpen = open;
+      schedule();
+    }).catch((e: unknown) => {
+      console.debug('[mobile] keyboard listener unavailable', e);
+    });
+  }
   const device = getPlugin('MeshDevice') as unknown as {
     getFoldState?: () => Promise<{ folds: NativeFold[] }>;
   };

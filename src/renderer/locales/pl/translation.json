@@ -9491,5 +9491,17 @@
     "tourLastHint": "Protokoły można zmieniać w dowolnym momencie w sekcji Aplikacja > Protokoły.",
     "next": "Dalej",
     "done": "Gotowe"
+  },
+  "mobile": {
+    "starting": "Uruchamianie Mesh Client…",
+    "startFailed": "Nie udało się uruchomić Mesh Client.",
+    "tryAgain": "Spróbuj ponownie",
+    "backgroundTitle": "Mesh Client jest połączony",
+    "backgroundText": "Połączenia radiowe i sieciowe pozostają otwarte.",
+    "chooseRadioTitle": "Wybierz radio",
+    "chooseRadioMessage": "Wybierz urządzenie USB do połączenia",
+    "noUsbDevice": "Nie podłączono żadnego szeregowego urządzenia USB. Podłącz radio kablem USB OTG.",
+    "usbPermissionDenied": "Odmówiono uprawnień USB.",
+    "folderUnavailable": "Wybór folderu nie jest dostępny na urządzeniach mobilnych."
   }
 }

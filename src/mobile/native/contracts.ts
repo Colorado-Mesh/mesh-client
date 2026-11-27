@@ -258,6 +258,22 @@ export interface MeshProcessPlugin {
   writeStdin(o: { id: string; dataB64: string }): Promise<void>;
   closeStdin(o: { id: string }): Promise<void>;
   kill(o: { id: string; signal: string }): Promise<void>;
+
+  /**
+   * The real directory shared by main and the sidecar (Reticulum config + storage). The host maps
+   * the virtual `/data/user/reticulum` to it in sidecar arguments. Android:
+   * `<filesDir>/mesh-reticulum`; iOS: `<Application Support>/mesh-reticulum`. Created if missing.
+   */
+  getSharedDir(): Promise<{ path: string }>;
+  /** Recursive listing under the shared dir (`path` relative, '' = root); files only. */
+  sharedList(o: {
+    path: string;
+  }): Promise<{ files: { path: string; size: number; mtimeMs: number }[] }>;
+  sharedRead(o: { path: string }): Promise<{ dataB64: string }>;
+  /** Atomic replace (write temp + rename); creates parent directories. */
+  sharedWrite(o: { path: string; dataB64: string }): Promise<void>;
+  /** Removes a file or directory tree; no error when missing. */
+  sharedRemove(o: { path: string }): Promise<void>;
 }
 
 export interface MeshProcessEvents {

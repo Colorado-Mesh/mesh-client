@@ -27,6 +27,7 @@ import {
   isGattSessionProfile,
 } from '../../../main/gatt-sidecar-proxy';
 import { callNative, onNativeEvent } from '../hostChannel';
+import { linkClosed, linkOpened } from '../linkTracker';
 
 export {
   fetchErrorDetail,
@@ -313,6 +314,7 @@ export class GattSidecarProxy extends EventEmitter {
         characteristic: notifyUuid,
       });
       this.sessions.set(sessionId, session);
+      linkOpened('ble');
       if (wire === 'meshtastic') {
         session.drainRequested = true;
         void this.runReadPump(session);
@@ -421,7 +423,7 @@ export class GattSidecarProxy extends EventEmitter {
       failures = out.failed ? failures + 1 : 0;
       if (failures >= FROM_RADIO_MAX_FAILED_DRAINS) {
         console.warn(
-          'mcL9008 [gatt-mobile] meshtastic fromRadio read pump stalled; reporting disconnect',
+          'mcL1522 [gatt-mobile] meshtastic fromRadio read pump stalled; reporting disconnect',
         );
         this.handleRemoteDisconnect(s, 'read_pump_stalled');
         return;
@@ -439,6 +441,7 @@ export class GattSidecarProxy extends EventEmitter {
   }
 
   private teardown(s: Session): void {
+    if (!s.closed && this.sessions.get(s.profile) === s) linkClosed('ble');
     s.closed = true;
     if (s.rssiTimer) clearInterval(s.rssiTimer);
     s.rssiTimer = null;

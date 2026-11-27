@@ -52,7 +52,7 @@ export function hostSend(channel: string, args: unknown[]): void {
     post({ t: 'send', channel, args: cloneArgs(args) });
   } catch (e) {
     console.warn(
-      `[mobile] ipc send ${channel} failed: ${e instanceof Error ? e.message : String(e)}`,
+      `mcL1527 [mobile] ipc send ${channel} failed: ${e instanceof Error ? e.message : String(e)}`,
     );
   }
 }
@@ -110,7 +110,7 @@ async function handleNative(msg: Extract<HostToUiMessage, { t: 'native' }>): Pro
     } catch (e) {
       attachedNativeEvents.delete(key);
       console.warn(
-        `[mobile] addListener ${key} failed: ${e instanceof Error ? e.message : String(e)}`,
+        `mcL1528 [mobile] addListener ${key} failed: ${e instanceof Error ? e.message : String(e)}`,
       );
     }
     return;
@@ -155,7 +155,9 @@ function onMessage(ev: MessageEvent<HostToUiMessage>): void {
         try {
           l(RENDERER_EVENT, ...msg.args);
         } catch (e) {
-          console.error(`[mobile] listener for ${msg.channel} threw`, e);
+          console.error(
+            `mcL1529 [mobile] listener for ${msg.channel} threw: ${e instanceof Error ? e.message : String(e)}`,
+          );
         }
       }
       return;
@@ -167,8 +169,9 @@ function onMessage(ev: MessageEvent<HostToUiMessage>): void {
       void handleUi(msg);
       return;
     case 'log':
-      if (msg.level === 'error') console.error(msg.text);
-      else if (msg.level === 'warn') console.warn(msg.text);
+      // Forwarded host-worker warn/error lines keep their own mcL id after this relay id.
+      if (msg.level === 'error') console.error('mcL1531 [mobile/host-log]', msg.text);
+      else if (msg.level === 'warn') console.warn('mcL1532 [mobile/host-log]', msg.text);
       else console.debug(msg.text);
       return;
     case 'ready':
@@ -193,7 +196,7 @@ export function startHost(opts: StartHostOptions): Promise<void> {
   worker = new Worker(opts.workerUrl, { type: 'module', name: 'mesh-host' });
   worker.addEventListener('message', onMessage);
   worker.addEventListener('error', (ev) => {
-    console.error('[mobile] host worker error', ev.message);
+    console.error(`mcL1530 [mobile] host worker error: ${ev.message}`);
     readyReject(new Error(ev.message || 'host worker failed to load'));
   });
   post({

@@ -9347,5 +9347,17 @@
     "tourLastHint": "Você pode alterar os protocolos a qualquer momento em Aplicativo > Protocolos.",
     "next": "Avançar",
     "done": "Concluído"
+  },
+  "mobile": {
+    "starting": "Iniciando o Mesh Client…",
+    "startFailed": "Não foi possível iniciar o Mesh Client.",
+    "tryAgain": "Tentar novamente",
+    "backgroundTitle": "Mesh Client está conectado",
+    "backgroundText": "Mantendo abertos os links de rádio e de rede.",
+    "chooseRadioTitle": "Escolha um rádio",
+    "chooseRadioMessage": "Escolha o dispositivo USB para conectar",
+    "noUsbDevice": "Nenhum dispositivo serial USB está conectado. Conecte o rádio com um cabo USB OTG.",
+    "usbPermissionDenied": "A permissão USB foi negada.",
+    "folderUnavailable": "Escolher uma pasta não está disponível no celular."
   }
 }
