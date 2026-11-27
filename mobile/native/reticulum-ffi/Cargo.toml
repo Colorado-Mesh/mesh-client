@@ -8,8 +8,11 @@ rust-version = "1.88"
 publish = false
 
 # Standalone workspace so the desktop sidecar's Cargo.lock and lint policy (`unsafe_code =
-# "forbid"`) stay untouched. scripts/build-mobile-sidecar.mjs seeds this crate's gitignored
-# Cargo.lock from ../Cargo.lock, so every shared dependency resolves to the reviewed version.
+# "forbid"`) stay untouched. mobile/scripts/build-sidecar.mjs stages the desktop crate (plus the
+# mobile library root, ../reticulum-lib/lib.rs) at ../.stage/reticulum-sidecar and seeds this
+# crate's gitignored Cargo.lock from reticulum-sidecar/Cargo.lock, so every shared dependency
+# resolves to the reviewed version. Run `node mobile/scripts/build-sidecar.mjs stage` before any
+# cargo command here.
 [workspace]
 
 [lib]
@@ -25,7 +28,7 @@ rns-stack = ["mesh-client-reticulum-sidecar/rns-stack"]
 rns-rnode-tcp = ["mesh-client-reticulum-sidecar/rns-rnode-tcp"]
 
 [dependencies]
-mesh-client-reticulum-sidecar = { path = "..", default-features = false }
+mesh-client-reticulum-sidecar = { path = "../.stage/reticulum-sidecar", default-features = false }
 clap = "4"
 serde_json = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "fs", "macros", "sync"] }
