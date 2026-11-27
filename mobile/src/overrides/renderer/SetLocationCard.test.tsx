@@ -20,6 +20,7 @@ import SetLocationCard from './SetLocationCard';
 function resetState() {
   localStorage.removeItem(GPS_SETTINGS_STORAGE_KEY);
   localStorage.removeItem(SAVED_LOCATIONS_STORAGE_KEY);
+  localStorage.removeItem('mesh-mobile:phoneLocationId');
   resetSavedLocationsCacheForTests();
   useLocationPromptStore.setState({
     confirmedLocationId: null,
@@ -98,10 +99,74 @@ describe('SetLocationCard (mobile)', () => {
     expect(onLocationChanged).toHaveBeenCalledTimes(1);
   });
 
-  it('defers to the desktop card when confirming a saved location', () => {
+  it('asks "Still at" with the phone option, and confirms in one tap', () => {
+    const eoc = saveNewLocation({ name: 'EOC', lat: 39.7, lon: -104.9, fixed: false });
+    render(<SetLocationCard ourPosition={null} trust="needsConfirm" variant="startup" />);
+    expect(screen.getByRole('heading', { name: 'Still at EOC?' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: "Use this phone's location" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Yes, still at EOC/ }));
+    expect(useLocationPromptStore.getState().confirmedLocationId).toBe(eoc.id);
+  });
+
+  it('"New location" opens the phone choices, and Cancel returns to the question', () => {
     saveNewLocation({ name: 'EOC', lat: 39.7, lon: -104.9, fixed: false });
     render(<SetLocationCard ourPosition={null} trust="needsConfirm" variant="startup" />);
-    expect(screen.queryByRole('button', { name: "Use this phone's location" })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'New location' }));
+    expect(screen.getByRole('button', { name: 'Enter manually' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Still at EOC?' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('heading', { name: 'Still at EOC?' })).toBeInTheDocument();
+  });
+
+  it('updates the one "This phone" entry on later uses instead of adding another', async () => {
+    const fix = vi.fn().mockResolvedValue({ lat: 39.75, lon: -105.0, source: 'native' });
+    window.electronAPI.getGpsFix = fix;
+    const first = render(<SetLocationCard ourPosition={null} trust="unknown" variant="startup" />);
+    fireEvent.click(screen.getByRole('button', { name: "Use this phone's location" }));
+    await vi.waitFor(() => {
+      expect(readSavedLocations().locations).toHaveLength(1);
+    });
+    first.unmount();
+    // Next launch, somewhere else: "Still at This phone?" -> use the phone again.
+    fix.mockResolvedValue({ lat: 40.01, lon: -105.27, source: 'native' });
+    render(<SetLocationCard ourPosition={null} trust="needsConfirm" variant="startup" />);
+    fireEvent.click(screen.getByRole('button', { name: "Use this phone's location" }));
+    await vi.waitFor(() => {
+      expect(getActiveSavedLocation()).toMatchObject({ lat: 40.01, lon: -105.27 });
+    });
+    expect(readSavedLocations().locations).toHaveLength(1);
+  });
+
+  it('adopts an earlier "This phone" entry that has no remembered id', async () => {
+    saveNewLocation({ name: 'This phone', lat: 39.75, lon: -105.0, fixed: false });
+    saveNewLocation({ name: 'Home', lat: 40, lon: -105, fixed: true });
+    window.electronAPI.getGpsFix = vi
+      .fn()
+      .mockResolvedValue({ lat: 40.01, lon: -105.27, source: 'native' });
+    render(<SetLocationCard ourPosition={null} trust="unknown" variant="startup" />);
+    fireEvent.click(screen.getByRole('button', { name: "Use this phone's location" }));
+    await vi.waitFor(() => {
+      expect(getActiveSavedLocation()).toMatchObject({ name: 'This phone', lat: 40.01 });
+    });
+    expect(
+      readSavedLocations()
+        .locations.map((l) => l.name)
+        .sort(),
+    ).toEqual(['Home', 'This phone']);
+  });
+
+  it('has no axe violations while confirming', async () => {
+    saveNewLocation({ name: 'EOC', lat: 39.7, lon: -104.9, fixed: false });
+    const { container } = render(
+      <SetLocationCard
+        ourPosition={null}
+        trust="needsConfirm"
+        variant="startup"
+        onDismiss={vi.fn()}
+      />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('renders nothing when the position is trusted', () => {
