@@ -5,13 +5,17 @@ import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener'
 import type { MeshComDeviceHandle } from '../protocols/MeshComProtocol';
 import { MESHCOM_SERIAL_WX_COLLECT_MS } from '../timeConstants';
 import type { IdentityId } from '../types';
-import { sendMeshcomDeviceCommand } from './meshcomDeviceCommands';
 import { type MeshcomMheardStation, parseMeshcomMheardText } from './meshcomMheard';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+async function loadSendMeshcomDeviceCommand() {
+  const { sendMeshcomDeviceCommand } = await import('./meshcomDeviceCommands');
+  return sendMeshcomDeviceCommand;
 }
 
 async function collectMheardViaSerial(
@@ -25,6 +29,7 @@ async function collectMheardViaSerial(
     }
   });
   try {
+    const sendMeshcomDeviceCommand = await loadSendMeshcomDeviceCommand();
     await sendMeshcomDeviceCommand(handle, '--mheard');
     await sleep(MESHCOM_SERIAL_WX_COLLECT_MS);
     return parseMeshcomMheardText(lines.join('\n'));
@@ -37,6 +42,7 @@ async function collectMheardViaBle(handle: MeshComDeviceHandle): Promise<Meshcom
   const stations: MeshcomMheardStation[] = [];
   handle.mheardInFlight = stations;
   try {
+    const sendMeshcomDeviceCommand = await loadSendMeshcomDeviceCommand();
     await sendMeshcomDeviceCommand(handle, '--mheard');
     await sleep(MESHCOM_SERIAL_WX_COLLECT_MS);
     return [...stations];

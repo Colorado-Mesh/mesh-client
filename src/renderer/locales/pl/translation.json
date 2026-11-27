@@ -2655,7 +2655,8 @@
     "aiResultHeading": "Triaż oparty na sztucznej inteligencji",
     "aiWorking": "Pobieranie dokumentów i analizowanie…",
     "aiVerify": "Porównaj triaż przeprowadzony przez sztuczną inteligencję z ustaleniami i dokumentacją. Powyższe zalecenia heurystyczne pozostają wiążące w trybie offline.",
-    "troubleshootingDocs": "Dokumenty dotyczące rozwiązywania problemów ↗"
+    "troubleshootingDocs": "Dokumenty dotyczące rozwiązywania problemów ↗",
+    "aiNeedsFindings": "Analiza z wykorzystaniem sztucznej inteligencji wymaga co najmniej jednego wyniku opartego na regułach. Wbudowana funkcja Analizuj już zgłosiła brak problemów."
   },
   "logAnalyzer": {
     "categories": {
@@ -8653,7 +8654,8 @@
       "cancelled": "Podsumowanie anulowane.",
       "error": "Nie można podsumować. Sprawdź ustawienia sztucznej inteligencji i spróbuj ponownie.",
       "repetitiveOutput": "Model zaczął się powtarzać. Wypróbuj większy model lub krótszy zasięg.",
-      "docsUnavailable": "Nie udało się załadować dokumentów dotyczących rozwiązywania problemów. Sprawdź połączenie internetowe i ponów próbę analizy za pomocą sztucznej inteligencji."
+      "docsUnavailable": "Nie udało się załadować dokumentów dotyczących rozwiązywania problemów. Sprawdź połączenie internetowe i ponów próbę analizy za pomocą sztucznej inteligencji.",
+      "noFindings": "Brak wyników opartych na regułach do analizy. Wbudowana funkcja analizy już zgłosiła brak problemów."
     },
     "hours_many": "Ostatnie {{count}} godzin",
     "hours_few": "Ostatnie {{count}} godziny",

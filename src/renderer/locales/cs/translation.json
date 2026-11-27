@@ -2632,7 +2632,8 @@
     "aiResultHeading": "Třídění pomocí umělé inteligence",
     "aiWorking": "Načítání dokumentů a analýza…",
     "aiVerify": "Ověřte třídění pomocí umělé inteligence podle zjištění a dokumentů. Výše uvedená heuristická doporučení zůstávají směrodatná i v režimu offline.",
-    "troubleshootingDocs": "Dokumenty k řešení problémů ↗"
+    "troubleshootingDocs": "Dokumenty k řešení problémů ↗",
+    "aiNeedsFindings": "Analýza pomocí umělé inteligence vyžaduje alespoň jeden nález založený na pravidlech. Vestavěná analýza již nahlásila, že nebyly zjištěny žádné problémy."
   },
   "logAnalyzer": {
     "categories": {
@@ -8602,7 +8603,8 @@
       "cancelled": "Shrnutí bylo zrušeno.",
       "error": "Nelze shrnout. Zkontrolujte nastavení AI a zkuste to znovu.",
       "repetitiveOutput": "Model se začal opakovat. Vyzkoušejte větší model nebo kratší řadu.",
-      "docsUnavailable": "Nepodařilo se načíst dokumenty k řešení problémů. Zkontrolujte připojení k internetu a zkuste funkci Analýza pomocí umělé inteligence znovu."
+      "docsUnavailable": "Nepodařilo se načíst dokumenty k řešení problémů. Zkontrolujte připojení k internetu a zkuste funkci Analýza pomocí umělé inteligence znovu.",
+      "noFindings": "Žádné nálezy založené na pravidlech k analýze. Vestavěná analýza již nahlásila, že nebyly zjištěny žádné problémy."
     },
     "hours_few": "Poslední {{count}} hodiny",
     "loadingModel": "Načítání modelu na tomto zařízení...",

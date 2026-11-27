@@ -2916,6 +2916,7 @@
     "aiSetup": "Set up AI for log analysis",
     "aiFixEngine": "Fix AI engine",
     "aiNeedsNetwork": "Analyze with AI needs an internet connection to load troubleshooting docs. Built-in analysis still works offline.",
+    "aiNeedsFindings": "Analyze with AI needs at least one rule-based finding. Built-in Analyze already reported no issues.",
     "aiPrivacyHint": "Sends packed findings to your AI engine and fetches public troubleshooting docs. Review samples before sharing.",
     "aiConversationLabel": "{{protocol}} log analysis",
     "aiResultHeading": "AI triage",
@@ -9095,6 +9096,7 @@
       "invalidResponse": "The engine returned an incomplete or unsupported response.",
       "cancelled": "Summary cancelled.",
       "docsUnavailable": "Could not load troubleshooting docs. Check your internet connection and retry Analyze with AI.",
+      "noFindings": "No rule-based findings to analyze. Built-in Analyze already reported no issues.",
       "error": "Could not summarize. Check AI settings and retry.",
       "repetitiveOutput": "The model started repeating itself. Try a larger model or a shorter range."
     },

@@ -418,6 +418,20 @@ it.each(['http://localhost:1234', 'http://127.0.0.1:1234', 'http://[::1]:1234'])
   },
 );
 
+it('does not debug-log Invalid URL for empty or incomplete AI endpoint drafts', async () => {
+  const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+  await openSettings({ engine: 'local', baseUrl: '', hasApiKey: false });
+  fireEvent.change(screen.getByLabelText('Server base URL'), {
+    target: { value: 'not-a-url' },
+  });
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(
+    debug.mock.calls.some((args) =>
+      args.some((arg) => arg instanceof TypeError && String(arg).includes('Invalid URL')),
+    ),
+  ).toBe(false);
+});
+
 it('requires saving endpoint and key edits before testing the connection', async () => {
   await openSettings({
     engine: 'local',

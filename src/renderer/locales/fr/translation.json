@@ -2601,7 +2601,8 @@
     "aiResultHeading": "Triage par IA",
     "aiWorking": "Récupération des documents et analyse en cours…",
     "aiVerify": "Vérifiez le triage effectué par l’IA par rapport aux résultats et aux documents. Les recommandations heuristiques ci-dessus restent faisant autorité hors ligne.",
-    "troubleshootingDocs": "Documents de dépannage ↗"
+    "troubleshootingDocs": "Documents de dépannage ↗",
+    "aiNeedsFindings": "L'analyse avec l'IA nécessite au moins un résultat basé sur des règles. L'analyse intégrée n'a déjà signalé aucun problème."
   },
   "logAnalyzer": {
     "categories": {
@@ -8525,7 +8526,8 @@
       "cancelled": "Résumé annulé.",
       "error": "Impossible de résumer. Vérifiez les paramètres de l'IA et réessayez.",
       "repetitiveOutput": "Le modèle a commencé à se répéter. Essayez un modèle plus grand ou une gamme plus courte.",
-      "docsUnavailable": "Impossible de charger les documents de dépannage. Vérifiez votre connexion Internet et réessayez d’utiliser la fonctionnalité Analyser avec l’IA."
+      "docsUnavailable": "Impossible de charger les documents de dépannage. Vérifiez votre connexion Internet et réessayez d’utiliser la fonctionnalité Analyser avec l’IA.",
+      "noFindings": "Aucun résultat basé sur des règles à analyser. L’analyse intégrée n’a déjà signalé aucun problème."
     },
     "loadingModel": "Chargement du modèle sur cet appareil...",
     "readingMessages": "Lecture des messages sur cet appareil. Le traitement par le processeur peut prendre quelques minutes...",

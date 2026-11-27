@@ -24,6 +24,21 @@ beforeEach(() => {
 });
 
 describe('prepareLogAnalysisPrompt', () => {
+  it('returns noFindings without fetching docs for empty packed findings', async () => {
+    const prepared = await prepareLogAnalysisPrompt(
+      {
+        conversationLabel: 'meshtastic log analysis',
+        protocol: 'meshtastic',
+        locale: 'en',
+        messages: [{ at: 1, sender: 'empty', body: 'No issues detected' }],
+      },
+      { maxChars: 4_000, maxPromptBytes: 12_000 },
+      () => true,
+    );
+    expect(prepared).toEqual({ ok: false, reason: 'noFindings' });
+    expect(mockedFetch).not.toHaveBeenCalled();
+  });
+
   it('returns docsUnavailable when fetch fails', async () => {
     mockedFetch.mockRejectedValue(new LogDocsUnavailableError());
     const prepared = await prepareLogAnalysisPrompt(

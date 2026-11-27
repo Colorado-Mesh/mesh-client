@@ -1,9 +1,30 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
-import { buildAiLogAnalysisPrompt } from './aiLogAnalysisPrompt';
+import { buildAiLogAnalysisPrompt, isEmptyLogAnalysisFindings } from './aiLogAnalysisPrompt';
 
 describe('buildAiLogAnalysisPrompt', () => {
+  it('treats missing or empty-sender rows as empty findings', () => {
+    expect(isEmptyLogAnalysisFindings([])).toBe(true);
+    expect(isEmptyLogAnalysisFindings([{ at: 1, sender: 'empty', body: 'No issues' }])).toBe(true);
+    expect(
+      isEmptyLogAnalysisFindings([{ at: 1, sender: 'ble-connection', body: 'BLE failed' }]),
+    ).toBe(false);
+  });
+
+  it('instructs the model not to invent issues from docs when findings are empty', () => {
+    const prompt = buildAiLogAnalysisPrompt({
+      conversationLabel: 'x',
+      protocol: 'meshtastic',
+      locale: 'en',
+      docsText: '## BLE\nReset pairing.',
+      docsUrl: 'https://example.invalid/',
+      maxChars: 20_000,
+      messages: [{ at: 1, sender: 'empty', body: 'No issues detected' }],
+    });
+    expect(prompt.system).toContain('do not invent problems from the troubleshooting docs');
+  });
+
   it('separates trusted docs from untrusted log findings', () => {
     const prompt = buildAiLogAnalysisPrompt(
       {

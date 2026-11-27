@@ -2601,7 +2601,8 @@
     "aiResultHeading": "AI 分流",
     "aiWorking": "正在获取文档并进行分析……",
     "aiVerify": "根据检查结果和文档验证 AI 分流。上述启发式建议在离线时仍具有权威性。",
-    "troubleshootingDocs": "故障排除文档 ↗"
+    "troubleshootingDocs": "故障排除文档 ↗",
+    "aiNeedsFindings": "使用 AI 进行分析需要至少一个基于规则的结果。内置分析已报告不存在问题。"
   },
   "logAnalyzer": {
     "categories": {
@@ -8525,7 +8526,8 @@
       "cancelled": "摘要已取消。",
       "error": "无法汇总。请检查AI设置并重试。",
       "repetitiveOutput": "模型开始自我重复。尝试更大的型号或更短的范围。",
-      "docsUnavailable": "无法加载故障排除文档。请检查您的互联网连接，然后重试“使用 AI 分析”。"
+      "docsUnavailable": "无法加载故障排除文档。请检查您的互联网连接，然后重试“使用 AI 分析”。",
+      "noFindings": "没有基于规则的结果可供分析。内置分析已报告不存在问题。"
     },
     "loadingModel": "正在此设备上加载模型...",
     "readingMessages": "正在读取此设备上的消息。CPU处理可能需要几分钟时间...",

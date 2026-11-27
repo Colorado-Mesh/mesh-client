@@ -101,14 +101,17 @@ generation (show the loading phase). Answers never overwrite Catch up summary te
 ## Log Analyze with AI
 
 The Log panel’s rule-based Analyze modal can offer **Analyze with AI** when Catch up AI is
-opted in and ready. That path uses the same `ai:summarize` IPC with `surface: 'log'` (single-pass;
-no follow-ups or multi-pass). Main allowlist-fetches troubleshooting markdown from
+opted in and ready **and** the heuristic analyzer produced at least one finding. Empty packed
+findings (`sender: 'empty'`) are rejected in main as `noFindings` without a docs fetch or
+inference, so troubleshooting pages alone cannot invent issues. That path uses the same
+`ai:summarize` IPC with `surface: 'log'` (single-pass; no follow-ups or multi-pass). Main
+allowlist-fetches troubleshooting markdown from
 `raw.githubusercontent.com/Colorado-Mesh/mesh-client/main/docs/` (same pages as the published
 MkDocs site), selects heading sections that match finding tokens under the engine prompt budget,
 and builds the prompt via sibling `ai-summarize-prompt-prepare.js`
 (`src/main/ai/summarizePromptPrepare.ts`, using `src/shared/aiLogAnalysisPrompt.ts`). A docs fetch failure, or an offline state detected by the main process after a
 request starts, produces `docsUnavailable`. Separately, the Log panel disables the
-AI action when the renderer is already offline. The built-in analyzer remains
+AI action when the renderer is already offline or there are no findings. The built-in analyzer remains
 available either way. See [Log analysis](../log-analysis.md).
 
 ## Data and runtime boundaries

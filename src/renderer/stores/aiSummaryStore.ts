@@ -442,6 +442,7 @@ export function mapAiError(
         'invalidResponse',
         'cancelled',
         'docsUnavailable',
+        'noFindings',
       ].includes(message)
     )
       return message as AiSummaryErrorReason;

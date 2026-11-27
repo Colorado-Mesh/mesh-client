@@ -114,8 +114,10 @@ export default function LogAnalyzeModal({
     };
   }, [isOpen, summaryKey]);
 
+  const hasFindings = result.categories.length > 0;
+
   const runAiAnalysis = () => {
-    if (!canAiSummarize || !online || result.totalEntries === 0) return;
+    if (!canAiSummarize || !online || !hasFindings) return;
     const messages = analysisResultToAiMessages(result, t);
     void runSummary(summaryKey, {
       requestId: crypto.randomUUID(),
@@ -271,11 +273,13 @@ export default function LogAnalyzeModal({
                 <Button
                   size="sm"
                   aria-label={t('logAnalyzeModal.aiAnalyze')}
-                  disabled={!online || result.totalEntries === 0 || aiSummary?.streaming === true}
+                  disabled={!online || !hasFindings || aiSummary?.streaming === true}
                   title={
-                    online
-                      ? t('logAnalyzeModal.aiPrivacyHint')
-                      : t('logAnalyzeModal.aiNeedsNetwork')
+                    !hasFindings
+                      ? t('logAnalyzeModal.aiNeedsFindings')
+                      : online
+                        ? t('logAnalyzeModal.aiPrivacyHint')
+                        : t('logAnalyzeModal.aiNeedsNetwork')
                   }
                   onClick={runAiAnalysis}
                 >

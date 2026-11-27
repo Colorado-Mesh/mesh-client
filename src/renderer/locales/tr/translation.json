@@ -2601,7 +2601,8 @@
     "aiResultHeading": "YZ triyajı",
     "aiWorking": "Belgeler alınıyor ve analiz ediliyor…",
     "aiVerify": "Yapay zekâ triyajını bulgulara ve belgelere göre doğrulayın. Yukarıdaki sezgisel öneriler çevrim dışıyken de geçerliliğini korur.",
-    "troubleshootingDocs": "Sorun giderme belgeleri ↗"
+    "troubleshootingDocs": "Sorun giderme belgeleri ↗",
+    "aiNeedsFindings": "Yapay zekâ ile analiz etme için en az bir kurala dayalı bulgu gerekir. Yerleşik Analiz zaten herhangi bir sorun olmadığını bildirdi."
   },
   "logAnalyzer": {
     "categories": {
@@ -8525,7 +8526,8 @@
       "cancelled": "Özet iptal edildi.",
       "error": "Özetlenemedi. AI ayarlarını kontrol edin ve yeniden deneyin.",
       "repetitiveOutput": "Model kendini tekrarlamaya başladı. Daha büyük bir model veya daha kısa bir aralık deneyin.",
-      "docsUnavailable": "Sorun giderme belgeleri yüklenemedi. İnternet bağlantınızı kontrol edin ve Yapay Zekâ ile Analiz Et'i yeniden deneyin."
+      "docsUnavailable": "Sorun giderme belgeleri yüklenemedi. İnternet bağlantınızı kontrol edin ve Yapay Zekâ ile Analiz Et'i yeniden deneyin.",
+      "noFindings": "Analiz edilecek kural tabanlı bulgu yok. Yerleşik Analiz zaten sorun olmadığını bildirdi."
     },
     "loadingModel": "Model bu cihaza yükleniyor...",
     "readingMessages": "Bu cihazdaki mesajlar okunuyor. CPU'nun işlenmesi birkaç dakika sürebilir...",

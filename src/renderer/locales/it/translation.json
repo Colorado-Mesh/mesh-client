@@ -2601,7 +2601,8 @@
     "aiResultHeading": "Triage tramite IA",
     "aiWorking": "Recupero dei documenti e analisi in corso…",
     "aiVerify": "Confrontare il triage dell'IA con i risultati e la documentazione. Le raccomandazioni euristiche di cui sopra rimangono autorevoli anche offline.",
-    "troubleshootingDocs": "Documenti per la risoluzione dei problemi ↗"
+    "troubleshootingDocs": "Documenti per la risoluzione dei problemi ↗",
+    "aiNeedsFindings": "L'analisi con l'IA richiede almeno un risultato basato su regole. L'analisi integrata non ha già segnalato alcun problema."
   },
   "logAnalyzer": {
     "categories": {
@@ -8525,7 +8526,8 @@
       "cancelled": "Riepilogo annullato.",
       "error": "Impossibile riepilogare. Controlla le impostazioni AI e riprova.",
       "repetitiveOutput": "Il modello ha iniziato a ripetersi. Prova un modello più grande o una gamma più corta.",
-      "docsUnavailable": "Impossibile caricare i documenti per la risoluzione dei problemi. Controlla la connessione Internet e riprova ad analizzare con l'IA."
+      "docsUnavailable": "Impossibile caricare i documenti per la risoluzione dei problemi. Controlla la connessione Internet e riprova ad analizzare con l'IA.",
+      "noFindings": "Nessun risultato basato su regole da analizzare. L'analisi integrata non ha già rilevato alcun problema."
     },
     "loadingModel": "Caricamento del modello su questo dispositivo in corso...",
     "readingMessages": "Lettura dei messaggi su questo dispositivo. L'elaborazione della CPU potrebbe richiedere alcuni minuti...",

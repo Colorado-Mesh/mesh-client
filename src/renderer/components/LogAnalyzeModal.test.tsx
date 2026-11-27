@@ -209,6 +209,44 @@ describe('log analysis evidence and report', () => {
     expect(screen.getByRole('button', { name: en.logAnalyzeModal.aiAnalyze })).toBeEnabled();
   });
 
+  it('disables Analyze with AI when the log has entries but no rule-based findings', () => {
+    useAiSummaryStore.setState({
+      cachedEnabled: true,
+      status: {
+        enabled: true,
+        engine: 'os',
+        wireFormat: null,
+        baseUrl: '',
+        model: 'Apple Intelligence',
+        hasApiKey: false,
+        allowRemote: false,
+        isRemote: false,
+        localEngine: { ready: false, modelId: null, downloading: false },
+        osAi: { available: true, platform: 'apple-foundation-models' },
+        mlxHelperAvailable: false,
+        mlxHelperStatus: 'unsupported',
+        mlxHelperReason: 'unsupported',
+        timeoutSeconds: 60,
+        maxCollectedMessages: 2000,
+      },
+    });
+    const infoOnly: LogEntry[] = [
+      {
+        ts: 1000,
+        level: 'info',
+        source: 'main',
+        message: '[IPC] appSettings:set: rendererPreferences (1 rows)',
+      },
+    ];
+    render(<LogAnalyzeModal isOpen onClose={vi.fn()} entries={infoOnly} protocol="meshtastic" />);
+    expect(screen.getByText(en.logAnalyzeModal.emptyState)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: en.logAnalyzeModal.aiAnalyze })).toBeDisabled();
+    expect(screen.getByRole('button', { name: en.logAnalyzeModal.aiAnalyze })).toHaveAttribute(
+      'title',
+      en.logAnalyzeModal.aiNeedsFindings,
+    );
+  });
+
   it('disables Analyze with AI when offline and keeps built-in findings', () => {
     const onlineSpy = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     useAiSummaryStore.setState({

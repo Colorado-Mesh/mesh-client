@@ -24,7 +24,7 @@ export type SummarizePromptResult =
       };
       finalStyle: 'compact' | 'structured';
     }
-  | { ok: false; reason: 'docsUnavailable' | 'tooLarge' };
+  | { ok: false; reason: 'docsUnavailable' | 'tooLarge' | 'noFindings' };
 
 type BuildAiSummaryPrompt = typeof buildAiSummaryPrompt;
 type BuildAiFollowUpPrompt = typeof buildAiFollowUpPrompt;

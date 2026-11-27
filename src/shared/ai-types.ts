@@ -100,6 +100,8 @@ export type AiSummaryErrorReason =
   | 'cancelled'
   /** Log Analyze with AI could not fetch docs-site troubleshooting material. */
   | 'docsUnavailable'
+  /** Log Analyze with AI had only the synthetic empty finding row (no real categories). */
+  | 'noFindings'
   | 'error';
 
 export interface AiOsAiStatus {

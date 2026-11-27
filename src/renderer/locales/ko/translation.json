@@ -2601,7 +2601,8 @@
     "aiResultHeading": "AI 분류",
     "aiWorking": "문서를 가져와 분석 중...",
     "aiVerify": "AI 분류 결과를 소견 및 문서와 대조하여 확인하세요. 위의 휴리스틱 권장 사항은 오프라인 상태에서도 유효합니다.",
-    "troubleshootingDocs": "문제 해결 문서 ↗"
+    "troubleshootingDocs": "문제 해결 문서 ↗",
+    "aiNeedsFindings": "AI로 분석하려면 규칙 기반 결과가 하나 이상 필요합니다. 기본 제공 분석 기능에서 이미 문제가 없다고 보고했습니다."
   },
   "logAnalyzer": {
     "categories": {
@@ -8525,7 +8526,8 @@
       "cancelled": "요약이 취소되었습니다.",
       "error": "요약할 수 없습니다. AI 설정을 확인하고 다시 시도하십시오.",
       "repetitiveOutput": "모델이 반복되기 시작했습니다. 더 큰 모델 또는 더 짧은 범위를 시도하십시오.",
-      "docsUnavailable": "문제 해결 문서를 불러올 수 없습니다. 인터넷 연결을 확인하고 AI로 분석을 다시 시도하세요."
+      "docsUnavailable": "문제 해결 문서를 불러올 수 없습니다. 인터넷 연결을 확인하고 AI로 분석을 다시 시도하세요.",
+      "noFindings": "분석할 규칙 기반 결과가 없습니다. 내장된 분석 기능에서 이미 문제가 없다고 보고했습니다."
     },
     "loadingModel": "이 장치에 모델 로드 중...",
     "readingMessages": "이 장치에서 메시지를 읽습니다. CPU 처리에는 몇 분 정도 걸릴 수 있습니다...",

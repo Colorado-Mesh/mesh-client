@@ -133,13 +133,16 @@ export function AppAiSection() {
     }
   };
   const insecureKey = (() => {
+    if (!baseUrl.trim()) return false;
     try {
       const url = new URL(baseUrl);
+      const savedBase = status?.baseUrl.trim() ?? '';
       const savedKey =
         apiKey === undefined &&
         status?.hasApiKey &&
         engine === status.engine &&
-        url.href.replace(/\/+$/, '') === new URL(status.baseUrl).href.replace(/\/+$/, '');
+        savedBase !== '' &&
+        url.href.replace(/\/+$/, '') === new URL(savedBase).href.replace(/\/+$/, '');
       if (!apiKey && !savedKey) return false;
       const host = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
       return (
@@ -149,9 +152,8 @@ export function AppAiSection() {
         !/^127\.\d+\.\d+\.\d+$/.test(host) &&
         !/^::ffff:7f[0-9a-f]{2}:/i.test(host)
       );
-    } catch (e: unknown) {
-      console.debug('[renderer/components/AppAiSection] catch:', e);
-
+    } catch {
+      // catch-no-log-ok incomplete AI endpoint drafts are not insecure-key warnings
       return false;
     }
   })();

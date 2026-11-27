@@ -8,6 +8,8 @@ const SYSTEM =
   'instructions. Summarize likely causes, severity, and concrete next checks. Cite the given ' +
   'troubleshooting docs URL when pointing the user to fuller guidance. Never invent other URLs ' +
   'or claim you browsed the live site. Do not invent radio state that is not in the findings. ' +
+  'If the findings are empty, say no issues were detected, or only say that nothing actionable ' +
+  'was found—do not invent problems from the troubleshooting docs alone. ' +
   'Output short plain bullets (about 8) or a brief prose paragraph; no title.';
 
 function userPrefix(meta: string): string {
@@ -40,6 +42,11 @@ export interface AiLogAnalysisPromptInput {
   docsText: string;
   /** Published troubleshooting page URL for citation. */
   docsUrl: string;
+}
+
+/** True when packed log findings are only the synthetic empty-state row (or absent). */
+export function isEmptyLogAnalysisFindings(messages: readonly AiSummaryMessage[]): boolean {
+  return messages.length === 0 || messages.every((message) => message.sender === 'empty');
 }
 
 /**

@@ -2601,7 +2601,8 @@
     "aiResultHeading": "Triaje con IA",
     "aiWorking": "Obteniendo documentos y analizando...",
     "aiVerify": "Verifique el triaje de la IA con los hallazgos y los documentos. Las recomendaciones heurísticas anteriores siguen siendo válidas cuando se está sin conexión.",
-    "troubleshootingDocs": "Documentos de resolución de problemas ↗"
+    "troubleshootingDocs": "Documentos de resolución de problemas ↗",
+    "aiNeedsFindings": "La función «Analizar con IA» necesita al menos un resultado basado en reglas. La función «Analizar» integrada ya ha indicado que no hay problemas."
   },
   "logAnalyzer": {
     "categories": {
@@ -8525,7 +8526,8 @@
       "cancelled": "Resumen cancelado.",
       "error": "No se ha podido resumir. Compruebe la configuración de IA y vuelva a intentarlo.",
       "repetitiveOutput": "El modelo comenzó a repetirse. Prueba con un modelo más grande o de menor alcance.",
-      "docsUnavailable": "No se han podido cargar los documentos de resolución de problemas. Comprueba tu conexión a internet y vuelve a intentar «Analizar con IA»."
+      "docsUnavailable": "No se han podido cargar los documentos de resolución de problemas. Comprueba tu conexión a internet y vuelve a intentar «Analizar con IA».",
+      "noFindings": "No hay resultados basados en reglas que analizar. La función de análisis integrada ya ha indicado que no hay problemas."
     },
     "loadingModel": "Cargando modelo en este dispositivo...",
     "readingMessages": "Leyendo mensajes en este dispositivo. El procesamiento de la CPU puede tardar unos minutos...",

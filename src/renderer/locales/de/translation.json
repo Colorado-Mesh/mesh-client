@@ -2601,7 +2601,8 @@
     "aiResultHeading": "KI-Triage",
     "aiWorking": "Dokumente werden abgerufen und analysiert …",
     "aiVerify": "Überprüfen Sie die KI-Triage anhand der Befunde und Dokumente. Die oben genannten heuristischen Empfehlungen behalten auch offline ihre Gültigkeit.",
-    "troubleshootingDocs": "Dokumente zur Fehlerbehebung ↗"
+    "troubleshootingDocs": "Dokumente zur Fehlerbehebung ↗",
+    "aiNeedsFindings": "Für die Analyse mit KI ist mindestens ein regelbasiertes Ergebnis erforderlich. Die integrierte Analyse hat bereits gemeldet, dass keine Probleme vorliegen."
   },
   "logAnalyzer": {
     "categories": {
@@ -8525,7 +8526,8 @@
       "cancelled": "Zusammenfassung abgebrochen.",
       "error": "Konnte nicht zusammengefasst werden. Überprüfen Sie die KI-Einstellungen und versuchen Sie es erneut.",
       "repetitiveOutput": "Das Modell begann sich zu wiederholen. Probieren Sie ein größeres Modell oder eine kürzere Reichweite aus.",
-      "docsUnavailable": "Die Dokumente zur Fehlerbehebung konnten nicht geladen werden. Überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut mit „Mit KI analysieren“."
+      "docsUnavailable": "Die Dokumente zur Fehlerbehebung konnten nicht geladen werden. Überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut mit „Mit KI analysieren“.",
+      "noFindings": "Keine regelbasierten Ergebnisse zur Analyse vorhanden. Die integrierte Analyse hat bereits keine Probleme gemeldet."
     },
     "loadingModel": "Modell auf diesem Gerät wird geladen...",
     "readingMessages": "Lesen von Nachrichten auf diesem Gerät. Die CPU-Verarbeitung kann einige Minuten dauern...",

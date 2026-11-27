@@ -1,5 +1,8 @@
 import type { AiSummaryMessage, AiSummaryRequest } from '../../shared/ai-types';
-import { buildAiLogAnalysisPrompt } from '../../shared/aiLogAnalysisPrompt';
+import {
+  buildAiLogAnalysisPrompt,
+  isEmptyLogAnalysisFindings,
+} from '../../shared/aiLogAnalysisPrompt';
 import { logCaughtDebug } from '../caughtErrorPolicy';
 import { fetchLogDocsForAnalysis, LogDocsUnavailableError } from './fetchLogDocs';
 
@@ -10,7 +13,7 @@ export interface LogAnalysisPromptBudget {
 
 export type PreparedLogAnalysisPrompt =
   | { ok: true; prompt: ReturnType<typeof buildAiLogAnalysisPrompt> }
-  | { ok: false; reason: 'docsUnavailable' };
+  | { ok: false; reason: 'docsUnavailable' | 'noFindings' };
 
 /**
  * Sibling-entry helper: fetch allowlisted docs, select excerpts, build the log prompt.
@@ -21,6 +24,9 @@ export async function prepareLogAnalysisPrompt(
   budget: LogAnalysisPromptBudget,
   isOnline: () => boolean,
 ): Promise<PreparedLogAnalysisPrompt> {
+  if (isEmptyLogAnalysisFindings(request.messages)) {
+    return { ok: false, reason: 'noFindings' };
+  }
   const docsBudget = Math.max(512, Math.floor(budget.maxPromptBytes * 0.45));
   const findingHints = request.messages.flatMap((message: AiSummaryMessage) => [
     message.sender,
