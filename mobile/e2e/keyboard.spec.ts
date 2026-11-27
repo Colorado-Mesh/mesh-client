@@ -32,7 +32,17 @@ test('phone: the bottom bar steps aside while typing', async ({ browser }) => {
   await page.evaluate(() => {
     document.documentElement.dataset.mobileKeyboard = 'open';
   });
-  await expect(more).toBeHidden();
+  // Collapsed, not removed: the bar takes no height but keeps display, so its accessibility nodes
+  // are not re-created (re-creating them left the Android WebView tree stale after typing).
+  const bar = page.locator('nav:has(> [data-nav-section="more"])');
+  await expect
+    .poll(() =>
+      bar.evaluate((n) => ({
+        height: n.getBoundingClientRect().height,
+        display: getComputedStyle(n).display,
+      })),
+    )
+    .toEqual({ height: 0, display: 'flex' });
   // Content takes the freed height: main reaches the status strip, not a bar above it.
   const mainBottom = await page.evaluate(
     () => document.querySelector('main')?.getBoundingClientRect().bottom ?? 0,

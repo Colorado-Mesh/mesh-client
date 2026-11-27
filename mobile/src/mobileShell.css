@@ -196,12 +196,25 @@ html[data-mesh-mobile] [data-mobile-side-nav] > nav > button {
 /*
  * Typing: the keyboard needs the height; navigation returns when it closes. The bar is the shell's
  * nav that holds the More button (BottomNav), found with :has() so no wrapper element is needed.
+ * Collapse and slide rather than display:none: toggling display re-creates the nav's accessibility
+ * nodes, and the Android WebView tree then went stale, leaving the visible bar out of TalkBack's
+ * view after the keyboard closed (seen on the emulator for 20 s and more).
  */
-html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav],
 html[data-mesh-mobile][data-mobile-keyboard='open']
   [data-app-shell]
   > nav:has(> [data-nav-section='more']) {
-  display: none;
+  max-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+  border-top-width: 0;
+}
+
+html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav='right'] {
+  transform: translateX(100%);
+}
+
+html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav='left'] {
+  transform: translateX(-100%);
 }
 
 /* Keep the keyboard from covering composers on WebViews that only shrink the visual viewport. */

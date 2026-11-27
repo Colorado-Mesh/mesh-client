@@ -129,7 +129,15 @@ test('folded iPhone Duo: the column navigation steps aside while typing', async 
   await page.evaluate(() => {
     document.documentElement.dataset.mobileKeyboard = 'open';
   });
-  await expect(nav).toBeHidden();
+  // Slid off the screen edge rather than display:none, which keeps its accessibility nodes.
+  await expect
+    .poll(() =>
+      nav.evaluate((n) => ({
+        offScreen: n.getBoundingClientRect().left >= window.innerWidth,
+        display: getComputedStyle(n).display,
+      })),
+    )
+    .toEqual({ offScreen: true, display: 'flex' });
   await page.evaluate(() => {
     delete document.documentElement.dataset.mobileKeyboard;
   });
