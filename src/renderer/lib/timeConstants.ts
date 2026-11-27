@@ -287,6 +287,13 @@ export const MESHCORE_ROOM_SYNC_TICK_MS = 60_000;
 export const MESHCORE_STATS_POLL_MS = 30_000;
 
 /**
+ * Bound on one companion stats RPC (core / radio / packets). meshcore.js `getStats` waits for a
+ * Stats frame with no deadline, so a radio that stopped answering would hang the poll forever.
+ * Well under {@link MESHCORE_STATS_POLL_MS} so the next tick finds the poll released.
+ */
+export const MESHCORE_STATS_RPC_TIMEOUT_MS = 10 * MS_PER_SECOND;
+
+/**
  * Remote Status refresh for MeshCore noise-floor trend while a node detail panel is open
  * and visible (not a global always-on poll).
  */
