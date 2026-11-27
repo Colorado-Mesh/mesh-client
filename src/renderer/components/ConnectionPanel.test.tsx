@@ -27,6 +27,7 @@ import {
 } from '../lib/secureSecretStorage';
 import type { DeviceState } from '../lib/types';
 import { mockConsoleWarn, withMockedConsoleWarn } from '../lib/vitestConsoleMock';
+import { useMeshcoreMqttFeedStatusStore } from '../stores/meshcoreMqttFeedStatusStore';
 import ConnectionPanel from './ConnectionPanel';
 
 const CONNECTION_PANEL_SOURCE = readFileSync(join(__dirname, 'ConnectionPanel.tsx'), 'utf-8');
@@ -234,9 +235,7 @@ describe('ConnectionPanel MQTT connect error', () => {
       />,
     );
 
-    const mqttCard = screen.getByText('MQTT Connection').closest('.bg-deep-black');
-    expect(mqttCard).toBeTruthy();
-    const connectBtn = within(mqttCard as HTMLElement).getByRole('button', { name: 'Connect' });
+    const connectBtn = screen.getByRole('button', { name: 'Connect mqtt.example.com' });
     await user.click(connectBtn);
 
     expect(await screen.findByText('broker refused')).toBeInTheDocument();
@@ -424,9 +423,14 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
     await user.type(topic, 'meshcore/zzzz');
 
     expect(topic).toHaveAttribute('aria-invalid', 'true');
-    const mqttCard = screen.getByText('MQTT Connection').closest('.bg-deep-black');
-    const connectBtn = within(mqttCard as HTMLElement).getByRole('button', { name: 'Connect' });
-    expect(connectBtn).toBeDisabled();
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Connect LetsMesh' }));
+    expect(
+      (await screen.findAllByText(/Topic prefix must be meshcore\/test or meshcore\/\{IATA\}/i))
+        .length,
+    ).toBeGreaterThan(0);
+    expect(connect).not.toHaveBeenCalled();
   });
 
   it('offers MeshCore.CA Primary/Backup broker toggle that switches the server', async () => {
@@ -1263,11 +1267,8 @@ describe('ConnectionPanel MQTT cancel while connecting', () => {
         protocol="meshcore"
       />,
     );
-    const mqttCard = screen.getByText('MQTT Connection').closest('.bg-deep-black');
-    expect(mqttCard).toBeTruthy();
-    const cancelBtn = within(mqttCard as HTMLElement).getByRole('button', { name: /^Cancel$/i });
-    await user.click(cancelBtn);
-    expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshcore');
+    await user.click(screen.getByRole('button', { name: /^Cancel / }));
+    expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshcore', 'chat');
   });
 });
 
@@ -3416,5 +3417,236 @@ describe('ConnectionPanel saved device history', () => {
       const parsed = JSON.parse(raw!) as { httpAddress?: string }[];
       expect(parsed.map((e) => e.httpAddress)).toEqual(['10.0.0.2:4403', '10.0.0.1:4403']);
     });
+  });
+});
+
+describe('ConnectionPanel MeshCore MQTT feeds', () => {
+  const FEEDS_KEY = 'mesh-client:mqttFeeds:meshcore';
+
+  const renderPanel = (mqttStatus: 'connected' | 'disconnected' = 'disconnected') =>
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus={mqttStatus}
+        protocol="meshcore"
+      />,
+    );
+
+  const seededFeed = (index: number, enabled: boolean) => ({
+    id: `feed-${index}`,
+    name: `Feed ${index}`,
+    preset: 'custom',
+    enabled,
+    settings: {
+      server: `broker-${index}.local`,
+      port: 1883,
+      username: '',
+      topicPrefix: 'meshcore/DEN',
+      useWebSocket: false,
+      tlsEnabled: false,
+      meshcorePacketLoggerEnabled: true,
+    },
+  });
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/DEN',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+      }),
+    );
+    for (const key of [
+      'mesh-client:migrated:meshcore-letsmesh-default-v1',
+      'mesh-client:migrated:meshcore-topic-iata-v1',
+      'mesh-client:migrated:colorado-mesh-port-443-v1',
+      'mesh-client:migrated:meshcore-topic-iata-shape-v1',
+      'mesh-client:coloradoMqttRegionAck-v1',
+    ]) {
+      localStorage.setItem(key, '1');
+    }
+    useMeshcoreMqttFeedStatusStore.getState().reset();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('adds a connection without opening the editor', async () => {
+    const user = userEvent.setup();
+    const { container } = renderPanel();
+
+    expect(screen.getByText('MQTT connections')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit mqtt-us-v1.letsmesh.net' })).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Add MQTT connection' }));
+
+    expect(screen.getByText('New broker')).toBeInTheDocument();
+    expect(container.querySelector('details')?.open).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: 'Edit New broker' }));
+    expect(container.querySelector('details')?.open).toBe(true);
+    expect(screen.getByLabelText('Name')).toHaveValue('New broker');
+    const preset = screen.getByRole('combobox', { name: 'Network Preset' });
+    expect(within(preset).getAllByRole('option')).toHaveLength(9);
+
+    const name = screen.getByLabelText('Name');
+    await user.clear(name);
+    await user.type(name, 'Local analyzer');
+    expect(screen.getByText('Local analyzer')).toBeInTheDocument();
+  });
+
+  it('exits the editor with Close or Done', async () => {
+    const user = userEvent.setup();
+    const { container } = renderPanel();
+
+    await user.click(screen.getByRole('button', { name: 'Edit mqtt-us-v1.letsmesh.net' }));
+    expect(container.querySelector('details')?.open).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(container.querySelector('details')?.open).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: 'Edit mqtt-us-v1.letsmesh.net' }));
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    expect(container.querySelector('details')?.open).toBe(false);
+  });
+
+  it('edits a feed while connected and offers Reconnect only after a change', async () => {
+    localStorage.setItem(
+      FEEDS_KEY,
+      JSON.stringify({ version: 1, chatName: 'Home mesh', feeds: [seededFeed(0, true)] }),
+    );
+    act(() => {
+      useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-0', 'connected');
+    });
+    const user = userEvent.setup();
+    const { container } = renderPanel('connected');
+
+    expect(screen.getByText('Home mesh')).toBeInTheDocument();
+    expect(screen.getByText('Feed 0')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Reconnect Feed 0$/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Edit Feed 0' }));
+    expect(container.querySelector('details')?.open).toBe(true);
+    const preset = screen.getByRole('combobox', { name: 'Network Preset' });
+    expect(preset).toHaveValue('custom');
+    expect(screen.getByLabelText('Server')).toHaveValue('broker-0.local');
+    // The summary follows the broker whose editor is open.
+    expect(screen.getAllByText('broker-0.local:1883').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('meshcore/DEN/meshcore/packets').length).toBeGreaterThan(0);
+
+    const name = screen.getByLabelText('Name');
+    await user.clear(name);
+    await user.type(name, 'Denver analyzer');
+    expect(screen.getByText('Denver analyzer')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /^Reconnect Denver analyzer$/i }),
+    ).not.toBeInTheDocument();
+
+    const server = screen.getByLabelText('Server');
+    await user.clear(server);
+    await user.type(server, 'analyzer.denver.local');
+    expect(screen.getByRole('button', { name: 'Reconnect Denver analyzer' })).toBeVisible();
+  });
+
+  it('shows connect and disconnect per connection status', () => {
+    localStorage.setItem(
+      FEEDS_KEY,
+      JSON.stringify({
+        version: 1,
+        chatName: 'Home mesh',
+        feeds: [seededFeed(0, true), seededFeed(1, true)],
+      }),
+    );
+    act(() => {
+      useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-0', 'connected');
+      useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-1', 'disconnected');
+    });
+    renderPanel('connected');
+
+    expect(screen.getByRole('button', { name: 'Disconnect Feed 0' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Connect Feed 0' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Connect Feed 1' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Disconnect Feed 1' })).not.toBeInTheDocument();
+  });
+
+  it('blocks enabling a feed past the concurrent-connection cap', async () => {
+    localStorage.setItem(
+      FEEDS_KEY,
+      JSON.stringify({
+        version: 1,
+        feeds: [
+          seededFeed(0, true),
+          seededFeed(1, true),
+          seededFeed(2, true),
+          seededFeed(3, false),
+        ],
+      }),
+    );
+    renderPanel();
+
+    const toggle = screen.getByLabelText<HTMLInputElement>('Connect Feed 3 on launch');
+    expect(toggle.checked).toBe(false);
+    fireEvent.click(toggle);
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/at most 3 feeds connect at once/i);
+    expect(toggle.checked).toBe(false);
+  });
+
+  it('names the chat entry after its preset instead of a hardcoded label', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt.meshcore.coloradomesh.org',
+        topicPrefix: 'meshcore/DEN',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+      }),
+    );
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    renderPanel();
+    const list = screen.getByRole('list', { name: 'MeshCore MQTT brokers' });
+    expect(within(list).getByText('Colorado Mesh')).toBeInTheDocument();
+    expect(within(list).getByText('Chat')).toBeInTheDocument();
+  });
+
+  it('renames the chat connection', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByRole('button', { name: 'Edit mqtt-us-v1.letsmesh.net' }));
+    const name = screen.getByLabelText('Name');
+    await user.clear(name);
+    await user.type(name, 'Colorado chat');
+    expect(screen.getByText('Colorado chat')).toBeInTheDocument();
+  });
+
+  it('deletes a feed', async () => {
+    localStorage.setItem(FEEDS_KEY, JSON.stringify({ version: 1, feeds: [seededFeed(0, true)] }));
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByRole('button', { name: 'Delete Feed 0' }));
+    expect(screen.queryByText('Feed 0')).not.toBeInTheDocument();
+  });
+
+  it('shows per-feed connection status from the status store', () => {
+    localStorage.setItem(FEEDS_KEY, JSON.stringify({ version: 1, feeds: [seededFeed(0, true)] }));
+    act(() => {
+      useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-0', 'connected');
+    });
+    renderPanel();
+    expect(screen.getByText('Connected')).toBeInTheDocument();
   });
 });

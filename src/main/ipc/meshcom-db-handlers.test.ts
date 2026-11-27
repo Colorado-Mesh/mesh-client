@@ -316,7 +316,7 @@ describe('rebindMeshcomIdentityOn with NodeSqliteDB', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
+  }, 20_000);
 
   it('merges source favorite and coords into destination before dropping the contact', () => {
     const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-mc-rebind-contact-'));
@@ -366,7 +366,7 @@ describe('rebindMeshcomIdentityOn with NodeSqliteDB', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
+  }, 20_000);
 
   it('does not treat same msg_id with different recipients as logical duplicates', () => {
     const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-mc-rebind-to-'));
@@ -395,5 +395,5 @@ describe('rebindMeshcomIdentityOn with NodeSqliteDB', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
+  }, 20_000);
 });

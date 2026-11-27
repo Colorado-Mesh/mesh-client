@@ -11,7 +11,7 @@ import {
   RepetitiveAiOutputError,
   sanitizeAiModelOutput,
 } from '@/renderer/lib/aiSummaryOutput';
-import type { AiWorkerPhase } from '@/renderer/lib/aiWorkerHost';
+import { AiWorkerHost, type AiWorkerPhase } from '@/renderer/lib/aiWorkerHost';
 import { getAppSettingsRaw, mergeAppSettingsPartial } from '@/renderer/lib/appSettingsStorage';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 import type {
@@ -703,7 +703,6 @@ export async function runSummary(
     });
     if (result.localJob) {
       const job = result.localJob;
-      const { AiWorkerHost } = await Promise.race([import('@/renderer/lib/aiWorkerHost'), aborted]);
       signal.throwIfAborted();
       const host = new AiWorkerHost();
       let text = '';

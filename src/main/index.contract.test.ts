@@ -264,8 +264,9 @@ describe('MQTT forwarder dropped-event logs (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /mqtt:clientId dropped \(mainWindow not ready\)',\s*sanitizeLogMessage\(id\)/,
     );
-    // MeshCore / MeshCom share attachMqttAdapterUiEvents — protocol is a %s arg
-    // (literal format string; avoids unsafe-formatstring).
+    // MeshCom shares attachMqttAdapterUiEvents with the Meshtastic forwarder (protocol is a %s
+    // arg). MeshCore now has one connection per broker, so its dropped-event logs carry the
+    // connection id instead.
     expect(INDEX_SOURCE).toMatch(
       /mqtt:status \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}protocol[\s\S]{0,40}sanitizeLogMessage\(s\)/,
     );
@@ -275,8 +276,17 @@ describe('MQTT forwarder dropped-event logs (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /mqtt:clientId \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}protocol[\s\S]{0,40}sanitizeLogMessage\(id\)/,
     );
-    expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcoreMqttAdapter,\s*'meshcore'\)/);
     expect(INDEX_SOURCE).toMatch(/attachMqttAdapterUiEvents\(meshcomMqttAdapter,\s*'meshcom'\)/);
+    expect(INDEX_SOURCE).toMatch(/meshcoreMqttPool\.on\('status'/);
+    expect(INDEX_SOURCE).toMatch(
+      /mqtt:status \(%s\/%s\) dropped \(mainWindow not ready\)'[\s\S]{0,120}sanitizeLogMessage\(connectionId\)[\s\S]{0,80}sanitizeLogMessage\(status\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /mqtt:error \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}sanitizeLogMessage\(connectionId\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /mqtt:clientId \(%s\) dropped \(mainWindow not ready\)'[\s\S]{0,80}sanitizeLogMessage\(connectionId\)/,
+    );
   });
 
   it('sanitizes Linux BlueZ bluetooth IPC error log paths', () => {

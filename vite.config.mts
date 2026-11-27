@@ -147,6 +147,57 @@ export default defineConfig({
               priority: 25,
             },
             {
+              // The MeshCore runtime shell alone is the largest single renderer module; keeping
+              // it in its own chunk keeps every protocol chunk under the 1200 kB advisory limit.
+              name: 'protocol-runtimes-config',
+              test: /[\\/]runtime[\\/]useMeshcoreRuntime\.ts$/,
+              priority: 23,
+            },
+            {
+              // Keep the per-protocol runtime shells out of App-*.js (1000 kB entry budget).
+              // They are needed at startup, but as a separate chunk they load in parallel and
+              // keep App parseable without the ~550 kB of runtime code.
+              name: 'protocol-runtimes',
+              test: /[\\/]runtime[\\/](useMeshtasticRuntime|useReticulumRuntime)\.ts$/,
+              priority: 22,
+            },
+            {
+              // Keep AI summary orchestration out of App-*.js (1000 kB entry budget).
+              name: 'ai-summary',
+              test: /[\\/](aiSummaryStore|aiSummaryPrompt|aiFollowUpPrompt|aiFollowUpContext|aiFollowUpFocus|aiMultiPassSummary|aiSummaryScope)\.[tj]sx?$/,
+              priority: 21,
+            },
+            {
+              // Keep chat outbox/ack plumbing out of App-*.js (1000 kB entry budget).
+              name: 'chat-runtime',
+              test: /[\\/](useChatOutbox|networkAckAwait|unifiedInbox|chatMqttHybridSend|autoResendController)\.[tj]sx?$/,
+              priority: 21,
+            },
+            {
+              // Keep peer transport/voice helpers out of App-*.js (1000 kB entry budget).
+              name: 'peer-network',
+              test: /[\\/]lib[\\/]reticulum[\\/]/,
+              priority: 21,
+            },
+            {
+              // Keep emergency/MECP handling out of App-*.js (1000 kB entry budget).
+              name: 'emergency',
+              test: /[\\/](useMecpAlertWatcher|mecpRebroadcast|mecpComposeRoles|mecpBlockStore|mecpAckTracker)\.[tj]sx?$/,
+              priority: 21,
+            },
+            {
+              // Keep TAK relay helpers out of App-*.js (1000 kB entry budget).
+              name: 'tak-relay',
+              test: /(?:[\\/]lib[\\/]tak[\\/].*|[\\/](?:useTakInboundChat|takNodeFeed)\.[tj]sx?)$/,
+              priority: 21,
+            },
+            {
+              // Keep shell widgets / startup helpers out of App-*.js (1000 kB entry budget).
+              name: 'app-widgets',
+              test: /[\\/](FirstRunProtocolPicker|FirmwareUpdateNotifier|GlobalInstantTooltip|GlobalScanQrControl|HelpTooltip|InactiveProtocolNotifier|LanguageSelector|MeshcoreFloodAdvertHeaderButton|MeshcoreWaitingMessagesHeaderIndicator|ProtocolAutoConnectCoordinator|ProtocolSwitcher|RadioChatSyncButton|RemoteAdminErrorNotifier|ReticulumPeerDetailErrorBoundary|ReticulumStackAutostartCoordinator|ReticulumTxBufferingHeaderIndicator|RetryableLazy|ScanQrDisclosure|ServiceAnnouncementStrip|UpdateStatusIndicator|UnseenEmergencyBanner|ConfirmModal|AppRail|BottomNav|QuitButton|SectionHeader|useRrcStartupAutoConnect|useTakServer|useTakNodeReplicator|useOperationalAlerts|useProtocolRfAutoConnect|useProtocolConnection|useContactGroups|useMeshClientDeepLink|useEmergencyOutboxDrain|firmwareCheck|meshcoreRegionDiscovery|meshcoreRegionDiscoveryStorage|protocolRuntimeAdapters|connectionHistoryStorage|connectionHeaderStatus|connectionPanelLabels|appTabMappings|lazyTabPanels|chatSignalReport|globalInstantTooltip|deviceFirmwareBoards|meshcomCallsignWatchlist)\.[tj]sx?$/,
+              priority: 21,
+            },
+            {
               // Keep chat weather-forecast parsing out of App-*.js (1000 kB entry budget).
               name: 'weather-forecast',
               test: /[\\/](weatherForecastParse|weatherForecastIngest|weatherForecastStore|weatherForecastArea|useWeatherForecastIngest)\.[tj]sx?$/,

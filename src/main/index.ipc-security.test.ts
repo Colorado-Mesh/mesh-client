@@ -1044,7 +1044,7 @@ describe('MQTT mutator IPC sender validation (source contract, H2)', () => {
   it('mqtt:updateMeshcoreToken validates token is a non-empty, length-capped string', () => {
     const idx = INDEX_SOURCE.indexOf("'mqtt:updateMeshcoreToken'");
     expect(idx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(idx, idx + 700);
+    const body = INDEX_SOURCE.slice(idx, idx + 1400);
     expect(INDEX_SOURCE).toContain('const MQTT_MESHCORE_TOKEN_MAX_LENGTH = 8192;');
     expect(body).toContain("typeof token !== 'string' || token.length === 0");
     expect(body).toContain('token.length > MQTT_MESHCORE_TOKEN_MAX_LENGTH');
@@ -1053,7 +1053,7 @@ describe('MQTT mutator IPC sender validation (source contract, H2)', () => {
   it('mqtt:updateMeshcoreToken validates expiresAt is a finite number', () => {
     const idx = INDEX_SOURCE.indexOf("'mqtt:updateMeshcoreToken'");
     expect(idx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(idx, idx + 700);
+    const body = INDEX_SOURCE.slice(idx, idx + 1400);
     expect(body).toContain("typeof expiresAt !== 'number' || !Number.isFinite(expiresAt)");
   });
 });

@@ -488,6 +488,11 @@ describe('SecureSecretStore', () => {
       await expect(store.set(meshcomScoped, 'node-pw')).resolves.toMatchObject({ verified: true });
       expect(await store.get(meshcomScoped)).toBe('node-pw');
       await expect(store.set('meshcom:node-passwd:deadbeef', 'x')).rejects.toThrow(/invalid key/);
+      await expect(store.set('mqtt:meshcore:feeds', '{"feed-1":"pw"}')).resolves.toMatchObject({
+        verified: true,
+      });
+      expect(await store.get('mqtt:meshcore:feeds')).toBe('{"feed-1":"pw"}');
+      await expect(store.set('mqtt:meshcore:feeds:feed-1', 'pw')).rejects.toThrow(/invalid key/);
     } finally {
       db.close();
     }

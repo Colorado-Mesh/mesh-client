@@ -10,6 +10,7 @@ import {
 
 import { APP_SETTINGS_STORAGE_KEY, LEGACY_APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
 import { errLikeToLogString } from './errLikeToLogString';
+import { parseStoredJson } from './parseStoredJson';
 import {
   commitRendererStorageItem,
   flushRendererStorageDeletions,
@@ -20,6 +21,7 @@ import {
 
 export const MESHCORE_IDENTITY_SECRET_KEY = 'meshcore:identity';
 export const MESHCORE_MQTT_SECRET_KEY = 'mqtt:meshcore';
+export const MESHCORE_MQTT_FEEDS_SECRET_KEY = 'mqtt:meshcore:feeds';
 export const MESHTASTIC_MQTT_SECRET_KEY = 'mqtt:meshtastic';
 export const MESHCOM_MQTT_SECRET_KEY = 'mqtt:meshcom';
 export const MQTT_PROFILES_SECRET_KEY = 'mqtt:profiles';
@@ -37,7 +39,7 @@ const LEGACY_MESHTASTIC_BACKUP_PREFIX = 'mesh-client:meshtastic-dm-key-backup:';
 const COMPATIBILITY_CREDENTIAL_PREFIX = 'mesh-client:credentialCompatibility:';
 
 function compatibilityCredentialKey(key: string): boolean {
-  return /^(?:meshcore:identity|mqtt:(?:meshcore|meshtastic|meshcom|profiles(?::meshcom)?)|meshcore:(?:room|repeater):\d{1,10}|meshcom:node-passwd|meshcom:node-passwd:[a-f0-9]{64})$/.test(
+  return /^(?:meshcore:identity|mqtt:(?:meshcore(?::feeds)?|meshtastic|meshcom|profiles(?::meshcom)?)|meshcore:(?:room|repeater):\d{1,10}|meshcom:node-passwd|meshcom:node-passwd:[a-f0-9]{64})$/.test(
     key,
   );
 }
@@ -560,6 +562,71 @@ interface LegacyMqttSecrets {
   channelPsks?: string[];
 }
 
+const MESHTASTIC_PSK_RECOVERY_FLAG = 'mesh-client:migrated:meshtastic-psk-recovery-v1';
+let meshtasticPskRecoveryInFlight: Promise<void> | null = null;
+
+interface PersistedMqttPsks {
+  channelPsks?: string[];
+}
+
+/**
+ * Legacy `connectionPanelStorageMigrations` moved the entire JSON blob to the MeshCore key when
+ * topicPrefix started with "meshcore", leaving Meshtastic manual PSK lines unreachable.
+ */
+export function recoverMeshtasticChannelPsksFromLegacyMigration(): string[] | undefined {
+  if (localStorage.getItem(MESHTASTIC_PSK_RECOVERY_FLAG) !== null) return;
+  // An unreadable protected row is unknown, not an empty source/destination.
+  if (
+    isProtectedSecureSecretUnavailable(MESHTASTIC_MQTT_SECRET_KEY) ||
+    isProtectedSecureSecretUnavailable(MESHCORE_MQTT_SECRET_KEY)
+  )
+    return;
+
+  const meshtastic = parseStoredJson<PersistedMqttPsks>(
+    getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY),
+    'recoverMeshtasticChannelPsksFromLegacyMigration meshtastic',
+  );
+  if (meshtastic?.channelPsks?.length) {
+    localStorage.setItem(MESHTASTIC_PSK_RECOVERY_FLAG, '1');
+    return meshtastic.channelPsks;
+  }
+
+  const meshcore = parseStoredJson<PersistedMqttPsks>(
+    getCachedSecureSecret(MESHCORE_MQTT_SECRET_KEY),
+    'recoverMeshtasticChannelPsksFromLegacyMigration meshcore',
+  );
+  const psks = meshcore?.channelPsks;
+  if (!psks?.length) {
+    localStorage.setItem(MESHTASTIC_PSK_RECOVERY_FLAG, '1');
+    return;
+  }
+
+  const merged: PersistedMqttPsks = { ...meshtastic, channelPsks: psks };
+  if (meshtasticPskRecoveryInFlight) return psks;
+  meshtasticPskRecoveryInFlight = setSecureSecret(
+    MESHTASTIC_MQTT_SECRET_KEY,
+    JSON.stringify(merged),
+  )
+    .then(() => {
+      localStorage.setItem(MESHTASTIC_PSK_RECOVERY_FLAG, '1');
+    })
+    .catch((error: unknown) => {
+      console.warn(
+        'mcL0966 [secureSecretStorage] Meshtastic PSK recovery failed ' + errLikeToLogString(error),
+      );
+    })
+    .finally(() => {
+      meshtasticPskRecoveryInFlight = null;
+    });
+  return psks;
+}
+
+/** Complete this legacy handoff before connection effects or credential editors can run. */
+async function migrateLegacyMeshtasticMqttChannelPsks(): Promise<void> {
+  recoverMeshtasticChannelPsksFromLegacyMigration();
+  await meshtasticPskRecoveryInFlight;
+}
+
 function parseLegacyRecord(raw: string, label: string): Record<string, unknown> {
   let parsed: unknown;
   try {
@@ -797,10 +864,6 @@ export async function initializeSecureSecrets(
   await migrateMqttSettings(LEGACY_MESHCORE_MQTT_KEY, MESHCORE_MQTT_SECRET_KEY);
   if (!routedLegacyMqtt)
     await migrateMqttSettings(LEGACY_MESHTASTIC_MQTT_KEY, MESHTASTIC_MQTT_SECRET_KEY);
-  // Dynamic import breaks the static secureSecretStorage ↔ meshtasticMqttSettingsStorage cycle;
-  // the module is already in the main graph, so this is for initialization safety only.
-  const { migrateLegacyMeshtasticMqttChannelPsks } =
-    await import('./meshtasticMqttSettingsStorage');
   await migrateLegacyMeshtasticMqttChannelPsks();
   await migrateMqttProfiles();
   await migrateCredentialSettings();

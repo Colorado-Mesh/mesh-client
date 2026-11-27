@@ -242,3 +242,15 @@ it('requires the nodes upsert chunk before launching Electron', () => {
     }),
   ).toBe(false);
 });
+
+it('requires the MeshCore MQTT pool chunk before launching Electron', () => {
+  expect(DEV_ELECTRON_BUNDLE_PATHS.meshcoreMqttPool).toContain('meshcore-mqtt-pool.js');
+  expect(
+    areElectronBundlesReady(DEV_ELECTRON_BUNDLE_PATHS, (file) => {
+      if (file.endsWith('meshcore-mqtt-pool.js')) {
+        throw new Error('not built');
+      }
+      return { isFile: () => true, size: 1 };
+    }),
+  ).toBe(false);
+});

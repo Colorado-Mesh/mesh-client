@@ -27,6 +27,7 @@ import {
 } from '@/renderer/lib/meshcoreRepeaterCliQueue';
 import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
 import { getReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
+import { MESHCORE_MQTT_CHAT_CONNECTION_ID } from '@/shared/meshcoreMqttConnections';
 import { touch } from '@/shared/touch';
 
 import { bytesToHex } from '../../shared/hexBytes';
@@ -325,7 +326,6 @@ import {
 } from '../lib/meshcoreLocallyDeletedContacts';
 import { trimMeshcoreChatMessages } from '../lib/meshcoreMessageMemoryWindow';
 import { exportAndPersistMeshcoreMqttIdentity } from '../lib/meshcoreMqttIdentityExport';
-import { readMeshcoreMqttSettingsFromStorage } from '../lib/meshcoreMqttSettingsStorage';
 import { mergeMeshcoreNeighborPage } from '../lib/meshcoreNeighborPageMerge';
 import { buildMeshcoreOpenReactionWire } from '../lib/meshcoreOpenReaction';
 import {
@@ -667,6 +667,11 @@ import type {
 import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
+import {
+  aggregateMeshcoreMqttStatus,
+  isMeshcoreMqttPublishEligible,
+  useMeshcoreMqttFeedStatusStore,
+} from '../stores/meshcoreMqttFeedStatusStore';
 import {
   updateMessageStatus,
   upsertMessageRecordsForIdentity,
@@ -2127,13 +2132,18 @@ export function useMeshcoreRuntime() {
   }, [mqttStatus]);
 
   useEffect(() => {
-    return window.electronAPI.mqtt.onStatus(({ status: s, protocol }) => {
+    return window.electronAPI.mqtt.onStatus(({ status: s, protocol, connectionId, role }) => {
       if (protocol !== 'meshcore') return;
+      const id = connectionId ?? MESHCORE_MQTT_CHAT_CONNECTION_ID;
+      useMeshcoreMqttFeedStatusStore.getState().setStatus(id, s);
+      const statuses = useMeshcoreMqttFeedStatusStore.getState().statuses;
+      mirrorMqttStatusForProtocol('meshcore', aggregateMeshcoreMqttStatus(statuses));
+      // Chat send/connection-loss state follows the single bidirectional broker only.
+      if (role !== 'chat' && id !== MESHCORE_MQTT_CHAT_CONNECTION_ID) return;
       const prev = mqttStatusRef.current;
       const st = s;
       mqttStatusRef.current = st;
       setMqttStatus(st);
-      mirrorMqttStatusForProtocol('meshcore', st);
       if (st === 'connected') {
         setMqttConnectionLoss(false);
       } else if (consumeMqttUserDisconnect()) {
@@ -2145,22 +2155,21 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const maybeAutoLaunchMeshcoreMqttAfterIdentity = useCallback(() => {
-    if (!readMeshcoreMqttSettingsFromStorage().autoLaunch) return;
     void (async () => {
-      const st = mqttStatusRef.current;
-      if (st === 'connected') return;
-      // Startup may have opened MQTT before RF identity/JWT was ready — replace stale session.
-      if (st === 'connecting') {
-        await window.electronAPI.mqtt.disconnect('meshcore').catch((e: unknown) => {
-          console.debug(
-            '[useMeshcoreRuntime] MQTT stale connecting session disconnect ' +
-              errLikeToLogString(e),
-          );
-        });
+      // Startup may have opened the chat session before RF identity/JWT was ready — replace only
+      // that stale session; enabled analyzer feeds keep running.
+      if (mqttStatusRef.current === 'connecting') {
+        await window.electronAPI.mqtt
+          .disconnect('meshcore', MESHCORE_MQTT_CHAT_CONNECTION_ID)
+          .catch((e: unknown) => {
+            console.debug(
+              '[useMeshcoreRuntime] MQTT stale connecting chat disconnect ' + errLikeToLogString(e),
+            );
+          });
         mqttStatusRef.current = 'disconnected';
         setMqttStatus('disconnected');
       }
-      if (mqttStatusRef.current !== 'disconnected') return;
+      // Handles chat auto-launch and enabled feeds independently.
       await tryAutoLaunchMqtt('meshcore');
     })().catch((e: unknown) => {
       console.warn(
@@ -2985,6 +2994,7 @@ export function useMeshcoreRuntime() {
       meshcoreWaitingMessagesPollRef,
       meshcoreConnectTypeRef,
       mqttStatusRef,
+      isMqttPublishEligible: isMeshcoreMqttPublishEligible,
       myNodeNumRef,
       nicknameMapRef,
       readNodes: readMeshcoreNodes,
@@ -5635,7 +5645,7 @@ export function useMeshcoreRuntime() {
           .getState()
           .renameMessage(heardIdentityId, provisionalHeardId, channelMsgId);
       }
-      if (mqttStatusRef.current === 'connected') {
+      if (isMeshcoreMqttPublishEligible()) {
         void window.electronAPI.mqtt
           .publishMeshcorePacketLog({
             origin: selfInfo?.name ?? 'mesh-client',

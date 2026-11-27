@@ -87,6 +87,8 @@ export interface MeshcoreRfRxDeps {
   selfInfoRef: RefObject<MeshCoreSelfInfo | null>;
   rawPacketsRef: RefObject<RxPacketEntry[]>;
   mqttStatusRef: RefObject<MQTTStatus>;
+  /** Chat OR any analyzer feed accepts packet logs. Falls back to the chat status ref. */
+  isMqttPublishEligible?: () => boolean;
   lastPacketLogPublishFailureLogAtRef: RefObject<number>;
   /** Token bucket created once at attach time; shared across every RF RX in the session. */
   mqttPacketLogBucket: MeshcoreMqttPacketLogBucket;
@@ -775,10 +777,17 @@ function publishMeshcoreRfMqttPacketLog(
   rssi: number,
   deps: Pick<
     MeshcoreRfRxDeps,
-    'mqttStatusRef' | 'lastPacketLogPublishFailureLogAtRef' | 'selfInfoRef' | 'mqttPacketLogBucket'
+    | 'mqttStatusRef'
+    | 'isMqttPublishEligible'
+    | 'lastPacketLogPublishFailureLogAtRef'
+    | 'selfInfoRef'
+    | 'mqttPacketLogBucket'
   >,
 ): void {
-  if (deps.mqttStatusRef.current !== 'connected') return;
+  const eligible = deps.isMqttPublishEligible
+    ? deps.isMqttPublishEligible()
+    : deps.mqttStatusRef.current === 'connected';
+  if (!eligible) return;
   const nowMs = Date.now();
   if (!tryTakeMeshcoreMqttPacketLogToken(deps.mqttPacketLogBucket, nowMs)) return;
   void window.electronAPI.mqtt

@@ -120,7 +120,12 @@ export function meshcoreMqttPresetFields(
     case 'coloradomesh':
       return { ...deviceSigningWssFields(COLORADO_MESH_HOST, '/ws'), topicPrefix: 'meshcore/DEN' };
     case 'meshmapper':
-      return deviceSigningWssFields(MESHMAPPER_HOST, '/ws');
+      // MeshMapper only ingests `packets` (or `status`); keep the analyzer feed on when this
+      // analyzer-only broker owns the chat slot too.
+      return {
+        ...deviceSigningWssFields(MESHMAPPER_HOST, '/ws'),
+        meshcorePacketLoggerEnabled: true,
+      };
     case 'waev':
       return deviceSigningWssFields(WAEV_HOST, '/mqtt');
     case 'meshatse':

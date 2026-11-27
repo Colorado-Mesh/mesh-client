@@ -340,6 +340,18 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const meshcorePoolPad = 'x'.repeat(600);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/meshcore-mqtt-pool.ts'),
+            [
+              'export class MeshcoreMqttPool {',
+              '  publishPacketPayload() {',
+              `    return 'MeshcoreMqttPool publishPacketPayload ${meshcorePoolPad}';`,
+              '  }',
+              '}',
+              '',
+            ].join('\n'),
+          );
         }
 
         // Existing shard artifacts must remain untouched, even under CI defaults.

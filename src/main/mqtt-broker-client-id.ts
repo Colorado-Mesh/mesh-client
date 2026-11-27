@@ -12,7 +12,10 @@ export const MESHCOM_MQTT_CLIENT_ID_SETTING_KEY = 'meshcomMqttClientId';
 const MESHTASTIC_CLIENT_ID_PREFIX = 'meshtastic-electron-';
 const MESHCORE_CLIENT_ID_PREFIX = 'meshcore-mqtt-';
 const MESHCOM_CLIENT_ID_PREFIX = 'meshcom-mqtt-';
+const MESHCORE_FEED_CLIENT_ID_SETTING_PREFIX = 'meshcoreMqttClientId:';
 const CLIENT_ID_HEX_BYTES = 8;
+/** Feed ids come from the renderer; bound the setting key they map to. */
+const MAX_CONNECTION_ID_LENGTH = 64;
 
 const V1_USERNAME_PATTERN = /^v1_[0-9a-f]{64}$/i;
 
@@ -67,8 +70,15 @@ function isValidMeshcomClientId(id: string): boolean {
 /**
  * Resolve a stable MQTT broker clientId for this install.
  * MeshCore LetsMesh v1 usernames double as clientId (unchanged).
+ *
+ * MeshCore analyzer feeds pass a `connectionId`; each gets its own stored clientId so two feeds
+ * pointing at the same broker never share an MQTT session id.
  */
-export function resolveMqttBrokerClientId(protocol: MeshProtocol, settings: MQTTSettings): string {
+export function resolveMqttBrokerClientId(
+  protocol: MeshProtocol,
+  settings: MQTTSettings,
+  connectionId?: string,
+): string {
   if (protocol === 'meshcore' && V1_USERNAME_PATTERN.test(settings.username ?? '')) {
     return settings.username;
   }
@@ -78,6 +88,16 @@ export function resolveMqttBrokerClientId(protocol: MeshProtocol, settings: MQTT
     if (existing && isValidMeshcomClientId(existing)) return existing;
     const clientId = generateMeshcomClientId();
     writeAppSetting(MESHCOM_MQTT_CLIENT_ID_SETTING_KEY, clientId);
+    return clientId;
+  }
+
+  if (protocol === 'meshcore' && connectionId && connectionId !== 'chat') {
+    const safeId = connectionId.slice(0, MAX_CONNECTION_ID_LENGTH);
+    const settingKey = `${MESHCORE_FEED_CLIENT_ID_SETTING_PREFIX}${safeId}`;
+    const existing = readAppSetting(settingKey);
+    if (existing && isValidMeshcoreClientId(existing)) return existing;
+    const clientId = generateMeshcoreClientId();
+    writeAppSetting(settingKey, clientId);
     return clientId;
   }
 

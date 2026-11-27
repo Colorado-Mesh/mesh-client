@@ -51,6 +51,8 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/main/scheduledBroadcastsIntervalRebuild.ts --bundle --platform=node --outfile=dist-electron/main/scheduled-broadcasts-interval-rebuild.js --format=cjs --watch';
   const mqttWaypointValidationBuild =
     'esbuild src/main/mqttPublishWaypointValidation.ts --bundle --platform=node --outfile=dist-electron/main/mqtt-publish-waypoint-validation.js --format=cjs --watch';
+  const meshcoreMqttPoolBuild =
+    'esbuild src/main/meshcore-mqtt-pool.ts --bundle --platform=node --outfile=dist-electron/main/meshcore-mqtt-pool.js --external:electron --external:mqtt --format=cjs --watch';
   const notificationSoundPlayWavBuild =
     'esbuild src/main/notificationSoundPlayWav.ts --bundle --platform=node --outfile=dist-electron/main/notification-sound-play-wav.js --format=cjs --watch';
   const nodeUpsertBuild =
@@ -69,7 +71,7 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,notifwav,nodeupsert,meshcomdb,meshcomdbfb,udpbridge,vite,electron',
+    'main,preload,translation,summary,followup,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,mcpool,notifwav,nodeupsert,meshcomdb,meshcomdbfb,udpbridge,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
@@ -85,6 +87,7 @@ export function buildDevConcurrentlyArgs() {
     trayUnreadDotBuild,
     scheduledBroadcastsRebuildBuild,
     mqttWaypointValidationBuild,
+    meshcoreMqttPoolBuild,
     notificationSoundPlayWavBuild,
     nodeUpsertBuild,
     meshcomDbBuild,
