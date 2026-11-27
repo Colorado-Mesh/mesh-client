@@ -277,6 +277,27 @@ A message stored at a propagation node is waiting for the recipient to pick it u
 
 ---
 
+## Reach check (MeshCore)
+
+**Heard by** counts the repeaters your own radio hears forwarding your message. A reach check asks the wider network: it sends a short code to a community **Mesh Health Check** server's test channel, and the server counts how many of its MQTT observers heard it. Colorado Mesh calls its test channel `#cm-reach`; other communities run their own servers and channels.
+
+1. In **App > Reach check**, enter your community's health-check server address; ask your community for it (Colorado Mesh's is `https://rangecheck.meshcore.coloradomesh.org`). The field is blank until you fill it in, and a pasted page address is saved as its site address. You can also enter it the first time you run a check.
+2. With a MeshCore companion radio connected, select **Reach check** in the Chat toolbar.
+3. If the server's test channel is not on your radio yet, mesh-client asks before adding it to the first free channel slot. A channel whose key comes from its name (a `#hashtag` channel) is added for you; for a channel with its own key, paste the 32-character key and mesh-client checks it against the server before adding it.
+4. Chat switches to the test channel and sends the code like a typed message, with that channel's saved flood scope.
+
+Under the sent code, a line reports **waiting for observers**, then how many observers heard it, how many repeaters carried it, and the farthest distance, with a **Full results** link to the server's own page and map. Codes expire after the time the server sets (about ten minutes by default); the line then says **finished**. Results are not kept after mesh-client restarts, but the server's page keeps them for days.
+
+When a check cannot run, a dialog says why:
+
+- **Browser check:** some servers (Cloudflare Turnstile) only give codes to a browser. mesh-client still prepares and opens the test channel, then offers to open the site so you can get a code there and send it yourself. There is no results line in that case.
+- **Same name, different key:** if your radio already has a channel with the test channel's name but another key, the server cannot read it, so mesh-client stops instead of sending. Fix or remove that channel first.
+- **All channel slots in use**, **server not reachable**, **limiting new checks** (with a wait time) and **no test channel set up** stop the check with nothing sent.
+
+Only public `https://` servers are accepted. Reach check is MeshCore only, because the observers are MeshCore MQTT feeds.
+
+---
+
 ## Per-protocol differences
 
 | Area                    | Meshtastic                           | MeshCore                                                       | Reticulum                                         |
