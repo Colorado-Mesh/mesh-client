@@ -95,3 +95,62 @@ for (const d of DEVICES) {
     await context.close();
   });
 }
+
+// App > Saved locations rows wrap rather than squeeze the coordinates: on a 375 px phone the
+// active row showed one character of them (the name field, Doesn't move, Active and the delete
+// button took the line). mobileShell.css gives the coordinates a minimum width.
+for (const width of [361, 375, 412]) {
+  test(`saved location rows show their full coordinates at ${width} px`, async ({ browser }) => {
+    const context = await browser.newContext({
+      viewport: { width, height: 812 },
+      isMobile: true,
+      hasTouch: true,
+      deviceScaleFactor: 2,
+    });
+    const page = await context.newPage();
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'mesh-client:gpsSettings',
+        JSON.stringify({ staticLat: 39.75, staticLon: -105.0 }),
+      );
+      localStorage.setItem(
+        'mesh-client:savedLocations',
+        JSON.stringify({
+          locations: [
+            { id: 'loc-e2e-phone', name: 'This phone', lat: 39.75, lon: -105.0, fixed: false },
+            { id: 'loc-e2e-home', name: 'Home', lat: 40.0149, lon: -105.2705, fixed: true },
+          ],
+          activeId: 'loc-e2e-phone',
+        }),
+      );
+    });
+    const boot = await bootApp(page, h);
+    await page.locator('[data-nav-section="more"]').click();
+    await page.getByRole('dialog').getByRole('button', { name: /^App/ }).first().click();
+    const anchor = page.locator('[data-setting-anchor="app.gps.savedLocations"]');
+    await anchor.evaluate((el) => {
+      const details = el.closest('details');
+      if (details) details.open = true;
+    });
+    const coords = anchor.locator('li > input[type="text"] + span');
+    await expect(coords).toHaveCount(2);
+    const rows = await coords.evaluateAll((els) =>
+      els.map((e) => ({
+        text: e.textContent ?? '',
+        clipped: e.scrollWidth > e.clientWidth + 1,
+        width: Math.round(e.getBoundingClientRect().width),
+      })),
+    );
+    for (const row of rows) {
+      expect(row.text.length, 'coordinates rendered').toBeGreaterThan(5);
+      expect(row.clipped, `coordinates cut off: ${JSON.stringify(row)}`).toBe(false);
+    }
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+    await anchor.screenshot({ path: test.info().outputPath(`saved-locations-${width}.png`) });
+    expect(unexpectedErrors(boot.pageErrors)).toEqual([]);
+    await context.close();
+  });
+}

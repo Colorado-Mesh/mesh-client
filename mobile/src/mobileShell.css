@@ -225,6 +225,21 @@ html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav='left'
   transform: translateX(-100%);
 }
 
+/*
+ * App > Saved locations: each row is a wrapping flex line, and its coordinates (the span after the
+ * name field) may shrink to nothing (min-width 0), so on a phone the active row showed one
+ * character of them. fit-content keeps the whole pair (in any coordinate format and text size)
+ * and makes the row wrap instead, truncating only if the pair is wider than the row itself.
+ * Pinned by e2e/layout.spec.ts.
+ */
+html[data-mesh-mobile]
+  [data-setting-anchor='app.gps.savedLocations']
+  li
+  > input[type='text']
+  + span {
+  min-width: fit-content;
+}
+
 /* Keep the keyboard from covering composers on WebViews that only shrink the visual viewport. */
 html[data-mesh-mobile] [data-app-shell] main {
   scroll-padding-bottom: var(--mobile-keyboard-inset, 0px);
