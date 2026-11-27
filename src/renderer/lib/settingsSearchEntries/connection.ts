@@ -237,6 +237,22 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     visible: hasMeshcoreMqtt,
   },
   {
+    id: 'connection.mqtt.meshcoreFeeds',
+    slot: 'Connection',
+    labelKey: 'connectionPanel.meshcoreFeeds.editorLabel',
+    sectionKey: MQTT,
+    keywords: ['mqtt', 'feed', 'analyzer', 'packet', 'meshmapper', 'broker', 'multiple brokers'],
+    visible: hasMeshcoreMqtt,
+  },
+  {
+    id: 'connection.mqtt.meshcoreFeedName',
+    slot: 'Connection',
+    labelKey: 'connectionPanel.meshcoreFeeds.nameLabel',
+    sectionKey: MQTT,
+    keywords: ['mqtt', 'feed', 'name', 'analyzer', 'broker'],
+    visible: hasMeshcoreMqtt,
+  },
+  {
     id: 'connection.mqtt.username',
     slot: 'Connection',
     labelKey: 'connectionPanel.username',
@@ -369,6 +385,8 @@ export const connectionSurface: SettingsSearchSurface = {
     'connectionPanel.meshcorePresetDeviation.*': 'warning when settings drift from the preset',
     'connectionPanel.meshtasticPreset.*': 'option values of the indexed Meshtastic network preset',
     'connectionPanel.meshcoreMqttIdentity.*': 'MQTT signing identity status and errors',
+    'connectionPanel.meshcoreFeeds.*':
+      'feed list status/action labels and accessible names of the indexed feed editor',
     'connectionPanel.wsRequired': 'suffix note on the indexed WebSocket toggle',
     'connectionPanel.windowsMdnsNote': 'Windows note under the indexed device address',
     'mqttProfiles.noneSelected': 'option label of the indexed saved-profile select',

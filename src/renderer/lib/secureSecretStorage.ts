@@ -20,6 +20,7 @@ import {
 
 export const MESHCORE_IDENTITY_SECRET_KEY = 'meshcore:identity';
 export const MESHCORE_MQTT_SECRET_KEY = 'mqtt:meshcore';
+export const MESHCORE_MQTT_FEEDS_SECRET_KEY = 'mqtt:meshcore:feeds';
 export const MESHTASTIC_MQTT_SECRET_KEY = 'mqtt:meshtastic';
 export const MESHCOM_MQTT_SECRET_KEY = 'mqtt:meshcom';
 export const MQTT_PROFILES_SECRET_KEY = 'mqtt:profiles';
@@ -37,7 +38,7 @@ const LEGACY_MESHTASTIC_BACKUP_PREFIX = 'mesh-client:meshtastic-dm-key-backup:';
 const COMPATIBILITY_CREDENTIAL_PREFIX = 'mesh-client:credentialCompatibility:';
 
 function compatibilityCredentialKey(key: string): boolean {
-  return /^(?:meshcore:identity|mqtt:(?:meshcore|meshtastic|meshcom|profiles(?::meshcom)?)|meshcore:(?:room|repeater):\d{1,10}|meshcom:node-passwd|meshcom:node-passwd:[a-f0-9]{64})$/.test(
+  return /^(?:meshcore:identity|mqtt:(?:meshcore(?::feeds)?|meshtastic|meshcom|profiles(?::meshcom)?)|meshcore:(?:room|repeater):\d{1,10}|meshcom:node-passwd|meshcom:node-passwd:[a-f0-9]{64})$/.test(
     key,
   );
 }

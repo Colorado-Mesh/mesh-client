@@ -171,6 +171,8 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshcoreKeyBackupStorage.test.ts',
   'src/renderer/lib/meshcoreLateRfHopEnrichment.test.ts',
   'src/renderer/lib/meshcoreMqttSettingsStorage.test.ts',
+  'src/renderer/lib/meshcoreMqttFeeds.test.ts',
+  'src/renderer/lib/meshcoreMqttConnect.test.ts',
   'src/renderer/lib/meshcoreContactAutoAdd.test.ts',
   'src/renderer/lib/meshcoreDbCacheHydration.repair.test.ts',
   'src/renderer/lib/meshcoreOwnNodeIds.test.ts',

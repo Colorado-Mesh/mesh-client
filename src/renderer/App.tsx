@@ -4419,7 +4419,7 @@ function AppContent() {
 
   // ─── LetsMesh JWT proactive/reactive refresh ──────────────────────
   useEffect(() => {
-    const off = window.electronAPI.mqtt.onRequestTokenRefresh((serverHost) => {
+    const off = window.electronAPI.mqtt.onRequestTokenRefresh(({ connectionId, serverHost }) => {
       const doRefresh = async () => {
         try {
           const identity = await readMeshcoreIdentityAsync();
@@ -4428,7 +4428,7 @@ function AppContent() {
             return;
           }
           const { token, expiresAt } = await generateLetsMeshAuthToken(identity, serverHost);
-          await window.electronAPI.mqtt.updateMeshcoreToken(token, expiresAt);
+          await window.electronAPI.mqtt.updateMeshcoreToken(connectionId, token, expiresAt);
         } catch (e) {
           console.warn('mcL0349 [App] token refresh failed ' + errLikeToLogString(e));
         }

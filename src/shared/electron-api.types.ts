@@ -30,6 +30,7 @@ import type { GeoResolvedPlace, GeoResolvePlaceRequest } from './geoPlace';
 import type { IncidentSnapshot } from './incidentTypes';
 import type { LiveMapWindowApi } from './liveMapWindow';
 import type { MapOverlayImportResult } from './mapOverlays/types';
+import type { MeshcoreMqttConnectionRole } from './meshcoreMqttConnections';
 import type { MeshProtocol } from './meshProtocol';
 import type { NotificationSoundsApi } from './notificationSounds';
 import type { MapSourceId, OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
@@ -1148,13 +1149,39 @@ export interface ElectronAPI {
 
   // ─── MQTT ────────────────────────────────────────────────────────────────────
   mqtt: {
-    connect: (settings: MQTTSettings) => Promise<void>;
-    disconnect: (protocol?: MeshProtocol) => Promise<void>;
+    connect: (
+      settings: MQTTSettings & {
+        connectionId?: string;
+        role?: MeshcoreMqttConnectionRole;
+      },
+    ) => Promise<void>;
+    disconnect: (protocol?: MeshProtocol, connectionId?: string) => Promise<void>;
     powerResume: () => Promise<void>;
     powerSuspend: () => Promise<void>;
-    onStatus: (cb: (payload: { status: MQTTStatus; protocol: MeshProtocol }) => void) => () => void;
-    onError: (cb: (payload: { error: string; protocol: MeshProtocol }) => void) => () => void;
-    onWarning: (cb: (payload: { warning: string; protocol: MeshProtocol }) => void) => () => void;
+    onStatus: (
+      cb: (payload: {
+        status: MQTTStatus;
+        protocol: MeshProtocol;
+        connectionId?: string;
+        role?: MeshcoreMqttConnectionRole;
+      }) => void,
+    ) => () => void;
+    onError: (
+      cb: (payload: {
+        error: string;
+        protocol: MeshProtocol;
+        connectionId?: string;
+        role?: MeshcoreMqttConnectionRole;
+      }) => void,
+    ) => () => void;
+    onWarning: (
+      cb: (payload: {
+        warning: string;
+        protocol: MeshProtocol;
+        connectionId?: string;
+        role?: MeshcoreMqttConnectionRole;
+      }) => void,
+    ) => () => void;
     onNodeUpdate: (
       cb: (node: Partial<MeshNode> & { node_id: number; protocol?: MeshProtocol }) => void,
     ) => () => void;
@@ -1170,8 +1197,15 @@ export interface ElectronAPI {
         protocol: 'meshtastic';
       }) => void,
     ) => () => void;
-    onClientId: (cb: (payload: { clientId: string; protocol: MeshProtocol }) => void) => () => void;
-    getClientId: (protocol?: MeshProtocol) => Promise<string>;
+    onClientId: (
+      cb: (payload: {
+        clientId: string;
+        protocol: MeshProtocol;
+        connectionId?: string;
+        role?: MeshcoreMqttConnectionRole;
+      }) => void,
+    ) => () => void;
+    getClientId: (protocol?: MeshProtocol, connectionId?: string) => Promise<string>;
     getCachedNodes: () => Promise<unknown>;
     getChannelNameToIndex: () => Promise<Record<string, number>>;
     updateChannelKeys: (args: {
@@ -1264,10 +1298,12 @@ export interface ElectronAPI {
     }) => Promise<void>;
     onMeshcoreChat: (cb: (msg: unknown) => void) => () => void;
     refreshMeshcoreToken: (
-      serverHost: string,
+      connectionId: string,
     ) => Promise<{ token: string; expiresAt: number } | null>;
-    updateMeshcoreToken: (token: string, expiresAt: number) => Promise<void>;
-    onRequestTokenRefresh: (cb: (serverHost: string) => void) => () => void;
+    updateMeshcoreToken: (connectionId: string, token: string, expiresAt: number) => Promise<void>;
+    onRequestTokenRefresh: (
+      cb: (payload: { connectionId: string; serverHost: string }) => void,
+    ) => () => void;
   };
 
   // ─── BLE coexistence (multi-protocol peripheral registry + scan mutex) ─────

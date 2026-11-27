@@ -1517,6 +1517,9 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1506: 'src/renderer/lib/meshcoreRepeaterRouteEscalation.ts:sameRouteRetry',
   mcL1507: 'src/renderer/lib/meshcom/meshcomGrcHiddenChannels.ts:persistFailed',
   mcL1508: 'src/main/offline-maps/tile-cache.ts:evictionNoProgress',
+  mcL1509: 'src/renderer/lib/meshcoreMqttFeeds.ts:credentialPersistFailed',
+  mcL1510: 'src/renderer/lib/meshcoreMqttConnect.ts:feedConnectFailed',
+  mcL1511: 'src/renderer/lib/meshcoreMqttConnect.ts:feedConnectSkipped',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

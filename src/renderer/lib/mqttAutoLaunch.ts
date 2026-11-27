@@ -1,24 +1,12 @@
 import { meshcoreMqttNeedsColoradoRegionAck } from './connectionPanelStorageMigrations';
 import { loadHiddenProtocols } from './enabledProtocols';
 import { errLikeToLogString } from './errLikeToLogString';
-import {
-  validateLetsMeshManualCredentials,
-  validateLetsMeshPresetConnect,
-} from './letsMeshConnectionGuards';
-import {
-  generateLetsMeshAuthToken,
-  letsMeshMqttUsernameFromIdentity,
-  meshcoreIdentityHasPrivateKey,
-  readMeshcoreIdentityAsync,
-} from './letsMeshJwt';
+import { meshcoreIdentityHasPrivateKey } from './letsMeshJwt';
 import { readMeshcomMqttSettingsFromStorage } from './meshcomMqttSettingsStorage';
-import {
-  type MeshcoreMqttPreset,
-  readStoredMeshcoreMqttPreset,
-  usesMeshcoreDeviceSigningMqtt,
-} from './meshcoreMqttPresets';
+import { connectEnabledMeshcoreMqttFeeds, prepareMeshcoreMqttConnect } from './meshcoreMqttConnect';
+import { loadMeshcoreMqttFeeds } from './meshcoreMqttFeeds';
+import { readStoredMeshcoreMqttPreset, usesMeshcoreDeviceSigningMqtt } from './meshcoreMqttPresets';
 import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
-import { prepareMeshcoreIataMqttTopicPrefix } from './meshcoreMqttTopicPrefix';
 import { readMeshtasticMqttSettingsFromStorage } from './meshtasticMqttSettingsStorage';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './meshtasticMqttTlsMigration';
 import type { MeshProtocol, MQTTSettings } from './types';
@@ -72,59 +60,28 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
       prot === 'meshcore' ? 'meshcore' : prot === 'meshcom' ? 'meshcom' : 'meshtastic',
   };
 
-  const meshcorePreset: MeshcoreMqttPreset | null =
-    prot === 'meshcore' ? readStoredMeshcoreMqttPreset() : null;
-
-  if (prot === 'meshcore') {
-    const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(meshcorePreset, connectSettings);
-    if (!iataPrepared.ok) {
-      console.warn(
-        'mcL0978 [App] MQTT auto-launch skipped: invalid MeshCore topic prefix (need meshcore/{IATA} or meshcore/test)',
-      );
-      return;
-    }
-    connectSettings.topicPrefix = iataPrepared.topicPrefix;
+  if (prot !== 'meshcore') {
+    await window.electronAPI.mqtt.connect(connectSettings);
+    return;
   }
 
-  if (prot === 'meshcore' && usesMeshcoreDeviceSigningMqtt(meshcorePreset, connectSettings)) {
-    const presetErr = validateLetsMeshPresetConnect(connectSettings);
-    if (presetErr) {
-      console.warn('mcL0979 [App] MQTT auto-launch skipped: ' + errLikeToLogString(presetErr));
-      return;
-    }
-    const identity = await readMeshcoreIdentityAsync();
-    const hasFull = !!(identity?.private_key && identity.public_key);
-    if (hasFull) {
-      try {
-        const u = letsMeshMqttUsernameFromIdentity(identity);
-        if (u) connectSettings.username = u;
-        const { token, expiresAt } = await generateLetsMeshAuthToken(
-          identity,
-          connectSettings.server,
-        );
-        connectSettings.password = token;
-        connectSettings.tokenExpiresAt = expiresAt;
-      } catch (e) {
-        console.warn(
-          'mcL0980 [App] LetsMesh auth token auto-launch generation failed ' +
-            errLikeToLogString(e),
-        );
-        return;
-      }
-    } else {
-      if (!connectSettings.password.trim()) {
-        console.warn(
-          'mcL0981 [App] MQTT auto-launch skipped: LetsMesh needs imported identity or password',
-        );
-        return;
-      }
-      const manualErr = validateLetsMeshManualCredentials(connectSettings);
-      if (manualErr) {
-        console.warn('mcL0982 [App] MQTT auto-launch skipped: ' + errLikeToLogString(manualErr));
-        return;
-      }
-    }
+  // Chat broker first (it is the only bidirectional session), then enabled analyzer feeds.
+  const prepared = await prepareMeshcoreMqttConnect({
+    preset: readStoredMeshcoreMqttPreset(),
+    settings: connectSettings,
+  });
+  if (!prepared.ok) {
+    console.warn('mcL0978 [App] MQTT auto-launch skipped: ' + prepared.failure.message);
+    return;
   }
-
-  await window.electronAPI.mqtt.connect(connectSettings);
+  try {
+    await window.electronAPI.mqtt.connect(prepared.settings);
+  } catch (e) {
+    console.warn('mcL0979 [App] MQTT auto-launch connect failed ' + errLikeToLogString(e));
+    return;
+  }
+  const { failures } = await connectEnabledMeshcoreMqttFeeds(loadMeshcoreMqttFeeds());
+  if (failures.length > 0) {
+    console.warn(`mcL0980 [App] ${failures.length} MeshCore MQTT feed(s) failed to auto-launch`);
+  }
 }

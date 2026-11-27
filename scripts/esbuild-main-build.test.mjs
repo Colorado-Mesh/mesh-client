@@ -53,6 +53,8 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Shared `pathUnderRoot` containment helpers stay in index.js (sibling chunk costs more);
  * keep that module compact so the budget remains 819 KiB — do not raise without an
  * explicit developer ask (see AGENTS.md Bundle CI).
+ * MeshCore MQTT multi-broker pool (chat + publish-only analyzer feeds) ships as sibling
+ * `meshcore-mqtt-pool.js`; index.js keeps the thin `loadMeshcoreMqttPool` loader and event wiring.
  */
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 819 * 1024;
 
@@ -271,6 +273,10 @@ describe('esbuild-main-build', () => {
       const udpBridgeBytes = fs.readFileSync(path.join(tempDir, 'udp-bridge.js'));
       expect(udpBridgeBytes.length).toBeGreaterThan(200);
       expect(udpBridgeBytes.toString('utf8')).toContain('registerUdpBridgeIpcHandlers');
+      const meshcoreMqttPoolBytes = fs.readFileSync(path.join(tempDir, 'meshcore-mqtt-pool.js'));
+      expect(meshcoreMqttPoolBytes.length).toBeGreaterThan(500);
+      expect(meshcoreMqttPoolBytes.toString('utf8')).toContain('MeshcoreMqttPool');
+      expect(meshcoreMqttPoolBytes.toString('utf8')).toContain('publishPacketPayload');
       const indexSource = fs.readFileSync(outfile, 'utf8');
       expect(indexSource).not.toContain('waypoint.geofenceRadius invalid');
       expect(mqttWaypointValidationBytes.toString('utf8')).toContain(

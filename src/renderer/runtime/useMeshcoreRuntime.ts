@@ -27,6 +27,7 @@ import {
 } from '@/renderer/lib/meshcoreRepeaterCliQueue';
 import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
 import { getReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
+import { MESHCORE_MQTT_CHAT_CONNECTION_ID } from '@/shared/meshcoreMqttConnections';
 import { touch } from '@/shared/touch';
 
 import { bytesToHex } from '../../shared/hexBytes';
@@ -667,6 +668,10 @@ import type {
 import { setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
+import {
+  aggregateMeshcoreMqttStatus,
+  useMeshcoreMqttFeedStatusStore,
+} from '../stores/meshcoreMqttFeedStatusStore';
 import {
   updateMessageStatus,
   upsertMessageRecordsForIdentity,
@@ -2127,13 +2132,18 @@ export function useMeshcoreRuntime() {
   }, [mqttStatus]);
 
   useEffect(() => {
-    return window.electronAPI.mqtt.onStatus(({ status: s, protocol }) => {
+    return window.electronAPI.mqtt.onStatus(({ status: s, protocol, connectionId, role }) => {
       if (protocol !== 'meshcore') return;
+      const id = connectionId ?? MESHCORE_MQTT_CHAT_CONNECTION_ID;
+      useMeshcoreMqttFeedStatusStore.getState().setStatus(id, s);
+      const statuses = useMeshcoreMqttFeedStatusStore.getState().statuses;
+      mirrorMqttStatusForProtocol('meshcore', aggregateMeshcoreMqttStatus(statuses));
+      // Chat send/connection-loss state follows the single bidirectional broker only.
+      if (role !== 'chat' && id !== MESHCORE_MQTT_CHAT_CONNECTION_ID) return;
       const prev = mqttStatusRef.current;
       const st = s;
       mqttStatusRef.current = st;
       setMqttStatus(st);
-      mirrorMqttStatusForProtocol('meshcore', st);
       if (st === 'connected') {
         setMqttConnectionLoss(false);
       } else if (consumeMqttUserDisconnect()) {

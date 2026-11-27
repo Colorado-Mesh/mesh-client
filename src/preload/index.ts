@@ -866,26 +866,73 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ─── MQTT ──────────────────────────────────────────────────────
   mqtt: {
-    connect: (settings: MQTTSettings) => ipcRenderer.invoke('mqtt:connect', settings),
-    disconnect: (protocol?: MeshProtocol) => ipcRenderer.invoke('mqtt:disconnect', protocol),
+    connect: (settings: MQTTSettings & { connectionId?: string; role?: 'chat' | 'feed' }) =>
+      ipcRenderer.invoke('mqtt:connect', settings),
+    disconnect: (protocol?: MeshProtocol, connectionId?: string) =>
+      ipcRenderer.invoke('mqtt:disconnect', protocol, connectionId),
     powerResume: () => ipcRenderer.invoke('mqtt:powerResume'),
     powerSuspend: () => ipcRenderer.invoke('mqtt:powerSuspend'),
-    onStatus: (cb: (payload: { status: MQTTStatus; protocol: MeshProtocol }) => void) => {
-      const handler = (_: unknown, payload: { status: MQTTStatus; protocol: MeshProtocol }) => {
+    onStatus: (
+      cb: (payload: {
+        status: MQTTStatus;
+        protocol: MeshProtocol;
+        connectionId?: string;
+        role?: 'chat' | 'feed';
+      }) => void,
+    ) => {
+      const handler = (
+        _: unknown,
+        payload: {
+          status: MQTTStatus;
+          protocol: MeshProtocol;
+          connectionId?: string;
+          role?: 'chat' | 'feed';
+        },
+      ) => {
         cb(payload);
       };
       ipcRenderer.on('mqtt:status', handler);
       return () => ipcRenderer.off('mqtt:status', handler);
     },
-    onError: (cb: (payload: { error: string; protocol: MeshProtocol }) => void) => {
-      const handler = (_: unknown, payload: { error: string; protocol: MeshProtocol }) => {
+    onError: (
+      cb: (payload: {
+        error: string;
+        protocol: MeshProtocol;
+        connectionId?: string;
+        role?: 'chat' | 'feed';
+      }) => void,
+    ) => {
+      const handler = (
+        _: unknown,
+        payload: {
+          error: string;
+          protocol: MeshProtocol;
+          connectionId?: string;
+          role?: 'chat' | 'feed';
+        },
+      ) => {
         cb(payload);
       };
       ipcRenderer.on('mqtt:error', handler);
       return () => ipcRenderer.off('mqtt:error', handler);
     },
-    onWarning: (cb: (payload: { warning: string; protocol: MeshProtocol }) => void) => {
-      const handler = (_: unknown, payload: { warning: string; protocol: MeshProtocol }) => {
+    onWarning: (
+      cb: (payload: {
+        warning: string;
+        protocol: MeshProtocol;
+        connectionId?: string;
+        role?: 'chat' | 'feed';
+      }) => void,
+    ) => {
+      const handler = (
+        _: unknown,
+        payload: {
+          warning: string;
+          protocol: MeshProtocol;
+          connectionId?: string;
+          role?: 'chat' | 'feed';
+        },
+      ) => {
         cb(payload);
       };
       ipcRenderer.on('mqtt:warning', handler);
@@ -937,15 +984,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('mqtt:trace-route-reply', handler);
       return () => ipcRenderer.off('mqtt:trace-route-reply', handler);
     },
-    onClientId: (cb: (payload: { clientId: string; protocol: MeshProtocol }) => void) => {
-      const handler = (_: unknown, payload: { clientId: string; protocol: MeshProtocol }) => {
+    onClientId: (
+      cb: (payload: {
+        clientId: string;
+        protocol: MeshProtocol;
+        connectionId?: string;
+        role?: 'chat' | 'feed';
+      }) => void,
+    ) => {
+      const handler = (
+        _: unknown,
+        payload: {
+          clientId: string;
+          protocol: MeshProtocol;
+          connectionId?: string;
+          role?: 'chat' | 'feed';
+        },
+      ) => {
         cb(payload);
       };
       ipcRenderer.on('mqtt:clientId', handler);
       return () => ipcRenderer.off('mqtt:clientId', handler);
     },
-    getClientId: (protocol?: MeshProtocol): Promise<string> =>
-      ipcRenderer.invoke('mqtt:getClientId', protocol),
+    getClientId: (protocol?: MeshProtocol, connectionId?: string): Promise<string> =>
+      ipcRenderer.invoke('mqtt:getClientId', protocol, connectionId),
     getCachedNodes: () => ipcRenderer.invoke('mqtt:getCachedNodes'),
     getChannelNameToIndex: () => ipcRenderer.invoke('mqtt:getChannelNameToIndex'),
     updateChannelKeys: (args: {
@@ -1041,14 +1103,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.off('mqtt:meshcore-chat', handler);
     },
     refreshMeshcoreToken: (
-      serverHost: string,
+      connectionId: string,
     ): Promise<{ token: string; expiresAt: number } | null> =>
-      ipcRenderer.invoke('mqtt:refreshMeshcoreToken', serverHost),
-    updateMeshcoreToken: (token: string, expiresAt: number): Promise<void> =>
-      ipcRenderer.invoke('mqtt:updateMeshcoreToken', { token, expiresAt }),
-    onRequestTokenRefresh: (cb: (serverHost: string) => void): (() => void) => {
-      const handler = (_: unknown, serverHost: string) => {
-        cb(serverHost);
+      ipcRenderer.invoke('mqtt:refreshMeshcoreToken', connectionId),
+    updateMeshcoreToken: (connectionId: string, token: string, expiresAt: number): Promise<void> =>
+      ipcRenderer.invoke('mqtt:updateMeshcoreToken', { connectionId, token, expiresAt }),
+    onRequestTokenRefresh: (
+      cb: (payload: { connectionId: string; serverHost: string }) => void,
+    ): (() => void) => {
+      const handler = (_: unknown, payload: { connectionId: string; serverHost: string }) => {
+        cb(payload);
       };
       ipcRenderer.on('mqtt:requestTokenRefresh', handler);
       return () => ipcRenderer.off('mqtt:requestTokenRefresh', handler);

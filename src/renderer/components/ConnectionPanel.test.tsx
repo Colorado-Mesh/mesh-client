@@ -27,6 +27,7 @@ import {
 } from '../lib/secureSecretStorage';
 import type { DeviceState } from '../lib/types';
 import { mockConsoleWarn, withMockedConsoleWarn } from '../lib/vitestConsoleMock';
+import { useMeshcoreMqttFeedStatusStore } from '../stores/meshcoreMqttFeedStatusStore';
 import ConnectionPanel from './ConnectionPanel';
 
 const CONNECTION_PANEL_SOURCE = readFileSync(join(__dirname, 'ConnectionPanel.tsx'), 'utf-8');
@@ -3416,5 +3417,126 @@ describe('ConnectionPanel saved device history', () => {
       const parsed = JSON.parse(raw!) as { httpAddress?: string }[];
       expect(parsed.map((e) => e.httpAddress)).toEqual(['10.0.0.2:4403', '10.0.0.1:4403']);
     });
+  });
+});
+
+describe('ConnectionPanel MeshCore MQTT feeds', () => {
+  const FEEDS_KEY = 'mesh-client:mqttFeeds:meshcore';
+
+  const renderPanel = () =>
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+  const seededFeed = (index: number, enabled: boolean) => ({
+    id: `feed-${index}`,
+    name: `Feed ${index}`,
+    preset: 'custom',
+    enabled,
+    settings: {
+      server: `broker-${index}.local`,
+      port: 1883,
+      username: '',
+      topicPrefix: 'meshcore/DEN',
+      useWebSocket: false,
+      tlsEnabled: false,
+      meshcorePacketLoggerEnabled: true,
+    },
+  });
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/DEN',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+      }),
+    );
+    for (const key of [
+      'mesh-client:migrated:meshcore-letsmesh-default-v1',
+      'mesh-client:migrated:meshcore-topic-iata-v1',
+      'mesh-client:migrated:colorado-mesh-port-443-v1',
+      'mesh-client:migrated:meshcore-topic-iata-shape-v1',
+      'mesh-client:coloradoMqttRegionAck-v1',
+    ]) {
+      localStorage.setItem(key, '1');
+    }
+    useMeshcoreMqttFeedStatusStore.getState().reset();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('adds a publish-only feed and switches the editor to it', async () => {
+    const user = userEvent.setup();
+    const { container } = renderPanel();
+    hydrateAxeThemeColors(container);
+
+    const editor = screen.getByRole('combobox', { name: 'Broker to edit' });
+    expect(
+      within(editor)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['Chat connection']);
+
+    await user.type(screen.getByLabelText('New feed name'), 'Local analyzer');
+    await user.click(screen.getByLabelText('Add packet analyzer feed'));
+
+    expect(
+      within(editor)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['Chat connection', 'Local analyzer']);
+    expect(screen.getByLabelText('Name')).toHaveValue('Local analyzer');
+    // Feed mode never lets the analyzer opt out of packet publishing.
+    expect(screen.queryByLabelText(/Packet logger/)).not.toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('blocks enabling a feed past the concurrent-connection cap', async () => {
+    localStorage.setItem(
+      FEEDS_KEY,
+      JSON.stringify({
+        version: 1,
+        feeds: [
+          seededFeed(0, true),
+          seededFeed(1, true),
+          seededFeed(2, true),
+          seededFeed(3, false),
+        ],
+      }),
+    );
+    renderPanel();
+
+    const toggle = screen.getByLabelText<HTMLInputElement>('Connect Feed 3 on launch');
+    expect(toggle.checked).toBe(false);
+    fireEvent.click(toggle);
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/at most 3 feeds connect at once/i);
+    expect(toggle.checked).toBe(false);
+  });
+
+  it('shows per-feed connection status from the status store', () => {
+    localStorage.setItem(FEEDS_KEY, JSON.stringify({ version: 1, feeds: [seededFeed(0, true)] }));
+    act(() => {
+      useMeshcoreMqttFeedStatusStore.getState().setStatus('feed-0', 'connected');
+    });
+    renderPanel();
+    expect(screen.getByText('Connected')).toBeInTheDocument();
   });
 });

@@ -48,6 +48,7 @@ describe('run-dev', () => {
     expect(
       args.some((arg) => arg.startsWith('esbuild src/main/mqttPublishWaypointValidation.ts')),
     ).toBe(true);
+    expect(args.some((arg) => arg.startsWith('esbuild src/main/meshcore-mqtt-pool.ts'))).toBe(true);
     expect(args.some((arg) => arg.startsWith('esbuild src/main/notificationSoundPlayWav.ts'))).toBe(
       true,
     );

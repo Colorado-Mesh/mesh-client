@@ -208,6 +208,18 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // MeshCore MQTT multi-broker pool (chat + analyzer feeds) — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/meshcore-mqtt-pool.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'meshcore-mqtt-pool.js'),
+    external: [...MAIN_ESBUILD_EXTERNALS],
+    minify,
+    logLevel: 'info',
+  });
   // MQTT publishWaypoint arg validation (incl. 2.8 geofence) — keep out of measured main `index.js`.
   await esbuild.build({
     absWorkingDir,

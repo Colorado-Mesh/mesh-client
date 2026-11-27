@@ -1,26 +1,17 @@
-import { MQTT_DEFAULT_RECONNECT_ATTEMPTS } from '@/shared/meshtasticMqttReconnect';
-
+import { MESHCORE_MQTT_DEFAULTS, MESHCORE_MQTT_SETTINGS_STORAGE_KEY } from './meshcoreMqttDefaults';
 import { readMqttSettingsFromStorage } from './mqttSettingsStorage';
 import { MESHCORE_MQTT_SECRET_KEY } from './secureSecretStorage';
 import type { MQTTSettings } from './types';
 
-const STORAGE_KEY = 'mesh-client:mqttSettings:meshcore';
-
-const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
-  server: '',
-  port: 1883,
-  username: '',
-  password: '',
-  topicPrefix: 'meshcore',
-  autoLaunch: false,
-  maxRetries: MQTT_DEFAULT_RECONNECT_ATTEMPTS,
-  tokenExpiresAt: undefined,
-  useWebSocket: true,
-  tlsEnabled: true,
-  wsPath: '/ws',
-};
-
-/** Read persisted MeshCore MQTT settings (same merge as ConnectionPanel). */
+/**
+ * Read persisted MeshCore chat-broker settings (same merge as ConnectionPanel).
+ * Analyzer feeds use `loadMeshcoreMqttFeeds()` instead — the chat broker keeps the legacy key so
+ * presets, migrations and auto-launch keep working unchanged.
+ */
 export function readMeshcoreMqttSettingsFromStorage(): MQTTSettings {
-  return readMqttSettingsFromStorage(STORAGE_KEY, MESHCORE_MQTT_DEFAULTS, MESHCORE_MQTT_SECRET_KEY);
+  return readMqttSettingsFromStorage(
+    MESHCORE_MQTT_SETTINGS_STORAGE_KEY,
+    MESHCORE_MQTT_DEFAULTS,
+    MESHCORE_MQTT_SECRET_KEY,
+  );
 }

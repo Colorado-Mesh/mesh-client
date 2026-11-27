@@ -29,6 +29,68 @@ function normalizePrefix(prefix: string): string {
   return p.endsWith('/') ? p.slice(0, -1) : p;
 }
 
+export interface MeshcorePacketLogArgs {
+  origin: string;
+  snr: number;
+  rssi: number;
+  rawHex?: string;
+  len?: number;
+  packetType?: number;
+  route?: string;
+  payloadLen?: number;
+  hash?: string;
+  direction?: 'rx' | 'tx';
+}
+
+/**
+ * Analyzer feed topic tail (`meshcoretomqtt` layout). Publish-only feeds each own a topic prefix /
+ * v1_ pubkey, so the topic is resolved per connection while the payload stays shared.
+ */
+function meshcorePacketTopicTail(settings: MQTTSettings): string {
+  const base = normalizePrefix(settings.topicPrefix || 'msh');
+  const pubKey = /^v1_([0-9a-f]{64})$/i.exec(settings.username ?? '')?.[1]?.toUpperCase();
+  return pubKey ? `${base}/${pubKey}/packets` : `${base}/meshcore/packets`;
+}
+
+/**
+ * Serialize one packet-log payload. Multi-broker fan-out serializes once so N feeds do not
+ * re-stringify every RX packet.
+ */
+export function buildMeshcorePacketLogPayload(
+  args: MeshcorePacketLogArgs,
+  pubKey?: string,
+): string {
+  const now = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const date = formatIsoDate(now);
+  const payload: Record<string, string> = {
+    ...(pubKey ? { origin_id: pubKey } : {}),
+    origin: args.origin.slice(0, 200),
+    timestamp: now.toISOString(),
+    type: 'PACKET',
+    direction: args.direction ?? 'rx',
+    time,
+    date,
+    ...(args.len != null ? { len: String(args.len) } : {}),
+    ...(args.packetType != null ? { packet_type: String(args.packetType) } : {}),
+    ...(args.route != null ? { route: args.route } : {}),
+    ...(args.payloadLen != null ? { payload_len: String(args.payloadLen) } : {}),
+    ...(args.rawHex
+      ? { raw: args.rawHex.length > 2048 ? args.rawHex.slice(0, 2048) : args.rawHex }
+      : {}),
+    SNR: String(args.snr),
+    RSSI: String(args.rssi),
+    ...(args.hash ? { hash: args.hash } : {}),
+  };
+  return JSON.stringify(payload);
+}
+
+/** v1_ username pubkey used for `origin_id` + per-pubkey topic segments. */
+export function meshcoreMqttPubKey(settings: MQTTSettings): string | undefined {
+  return /^v1_([0-9a-f]{64})$/i.exec(settings.username ?? '')?.[1]?.toUpperCase();
+}
+
 /** For debug logs only — actual connect uses the same option-object shape as MQTTManager. */
 function buildMeshcoreUrlForLog(settings: MQTTSettings): string {
   const host = settings.server.trim();
@@ -56,6 +118,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   private status: MQTTStatus = 'disconnected';
   private clientIdStr = '';
   private lastSettings: MQTTSettings | null = null;
+  /** Packet-analyzer feeds never subscribe or ingest chat — publish-only like v1_ brokers. */
+  private publishOnly = false;
   private connectAckTimer: ReturnType<typeof setTimeout> | null = null;
   /** True when a watchdog tore the client down — suppress noisy subscribe(err) after. */
   private connectAbortByWatchdog = false;
@@ -234,6 +298,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.pendingReconnectTimer = null;
     }
     this.retryCount = 0;
+    this.publishOnly = false;
     if (this.client) {
       const stale = this.client;
       this.client = null;
@@ -243,7 +308,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.setStatus('disconnected');
   }
 
-  connect(settings: MQTTSettings): void {
+  connect(settings: MQTTSettings, options?: { publishOnly?: boolean }): void {
     const topicPrefix = settings.topicPrefix ?? '';
     if (topicPrefix.includes('+') || topicPrefix.includes('#')) {
       this.disconnect();
@@ -253,6 +318,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       return;
     }
     this.disconnect();
+    this.publishOnly = options?.publishOnly === true;
     this.lastSettings = settings;
     this.retryCount = 0;
     this._doConnect(settings);
@@ -391,7 +457,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.startConnectionWatchdog();
       this.emit('clientId', this.clientIdStr);
       // LetsMesh/Colorado brokers (v1_ username) are publish-only — skip subscribe.
-      if (!isV1Username) {
+      if (!isV1Username && !this.publishOnly) {
         // Add small delay before resubscribing to allow broker to stabilize
         setTimeout(() => {
           if (this.status !== 'connected' || !this.client) return;
@@ -462,6 +528,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     });
     sessionClient.on('message', (topic, payload) => {
       if (this.client !== sessionClient) return;
+      // Analyzer feeds are publish-only: never surface inbound chat from a duplicate broker.
+      if (this.publishOnly) return;
       if (mqttPayloadByteLength(payload) > MQTT_MAX_PACKET_BYTES) {
         this.rejectOversizedMqttPacket();
         return;
@@ -625,54 +693,25 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   }
 
   /**
-   * Packet logger / Analyzer feed — same topic layout as meshcoretomqtt (`meshcore/packets` under
-   * topic prefix), JSON shape aligned with Andrew-a-g/meshcoretomqtt README examples.
+   * Publish an already-serialized packet-log payload on this connection's analyzer topic.
+   * The pool builds the JSON once and fans it out to every feed.
    */
-  publishPacketLog(args: {
-    origin: string;
-    snr: number;
-    rssi: number;
-    rawHex?: string;
-    len?: number;
-    packetType?: number;
-    route?: string;
-    payloadLen?: number;
-    hash?: string;
-    direction?: 'rx' | 'tx';
-  }): void {
+  publishPacketPayload(payloadJson: string): void {
     if (!this.client || this.status !== 'connected' || !this.lastSettings) {
       throw new Error('MeshCore MQTT not connected');
     }
     if (!this.lastSettings.meshcorePacketLoggerEnabled) return;
-    const base = normalizePrefix(this.lastSettings.topicPrefix || 'msh');
-    const pubKey = /^v1_([0-9a-f]{64})$/i
-      .exec(this.lastSettings.username ?? '')?.[1]
-      ?.toUpperCase();
-    const topic = pubKey ? `${base}/${pubKey}/packets` : `${base}/meshcore/packets`;
-    const now = new Date();
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    const date = formatIsoDate(now);
-    const payload: Record<string, string> = {
-      ...(pubKey ? { origin_id: pubKey } : {}),
-      origin: args.origin.slice(0, 200),
-      timestamp: now.toISOString(),
-      type: 'PACKET',
-      direction: args.direction ?? 'rx',
-      time,
-      date,
-      ...(args.len != null ? { len: String(args.len) } : {}),
-      ...(args.packetType != null ? { packet_type: String(args.packetType) } : {}),
-      ...(args.route != null ? { route: args.route } : {}),
-      ...(args.payloadLen != null ? { payload_len: String(args.payloadLen) } : {}),
-      ...(args.rawHex
-        ? { raw: args.rawHex.length > 2048 ? args.rawHex.slice(0, 2048) : args.rawHex }
-        : {}),
-      SNR: String(args.snr),
-      RSSI: String(args.rssi),
-      ...(args.hash ? { hash: args.hash } : {}),
-    };
-    this.client.publish(topic, JSON.stringify(payload), { qos: 0 });
+    this.client.publish(meshcorePacketTopicTail(this.lastSettings), payloadJson, { qos: 0 });
+  }
+
+  /** True when this session forwards RX packet summaries (analyzer feed enabled). */
+  isPacketLoggerEnabled(): boolean {
+    return this.lastSettings?.meshcorePacketLoggerEnabled === true;
+  }
+
+  /** Topic this connection would publish analyzer packets to (diagnostics / duplicate checks). */
+  getPacketLogTopic(): string | null {
+    return this.lastSettings ? meshcorePacketTopicTail(this.lastSettings) : null;
   }
 
   /** Pause watchdog while macOS is suspended (timers freeze and cause false positives). */
