@@ -6,9 +6,9 @@
 import { MESHCOM_MAX_MSG_ID_LEN, MESHCOM_MAX_TEXT_LEN } from '@/shared/meshcomConstants';
 
 import {
-  MESHCOM_CALLSIGN_MAX_LEN,
   MESHCOM_EXTUDP_DST_MAX_LEN,
   normalizeMeshcomCallsign,
+  normalizeMeshcomSrcPath,
 } from './meshcomCallsign';
 import { MESHCOM_EXTUDP_MSG_MAX_LEN, truncateToWireBytes } from './meshcomWireLimits';
 
@@ -165,7 +165,7 @@ export function parseMeshcomExtUdp(raw: string | Uint8Array): MeshcomExtUdpInbou
     const dstRaw = asOptionalString(parsed.dst);
     const msgRaw = asOptionalString(parsed.msg);
     if (srcRaw == null || dstRaw == null || msgRaw == null) return null;
-    const src = normalizeMeshcomCallsign(srcRaw).slice(0, MESHCOM_CALLSIGN_MAX_LEN);
+    const src = normalizeMeshcomSrcPath(srcRaw);
     const dst =
       dstRaw === '*'
         ? '*'
@@ -193,7 +193,7 @@ export function parseMeshcomExtUdp(raw: string | Uint8Array): MeshcomExtUdpInbou
   if (type === 'pos') {
     const srcRaw = asOptionalString(parsed.src);
     if (srcRaw == null) return null;
-    const src = normalizeMeshcomCallsign(srcRaw).slice(0, MESHCOM_CALLSIGN_MAX_LEN);
+    const src = normalizeMeshcomSrcPath(srcRaw);
     if (!src) return null;
     const posMsg = asOptionalBoundedString(parsed.msg, MESHCOM_MAX_TEXT_LEN);
     return {
@@ -228,9 +228,7 @@ export function parseMeshcomExtUdp(raw: string | Uint8Array): MeshcomExtUdpInbou
     // injection (ext_udp_telemetry.md) still uses temp/press/gasres — accept both.
     return {
       type: 'tele',
-      src: teleSrc
-        ? normalizeMeshcomCallsign(teleSrc).slice(0, MESHCOM_CALLSIGN_MAX_LEN) || undefined
-        : undefined,
+      src: teleSrc ? normalizeMeshcomSrcPath(teleSrc) || undefined : undefined,
       temp: asOptionalNumber(parsed.temp) ?? asOptionalNumber(parsed.temp1),
       hum: asOptionalNumber(parsed.hum),
       press: asOptionalNumber(parsed.press) ?? asOptionalNumber(parsed.qfe),
