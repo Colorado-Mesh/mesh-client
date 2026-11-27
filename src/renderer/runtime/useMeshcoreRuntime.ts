@@ -250,6 +250,10 @@ import {
   getSerialPortFromMeshcoreConnection,
 } from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
+  isMeshcoreStatsTimeoutError,
+  withMeshcoreStatsTimeout,
+} from '../lib/meshcore/meshcoreStatsRpc';
+import {
   clearMeshcoreOpenHopPendingUserTx,
   decideOpenHopUserTxAfterEnsureFailure,
   isMeshcoreTcpBurstDeadBridge,
@@ -1824,8 +1828,10 @@ export function useMeshcoreRuntime() {
     try {
       let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
       try {
-        coreStats = await conn.getStatsCore();
+        coreStats = await withMeshcoreStatsTimeout(conn.getStatsCore(), 'core');
       } catch (e: unknown) {
+        // Radio silent: surface to the caller's warn (mcL1190 periodic, mcL1191 initial).
+        if (isMeshcoreStatsTimeoutError(e)) throw e;
         console.debug('[renderer/runtime/useMeshcoreRuntime] catch:', e);
 
         return;
@@ -1869,8 +1875,9 @@ export function useMeshcoreRuntime() {
       let packetStats: Awaited<ReturnType<MeshCoreConnection['getStatsPackets']>>;
       // Sequential: meshcore.js once(Stats) + type filter drops a parallel waiter on the first reply.
       try {
-        radioStats = await conn.getStatsRadio();
+        radioStats = await withMeshcoreStatsTimeout(conn.getStatsRadio(), 'radio');
       } catch (e: unknown) {
+        if (isMeshcoreStatsTimeoutError(e)) throw e;
         console.debug('[renderer/runtime/useMeshcoreRuntime] catch:', e);
 
         return;
@@ -1878,8 +1885,9 @@ export function useMeshcoreRuntime() {
       if (connRef.current !== conn) return;
 
       try {
-        packetStats = await conn.getStatsPackets();
+        packetStats = await withMeshcoreStatsTimeout(conn.getStatsPackets(), 'packets');
       } catch (e: unknown) {
+        if (isMeshcoreStatsTimeoutError(e)) throw e;
         console.debug('[renderer/runtime/useMeshcoreRuntime] catch:', e);
 
         return;
