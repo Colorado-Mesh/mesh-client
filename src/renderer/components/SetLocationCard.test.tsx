@@ -204,3 +204,68 @@ describe('StartupLocationPrompt', () => {
     expect(screen.queryByRole('heading')).toBeNull();
   });
 });
+
+describe('SetLocationCard in the mobile app', () => {
+  beforeEach(resetState);
+  afterEach(async () => {
+    resetState();
+    const { setMobileAppPlatform } = await import('../lib/mobilePlatform');
+    setMobileAppPlatform(null);
+  });
+
+  it('desktop shows no phone-location action', () => {
+    render(<SetLocationCard ourPosition={null} trust="unknown" variant="startup" />);
+    expect(screen.queryByRole('button', { name: "Use this phone's location" })).toBeNull();
+    expect(screen.getByLabelText('Coordinates')).toBeInTheDocument();
+  });
+
+  it('fills the location from the phone GPS fix and keeps manual entry one tap away', async () => {
+    const { setMobileAppPlatform } = await import('../lib/mobilePlatform');
+    setMobileAppPlatform('android');
+    const getGpsFix = vi.fn().mockResolvedValue({ lat: 39.75, lon: -105.0, source: 'native' });
+    window.electronAPI.getGpsFix = getGpsFix;
+    const onLocationChanged = vi.fn();
+    render(
+      <SetLocationCard
+        ourPosition={null}
+        trust="unknown"
+        variant="startup"
+        onLocationChanged={onLocationChanged}
+      />,
+    );
+    expect(screen.getByText(/Use this phone's location or enter one/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Coordinates')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Enter manually' }));
+    expect(screen.getByLabelText('Coordinates')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    fireEvent.click(screen.getByRole('button', { name: "Use this phone's location" }));
+    await vi.waitFor(() => {
+      expect(onLocationChanged).toHaveBeenCalled();
+    });
+    const active = getActiveSavedLocation();
+    expect(active).toMatchObject({ name: 'This phone', lat: 39.75, lon: -105.0 });
+  });
+
+  it('reports a failed phone fix (IP fallback) without saving', async () => {
+    const { setMobileAppPlatform } = await import('../lib/mobilePlatform');
+    setMobileAppPlatform('ios');
+    window.electronAPI.getGpsFix = vi.fn().mockResolvedValue({ lat: 1, lon: 2, source: 'ip' });
+    render(<SetLocationCard ourPosition={null} trust="unknown" variant="startup" />);
+    fireEvent.click(screen.getByRole('button', { name: "Use this phone's location" }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Couldn't get this phone's location/,
+    );
+    expect(readSavedLocations().locations).toHaveLength(0);
+  });
+
+  it('has no axe violations in the mobile variant', async () => {
+    const { setMobileAppPlatform } = await import('../lib/mobilePlatform');
+    setMobileAppPlatform('android');
+    const { container } = render(
+      <SetLocationCard ourPosition={null} trust="unknown" variant="startup" />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});

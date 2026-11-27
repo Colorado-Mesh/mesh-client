@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
-import { useEffect, useRef } from 'react';
+import type { CSSProperties, ReactNode, RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { type FoldRect, useMobileViewport } from '../../lib/mobileViewport';
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -16,11 +17,61 @@ export interface ConversationLayoutMode {
   sideOverlay: boolean;
 }
 
-/** Layout mode for list + conversation + side panel screens (RRC, MeshCore Rooms). */
+/** Side panel docks only at this usable width or wider (matches the desktop overlay query). */
+const MOBILE_SIDE_DOCK_MIN_WIDTH = 1280;
+
+/**
+ * Layout mode for list + conversation + side panel screens (RRC, MeshCore Rooms).
+ * Desktop uses the media queries above unchanged. The mobile app decides from its viewport state
+ * (`mobileViewport.ts`): two panes from 640px of usable width, so foldables and tablets show the
+ * list beside the conversation.
+ */
 export function useConversationLayoutMode(): ConversationLayoutMode {
-  const compact = useMediaQuery(CONVERSATION_COMPACT_QUERY);
-  const sideOverlay = useMediaQuery(CONVERSATION_SIDE_OVERLAY_QUERY);
-  return { compact, sideOverlay: compact || sideOverlay };
+  const compactQuery = useMediaQuery(CONVERSATION_COMPACT_QUERY);
+  const sideOverlayQuery = useMediaQuery(CONVERSATION_SIDE_OVERLAY_QUERY);
+  const viewport = useMobileViewport();
+  if (viewport.isMobile) {
+    const compact = viewport.panes === 1;
+    return { compact, sideOverlay: compact || viewport.usableWidth < MOBILE_SIDE_DOCK_MIN_WIDTH };
+  }
+  return { compact: compactQuery, sideOverlay: compactQuery || sideOverlayQuery };
+}
+
+/** Minimum list column width when it is aligned to a fold (keeps rows readable). */
+const FOLD_LIST_MIN_PX = 240;
+
+/**
+ * On a vertical separating fold (book posture, iPhone Duo partly open), end the list column at
+ * the hinge so the list and the conversation each get one side of the screen. Returns the list
+ * width plus the gutter that keeps controls off the hinge, or null to use the default width.
+ */
+export function foldAlignedListStyle(
+  fold: FoldRect | null,
+  containerLeft: number,
+  containerWidth: number,
+): CSSProperties | null {
+  if (!fold?.separating || fold.orientation !== 'vertical') return null;
+  const width = fold.left - containerLeft;
+  if (width < FOLD_LIST_MIN_PX || width > containerWidth - FOLD_LIST_MIN_PX) return null;
+  return { width: width + fold.width, paddingInlineEnd: fold.width, flexShrink: 0 };
+}
+
+function useFoldAlignedListStyle(
+  containerRef: RefObject<HTMLDivElement | null>,
+  enabled: boolean,
+): CSSProperties | null {
+  const viewport = useMobileViewport();
+  const [style, setStyle] = useState<CSSProperties | null>(null);
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!enabled || !viewport.isMobile || !viewport.fold || !el) {
+      setStyle(null);
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    setStyle(foldAlignedListStyle(viewport.fold, rect.left, rect.width));
+  }, [containerRef, enabled, viewport]);
+  return style;
 }
 
 export interface ConversationLayoutProps {
@@ -67,6 +118,8 @@ export function ConversationLayout({
   closeSideLabel,
 }: ConversationLayoutProps) {
   const { compact, sideOverlay } = mode;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const foldListStyle = useFoldAlignedListStyle(containerRef, !compact && listOpen);
   const showList = compact ? compactPane === 'list' : listOpen;
   const showConversation = !compact || compactPane === 'conversation';
   const showSide = side !== undefined && sideOpen && showConversation;
@@ -98,15 +151,18 @@ export function ConversationLayout({
 
   return (
     <div
+      ref={containerRef}
       className="bg-deep-black border-ink-800 relative flex h-full min-h-0 w-full min-w-0 overflow-hidden rounded-xl border"
       data-layout={compact ? 'compact' : sideOverlay ? 'medium' : 'wide'}
+      data-fold-split={foldListStyle ? 'true' : undefined}
     >
       {showList && (
         <aside
           aria-label={listLabel}
           inert={sideAsSheet}
+          style={foldListStyle ?? undefined}
           className={`border-ink-800 flex min-h-0 flex-col ${
-            compact ? 'w-full' : 'w-72 shrink-0 border-r'
+            compact ? 'w-full' : foldListStyle ? 'border-r' : 'w-72 shrink-0 border-r'
           }`}
         >
           {list}

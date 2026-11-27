@@ -41,4 +41,7 @@ export class WebMeshDevice extends WebPlugin {
   keepAwake(): Promise<void> {
     return Promise.resolve();
   }
+  setBackgroundMode(): Promise<void> {
+    return Promise.resolve();
+  }
 }

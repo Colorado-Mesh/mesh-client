@@ -7631,7 +7631,12 @@
     "deleteAria": "{{name}} silin",
     "stopUsing": "Kaydedilen konumu kullanmayı bırakın",
     "addLocation": "Şube ekle",
-    "coordsHintFormats": "Koordinatları veya harita bağlantısını yapıştırın: N/S/E/W, MGRS veya Google, Apple veya OpenStreetMap paylaşım bağlantısı ile ondalık (39.7392 ,-104.9903), derece/dakika/saniye."
+    "coordsHintFormats": "Koordinatları veya harita bağlantısını yapıştırın: N/S/E/W, MGRS veya Google, Apple veya OpenStreetMap paylaşım bağlantısı ile ondalık (39.7392 ,-104.9903), derece/dakika/saniye.",
+    "usePhoneLocation": "Bu telefonun konumunu kullan",
+    "phoneLocationName": "Bu telefon",
+    "phoneLocationFailed": "Bu telefonun konumu alınamadı. Sistem ayarlarından Mesh Client için konum erişimine izin verin veya bir konum girin.",
+    "bodyUnknownPhone": "Telsiziniz GPS bildirmiyor. Düğüm mesafelerinin ve yönlendirme kontrollerinin doğru olması için bu telefonun konumunu kullanın veya bir konum girin.",
+    "enterManually": "Elle gir"
   },
   "mqttProfiles": {
     "optionLabel": "Kaydedildi: {{name}}",

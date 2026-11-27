@@ -7631,7 +7631,12 @@
     "deleteAria": "{{name}} löschen",
     "stopUsing": "Gespeicherten Standort nicht mehr verwenden",
     "addLocation": "Hinzufügen",
-    "coordsHintFormats": "Koordinaten oder einen Kartenlink einfügen: Dezimal (39.7392, -104.9903), Grad/Minuten/Sekunden mit N/S/E/W, MGRS oder einem Freigabe-Link von Google, Apple oder OpenStreetMap."
+    "coordsHintFormats": "Koordinaten oder einen Kartenlink einfügen: Dezimal (39.7392, -104.9903), Grad/Minuten/Sekunden mit N/S/E/W, MGRS oder einem Freigabe-Link von Google, Apple oder OpenStreetMap.",
+    "usePhoneLocation": "Standort dieses Telefons verwenden",
+    "phoneLocationName": "Dieses Telefon",
+    "phoneLocationFailed": "Der Standort dieses Telefons konnte nicht ermittelt werden. Erlaube Mesh Client in den Systemeinstellungen den Zugriff auf den Standort oder gib einen Standort ein.",
+    "bodyUnknownPhone": "Dein Funkgerät meldet kein GPS. Verwende den Standort dieses Telefons oder gib einen ein, damit Knotenentfernungen und Routing-Prüfungen stimmen.",
+    "enterManually": "Manuell eingeben"
   },
   "mqttProfiles": {
     "optionLabel": "Gespeichert: {{name}}",

@@ -127,3 +127,27 @@ html[data-mesh-mobile] body {
   justify-content: flex-end;
   gap: 0.5rem;
 }
+
+/*
+ * App shell edges (mobile only). The desktop shell is `h-screen w-screen`; on phones the shell
+ * fills the dynamic viewport and keeps clear of the status bar, display cutouts, the iPhone Duo's
+ * trailing system column (right inset), and the home indicator / gesture bar. The bottom nav
+ * already pads itself with env(safe-area-inset-bottom); when the rail is shown instead (wide
+ * windows), the shell pads the bottom edge.
+ */
+html[data-mesh-mobile] [data-app-shell] {
+  height: 100dvh;
+  width: 100%;
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+html[data-mesh-mobile][data-mobile-nav='rail'] [data-app-shell] {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Keep the keyboard from covering composers on WebViews that only shrink the visual viewport. */
+html[data-mesh-mobile] [data-app-shell] main {
+  scroll-padding-bottom: var(--mobile-keyboard-inset, 0px);
+}

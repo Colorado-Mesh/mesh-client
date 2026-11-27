@@ -92,6 +92,7 @@ const PACKAGE_BUILTINS = {
 export const MOBILE_MODULE_OVERRIDES = {
   'gatt-sidecar-proxy.ts': 'src/mobile/host/overrides/gatt-mobile-proxy.ts',
   'translation/loadTranslationManifest.ts': 'src/mobile/host/overrides/loadTranslationManifest.ts',
+  'gps.ts': 'src/mobile/host/overrides/gps.ts',
 };
 
 function mobileHostResolvePlugin() {

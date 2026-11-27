@@ -7699,7 +7699,12 @@
     "deleteAria": "Smazat {{name}}",
     "stopUsing": "Přestat používat uloženou polohu",
     "addLocation": "Přidat lokalitu",
-    "coordsHintFormats": "Vložte souřadnice nebo odkaz na mapu: decimální (39,7392, -104,9903), stupně/minuty/sekundy s odkazem na sdílení N/S/E/W, Mgrs nebo Google, Apple nebo OpenStreetMap."
+    "coordsHintFormats": "Vložte souřadnice nebo odkaz na mapu: decimální (39,7392, -104,9903), stupně/minuty/sekundy s odkazem na sdílení N/S/E/W, Mgrs nebo Google, Apple nebo OpenStreetMap.",
+    "usePhoneLocation": "Použít polohu tohoto telefonu",
+    "phoneLocationName": "Tento telefon",
+    "phoneLocationFailed": "Polohu tohoto telefonu se nepodařilo zjistit. Povolte aplikaci Mesh Client přístup k poloze v nastavení systému nebo polohu zadejte.",
+    "bodyUnknownPhone": "Vaše rádio nehlásí GPS. Použijte polohu tohoto telefonu nebo ji zadejte, aby byly vzdálenosti uzlů a kontroly směrování přesné.",
+    "enterManually": "Zadat ručně"
   },
   "mqttProfiles": {
     "optionLabel": "Uloženo: {{name}}",

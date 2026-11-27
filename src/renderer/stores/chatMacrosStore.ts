@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { isMobileApp } from '../lib/mobilePlatform';
+
 export const CHAT_MACRO_SLOT_COUNT = 12;
 export const CHAT_MACRO_LABEL_MAX = 24;
 export const CHAT_MACRO_TEXT_MAX = 500;
@@ -94,8 +96,12 @@ const DEFAULT_PERSISTED: ChatMacrosPersisted = {
   slots: emptySlots(),
   size: null,
   sendMode: 'insert',
-  /** Expanded by default so MeshCore (and other) quick messages match companion-app canned UX. */
-  collapsed: false,
+  /**
+   * Expanded by default so MeshCore (and other) quick messages match companion-app canned UX.
+   * Mobile app: start collapsed so the conversation keeps its height on phones; one tap shows
+   * the macros (the choice is remembered like on desktop).
+   */
+  collapsed: isMobileApp(),
 };
 
 function isSlotIndex(index: number): boolean {

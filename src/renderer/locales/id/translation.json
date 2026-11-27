@@ -7631,7 +7631,12 @@
     "deleteAria": "Hapus {{name}}",
     "stopUsing": "Berhenti menggunakan lokasi tersimpan",
     "addLocation": "Tambahkan Lokasi",
-    "coordsHintFormats": "Tempel koordinat atau tautan peta: desimal (39,7392, -104,9903), derajat/menit/detik dengan N/S/E/W, MGRS, atau tautan berbagi Google, Apple, atau OpenStreetMap."
+    "coordsHintFormats": "Tempel koordinat atau tautan peta: desimal (39,7392, -104,9903), derajat/menit/detik dengan N/S/E/W, MGRS, atau tautan berbagi Google, Apple, atau OpenStreetMap.",
+    "usePhoneLocation": "Gunakan lokasi ponsel ini",
+    "phoneLocationName": "Ponsel ini",
+    "phoneLocationFailed": "Tidak dapat mengambil lokasi ponsel ini. Izinkan akses lokasi untuk Mesh Client di pengaturan sistem, atau masukkan lokasi.",
+    "bodyUnknownPhone": "Radio Anda tidak melaporkan GPS. Gunakan lokasi ponsel ini atau masukkan lokasi agar jarak node dan pemeriksaan perutean akurat.",
+    "enterManually": "Masukkan secara manual"
   },
   "mqttProfiles": {
     "optionLabel": "Tersimpan: {{name}}",

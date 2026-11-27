@@ -7749,7 +7749,12 @@
     "deleteAria": "Usuń {{name}}",
     "stopUsing": "Przestań używać zapisanej lokalizacji",
     "addLocation": "Dodaj lokalizację",
-    "coordsHintFormats": "Wklej współrzędne lub link do mapy: dziesiętny (39.7392, -104.9903), stopnie/minuty/sekundy za pomocą N/S/E/W, MGRS lub linku do udostępniania Google, Apple lub OpenStreetMap."
+    "coordsHintFormats": "Wklej współrzędne lub link do mapy: dziesiętny (39.7392, -104.9903), stopnie/minuty/sekundy za pomocą N/S/E/W, MGRS lub linku do udostępniania Google, Apple lub OpenStreetMap.",
+    "usePhoneLocation": "Użyj lokalizacji tego telefonu",
+    "phoneLocationName": "Ten telefon",
+    "phoneLocationFailed": "Nie udało się ustalić lokalizacji tego telefonu. Zezwól aplikacji Mesh Client na dostęp do lokalizacji w ustawieniach systemu lub wpisz lokalizację.",
+    "bodyUnknownPhone": "Twoje radio nie zgłasza GPS. Użyj lokalizacji tego telefonu lub wpisz ją, aby odległości między węzłami i kontrole trasowania były dokładne.",
+    "enterManually": "Wpisz ręcznie"
   },
   "mqttProfiles": {
     "optionLabel": "Zapisano: {{name}}",

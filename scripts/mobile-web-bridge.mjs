@@ -38,6 +38,8 @@ export function createBridgeSession(emit) {
       s.__err = `${e.code ?? ''} ${e.message}`.trim();
     });
     s.on('close', () => {
+      if (process.env.MESH_BRIDGE_DEBUG)
+        console.debug(`[bridge] tcp ${id} closed ${s.__err ?? ''}`);
       sockets.delete(id);
       emit('tcpClose', { id, error: s.__err });
     });
@@ -247,6 +249,9 @@ export function createBridgeSession(emit) {
 
   return {
     async handle(op, args) {
+      if (process.env.MESH_BRIDGE_DEBUG) {
+        console.debug(`[bridge] ${op} ${JSON.stringify(args ?? {}).slice(0, 160)}`);
+      }
       const fn = ops[op];
       if (!fn) throw new Error(`unknown op ${op}`);
       return await fn(args ?? {});

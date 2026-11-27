@@ -9,6 +9,8 @@
  * in portrait (669 pt) and Android book-style foldables (690–836 dp), while the Duo outer
  * display (466 pt minus its 84 pt system column) stays single-pane.
  */
+import { useSyncExternalStore } from 'react';
+
 export type WindowWidthClass = 'compact' | 'medium' | 'expanded' | 'large' | 'extraLarge';
 export type WindowHeightClass = 'compact' | 'medium' | 'expanded';
 export type DevicePosture = 'flat' | 'book' | 'tabletop' | 'folded';
@@ -130,4 +132,9 @@ export function setMobileViewport(next: MobileViewportState): void {
 export function subscribeMobileViewport(cb: () => void): () => void {
   subscribers.add(cb);
   return () => subscribers.delete(cb);
+}
+
+/** React hook: current mobile viewport (desktop always gets the constant `DESKTOP_VIEWPORT`). */
+export function useMobileViewport(): MobileViewportState {
+  return useSyncExternalStore(subscribeMobileViewport, getMobileViewport, () => DESKTOP_VIEWPORT);
 }

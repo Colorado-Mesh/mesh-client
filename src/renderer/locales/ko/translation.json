@@ -7631,7 +7631,12 @@
     "deleteAria": "{{name}} 삭제",
     "stopUsing": "저장된 위치 사용 중지",
     "addLocation": "위치 추가",
-    "coordsHintFormats": "좌표 또는 지도 링크 붙여넣기: 10진수 (39.7392, -104.9903), N/S/E/W, MGRS 또는 Google, Apple 또는 OpenStreetMap 공유 링크가 있는 도/분/초."
+    "coordsHintFormats": "좌표 또는 지도 링크 붙여넣기: 10진수 (39.7392, -104.9903), N/S/E/W, MGRS 또는 Google, Apple 또는 OpenStreetMap 공유 링크가 있는 도/분/초.",
+    "usePhoneLocation": "이 휴대폰의 위치 사용",
+    "phoneLocationName": "이 휴대폰",
+    "phoneLocationFailed": "이 휴대폰의 위치를 가져올 수 없습니다. 시스템 설정에서 Mesh Client의 위치 접근을 허용하거나 위치를 입력하세요.",
+    "bodyUnknownPhone": "무전기가 GPS를 보고하지 않습니다. 노드 거리와 라우팅 검사가 정확하도록 이 휴대폰의 위치를 사용하거나 위치를 입력하세요.",
+    "enterManually": "직접 입력"
   },
   "mqttProfiles": {
     "optionLabel": "저장됨: {{name}}",

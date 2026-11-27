@@ -191,6 +191,12 @@ export interface MeshDevicePlugin {
   getFoldState(): Promise<{ folds: NativeFoldFeature[] }>;
   /** Keep the screen awake while a radio operation needs it (firmware flash, long transfers). */
   keepAwake(o: { enabled: boolean }): Promise<void>;
+  /**
+   * Keep radio links alive while the app is in the background. Android: a `connectedDevice`
+   * foreground service with an ongoing notification (title/text). iOS: no-op (BLE uses the
+   * `bluetooth-central` background mode; sockets follow the system background policy).
+   */
+  setBackgroundMode(o: { enabled: boolean; title?: string; text?: string }): Promise<void>;
 }
 
 export interface MeshDeviceEvents {

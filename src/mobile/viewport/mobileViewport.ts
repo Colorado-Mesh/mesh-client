@@ -84,7 +84,11 @@ function update(): void {
   const ins = insets();
   const prev = getMobileViewport();
   const next = computeMobileViewport({
-    usableWidth: Math.round(window.innerWidth - ins.left - ins.right),
+    // clientWidth excludes classic scrollbars, which can come and go during boot without a
+    // resize event; innerWidth would leave a stale width class behind.
+    usableWidth: Math.round(
+      (document.documentElement.clientWidth || window.innerWidth) - ins.left - ins.right,
+    ),
     usableHeight: Math.round((keyboardOpen ? layoutH : visibleH) - ins.top - ins.bottom),
     fold,
     posture,
@@ -119,6 +123,12 @@ function schedule(): void {
 }
 
 export function installMobileViewport(): void {
+  // The layout viewport can change without a window `resize` (meta viewport applied after the
+  // first measurement, WebView insets settling); observe the root element as well.
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(schedule).observe(document.documentElement);
+  }
+  window.addEventListener('load', schedule);
   window.addEventListener('resize', schedule);
   window.addEventListener('orientationchange', schedule);
   window.visualViewport?.addEventListener('resize', schedule);

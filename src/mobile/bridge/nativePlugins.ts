@@ -11,11 +11,17 @@ export type AnyPlugin = Record<string, unknown> & {
   addListener?: (event: string, cb: (data: unknown) => void) => Promise<PluginListenerHandle>;
 };
 
+/** Lazily create one instance per web plugin (Capacitor calls the loader for every method). */
+function once<T>(load: () => Promise<T>): () => Promise<T> {
+  let instance: Promise<T> | null = null;
+  return () => (instance ??= load());
+}
+
 const WEB_IMPLEMENTATIONS: Record<string, () => Promise<unknown>> = {
-  MeshNet: () => import('./web/webMeshNet').then((m) => new m.WebMeshNet()),
-  MeshProcess: () => import('./web/webMeshProcess').then((m) => new m.WebMeshProcess()),
-  MeshDevice: () => import('./web/webMeshDevice').then((m) => new m.WebMeshDevice()),
-  MeshUsbSerial: () => import('./web/webMeshUsbSerial').then((m) => new m.WebMeshUsbSerial()),
+  MeshNet: once(() => import('./web/webMeshNet').then((m) => new m.WebMeshNet())),
+  MeshProcess: once(() => import('./web/webMeshProcess').then((m) => new m.WebMeshProcess())),
+  MeshDevice: once(() => import('./web/webMeshDevice').then((m) => new m.WebMeshDevice())),
+  MeshUsbSerial: once(() => import('./web/webMeshUsbSerial').then((m) => new m.WebMeshUsbSerial())),
 };
 
 const cache = new Map<string, AnyPlugin>();

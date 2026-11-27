@@ -7631,7 +7631,12 @@
     "deleteAria": "删除{{name}}",
     "stopUsing": "停止使用已保存的位置",
     "addLocation": "添加位置",
-    "coordsHintFormats": "粘贴坐标或地图链接：使用N/S/E/W、MGRS或Google、Apple或OpenStreetMap共享链接的十进制（ 39.7392 ， -104.9903 ）、度/分/秒。"
+    "coordsHintFormats": "粘贴坐标或地图链接：使用N/S/E/W、MGRS或Google、Apple或OpenStreetMap共享链接的十进制（ 39.7392 ， -104.9903 ）、度/分/秒。",
+    "usePhoneLocation": "使用此手机的位置",
+    "phoneLocationName": "此手机",
+    "phoneLocationFailed": "无法获取此手机的位置。请在系统设置中允许 Mesh Client 访问位置，或手动输入位置。",
+    "bodyUnknownPhone": "您的电台未报告 GPS。请使用此手机的位置或输入一个位置，以确保节点距离和路由检查准确。",
+    "enterManually": "手动输入"
   },
   "mqttProfiles": {
     "optionLabel": "已保存： {{name}}",

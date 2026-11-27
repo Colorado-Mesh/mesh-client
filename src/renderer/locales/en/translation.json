@@ -3123,7 +3123,12 @@
     "toggleFixedAria": "{{name}} doesn't move",
     "deleteAria": "Delete {{name}}",
     "stopUsing": "Stop using saved location",
-    "addLocation": "Add location"
+    "addLocation": "Add location",
+    "usePhoneLocation": "Use this phone's location",
+    "phoneLocationName": "This phone",
+    "phoneLocationFailed": "Couldn't get this phone's location. Allow location access for Mesh Client in system settings, or enter a location.",
+    "bodyUnknownPhone": "Your radio isn't reporting GPS. Use this phone's location or enter one so node distances and routing checks are accurate.",
+    "enterManually": "Enter manually"
   },
   "logPanel": {
     "showLevels": "Show levels",

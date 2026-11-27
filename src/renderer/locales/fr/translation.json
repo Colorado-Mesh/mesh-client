@@ -7631,7 +7631,12 @@
     "deleteAria": "Supprimer {{name}}",
     "stopUsing": "Arrêter d'utiliser l'emplacement enregistré",
     "addLocation": "Ajouter un lieu",
-    "coordsHintFormats": "Coller les coordonnées ou un lien de carte : décimal (39,7392, -104,9903), degrés/minutes/secondes avec N/S/E/W, MGRS ou un lien de partage Google, Apple ou OpenStreetMap."
+    "coordsHintFormats": "Coller les coordonnées ou un lien de carte : décimal (39,7392, -104,9903), degrés/minutes/secondes avec N/S/E/W, MGRS ou un lien de partage Google, Apple ou OpenStreetMap.",
+    "usePhoneLocation": "Utiliser la position de ce téléphone",
+    "phoneLocationName": "Ce téléphone",
+    "phoneLocationFailed": "Impossible d'obtenir la position de ce téléphone. Autorisez l'accès à la localisation pour Mesh Client dans les réglages du système, ou saisissez une position.",
+    "bodyUnknownPhone": "Votre radio ne transmet pas de GPS. Utilisez la position de ce téléphone ou saisissez-en une pour que les distances entre nœuds et les contrôles de routage soient exacts.",
+    "enterManually": "Saisir manuellement"
   },
   "mqttProfiles": {
     "optionLabel": "Enregistré : {{name}}",

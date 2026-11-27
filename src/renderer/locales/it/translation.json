@@ -7631,7 +7631,12 @@
     "deleteAria": "Elimina {{name}}",
     "stopUsing": "Interrompi l'utilizzo della posizione salv",
     "addLocation": "Aggiungi luogo",
-    "coordsHintFormats": "Incolla le coordinate o un link della mappa: decimale (39,7392, -104,9903), gradi/minuti/secondi con N/S/E/W, MGRS o un link di condivisione di Google, Apple o OpenStreetMap."
+    "coordsHintFormats": "Incolla le coordinate o un link della mappa: decimale (39,7392, -104,9903), gradi/minuti/secondi con N/S/E/W, MGRS o un link di condivisione di Google, Apple o OpenStreetMap.",
+    "usePhoneLocation": "Usa la posizione di questo telefono",
+    "phoneLocationName": "Questo telefono",
+    "phoneLocationFailed": "Impossibile ottenere la posizione di questo telefono. Consenti l'accesso alla posizione per Mesh Client nelle impostazioni di sistema oppure inserisci una posizione.",
+    "bodyUnknownPhone": "La tua radio non segnala il GPS. Usa la posizione di questo telefono o inseriscine una affinché le distanze tra i nodi e i controlli di instradamento siano accurati.",
+    "enterManually": "Inserisci manualmente"
   },
   "mqttProfiles": {
     "optionLabel": "Salvato: {{name}}",
