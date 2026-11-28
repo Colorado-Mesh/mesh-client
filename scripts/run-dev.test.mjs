@@ -112,7 +112,8 @@ describe('run-dev', () => {
       (arg) =>
         arg.startsWith('esbuild src/main/ipc/beacon-handlers.ts') &&
         arg.includes('--outfile=dist-electron/main/beacon-handlers.js') &&
-        arg.includes('--external:electron'),
+        arg.includes('--external:electron') &&
+        arg.includes('--external:ws'),
     );
     expect(beaconAt).toBeGreaterThanOrEqual(0);
     expect(names[beaconAt]).toBe('beacon');

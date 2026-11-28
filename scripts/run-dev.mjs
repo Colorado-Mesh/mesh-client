@@ -50,7 +50,7 @@ export function buildDevConcurrentlyArgs() {
   const reachCheckBuild =
     'esbuild src/main/ipc/reach-check-handlers.ts --bundle --platform=node --outfile=dist-electron/main/reach-check-handlers.js --external:electron --format=cjs --watch';
   const beaconBuild =
-    'esbuild src/main/ipc/beacon-handlers.ts --bundle --platform=node --outfile=dist-electron/main/beacon-handlers.js --external:electron --format=cjs --watch';
+    'esbuild src/main/ipc/beacon-handlers.ts --bundle --platform=node --outfile=dist-electron/main/beacon-handlers.js --external:electron --external:ws --format=cjs --watch';
   const trayUnreadDotBuild =
     'esbuild src/main/trayUnreadDot.ts --bundle --platform=node --outfile=dist-electron/main/tray-unread-dot.js --format=cjs --watch';
   const scheduledBroadcastsRebuildBuild =

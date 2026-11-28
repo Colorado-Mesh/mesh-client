@@ -239,6 +239,8 @@ describe('esbuild-main-build', () => {
       expect(beaconBytes.length).toBeGreaterThan(500);
       expect(beaconBytes.toString('utf8')).toContain('registerBeaconIpcHandlers');
       expect(beaconBytes.toString('utf8')).toContain('[main/beacon-feed]');
+      // ws stays external, as in index.js: the packaged app loads node_modules/ws.
+      expect(beaconBytes.toString('utf8')).not.toContain('permessage-deflate');
       const trayUnreadDotBytes = fs.readFileSync(path.join(tempDir, 'tray-unread-dot.js'));
       expect(trayUnreadDotBytes.length).toBeGreaterThan(200);
       expect(trayUnreadDotBytes.toString('utf8')).toContain('paintTrayUnreadDot');

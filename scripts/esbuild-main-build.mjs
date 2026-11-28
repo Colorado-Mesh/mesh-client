@@ -205,7 +205,8 @@ export async function buildMainProcess(opts = {}) {
     platform: 'node',
     format: 'cjs',
     outfile: path.join(path.dirname(outfile), 'beacon-handlers.js'),
-    external: ['electron'],
+    // Same externals as index.js (ws loads from node_modules, as before the move).
+    external: [...MAIN_ESBUILD_EXTERNALS],
     minify,
     logLevel: 'info',
   });
