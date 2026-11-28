@@ -37,6 +37,7 @@ export function decode(input: string): ParsedMessage {
       language: null,
       timestamp: null,
       callsign: null,
+      appDesignator: null,
     },
     warnings: [],
     raw: input,

@@ -614,7 +614,7 @@ process.exit(a === b || a.startsWith(b) || b.startsWith(a) ? 0 : 1);
 RATSPEAK_RELEASE_WATCH_ENTRIES=(
   'ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.4.0'
   'ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1'
-  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.1.0'
+  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.1.1'
   'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)|file:js/lxmface.js@d1af21c4f4d1c2250991b7fe02a23898fe054851'
   # Identity vault is refreshed from the latest ratspeak/Ratspeak release by
   # scripts/sync-ratspeak-releases.mjs during `pnpm run update` — no file: watch.
@@ -627,15 +627,15 @@ RATSPEAK_RELEASE_WATCH_ENTRIES=(
 # MECP 1.4.1 §6.1 patterns (R03 decimal-fraction rejection + envelope); bump the engine pin when re-syncing from mecp-app.
 MECP_UPSTREAM_WATCH_ENTRIES=(
   'mecp-org/mecp-app||MECP engine (vendored in renderer)|file:engine/src@59090c8d157754216261018aba1bdae61c28184d'
-  'mecp-org/MECP||MECP language packs (vendored in renderer)|file:languages@2d43243a9f201a01ae8c9717fcfe85d0c6818f09'
-  'mecp-org/MECP||MECP freetext patterns (vendored in renderer)|file:freetext@eab95105cad121b3b80f7a49bf5e05ca7aa80c9d'
+  'mecp-org/MECP||MECP language packs (vendored in renderer)|file:languages@6ff3deaf13425a58c2a296df6814d1612cd168a0'
+  'mecp-org/MECP||MECP freetext patterns (vendored in renderer)|file:freetext@0d4175fcce6a3cbbf322412fc66720de930299e9'
 )
 
 # MeshCom firmware wire contract (no npm SDK). Format matches RATSPEAK_RELEASE_WATCH_ENTRIES.
 # On newer tag: review extudp_functions.cpp, phone_commands.cpp, ble_phone_frame.h, country
 # profiles, EXTUDP JSON; update golden fixtures / meshcomCountryProfiles.ts; bump reviewed-ref.
 MESHCOM_UPSTREAM_WATCH_ENTRIES=(
-  'icssw-org/MeshCom-Firmware||MeshCom firmware (EXTUDP/BLE/serial wire)|v4.40a.11.14'
+  'icssw-org/MeshCom-Firmware||MeshCom firmware (EXTUDP/BLE/serial wire)|v4.40a.11.22'
 )
 
 # Open MECP upstream PRs carried locally ahead of the languages pin.
@@ -655,6 +655,7 @@ RATSPEAK_KNOWN_ORG_REPOS=(
   'microReticulum'
   'ratkey'
   'rathole'
+  'ratspeak-agent'
   'ratspeak-docs'
   'ratspeak-handheld'
   'ratspeak-website'

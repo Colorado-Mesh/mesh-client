@@ -113,7 +113,7 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.4.0');
     expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1');
     expect(result.stdout).toContain(
-      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.1.0',
+      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.1.1',
     );
     expect(result.stdout).toContain('ratspeak/LXMFace||');
     expect(result.stdout).toContain('file:js/lxmface.js@d1af21c4f4d1c2250991b7fe02a23898fe054851');
@@ -125,15 +125,16 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('  rsLXMF');
     expect(result.stdout).toContain('  rsLXST');
     expect(result.stdout).toContain('  lrgp-rs');
+    expect(result.stdout).toContain('  ratspeak-agent');
     expect(result.stdout).toContain('MECP_UPSTREAM_WATCH_ENTRIES:');
     expect(result.stdout).toContain('MECP_PR_WATCH_ENTRIES:');
     expect(result.stdout).toContain('file:engine/src@59090c8d1577');
-    expect(result.stdout).toContain('file:languages@2d43243a9f20');
-    expect(result.stdout).toContain('file:freetext@eab95105cad1');
+    expect(result.stdout).toContain('file:languages@6ff3deaf1342');
+    expect(result.stdout).toContain('file:freetext@0d4175fcce6a');
     expect(result.stdout).not.toContain('xiang-dev-1/MECP|5|M16 medical supply drop|');
     expect(result.stdout).toContain('MESHCOM_UPSTREAM_WATCH_ENTRIES:');
     expect(result.stdout).toContain(
-      'icssw-org/MeshCom-Firmware||MeshCom firmware (EXTUDP/BLE/serial wire)|v4.40a.11.14',
+      'icssw-org/MeshCom-Firmware||MeshCom firmware (EXTUDP/BLE/serial wire)|v4.40a.11.22',
     );
   });
 
@@ -569,9 +570,9 @@ exit 0
           body: 'lrgp-rs v0.4.1',
         },
         'ratspeak/Ratspeak': {
-          tag_name: 'v1.1.0',
-          published_at: '2026-11-08T12:00:00Z',
-          body: 'Ratspeak v1.1.0.',
+          tag_name: 'v1.1.1',
+          published_at: '2026-11-20T02:27:45Z',
+          body: 'Ratspeak v1.1.1.',
         },
       },
       commits: {
@@ -632,7 +633,7 @@ exit 0
       PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('v1.1.0');
+    expect(result.stdout).toContain('v1.1.1');
     expect(result.stdout).toContain('reviewed; current');
     expect(result.stdout).toContain('js/lxmface.js @ d1af21c4f4d1 (reviewed; current)');
     expect(result.stdout).toContain('v0.4.1');
@@ -662,7 +663,7 @@ exit 0
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('WARNING:');
-    expect(result.stdout).toContain('v1.1.0');
+    expect(result.stdout).toContain('v1.1.1');
     expect(result.stdout).toContain('v9.9.9');
     expect(result.stdout).toContain('docs/reticulum-games-parity.md');
     expect(result.stdout).not.toContain('Four in a Row');

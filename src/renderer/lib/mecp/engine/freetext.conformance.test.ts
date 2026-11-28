@@ -42,6 +42,7 @@ function decodeMessageConventions(input: string): Record<string, unknown> | null
   if (!env) return null;
   const extracted = extractFreetextConventions(env.freetext, env.codes);
   const got: Record<string, unknown> = {};
+  if (extracted.appDesignator != null) got.appDesignator = extracted.appDesignator;
   if (extracted.count != null) got.pax = extracted.count;
   if (extracted.gps != null) got.gps = extracted.gps;
   if (extracted.duration != null) got.duration = extracted.duration;

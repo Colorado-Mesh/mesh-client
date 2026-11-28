@@ -93,6 +93,7 @@ describe('describeMecpForTak', () => {
             language: null,
             timestamp: null,
             callsign: null,
+            appDesignator: null,
           },
           warnings: [],
           raw: 'MECP/2/',

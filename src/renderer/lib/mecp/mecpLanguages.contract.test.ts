@@ -117,15 +117,20 @@ describe('MECP language pack contract', () => {
     expect(english.categories.M.name).toBe('Medical');
     expect(english.codes.M01).toBe('Injury');
     expect(english.codes.M16).toBe('Medical supply drop needed');
+    expect(english.codes.M18).toBe('Stroke');
+    expect(english.codes.W07).toBe('Tornado');
+    expect(english.codes.D05).toBe('End of test');
     expect(english.codes.R03).toBe('ETA [time]');
+    expect(Object.keys(english.codes).length).toBe(120);
 
     for (const key of loaderKeys) {
       const loaded = await loadMecpLanguage(key);
       expect(loaded).not.toBe(english);
       expect(Object.keys(loaded.categories).length).toBeGreaterThan(0);
-      expect(Object.keys(loaded.codes).length).toBeGreaterThan(0);
+      expect(Object.keys(loaded.codes).length).toBe(120);
       expect(loaded.codes.M01.length).toBeGreaterThan(0);
       expect(loaded.codes.M16.length).toBeGreaterThan(0);
+      expect(loaded.codes.M18.length).toBeGreaterThan(0);
     }
   });
 });

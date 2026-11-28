@@ -125,6 +125,101 @@
     "expect": { "pax": null }
   },
   {
+    "title": "Claim order: timestamp minutes are not a person count",
+    "input": "MECP/1/S01 @6:30 pax",
+    "expect": { "timestamp": "06:30", "pax": null }
+  },
+  {
+    "title": "Claim order: two-digit hour timestamp minutes are not a person count",
+    "input": "MECP/1/S01 @14:30 pax",
+    "expect": { "timestamp": "14:30", "pax": null }
+  },
+  {
+    "title": "Claim order: a count after a colon timestamp still decodes",
+    "input": "MECP/1/S01 @06:30 4 pax",
+    "expect": { "timestamp": "06:30", "pax": 4 }
+  },
+  {
+    "title": "Claim order: a count before a colon timestamp still decodes",
+    "input": "MECP/2/T05 Rockfall near #base-camp, 3 PAX turned back @6:30.",
+    "expect": { "pax": 3, "timestamp": "06:30", "reference": "base-camp" }
+  },
+  {
+    "title": "Claim order: GPS longitude digits are not a person count",
+    "input": "MECP/0/M01 47.3769,8.5417 pax",
+    "expect": { "gps": { "lat": 47.3769, "lon": 8.5417 }, "pax": null }
+  },
+  {
+    "title": "Pax: a decimal fraction is not a person count",
+    "input": "MECP/1/S01 1.5 pax",
+    "expect": { "pax": null }
+  },
+  {
+    "title": "Pax: a comma decimal fraction is not a person count",
+    "input": "MECP/1/S01 2,5 pax",
+    "expect": { "pax": null }
+  },
+  {
+    "title": "Pax: glued timestamp minutes are not a person count",
+    "input": "MECP/1/S01 @6:30pax",
+    "expect": { "timestamp": null, "pax": null }
+  },
+  {
+    "title": "Duration: glued hour after colon timestamp minutes is not a duration",
+    "input": "MECP/2/R03 @6:30h",
+    "expect": { "timestamp": null, "duration": null }
+  },
+  {
+    "title": "Duration: glued min after colon timestamp minutes is not a duration",
+    "input": "MECP/2/R03 @14:30min",
+    "expect": { "timestamp": null, "duration": null }
+  },
+  {
+    "title": "Duration: spaced min after colon timestamp is time only",
+    "input": "MECP/2/R03 @14:30 min",
+    "expect": { "timestamp": "14:30", "duration": null }
+  },
+  {
+    "title": "Duration: a bare number before colon clock digits is not an ETA",
+    "input": "MECP/2/R03 14:30",
+    "expect": { "duration": null }
+  },
+  {
+    "title": "Duration: ETA-prefixed bare number before colon clock digits is not an ETA",
+    "input": "MECP/2/R03 ETA 14:30",
+    "expect": { "duration": null }
+  },
+  {
+    "title": "Duration: a bare number without a following colon clock still decodes",
+    "input": "MECP/2/R03 14",
+    "expect": { "duration": 14 }
+  },
+  {
+    "title": "Duration: bare number before colon rejects on the next two minute digits only",
+    "input": "MECP/2/R03 14:300",
+    "expect": { "duration": null }
+  },
+  {
+    "title": "Duration: ordinary colon punctuation after a bare number still decodes",
+    "input": "MECP/2/R03 45: on the way",
+    "expect": { "duration": 45 }
+  },
+  {
+    "title": "Duration: clock minutes without @ are not a unit-bearing duration",
+    "input": "MECP/2/R03 14:30h",
+    "expect": { "duration": null }
+  },
+  {
+    "title": "Pax: clock minutes without @ are not a person count",
+    "input": "MECP/1/S01 14:30 pax",
+    "expect": { "pax": null }
+  },
+  {
+    "title": "App designator: ETA-shaped first token with U is a designator, not a duration",
+    "input": "MECP/2/U04 R03 eta 45",
+    "expect": { "appDesignator": "eta", "duration": null }
+  },
+  {
     "title": "GPS: an out-of-range position is skipped and the next valid one is used",
     "input": "MECP/3/L06 95.0,200.0 47.3,8.5",
     "expect": { "gps": { "lat": 47.3, "lon": 8.5 } }
@@ -223,6 +318,31 @@
     "title": "Duration: a bare number that is not the first freetext token is not decoded",
     "input": "MECP/2/C01 R03 1pax 45",
     "expect": { "pax": 1, "duration": null }
+  },
+  {
+    "title": "Duration: a bare number that is the start of spaced pax is not a duration",
+    "input": "MECP/2/R03 4 pax",
+    "expect": { "pax": 4, "duration": null }
+  },
+  {
+    "title": "Duration: a bare number after ETA that is the start of spaced pax is not a duration",
+    "input": "MECP/2/R03 ETA 4 pax",
+    "expect": { "pax": 4, "duration": null }
+  },
+  {
+    "title": "Duration: glued pax as the first freetext token is pax only",
+    "input": "MECP/2/R03 4pax",
+    "expect": { "pax": 4, "duration": null }
+  },
+  {
+    "title": "Duration: spaced pax still allows a later unit-bearing duration",
+    "input": "MECP/2/R03 4 pax 45min",
+    "expect": { "pax": 4, "duration": 45 }
+  },
+  {
+    "title": "Duration: a bare number and a later glued pax are both decoded",
+    "input": "MECP/2/R03 45 4pax",
+    "expect": { "duration": 45, "pax": 4 }
   },
   {
     "title": "Duration: seconds are not a unit",
@@ -383,5 +503,45 @@
     "title": "Message: decoders accept a message longer than 200 bytes (202 bytes)",
     "input": "MECP/0/M01 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
     "expect": {}
+  },
+  {
+    "title": "App designator: first freetext token when a U code is present",
+    "input": "MECP/2/U04 rem #site-a",
+    "expect": { "appDesignator": "rem", "reference": "site-a" }
+  },
+  {
+    "title": "App designator: still decoded alongside a shared code",
+    "input": "MECP/1/M01 U04 rem needs help",
+    "expect": { "appDesignator": "rem" }
+  },
+  {
+    "title": "App designator: hyphenated designator",
+    "input": "MECP/2/U01 mecp-app",
+    "expect": { "appDesignator": "mecp-app" }
+  },
+  {
+    "title": "App designator: not decoded without a U code",
+    "input": "MECP/3/L01 rem running late",
+    "expect": { "appDesignator": null }
+  },
+  {
+    "title": "App designator: U code with no freetext has no designator",
+    "input": "MECP/2/U04",
+    "expect": { "appDesignator": null }
+  },
+  {
+    "title": "App designator: a leading reference is not a designator, and a later word is not taken",
+    "input": "MECP/2/U04 #site-a rem",
+    "expect": { "appDesignator": null, "reference": "site-a" }
+  },
+  {
+    "title": "App designator: uppercase first token is not a designator",
+    "input": "MECP/2/U04 REM payload",
+    "expect": { "appDesignator": null }
+  },
+  {
+    "title": "App designator: a bare digit after R03+U is not a designator",
+    "input": "MECP/0/R03 U02 4",
+    "expect": { "appDesignator": null, "duration": 4 }
   }
 ]

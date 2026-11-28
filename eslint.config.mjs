@@ -102,6 +102,11 @@ export default tseslint.config(
       // this typescript-eslint 8.73 strictTypeChecked rule cannot prove. Keep off until the
       // rule can treat known factories as constructed, or call sites are reshaped.
       '@typescript-eslint/no-unsafe-class-instance-assignment': 'off',
+      // Off: typescript-eslint 8.74+ flags every Meshtastic AdminMessage `payloadVariant.value`
+      // write/read because one union arm (`rebootOtaSeconds`) is `@deprecated`, and the rule
+      // does not narrow by `case`. Editors still strikethrough real deprecations; re-enable
+      // when the rule narrows discriminated unions (or codegen splits deprecated arms).
+      '@typescript-eslint/no-deprecated': 'off',
       '@typescript-eslint/restrict-template-expressions': 'off',
       '@typescript-eslint/unbound-method': 'off',
       // React event handlers often return Promise<void>; void-return check is too strict for JSX attrs.

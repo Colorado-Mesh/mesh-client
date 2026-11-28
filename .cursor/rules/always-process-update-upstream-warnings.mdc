@@ -1,0 +1,10 @@
+---
+description: After pnpm run update, process every upstream watch warning in the same PR
+alwaysApply: true
+---
+
+# Always process update upstream warnings
+
+When you run `pnpm run update` (or finish a deps-update branch), **do not skip** Ratspeak / MECP / MeshCom / new-org-repo watch warnings.
+
+Process every warning in the same change: re-vendor, bump `reviewed-ref`, or add known org repos until a re-check is quiet. Only leave a warning unprocessed when intents genuinely conflict — then ask the user.
