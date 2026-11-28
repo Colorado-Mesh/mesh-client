@@ -198,7 +198,12 @@ jobs:
             --target-dir reticulum-sidecar/target
 
       - name: Desktop sidecar for the harness spec
-        run: cargo build --release --manifest-path reticulum-sidecar/Cargo.toml
+        # The crate's default feature set is empty (no Reticulum stack, so identity generation
+        # cannot succeed). Build with the mobile feature set (MOBILE_SIDECAR_FEATURES in
+        # mobile/scripts/build-sidecar.mjs): the stack and RNode TCP, no BLE (which needs dbus).
+        run: >-
+          cargo build --release --manifest-path reticulum-sidecar/Cargo.toml
+          --features rns-stack,rns-rnode-tcp
 
       - name: Install Chromium for the harness
         run: pnpm -C mobile exec playwright install --with-deps chromium

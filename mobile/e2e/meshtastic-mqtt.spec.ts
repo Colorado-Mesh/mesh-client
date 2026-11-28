@@ -76,27 +76,32 @@ test('connects to an MQTT broker and receives a channel message', async ({ brows
     timeout: 30_000,
   });
 
-  // A gateway publishes a firmware-style JSON text message on the default channel.
+  // A gateway publishes a firmware-style JSON text message on the default channel. The app shows
+  // "connected" on CONNACK and subscribes after that (mqtt-manager), so a single publish can reach
+  // the broker before the app's subscription does; publish again on each poll until it is stored.
   const text = `mobile mqtt ${Date.now()}`;
   const client = await mqtt.connectAsync(`mqtt://${HOST}:${PORT}`);
-  await client.publishAsync(
-    'msh/US/2/json/LongFast/!7e57a1b2',
-    JSON.stringify({ type: 'text', from: 2119672242, channel: 0, payload: { text } }),
-  );
-  await client.endAsync();
-
-  await expect
-    .poll(
-      async () =>
-        page.evaluate(async (t) => {
-          const rows = (await window.electronAPI.db.getMessages(undefined, 200)) as {
-            payload?: string;
-          }[];
-          return rows.some((r) => r.payload === t);
-        }, text),
-      { timeout: 30_000 },
-    )
-    .toBe(true);
+  try {
+    await expect
+      .poll(
+        async () => {
+          await client.publishAsync(
+            'msh/US/2/json/LongFast/!7e57a1b2',
+            JSON.stringify({ type: 'text', from: 2119672242, channel: 0, payload: { text } }),
+          );
+          return page.evaluate(async (t) => {
+            const rows = (await window.electronAPI.db.getMessages(undefined, 200)) as {
+              payload?: string;
+            }[];
+            return rows.some((r) => r.payload === t);
+          }, text);
+        },
+        { timeout: 30_000, intervals: [1_000] },
+      )
+      .toBe(true);
+  } finally {
+    await client.endAsync();
+  }
   await page.getByRole('button', { name: /^Chat/ }).first().click();
   await expect(page.getByText(text).first()).toBeVisible({ timeout: 20_000 });
 

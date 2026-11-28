@@ -72,4 +72,16 @@ describe('mobile-android workflow', () => {
     expect(runs('sidecar')).toContain('node mobile/scripts/build-sidecar.mjs android');
     expect(runs('sidecar')).toContain('mobile/native/reticulum-ffi/Cargo.toml');
   });
+
+  it('builds the harness sidecar with the mobile feature set (the crate default has no stack)', async () => {
+    const { MOBILE_SIDECAR_FEATURES } = await import('./build-sidecar.mjs');
+    const harnessBuild = step('sidecar', 'Desktop sidecar for the harness spec').run;
+    expect(harnessBuild).toContain(
+      'cargo build --release --manifest-path reticulum-sidecar/Cargo.toml',
+    );
+    const words = harnessBuild.trim().split(/\s+/);
+    const at = words.indexOf('--features');
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(words[at + 1]).toBe(MOBILE_SIDECAR_FEATURES);
+  });
 });
