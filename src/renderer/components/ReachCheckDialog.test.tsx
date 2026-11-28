@@ -112,6 +112,16 @@ describe('ReachCheckDialog', () => {
     expect(onAnswer).toHaveBeenLastCalledWith({ kind: 'cancel' });
   });
 
+  it('wraps its message and field error so a short last word does not end up alone', () => {
+    // At 390 px the rate message broke as "Try again in 3" / "min." and the browser check
+    // message ended with "opened." alone; text-wrap: pretty keeps the last line from being one word.
+    renderDialog({ kind: 'paste-key', name: 'ukmeshtest', error: 'hash' });
+    const bodyId = screen.getByRole('dialog').getAttribute('aria-describedby');
+    expect(bodyId).toBeTruthy();
+    expect(document.getElementById(bodyId ?? '')).toHaveClass('text-pretty');
+    expect(screen.getByRole('alert')).toHaveClass('text-pretty');
+  });
+
   it.each([
     { kind: 'setup', error: 'invalid_url' },
     { kind: 'error', error: 'key-mismatch', name: '#cm-reach' },

@@ -129,7 +129,7 @@ export function ReachCheckDialog({ state, onAnswer }: ReachCheckDialogProps) {
           <h3 id={titleId} className="text-ink-200 text-lg font-semibold">
             {t('reachCheck.dialogTitle')}
           </h3>
-          <p id={bodyId} className="text-muted text-sm leading-relaxed">
+          <p id={bodyId} className="text-muted text-sm leading-relaxed text-pretty">
             {body}
           </p>
           {fieldLabel ? (
@@ -155,7 +155,7 @@ export function ReachCheckDialog({ state, onAnswer }: ReachCheckDialogProps) {
                 className={`${INPUT_CLASS} font-mono`}
               />
               {fieldError ? (
-                <p id={errorId} role="alert" className="text-xs text-red-400">
+                <p id={errorId} role="alert" className="text-xs text-pretty text-red-400">
                   {fieldError}
                 </p>
               ) : null}
