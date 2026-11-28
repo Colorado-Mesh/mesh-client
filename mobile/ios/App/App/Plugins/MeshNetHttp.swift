@@ -5,8 +5,9 @@ import Foundation
 /// delegate callbacks run on the MeshNet serial queue.
 ///
 /// `x-mesh-pinned-address`: URLSession cannot connect to a chosen IP while keeping the URL host
-/// for TLS/SNI, so the header is only stripped and the request resolves the host itself (the
-/// contract allows this: "implementations that cannot pin connect normally").
+/// for TLS/SNI. Resolving the host again would undo the host worker's public-address check (DNS
+/// rebinding), so a request that carries a pin is refused (`EPINUNSUPPORTED`), as the contract
+/// requires of an implementation that cannot pin.
 final class MeshWebStack: NSObject, URLSessionDataDelegate, URLSessionWebSocketDelegate {
     private final class HttpRequest {
         let id: String
@@ -84,10 +85,14 @@ final class MeshWebStack: NSObject, URLSessionDataDelegate, URLSessionWebSocketD
         guard let url = URL(string: urlText), let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
             throw MeshNetError("ERR_INVALID_URL Invalid URL: \(urlText)")
         }
+        let headers = call.meshHeaders("headers")
+        if headers.contains(where: { $0.key.lowercased() == "x-mesh-pinned-address" }) {
+            throw MeshNetError("EPINUNSUPPORTED this platform cannot connect to a pinned address")
+        }
         var request = URLRequest(url: url)
         request.httpMethod = (call.getString("method") ?? "GET").uppercased()
         request.timeoutInterval = 300
-        for (name, value) in call.meshHeaders("headers") where name.lowercased() != "x-mesh-pinned-address" {
+        for (name, value) in headers {
             request.setValue(value, forHTTPHeaderField: name)
         }
         if let body = call.getString("bodyB64"), !body.isEmpty {

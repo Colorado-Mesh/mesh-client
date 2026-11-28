@@ -69,8 +69,11 @@ export function createBridgeSession(emit, { sharedDir, udpBindAddress } = {}) {
       s.__err = `${e.code ?? ''} ${e.message}`.trim();
     });
     s.on('close', () => {
-      if (process.env.MESH_BRIDGE_DEBUG)
-        console.debug(`[bridge] tcp ${id} closed ${s.__err ?? ''}`);
+      if (process.env.MESH_BRIDGE_DEBUG) {
+        // The error text comes from the network peer: drop line breaks before it reaches a log.
+        const reason = String(s.__err ?? '').replace(/\n|\r/g, '');
+        console.debug(`[bridge] tcp ${id} closed ${reason}`);
+      }
       sockets.delete(id);
       emit('tcpClose', { id, error: s.__err });
     });
@@ -218,7 +221,11 @@ export function createBridgeSession(emit, { sharedDir, udpBindAddress } = {}) {
       const ac = new AbortController();
       http.set(a.id, ac);
       const headers = { ...(a.headers ?? {}) };
-      delete headers['x-mesh-pinned-address'];
+      // Node's fetch cannot connect to a chosen address: refuse a pinned request, as the
+      // contract requires (resolving again would undo the host's public-address check).
+      if (Object.keys(headers).some((k) => k.toLowerCase() === 'x-mesh-pinned-address')) {
+        throw new Error('EPINUNSUPPORTED this bridge cannot connect to a pinned address');
+      }
       const r = await fetch(a.url, {
         method: a.method,
         headers,

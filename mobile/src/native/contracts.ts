@@ -78,7 +78,9 @@ export interface HttpRequestOptions {
   /**
    * Header `x-mesh-pinned-address` (inside `headers`) carries an IP the host already validated
    * as public; the native client must connect to that address (keeping Host/SNI = URL host) and
-   * strip the header before sending. Implementations that cannot pin connect normally.
+   * strip the header before sending. An implementation that cannot pin must refuse the request
+   * (`EPINUNSUPPORTED`): resolving the host again would undo the caller's public-address check
+   * (DNS rebinding).
    */
 }
 
