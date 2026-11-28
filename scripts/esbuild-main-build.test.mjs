@@ -283,7 +283,12 @@ describe('esbuild-main-build', () => {
       expect(meshcoreMqttPoolBytes.length).toBeGreaterThan(500);
       expect(meshcoreMqttPoolBytes.toString('utf8')).toContain('MeshcoreMqttPool');
       expect(meshcoreMqttPoolBytes.toString('utf8')).toContain('publishPacketPayload');
+      // Adapter (+ MeshCom MQTT) lives in the sibling chunk, not measured index.js.
+      expect(meshcoreMqttPoolBytes.toString('utf8')).toContain(
+        'Token updated, reconnecting to apply JWT',
+      );
       const indexSource = fs.readFileSync(outfile, 'utf8');
+      expect(indexSource).not.toContain('Token updated, reconnecting to apply JWT');
       expect(indexSource).not.toContain('waypoint.geofenceRadius invalid');
       expect(mqttWaypointValidationBytes.toString('utf8')).toContain(
         'waypoint.geofenceRadius invalid',

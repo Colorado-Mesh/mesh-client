@@ -12,6 +12,7 @@ import {
 } from '../shared/meshtasticMqttReconnect';
 import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
 import { mqttUsesTls } from '../shared/mqttTls';
+import { isTransientNetworkError } from '../shared/networkTransientErrors';
 import { sanitizeLogMessage } from './log-service';
 import { forceEndMqttClient } from './mqtt-client-teardown';
 import {
@@ -178,6 +179,10 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   /**
    * Apply a refreshed JWT. `expectedServer` guards against a late refresh response landing on a
    * session that has since switched brokers (or reused the same connection id).
+   *
+   * MQTT 3.1.1 sends credentials only at CONNECT, so a live session must reconnect to apply the
+   * new password — storing it and only rescheduling the proactive timer left overnight feeds on
+   * the expired JWT until keepalive drop.
    */
   updateToken(token: string, expiresAt: number, expectedServer?: string): void {
     if (!this.lastSettings) {
@@ -194,16 +199,18 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.lastSettings.password = token;
     this.lastSettings.tokenExpiresAt = expiresAt;
     this.clearTokenRefreshTimer();
-    if (this.status === 'connected') {
-      this.scheduleTokenRefresh();
-    }
-    if (this.pendingReconnect && this.lastSettings) {
+    if (this.pendingReconnect) {
       this.pendingReconnect = false;
       if (this.pendingReconnectTimer) {
         clearTimeout(this.pendingReconnectTimer);
         this.pendingReconnectTimer = null;
       }
       console.debug('[MeshCore MQTT] Token updated, triggering pending reconnect');
+      this._doConnect(this.lastSettings);
+      return;
+    }
+    if (this.status === 'connected' || this.status === 'connecting') {
+      console.debug('[MeshCore MQTT] Token updated, reconnecting to apply JWT');
       this._doConnect(this.lastSettings);
     }
   }
@@ -419,18 +426,30 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     // — mqtt.js can still emit after end() — cannot touch lastPacketReceivedAt or consume
     // the new session's first-ping logs.
     const sessionClient = this.client;
-    sessionClient.on('error', (err) => {
+    sessionClient.on('error', (err: Error & { code?: unknown }) => {
       if (this.client !== sessionClient) return;
       if (isMqttPacketTooLargeError(err)) {
         this.rejectOversizedMqttPacket();
         return;
       }
       this.clearConnectTimers();
-      console.error(
-        'mcL0234 [MeshCore MQTT] client error',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      this.emit('error', err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      const sanitized = sanitizeLogMessage(message);
+      // Match Meshtastic mqtt-manager: keepalive/connack/network blips reconnect via
+      // 'close' — do not treat them as fatal overnight-log errors.
+      const isTransient = isTransientNetworkError(err);
+      if (isTransient) {
+        const isMsgTransient =
+          err.message === 'Keepalive timeout' || err.message === 'connack timeout';
+        if (isMsgTransient) {
+          console.warn('mcL1518 [MeshCore MQTT] Connection timeout (will reconnect):', sanitized);
+        } else {
+          console.warn('mcL1519 [MeshCore MQTT] Network error (will reconnect):', sanitized);
+        }
+      } else {
+        console.error('mcL0234 [MeshCore MQTT] client error', sanitized);
+      }
+      this.emit('error', message);
       // Unblock the UI immediately — 'close' may arrive many seconds later.
       if (this.status === 'connecting') {
         this.setStatus('disconnected');
