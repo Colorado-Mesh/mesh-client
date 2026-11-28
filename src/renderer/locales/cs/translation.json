@@ -1041,7 +1041,8 @@
       "unavailableNotCaptured": "Trasa není k dispozici: trasy jsou uchovávány pouze pro nedávné zprávy z této relace.",
       "notRecorded": "Pakety v této síti zaznamenávají, kolik relé prošly, ne které.",
       "reachedYouInHops_few": "Dorazilo k vám přes {{count}} skoky",
-      "reachedYouInHops_many": "Dorazilo k vám přes {{count}} skoku"
+      "reachedYouInHops_many": "Dorazilo k vám přes {{count}} skoku",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Označit jako nepřečtené",
     "deleteMessageLocal": "Smazat lokálně",
@@ -1786,7 +1787,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Země]/[Stát], např. msh/CO/US",
-      "meshcoreLetsmesh": "meshcore/{IATA}, např. meshcore/DEN",
+      "meshcoreLetsmesh": "Vyberte letištní kód IATA nejblíže vaší oblasti (meshcore/{IATA}). Test používejte jen pro testování analyzátoru.",
       "meshcoreDefault": "MESHCORE/[Země]/[Stát], např. MESHCORE/US/CO",
       "meshcom": "Kořenové téma brokera pro vaši bránu MeshCom, např. meshcom"
     },
@@ -1884,13 +1885,12 @@
       "syncFailed": "Synchronizace zjišťování RMAP se nezdařila.",
       "publishingOf": "RMAP v4: publikování {{current}} z {{total}}"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT je určen pro uživatele síťoviny v oblasti Colorada. Přednastavení publikuje pod meshcore/DEN (Denver IATA). Pokud nejste v Coloradu, použijte LetsMesh nebo MeshMapper. Pokračovat?",
-    "coloradoServerNote": "Colorado Mesh je určen pro uživatele mesh v oblasti Colorada. Předpona tématu používá Denver IATA (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT je pro uživatele mesh v oblasti Colorado. Pro prefix tématu zvolte místní letištní kód IATA. Pokud nejste v Coloradu, použijte místo toho LetsMesh nebo MeshMapper. Pokračovat?",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT je určen pro uživatele sítí v oblasti Colorada a publikuje pod meshcore/DEN. Pokud se nacházíte mimo Colorado, přepněte na LetsMesh (globální veřejný makléř).",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT je pro uživatele mesh v oblasti Colorado. Pokud jste mimo Colorado, přepněte na LetsMesh (globální veřejný broker).",
     "coloradoRegionGateStay": "Jsem v Coloradu",
     "coloradoRegionGateSwitch": "Přepnout na LetsMesh",
-    "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN.",
+    "topicPrefixInvalidIata": "Před připojením vyberte letištní kód IATA ze seznamu (nebo testovací volbu).",
     "maxRetriesHelpConnected": {
       "meshcore": "Pokus o opětovné připojení před vzdáním se (1–{{max}}). Uloženo s nastavením; po změně znovu stiskněte tlačítko Připojit, aby jej hlavní proces zvedl.",
       "meshtastic": "Oba protokoly umožňují 1–{{max}}. Uloženo s nastavením; odpojte a znovu připojte, aby běžící relace používala novou hodnotu.",
@@ -2033,7 +2033,21 @@
       "done": "Hotovo",
       "cancelAria": "Zrušit {{name}}",
       "duplicateWarning": "Další povolené připojení směřuje na stejného brokera (server a port), takže by byly pakety publikovány dvakrát."
-    }
+    },
+    "iataPicklist": {
+      "label": "Oblast IATA",
+      "placeholder": "Vyberte svou oblast IATA…",
+      "aria": "MeshCore MQTT oblast IATA",
+      "searchAria": "Hledat kódy IATA letišť",
+      "searchPlaceholder": "Hledat kód, město nebo název…",
+      "listAria": "Kódy letišť IATA",
+      "empty": "Hledání neodpovídá žádné letiště.",
+      "loadFailed": "Seznam letišť se nepodařilo načíst.",
+      "testOption": "test – analyzátor / pouze testování",
+      "nearestBadge": "Nejbližší",
+      "nearestOption": "{{label}} (nejbližší)"
+    },
+    "coloradoServerNote": "Colorado Mesh je určeno pro uživatele sítě v oblasti Colorada. Níže vyberte kód IATA místního letiště pro předponu tématu MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -2609,7 +2623,18 @@
     "evidence": "Zobrazit důkazy pro {{category}}",
     "evidenceShown": "Zobrazeno {{shown}} z {{total}} odpovídajících záznamů, nejnovější jako první.",
     "ignoredOtherProtocol": "Řádky z jiných rádiových protokolů ({{count}}) byly vyloučeny.",
-    "protocolNote": "Používá aktivní rádiový protokol. Linky vlastněné jiným rádiem jsou vyloučeny; sdílené linky v rámci celé aplikace zůstávají."
+    "protocolNote": "Používá aktivní rádiový protokol. Linky vlastněné jiným rádiem jsou vyloučeny; sdílené linky v rámci celé aplikace zůstávají.",
+    "aiAnalyze": "Analyzovat pomocí umělé inteligence",
+    "aiSetup": "Nastavení umělé inteligence pro analýzu protokolů",
+    "aiFixEngine": "Opravit modul umělé inteligence",
+    "aiNeedsNetwork": "Analýza pomocí umělé inteligence vyžaduje připojení k internetu pro načtení dokumentů k řešení problémů. Vestavěná analýza funguje i offline.",
+    "aiPrivacyHint": "Odešle zabalené nálezy do vašeho modulu umělé inteligence a získá veřejné dokumenty k řešení problémů. Před sdílením si prohlédněte vzorky.",
+    "aiConversationLabel": "{{protocol}} analýza protokolů",
+    "aiResultHeading": "Třídění pomocí umělé inteligence",
+    "aiWorking": "Načítání dokumentů a analýza…",
+    "aiVerify": "Ověřte třídění pomocí umělé inteligence podle zjištění a dokumentů. Výše uvedená heuristická doporučení zůstávají směrodatná i v režimu offline.",
+    "troubleshootingDocs": "Dokumenty k řešení problémů ↗",
+    "aiNeedsFindings": "Analýza pomocí umělé inteligence vyžaduje alespoň jeden nález založený na pravidlech. Vestavěná analýza již nahlásila, že nebyly zjištěny žádné problémy."
   },
   "logAnalyzer": {
     "categories": {
@@ -5541,7 +5566,39 @@
     "senderKeyPrefix": "Klíč odesílatele (prefix):",
     "control": "Řízení:",
     "advertTs": "Čas ADVERT:",
-    "advertLatLon": "Zem. šířka/délka ADVERT:"
+    "advertLatLon": "Zem. šířka/délka ADVERT:",
+    "meshcomKind": {
+      "msg": "ZPRÁVA",
+      "pos": "Prodejna",
+      "tele": "Tele",
+      "ack": "POTV.",
+      "other": "OSTATNÍ"
+    },
+    "meshcomKindTooltip": {
+      "msg": "SMS nebo zpráva v chatu",
+      "pos": "Správa o polohe",
+      "tele": "Telemetrie (EXTUDP)",
+      "ack": "Potvrzení o doručení nebo směrování",
+      "other": "Jiný typ rámu"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SÉRIOVÉ Č.",
+      "serverTooltip": "Přeneseno prostřednictvím serveru nebo brány (ne přímo metadata RF)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP snímek APRS",
+      "ble": "BLE telefonní oznámení APRS",
+      "serial": "Řádek JSON pro sériové připojení nebo netconsole"
+    },
+    "meshcomLegendHint": "Řádky zobrazují příchozí provoz MeshCom (EXTUDP, KISS, BLE APRS nebo sériový JSON). Cesta uvádí volací značky zdroje a digipeateru.",
+    "meshcomTransportColumn": "Odkaz",
+    "meshcomTransportColumnTooltip": "Jak se tento rámec dostal do aplikace (EXTUDP, KISS, BLE nebo sériové).",
+    "meshcomPathColumnTooltip": "Původní volací značka a trasa digipeateru, pokud jsou k dispozici.",
+    "meshcomPathEmpty": "V tomto snímku není žádná cesta digipeateru."
   },
   "remoteAdmin": {
     "errors": {
@@ -8546,7 +8603,9 @@
       "invalidResponse": "Motor vrátil neúplnou nebo nepodporovanou odpověď.",
       "cancelled": "Shrnutí bylo zrušeno.",
       "error": "Nelze shrnout. Zkontrolujte nastavení AI a zkuste to znovu.",
-      "repetitiveOutput": "Model se začal opakovat. Vyzkoušejte větší model nebo kratší řadu."
+      "repetitiveOutput": "Model se začal opakovat. Vyzkoušejte větší model nebo kratší řadu.",
+      "docsUnavailable": "Nepodařilo se načíst dokumenty k řešení problémů. Zkontrolujte připojení k internetu a zkuste funkci Analýza pomocí umělé inteligence znovu.",
+      "noFindings": "Žádné nálezy založené na pravidlech k analýze. Vestavěná analýza již nahlásila, že nebyly zjištěny žádné problémy."
     },
     "hours_few": "Poslední {{count}} hodiny",
     "loadingModel": "Načítání modelu na tomto zařízení...",
@@ -9204,7 +9263,7 @@
     "connectionHint": "MeshCom používá amatérské rádiové pásmo LoRa prostřednictvím nastavení země (--setctry). Ujistěte se, že profil země vašeho uzlu odpovídá vaší licenci.",
     "countrySettingLabel": "Nastavení země (--setctry)",
     "extUdpHint": "EXTUDP vyžaduje uzel nakonfigurovaný s možností --extudp zapnutou a s možností --extudpip směřující na tento počítač (UDP 1799).",
-    "kissTcpHint": "KISS/TCP používá port MeshCom 8001 – nikoli Reticulum KISS/AX.25.",
+    "kissTcpHint": "KISS/TCP používá port MeshCom 8001 — ne Reticulum KISS/AX.25. Volitelné --passwd, když je zapnuté --kiss auth. Jen důvěryhodná LAN/VPN (bez TLS).",
     "channelAll": "VŠE",
     "channelGroup": "Skupina {{id}}",
     "callsignFieldLabel": "Volací značka (--setcall)",
@@ -9337,14 +9396,19 @@
       "removeGroupListenNotUpdated": "{{name}} byl zde skryt, ale filtr poslechu uzlu nebyl aktualizován (rádiové příkazy nejsou k dispozici).",
       "removeGroupListenRadioChanged": "{{name}} byl zde skryt, ale filtr poslechu uzlu nebyl aktualizován (připojené rádio se změnilo)."
     },
-    "netConsoleHint": "NET Console je TCP port 2323 (nešifrovaná LAN). Povolte --netconsole na uzlu; volitelné --passwd pro přihlášení HMAC."
+    "netConsoleHint": "NET Console je TCP port 2323 (nešifrovaná LAN). Povolte --netconsole na uzlu; volitelné --passwd pro přihlášení HMAC.",
+    "importInvalidJson": "Soubor se nepodařilo přečíst – neplatný JSON.",
+    "importNoContactRows": "Soubor neobsahuje seznam kontaktů.",
+    "importCsvEmpty": "Soubor CSV neobsahuje žádné řádky s kontakty.",
+    "importSkippedCallsign": "Přeskočeno „{{callsign}}“: neplatná volací značka.",
+    "importSaveFailed": "„{{callsign}}“ se nepodařilo uložit do databáze."
   },
   "meshcomDeviceCommands": {
     "description": "Odesílejte příkazy uzlu ICSSW (--help, --settime, --setctry, …) přes sériové rozhraní nebo BLE. Příkazy kompatibilní s aplikací odpovídají oficiální aplikaci MeshCom; příkazy pouze pro sériové rozhraní vyžadují odkaz na konzoli USB.",
     "autoSettime": "Automaticky nastavit čas uzlu při připojení",
     "autoSettimeHint": "Při připojení přes sériové rozhraní nebo BLE odešlete příkaz --settime s UTC časem tohoto počítače (např. {{example}}).",
     "settimeNow": "Nastavit aktuální čas (UTC)",
-    "requiresSerialBle": "Pro odesílání příkazů zařízení se připojte přes sériové rozhraní nebo BLE. EXTUDP a KISS/TCP přenášejí pouze chat.",
+    "requiresSerialBle": "Pro odesílání příkazů zařízení se připojte přes Serial, BLE nebo NET Console. EXTUDP a KISS/TCP přenášejí jen chat.",
     "filter": "Filtrovat příkazy",
     "filterPlaceholder": "Hledat --settime, bránu, sousedy…",
     "serialOnly": "USB sériová konzole (starší)",

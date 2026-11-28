@@ -22,7 +22,7 @@ const VITEST_INPUT_RE = /\.(?:[cm]?[jt]sx?|mjs)$/i;
 const ESLINT_BATCH = 40;
 
 /** Bump when the cache payload or key inputs change. */
-export const PREPUSH_CACHE_VERSION = 1;
+export const PREPUSH_CACHE_VERSION = 2;
 
 /**
  * @param {typeof spawnSync} spawnSyncFn
@@ -38,47 +38,70 @@ function gitText(spawnSyncFn, cwd, gitArgs, input) {
     shell: false,
     ...(input === undefined ? {} : { input }),
   });
-  if (result.status !== 0) return null;
+  if (result.error || result.status !== 0) return null;
   return String(result.stdout ?? '');
 }
 
 /**
+ * @param {string} text
+ * @returns {string[]}
+ */
+function nonEmptyLines(text) {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/**
  * Stable identity of everything `check:changed` validates: committed HEAD, the
- * merge-base it diffs against, tracked changes vs HEAD (staged + unstaged), and
- * untracked file contents. Any edit, stage, commit, or untracked change moves it.
+ * merge-base it diffs against, tracked paths changed vs HEAD, and content hashes
+ * of those paths plus untracked files. Returns null when a git command fails so
+ * callers skip the cache instead of treating a failed diff as an empty tree.
+ * Hashes paths (not the patch body) so a diff larger than spawnSync's buffer
+ * cannot collapse the key.
  *
  * @param {{ cwd?: string, spawnSyncFn?: typeof spawnSync, mergeBase?: string | null }} [opts]
- * @returns {string}
+ * @returns {string | null}
  */
 export function computePrepushCacheKey(opts = {}) {
   const cwd = opts.cwd ?? ROOT;
   const spawnSyncFn = opts.spawnSyncFn ?? spawnSync;
   const mergeBase = opts.mergeBase === undefined ? resolveOriginMainMergeBase() : opts.mergeBase;
 
-  const head = gitText(spawnSyncFn, cwd, ['rev-parse', 'HEAD'])?.trim() ?? '';
-  const trackedDiff = gitText(spawnSyncFn, cwd, ['diff', 'HEAD', '--binary']) ?? '';
-  const untrackedList =
-    gitText(spawnSyncFn, cwd, ['ls-files', '--others', '--exclude-standard']) ?? '';
-  const untrackedPaths = untrackedList
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const untrackedHashes =
-    untrackedPaths.length > 0
-      ? (gitText(spawnSyncFn, cwd, ['hash-object', '--stdin-paths'], untrackedPaths.join('\n')) ??
-        '')
-      : '';
+  const head = gitText(spawnSyncFn, cwd, ['rev-parse', 'HEAD']);
+  if (head == null) return null;
+  const trackedList = gitText(spawnSyncFn, cwd, ['diff', '--name-only', 'HEAD']);
+  if (trackedList == null) return null;
+  const untrackedList = gitText(spawnSyncFn, cwd, ['ls-files', '--others', '--exclude-standard']);
+  if (untrackedList == null) return null;
+  const trackedPaths = nonEmptyLines(trackedList);
+  const untrackedPaths = nonEmptyLines(untrackedList);
+  const hashPaths = [...trackedPaths, ...untrackedPaths].filter((rel) =>
+    existsSync(path.join(cwd, rel)),
+  );
+  let contentHashes = '';
+  if (hashPaths.length > 0) {
+    const hashed = gitText(
+      spawnSyncFn,
+      cwd,
+      ['hash-object', '--stdin-paths'],
+      hashPaths.join('\n'),
+    );
+    if (hashed == null) return null;
+    contentHashes = hashed;
+  }
 
   return createHash('sha256')
-    .update(head)
+    .update(head.trim())
     .update('\0')
     .update(mergeBase ?? '')
     .update('\0')
-    .update(trackedDiff)
+    .update(trackedList)
     .update('\0')
     .update(untrackedList)
     .update('\0')
-    .update(untrackedHashes)
+    .update(contentHashes)
     .digest('hex');
 }
 
@@ -345,6 +368,10 @@ function main() {
 
   const mergeBase = resolveOriginMainMergeBase();
   const cacheKey = computePrepushCacheKey({ mergeBase });
+  if (cacheKey == null) {
+    console.error('check:changed: cache key failed — running checks without cache');
+    process.exit(runCheckChanged({ mergeBase }));
+  }
   if (isPrepushCacheValid(readPrepushCache(), cacheKey)) {
     console.error(
       'check:changed: skip — this exact tree already passed (PREPUSH_CHECK_NO_CACHE=1 forces a rerun)',

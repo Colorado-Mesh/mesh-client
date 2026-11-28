@@ -250,6 +250,10 @@ import {
   getSerialPortFromMeshcoreConnection,
 } from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
+  isMeshcoreStatsTimeoutError,
+  withMeshcoreStatsTimeout,
+} from '../lib/meshcore/meshcoreStatsRpc';
+import {
   clearMeshcoreOpenHopPendingUserTx,
   decideOpenHopUserTxAfterEnsureFailure,
   isMeshcoreTcpBurstDeadBridge,
@@ -647,6 +651,7 @@ import {
   MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS,
   MESHCORE_ROOM_SYNC_TICK_MS,
   MESHCORE_STATS_POLL_MS,
+  MESHCORE_STATS_RPC_TIMEOUT_MS,
   MESHCORE_TRACE_PING_DIRECT_FIRST_EXTRA_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_POLL_MS,
@@ -1824,8 +1829,13 @@ export function useMeshcoreRuntime() {
     try {
       let coreStats: Awaited<ReturnType<MeshCoreConnection['getStatsCore']>>;
       try {
-        coreStats = await conn.getStatsCore();
+        coreStats = await withMeshcoreStatsTimeout(
+          conn.getStatsCore(MESHCORE_STATS_RPC_TIMEOUT_MS),
+          'core',
+        );
       } catch (e: unknown) {
+        // Radio silent: surface to the caller's warn (mcL1190 periodic, mcL1191 initial).
+        if (isMeshcoreStatsTimeoutError(e)) throw e;
         console.debug('[renderer/runtime/useMeshcoreRuntime] catch:', e);
 
         return;
@@ -1869,8 +1879,12 @@ export function useMeshcoreRuntime() {
       let packetStats: Awaited<ReturnType<MeshCoreConnection['getStatsPackets']>>;
       // Sequential: meshcore.js once(Stats) + type filter drops a parallel waiter on the first reply.
       try {
-        radioStats = await conn.getStatsRadio();
+        radioStats = await withMeshcoreStatsTimeout(
+          conn.getStatsRadio(MESHCORE_STATS_RPC_TIMEOUT_MS),
+          'radio',
+        );
       } catch (e: unknown) {
+        if (isMeshcoreStatsTimeoutError(e)) throw e;
         console.debug('[renderer/runtime/useMeshcoreRuntime] catch:', e);
 
         return;
@@ -1878,8 +1892,12 @@ export function useMeshcoreRuntime() {
       if (connRef.current !== conn) return;
 
       try {
-        packetStats = await conn.getStatsPackets();
+        packetStats = await withMeshcoreStatsTimeout(
+          conn.getStatsPackets(MESHCORE_STATS_RPC_TIMEOUT_MS),
+          'packets',
+        );
       } catch (e: unknown) {
+        if (isMeshcoreStatsTimeoutError(e)) throw e;
         console.debug('[renderer/runtime/useMeshcoreRuntime] catch:', e);
 
         return;
@@ -4976,6 +4994,8 @@ export function useMeshcoreRuntime() {
       serialRediscoveryStopRef.current?.();
       serialRediscoveryStopRef.current = null;
       resetMeshcoreRoomAutoLoginSingleFlight();
+      // Serial watchdog interval and unplug watch must not outlive the runtime.
+      stopMeshcoreSerialWatchdog();
       void teardownMeshcoreConnEventListeners({ driverDisconnect: true });
       const conn = connRef.current;
       connRef.current = null;
@@ -4985,7 +5005,7 @@ export function useMeshcoreRuntime() {
         });
       }
     };
-  }, [teardownMeshcoreConnEventListeners]);
+  }, [teardownMeshcoreConnEventListeners, stopMeshcoreSerialWatchdog]);
 
   handleMeshcoreConnectionLostRef.current = handleMeshcoreConnectionLost;
 
@@ -5296,11 +5316,26 @@ export function useMeshcoreRuntime() {
       }
       if (type === 'serial') {
         await prepareRfConnect('serial');
+        const autoConnectSetupGen = meshcoreSetupGenerationRef.current;
         let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
         const attachSerialSession = async () => {
           opened = await openMeshCoreTransport('serial', {
             portSignature: lastSerialPortId,
           });
+          // A newer connect superseded this open: release it without touching its params.
+          if (meshcoreSetupGenerationRef.current !== autoConnectSetupGen) {
+            await disconnectSupersededMeshcoreOpen(opened.driverIdentityId, 'serial');
+            throw new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+          }
+          // prepareRfConnect cleared the params; attachRfSession starts the serial watchdog
+          // and unplug watch only when they already say serial (as manual connect sets them).
+          // Like manual connect, they stay set if the attach fails: a reconnect started by a
+          // loss during initConn reads them.
+          meshcoreConnectionParamsRef.current = {
+            rfType: 'serial',
+            serialPortId: lastSerialPortId ?? localStorage.getItem(LAST_SERIAL_PORT_KEY),
+            serialPort: null,
+          };
           await attachRfSession(opened.driverIdentityId, 'serial');
           meshcoreConnectionParamsRef.current = {
             rfType: 'serial',
@@ -5330,6 +5365,11 @@ export function useMeshcoreRuntime() {
             await attachSerialSession();
           }
         } catch (err) {
+          // A newer connect owns the session (state, connRef, listeners, params): this stale
+          // attempt released its own open above and must not run the failure handler.
+          if (meshcoreSetupGenerationRef.current !== autoConnectSetupGen) {
+            throw err;
+          }
           const isSetupAbort = isMeshcoreSetupAbortError(err);
           if (!isSetupAbort) {
             const normalized = normalizeMeshCoreError(
@@ -10669,7 +10709,7 @@ export function useMeshcoreRuntime() {
       const conn = connRef.current;
       if (!conn) return null;
       try {
-        const result = await conn.getStatsRadio();
+        const result = await conn.getStatsRadio(MESHCORE_STATS_RPC_TIMEOUT_MS);
         return result;
       } catch (e: unknown) {
         console.warn('mcL1320 [useMeshcoreRuntime] getRadioStats error ' + errLikeToLogString(e));
@@ -10682,7 +10722,7 @@ export function useMeshcoreRuntime() {
       const conn = connRef.current;
       if (!conn) return null;
       try {
-        const result = await conn.getStatsPackets();
+        const result = await conn.getStatsPackets(MESHCORE_STATS_RPC_TIMEOUT_MS);
         return result;
       } catch (e: unknown) {
         console.warn('mcL1321 [useMeshcoreRuntime] getPacketStats error ' + errLikeToLogString(e));

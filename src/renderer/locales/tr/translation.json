@@ -1020,7 +1020,8 @@
       "relayNotReported": "Radyo, bu mesajı hangi düğümün ilettiğini bildirmedi.",
       "unavailableDirectOrRoom": "Güzergahlar yalnızca kanal mesajları için gösterilir.",
       "unavailableNotCaptured": "Güzergah mevcut değil: güzergahlar yalnızca bu oturumdan gelen son mesajlar için tutulur.",
-      "notRecorded": "Bu ağdaki paketler, hangilerini değil, kaç röle geçtiklerini kaydeder."
+      "notRecorded": "Bu ağdaki paketler, hangilerini değil, kaç röle geçtiklerini kaydeder.",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Okunmadı olarak işaretle",
     "deleteMessageLocal": "Yerelde sil",
@@ -1763,7 +1764,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Ülke]/[Eyalet], ör. msh/CO/ABD",
-      "meshcoreLetsmesh": "meshcore/{IATA}, ör. ağ puanı/DEN",
+      "meshcoreLetsmesh": "Bölgenize en yakın havalimanı IATA kodunu seçin (meshcore/{IATA}). test yalnızca çözümleyici denemesi içindir.",
       "meshcoreDefault": "MESHCORE/[Ülke]/[Eyalet], ör. MESHCORE/ABD/CO",
       "meshcom": "MeshCom ağ geçidiniz için aracı kök konusu, ör. meshcom"
     },
@@ -1861,13 +1862,12 @@
       "syncFailed": "RMAP keşif senkronizasyonu başarısız oldu.",
       "publishingOf": "RMAP v4: {{current}} / {{total}} yayınlanıyor"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir. Ön ayar meshcore/DEN (Denver IATA) altında yayınlanır. Colorado'da değilseniz, bunun yerine LetsMesh veya MeshMapper kullanın. Devam edilsin mi?",
-    "coloradoServerNote": "Colorado Mesh, Colorado bölgesindeki mesh kullanıcıları içindir. Konu ön eki Denver IATA (meshcore/DEN) kullanır.",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir. Konu öneki için yerel havalimanı IATA kodunu seçin. Colorado'da değilseniz LetsMesh veya MeshMapper kullanın. Devam edilsin mi?",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir ve meshcore/DEN altında yayınlanır. Colorado dışındaysanız, LetsMesh'e (küresel kamu brokeri) geçin.",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir. Colorado dışındaysanız LetsMesh'e (küresel herkese açık broker) geçin.",
     "coloradoRegionGateStay": "Colorado'dayım",
     "coloradoRegionGateSwitch": "LetsMesh'e geç",
-    "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore/{IATA} (3 harf), ör. meshcore/DEN olmalıdır.",
+    "topicPrefixInvalidIata": "Bağlanmadan önce listeden bir havalimanı IATA kodu (veya test seçeneği) seçin.",
     "maxRetriesHelpConnected": {
       "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
       "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır.",
@@ -2009,7 +2009,21 @@
       "done": "Bitti",
       "cancelAria": "{{name}} öğesini iptal et",
       "duplicateWarning": "Etkinleştirilmiş başka bir bağlantı aynı aracıyı (sunucu ve bağlantı noktası) hedefler, bu nedenle paketler iki kez yayınlanacaktır."
-    }
+    },
+    "iataPicklist": {
+      "label": "Bölge IATA kodu",
+      "placeholder": "Bölgenizi seçin",
+      "aria": "MeshCore MQTT bölgesi IATA",
+      "searchAria": "Havalimanı IATA kodlarını arayın",
+      "searchPlaceholder": "Kod, şehir veya ad arayın…",
+      "listAria": "Havalimanı IATA kodları",
+      "empty": "Bu aramayla eşleşen havalimanı yok.",
+      "loadFailed": "Havalimanı listesi yüklenemedi.",
+      "testOption": "test — analiz cihazı / yalnızca test",
+      "nearestBadge": "En yakın",
+      "nearestOption": "{{label}} (en yakın)"
+    },
+    "coloradoServerNote": "Colorado Mesh, Colorado bölgesindeki mesh kullanıcıları içindir. MQTT konu ön eki için aşağıdan yerel havalimanınızın IATA kodunu seçin."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -2578,7 +2592,18 @@
     "evidence": "{{category}} için kanıtları görüntüleyin",
     "evidenceShown": "Eşleşen {{shown}}/{{total}} giriş gösteriliyor, önce en yeni.",
     "ignoredOtherProtocol": "{{count}} diğer radyo protokollerinden gelen hatlar hariç tutuldu.",
-    "protocolNote": "Aktif telsiz protokolünü kullanır. Başka bir telsize ait hatlar hariç tutulur; uygulama genelinde paylaşılan hatlar kalır."
+    "protocolNote": "Aktif telsiz protokolünü kullanır. Başka bir telsize ait hatlar hariç tutulur; uygulama genelinde paylaşılan hatlar kalır.",
+    "aiAnalyze": "Yapay zekâ ile analiz edin",
+    "aiSetup": "Günlük analizi için yapay zekâyı ayarlayın",
+    "aiFixEngine": "Yapay zekâ motorunu düzeltin",
+    "aiNeedsNetwork": "Yapay zekâ ile analiz etme özelliği, sorun giderme belgelerini yüklemek için internet bağlantısı gerektirir. Yerleşik analiz çevrim dışı olarak da çalışır.",
+    "aiPrivacyHint": "Paketlenmiş bulguları yapay zekâ motorunuza gönderir ve herkese açık sorun giderme belgelerini getirir. Paylaşmadan önce örnekleri inceleyin.",
+    "aiConversationLabel": "{{protocol}} günlük analizi",
+    "aiResultHeading": "YZ triyajı",
+    "aiWorking": "Belgeler alınıyor ve analiz ediliyor…",
+    "aiVerify": "Yapay zekâ triyajını bulgulara ve belgelere göre doğrulayın. Yukarıdaki sezgisel öneriler çevrim dışıyken de geçerliliğini korur.",
+    "troubleshootingDocs": "Sorun giderme belgeleri ↗",
+    "aiNeedsFindings": "Yapay zekâ ile analiz etme için en az bir kurala dayalı bulgu gerekir. Yerleşik Analiz zaten herhangi bir sorun olmadığını bildirdi."
   },
   "logAnalyzer": {
     "categories": {
@@ -5495,7 +5520,39 @@
     "senderKeyPrefix": "Gönderen anahtarı (ön ek):",
     "control": "Denetim:",
     "advertTs": "ADVERT zaman damgası:",
-    "advertLatLon": "ADVERT enlem/boylam:"
+    "advertLatLon": "ADVERT enlem/boylam:",
+    "meshcomKind": {
+      "msg": "Mesaj",
+      "pos": "POZ",
+      "tele": "Tele",
+      "ack": "Onay",
+      "other": "DİĞER"
+    },
+    "meshcomKindTooltip": {
+      "msg": "Kısa mesaj veya sohbet mesajı",
+      "pos": "Konum raporu",
+      "tele": "Telemetri (EXTUDP)",
+      "ack": "Teslimat veya yönlendirme onayı",
+      "other": "Diğer çerçeve türü"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SIRA",
+      "serverTooltip": "Sunucu veya ağ geçidi üzerinden iletilir (doğrudan RF meta verileri değildir)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP APRS çerçevesi",
+      "ble": "BLE telefon APRS bildirimi",
+      "serial": "Seri veya netconsole JSON satırı"
+    },
+    "meshcomLegendHint": "Satırlar gelen MeshCom trafiğini (EXTUDP, KISS, BLE APRS veya seri JSON) gösterir. Yol, kaynağı ve digipeater çağrı işaretlerini listeler.",
+    "meshcomTransportColumn": "Link",
+    "meshcomTransportColumnTooltip": "Bu çerçeve uygulamaya nasıl ulaştı (EXTUDP, KISS, BLE veya seri)?",
+    "meshcomPathColumnTooltip": "Varsa kaynak çağrı işareti ve digipeater yolu.",
+    "meshcomPathEmpty": "Bu çerçevede dijital tekrarlayıcı yolu yok."
   },
   "remoteAdmin": {
     "errors": {
@@ -8469,7 +8526,9 @@
       "invalidResponse": "Motor eksik veya desteklenmeyen bir yanıt verdi.",
       "cancelled": "Özet iptal edildi.",
       "error": "Özetlenemedi. AI ayarlarını kontrol edin ve yeniden deneyin.",
-      "repetitiveOutput": "Model kendini tekrarlamaya başladı. Daha büyük bir model veya daha kısa bir aralık deneyin."
+      "repetitiveOutput": "Model kendini tekrarlamaya başladı. Daha büyük bir model veya daha kısa bir aralık deneyin.",
+      "docsUnavailable": "Sorun giderme belgeleri yüklenemedi. İnternet bağlantınızı kontrol edin ve Yapay Zekâ ile Analiz Et'i yeniden deneyin.",
+      "noFindings": "Analiz edilecek kural tabanlı bulgu yok. Yerleşik Analiz zaten sorun olmadığını bildirdi."
     },
     "loadingModel": "Model bu cihaza yükleniyor...",
     "readingMessages": "Bu cihazdaki mesajlar okunuyor. CPU'nun işlenmesi birkaç dakika sürebilir...",
@@ -9119,7 +9178,7 @@
     "connectionHint": "MeshCom, Ülke Ayarı (--setctry) aracılığıyla amatör telsiz bandı LoRa kullanır. Düğümünüzün ülke profilinin lisansınızla eşleştiğinden emin olun.",
     "countrySettingLabel": "Ülke Ayarı (--setctry)",
     "extUdpHint": "EXTUDP'nin --extudp açık ve --extudpip bu bilgisayarı (UDP 1799) gösterecek şekilde yapılandırılmış düğüme ihtiyacı var.",
-    "kissTcpHint": "KISS/TCP, Reticulum KISS/AX.25'i değil, MeshCom bağlantı noktası 8001'i kullanır.",
+    "kissTcpHint": "KISS/TCP, MeshCom 8001 portunu kullanır — Reticulum KISS/AX.25 değil. --kiss auth açıkken --passwd isteğe bağlıdır. Yalnızca güvenilen LAN/VPN (TLS yok).",
     "channelAll": "TÜMÜ",
     "channelGroup": "Grup {{id}}",
     "callsignFieldLabel": "Çağrı işareti (--setcall)",
@@ -9252,14 +9311,19 @@
       "removeGroupListenNotUpdated": "{{name}} burada gizlendi, ancak düğüm dinleme filtresi güncellenmedi (radyo komutları kullanılamıyor).",
       "removeGroupListenRadioChanged": "{{name}} burada gizlendi, ancak düğüm dinleme filtresi güncellenmedi (bağlı radyo değişti)."
     },
-    "netConsoleHint": "NET Konsolu TCP bağlantı noktası 2323'tür (düz metin LAN). Düğümde --netconsole'u etkinleştirin; HMAC oturum açması için isteğe bağlı --passwd."
+    "netConsoleHint": "NET Konsolu TCP bağlantı noktası 2323'tür (düz metin LAN). Düğümde --netconsole'u etkinleştirin; HMAC oturum açması için isteğe bağlı --passwd.",
+    "importInvalidJson": "Dosya okunamadı — geçersiz JSON.",
+    "importNoContactRows": "Dosya bir kişi listesi içermiyor.",
+    "importCsvEmpty": "CSV dosyasında kişi satırı yok.",
+    "importSkippedCallsign": "\"{{callsign}}\" atlandı: Geçersiz çağrı işareti.",
+    "importSaveFailed": "\"{{callsign}}\" veritabanına kaydedilemedi."
   },
   "meshcomDeviceCommands": {
     "description": "ICSSW düğüm komutlarını (--help, --settime, --setctry, …) Seri veya BLE üzerinden gönderin. Uygulamaya uygun komutlar, resmî MeshCom uygulamasıyla eşleşir; yalnızca seri bağlantı üzerinden verilen komutlar için bir USB konsol bağlantısı gerekir.",
     "autoSettime": "Bağlandığında düğüm saatini otomatik olarak ayarla",
     "autoSettimeHint": "Seri veya BLE üzerinden bağlandığınızda bu bilgisayarın UTC saatini (--settime ile birlikte) gönderin (ör. {{example}}).",
     "settimeNow": "Şimdi saati ayarlayın (UTC)",
-    "requiresSerialBle": "Cihaz komutlarını göndermek için Seri veya BLE üzerinden bağlanın. EXTUDP ve KISS/TCP yalnızca sohbeti taşır.",
+    "requiresSerialBle": "Aygıt komutları göndermek için Serial, BLE veya NET Console ile bağlanın. EXTUDP ve KISS/TCP yalnızca sohbet taşır.",
     "filter": "Komutları filtrele",
     "filterPlaceholder": "--settime, ağ geçidi, komşular… arayın",
     "serialOnly": "USB seri konsol (eski)",

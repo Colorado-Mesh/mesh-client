@@ -73,6 +73,7 @@ function makeHandle(
     kissTxWaiters: new Map(),
     deviceSettings: emptyMeshcomDeviceSettingsAccum(),
     deviceSettingsWaiters: [],
+    mheardInFlight: null,
     recentOutbound: [],
   };
 }
@@ -610,7 +611,7 @@ describe('MeshComProtocol serial/BLE', () => {
     unsub();
   });
 
-  it('drops recent outbound EXTUDP echo and learns operatorCallsign when empty', async () => {
+  it('does not learn operatorCallsign from a foreign station matching recent outbound text', async () => {
     const { conn } = mockConnection('udp');
     const handle = makeHandle('udp', conn, { operatorCallsign: '' });
     const events: DomainEvent[] = [];
@@ -629,11 +630,11 @@ describe('MeshComProtocol serial/BLE', () => {
       ),
     );
 
-    expect(events.filter((e) => e.type === 'text_message')).toHaveLength(0);
-    expect(handle.operatorCallsign).toBe('SP2ONG-1');
-    expect(events.some((e) => e.type === 'device_self_info' && e.payload.name === 'SP2ONG-1')).toBe(
-      true,
-    );
+    const texts = events.filter((e) => e.type === 'text_message');
+    expect(texts).toHaveLength(1);
+    expect(texts[0]?.payload.payload).toBe('echo me');
+    expect(handle.operatorCallsign).toBe('');
+    expect(events.some((e) => e.type === 'device_self_info')).toBe(false);
     unsub();
   });
 

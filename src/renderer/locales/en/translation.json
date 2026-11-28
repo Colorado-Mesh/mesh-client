@@ -797,6 +797,7 @@
       "from": "From {{name}}",
       "toYou": "To you",
       "hopNamed": "{{index}}. {{name}} ({{hash}})",
+      "hopCallsign": "{{index}}. {{name}}",
       "hopGuess": "{{index}}. {{name}} or another repeater ({{hash}})",
       "hopUnknown": "{{index}}. {{hash}}, unknown repeater",
       "lastRelayNamed": "Last relay: {{name}}",
@@ -1375,13 +1376,26 @@
     "letsMeshRequiresWsPath": "This broker preset requires WebSocket path {{wsPath}}. Reset the preset or switch to Custom.",
     "letsMeshUsernameV1Hex": "Username must be v1_ followed by 64 hex characters (public key).",
     "ripplePresetConfirm": "The Ripple preset uses shared community credentials and disables TLS certificate verification. Only use this on a trusted network. Continue?",
-    "coloradoPresetConfirm": "Colorado Mesh MQTT is for Colorado-area mesh users. The preset publishes under meshcore/DEN (Denver IATA). If you are not in Colorado, use LetsMesh or MeshMapper instead. Continue?",
-    "coloradoServerNote": "Colorado Mesh is for Colorado-area mesh users. Topic prefix uses the Denver IATA (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT is for Colorado-area mesh users. Choose your local airport IATA for the topic prefix. If you are not in Colorado, use LetsMesh or MeshMapper instead. Continue?",
+    "coloradoServerNote": "Colorado Mesh is for Colorado-area mesh users. Pick your local airport IATA below for the MQTT topic prefix.",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT is for Colorado-area mesh users and publishes under meshcore/DEN. If you are outside Colorado, switch to LetsMesh (global public broker).",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT is for Colorado-area mesh users. If you are outside Colorado, switch to LetsMesh (global public broker).",
     "coloradoRegionGateStay": "I am in Colorado",
     "coloradoRegionGateSwitch": "Switch to LetsMesh",
-    "topicPrefixInvalidIata": "Topic prefix must be meshcore/test or meshcore/{IATA} (3 letters), e.g. meshcore/DEN.",
+    "topicPrefixInvalidIata": "Pick an airport IATA from the list (or the test option) before connecting.",
+    "iataPicklist": {
+      "label": "Area IATA",
+      "placeholder": "Select your area IATA…",
+      "aria": "MeshCore MQTT area IATA",
+      "searchAria": "Search airport IATA codes",
+      "searchPlaceholder": "Search code, city, or name…",
+      "listAria": "Airport IATA codes",
+      "empty": "No airports match that search.",
+      "loadFailed": "Could not load the airport list.",
+      "testOption": "test — analyzer / testing only",
+      "nearestBadge": "Nearest",
+      "nearestOption": "{{label}} (nearest)"
+    },
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "pairWithDevice": "Pair with your device",
@@ -1440,7 +1454,7 @@
     "topicPrefix": "Topic Prefix",
     "topicPrefixHelp": {
       "meshtastic": "msh/[Country]/[State], e.g. msh/CO/US",
-      "meshcoreLetsmesh": "meshcore/{IATA}, e.g. meshcore/DEN",
+      "meshcoreLetsmesh": "Pick the airport IATA nearest your area (meshcore/{IATA}). Use test only for analyzer testing.",
       "meshcoreDefault": "MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO",
       "meshcom": "Broker root topic for your MeshCom gateway, e.g. meshcom"
     },
@@ -2898,7 +2912,18 @@
     "copySuccess": "Report copied",
     "copyFailure": "Could not copy the report. Try again or export the log.",
     "evidence": "View evidence for {{category}}",
-    "evidenceShown": "Showing {{shown}} of {{total}} matching entries, newest first."
+    "evidenceShown": "Showing {{shown}} of {{total}} matching entries, newest first.",
+    "aiAnalyze": "Analyze with AI",
+    "aiSetup": "Set up AI for log analysis",
+    "aiFixEngine": "Fix AI engine",
+    "aiNeedsNetwork": "Analyze with AI needs an internet connection to load troubleshooting docs. Built-in analysis still works offline.",
+    "aiNeedsFindings": "Analyze with AI needs at least one rule-based finding. Built-in Analyze already reported no issues.",
+    "aiPrivacyHint": "Sends packed findings to your AI engine and fetches public troubleshooting docs. Review samples before sharing.",
+    "aiConversationLabel": "{{protocol}} log analysis",
+    "aiResultHeading": "AI triage",
+    "aiWorking": "Fetching docs and analyzing…",
+    "aiVerify": "Verify AI triage against the findings and docs. Heuristic recommendations above remain authoritative when offline.",
+    "troubleshootingDocs": "Troubleshooting docs ↗"
   },
   "logAnalyzer": {
     "categories": {
@@ -3488,6 +3513,11 @@
     "operatorNamePlaceholder": "firstname",
     "operatorNameHint": "Optional. Sent with Apply on Serial/BLE (max 19 characters).",
     "dbStorageDegraded": "MeshCom message history is unavailable (database module failed to load). Chat still works; history will not persist until you restart the app.",
+    "importInvalidJson": "Could not read the file — invalid JSON.",
+    "importNoContactRows": "The file does not contain a contact list.",
+    "importCsvEmpty": "The CSV file has no contact rows.",
+    "importSkippedCallsign": "Skipped \"{{callsign}}\": invalid callsign.",
+    "importSaveFailed": "Could not save \"{{callsign}}\" to the database.",
     "grc": {
       "editorHint": "Book up to six GRC groups on the node (--setgrc). The first slot is the master group. Empty filter receives all groups; with any booking, only matching groups are shown.",
       "slot": "Slot {{n}}",
@@ -6355,6 +6385,38 @@
     "transportRegionMismatch": "Does not match configured flood scope",
     "transportLegendHint": "Expand a row: route and transport lines are at the top. Regional scope/return codes appear only on TRANSPORT_FLOOD and TRANSPORT_DIRECT packets (not plain FLOOD/DIRECT).",
     "meshtasticLegendHint": "Expand a row: port and hop details are at the top. Hop counts use hopStart − hopLimit on RF packets (not MQTT).",
+    "meshcomLegendHint": "Rows show inbound MeshCom traffic (EXTUDP, KISS, BLE APRS, or serial JSON). Path lists origin and digipeater callsigns.",
+    "meshcomTransportColumn": "Link",
+    "meshcomTransportColumnTooltip": "How this frame reached the app (EXTUDP, KISS, BLE, or serial).",
+    "meshcomPathColumnTooltip": "Origin callsign and digipeater path when present.",
+    "meshcomPathEmpty": "No digipeater path on this frame.",
+    "meshcomKind": {
+      "msg": "MSG",
+      "pos": "POS",
+      "tele": "TELE",
+      "ack": "ACK",
+      "other": "OTHER"
+    },
+    "meshcomKindTooltip": {
+      "msg": "Text or chat message",
+      "pos": "Position report",
+      "tele": "Telemetry (EXTUDP)",
+      "ack": "Delivery or routing acknowledgment",
+      "other": "Other frame type"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "SERIAL",
+      "serverTooltip": "Relayed via server or gateway (not direct RF metadata)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "KISS/TCP APRS frame",
+      "ble": "BLE phone APRS notify",
+      "serial": "Serial or netconsole JSON line"
+    },
     "portLabel": "Port",
     "transportSourceLabel": "Transport",
     "hopsAbsentMqtt": "No RF hop count (MQTT path).",
@@ -9082,6 +9144,8 @@
       "httpError": "The provider request failed. Check the connection and credentials.",
       "invalidResponse": "The engine returned an incomplete or unsupported response.",
       "cancelled": "Summary cancelled.",
+      "docsUnavailable": "Could not load troubleshooting docs. Check your internet connection and retry Analyze with AI.",
+      "noFindings": "No rule-based findings to analyze. Built-in Analyze already reported no issues.",
       "error": "Could not summarize. Check AI settings and retry.",
       "repetitiveOutput": "The model started repeating itself. Try a larger model or a shorter range."
     },

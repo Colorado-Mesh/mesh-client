@@ -61,6 +61,18 @@ describe('MeshcomAuthLineBuffer', () => {
     expect(buf.push(`${huge}\nOK\n`).map((l) => l.text)).toEqual(['OK']);
   });
 
+  it('keeps raw bytes after OK even when they exceed the auth line cap', () => {
+    const buf = new MeshcomAuthLineBuffer();
+    const kiss = new Uint8Array(MESHCOM_AUTH_MAX_LINE_BYTES + 40);
+    kiss[0] = 0xc0;
+    kiss[kiss.length - 1] = 0x7e;
+    const chunk = new Uint8Array(3 + kiss.length);
+    chunk.set(new TextEncoder().encode('OK\n'));
+    chunk.set(kiss, 3);
+    expect(buf.push(chunk).map((l) => l.text)).toEqual(['OK']);
+    expect(Array.from(buf.takeRemainder())).toEqual(Array.from(kiss));
+  });
+
   it('drops an oversized unfinished line before a later newline arrives', () => {
     const buf = new MeshcomAuthLineBuffer();
     buf.push('Y'.repeat(MESHCOM_AUTH_MAX_LINE_BYTES + 8));

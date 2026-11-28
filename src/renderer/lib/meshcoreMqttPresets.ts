@@ -85,7 +85,8 @@ export function readStoredMeshcoreMqttPreset(): MeshcoreMqttPreset {
 
 /**
  * Common field block for a device-signing broker (WSS + TLS on 443, JWT auth).
- * Defaults the topic prefix to `meshcore/test`; callers override it per preset (e.g. Colorado DEN).
+ * Omits `topicPrefix` so presets never invent an IATA (`meshcore/DEN` / `meshcore/test`);
+ * the Connection panel IATA picklist owns that field.
  *
  * `tlsInsecure` is explicitly reset to `false` so switching from Ripple (which enables it) restores
  * certificate verification instead of leaking an insecure TLS setting into a JWT broker connection.
@@ -94,7 +95,6 @@ function deviceSigningWssFields(server: string, wsPath: '/ws' | '/mqtt'): Partia
   return {
     server,
     port: 443,
-    topicPrefix: 'meshcore/test',
     useWebSocket: true,
     tlsEnabled: true,
     tlsInsecure: false,
@@ -118,7 +118,7 @@ export function meshcoreMqttPresetFields(
       return deviceSigningWssFields(server, '/ws');
     }
     case 'coloradomesh':
-      return { ...deviceSigningWssFields(COLORADO_MESH_HOST, '/ws'), topicPrefix: 'meshcore/DEN' };
+      return deviceSigningWssFields(COLORADO_MESH_HOST, '/ws');
     case 'meshmapper':
       // MeshMapper only ingests `packets` (or `status`); keep the analyzer feed on when this
       // analyzer-only broker owns the chat slot too.

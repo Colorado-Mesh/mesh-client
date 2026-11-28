@@ -1020,7 +1020,8 @@
       "relayNotReported": "La radio non ha segnalato quale nodo ha inoltrato questo messaggio.",
       "unavailableDirectOrRoom": "Gli instradamenti vengono mostrati solo per i messaggi del canale.",
       "unavailableNotCaptured": "Percorso non disponibile: i percorsi vengono conservati solo per i messaggi recenti di questa sessione.",
-      "notRecorded": "I pacchetti su questa rete registrano quanti relè hanno superato, non quali."
+      "notRecorded": "I pacchetti su questa rete registrano quanti relè hanno superato, non quali.",
+      "hopCallsign": "{{index}}. {{name}}"
     },
     "markUnread": "Marca non letto",
     "deleteMessageLocal": "Elimina localmente",
@@ -1761,7 +1762,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Paese]/[Stato], ad es. msh/CO/USA",
-      "meshcoreLetsmesh": "meshcore/{IATA}, ad es. nucleo mesh/DEN",
+      "meshcoreLetsmesh": "Scegli l'IATA aeroportuale più vicino alla tua zona (meshcore/{IATA}). Usa test solo per provare l'analizzatore.",
       "meshcoreDefault": "MESHCORE/[Paese]/[Stato], ad es. MESHCORE/USA/CO",
       "meshcom": "Topic principale del broker per il gateway MeshCom, ad es. meshcom"
     },
@@ -1859,13 +1860,12 @@
       "syncFailed": "Sincronizzazione rilevamento RMAP non riuscita.",
       "publishingOf": "RMAP v4: pubblicazione di {{current}} di {{total}}"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT è per gli utenti di mesh della zona del Colorado. Il preset viene pubblicato sotto meshcore/DEN (Denver IATA). Se non sei in Colorado, usa invece LetsMesh o MeshMapper. Continua?",
-    "coloradoServerNote": "Colorado Mesh è per gli utenti mesh della zona del Colorado. Il prefisso dell'argomento utilizza Denver IATA (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT è per gli utenti mesh dell'area del Colorado. Scegli l'IATA dell'aeroporto locale come prefisso del topic. Se non sei in Colorado, usa LetsMesh o MeshMapper. Continuare?",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT è per gli utenti di mesh della zona del Colorado e pubblica sotto meshcore/DEN. Se ti trovi al di fuori del Colorado, passa a LetsMesh (broker pubblico globale).",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT è per gli utenti mesh dell'area del Colorado. Se sei fuori dal Colorado, passa a LetsMesh (broker pubblico globale).",
     "coloradoRegionGateStay": "Sono in Colorado",
     "coloradoRegionGateSwitch": "Passa a LetsMesh",
-    "topicPrefixInvalidIata": "Il prefisso dell'argomento deve essere meshcore/test o meshcore/{IATA} (3 lettere), ad esempio meshcore/DEN.",
+    "topicPrefixInvalidIata": "Scegli un IATA aeroportuale dall'elenco (o l'opzione di test) prima di connetterti.",
     "maxRetriesHelpConnected": {
       "meshcore": "Riconnetti i tentativi prima di rinunciare (1–{{max}}). Salvato con le impostazioni; premere nuovamente Connetti dopo aver modificato in modo che il processo principale lo raccolga.",
       "meshtastic": "Entrambi i protocolli consentono 1–{{max}}. Salvato con le impostazioni; disconnettersi e connettersi di nuovo in modo che la sessione in esecuzione utilizzi il nuovo valore.",
@@ -2009,7 +2009,21 @@
       "done": "Fine",
       "cancelAria": "Annulla {{name}}",
       "duplicateWarning": "Un'altra connessione abilitata è diretta allo stesso broker (server e porta), quindi i pacchetti verrebbero pubblicati due volte."
-    }
+    },
+    "iataPicklist": {
+      "label": "Area IATA",
+      "placeholder": "Seleziona la tua area IATA...",
+      "aria": "MeshCore MQTT area IATA",
+      "searchAria": "Cerca i codici IATA degli aeroporti",
+      "searchPlaceholder": "Cerca codice, città o nome…",
+      "listAria": "Codici IATA degli aeroporti",
+      "empty": "Nessun aeroporto corrisponde a questa ricerca.",
+      "loadFailed": "Impossibile caricare l'elenco degli aeroporti.",
+      "testOption": "test — solo analizzatore / test",
+      "nearestBadge": "Più vicino",
+      "nearestOption": "{{label}} (più vicino)"
+    },
+    "coloradoServerNote": "Colorado Mesh è per gli utenti della rete mesh dell'area del Colorado. Scegli il codice IATA del tuo aeroporto locale qui sotto per il prefisso dell'argomento MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -2578,7 +2592,18 @@
     "evidence": "Visualizza le prove per {{category}}",
     "evidenceShown": "Mostrando {{shown}} di {{total}} voci corrispondenti, prima le più recenti.",
     "ignoredOtherProtocol": "{{count}} righe provenienti da altri protocolli radio sono state escluse.",
-    "protocolNote": "Utilizza il protocollo radio attivo. Le linee di proprietà di un'altra radio sono escluse; le linee condivise a livello di app rimangono."
+    "protocolNote": "Utilizza il protocollo radio attivo. Le linee di proprietà di un'altra radio sono escluse; le linee condivise a livello di app rimangono.",
+    "aiAnalyze": "Analizza con l'IA",
+    "aiSetup": "Configura l'IA per l'analisi dei log",
+    "aiFixEngine": "Risolvi il problema del motore IA",
+    "aiNeedsNetwork": "La funzione \"Analizza con l'IA\" richiede una connessione a Internet per caricare i documenti di risoluzione dei problemi. L'analisi integrata funziona comunque offline.",
+    "aiPrivacyHint": "Invia i risultati elaborati al tuo motore di intelligenza artificiale e recupera i documenti pubblici per la risoluzione dei problemi. Rivedi gli esempi prima di condividerli.",
+    "aiConversationLabel": "{{protocol}} analisi dei registri",
+    "aiResultHeading": "Triage tramite IA",
+    "aiWorking": "Recupero dei documenti e analisi in corso…",
+    "aiVerify": "Confrontare il triage dell'IA con i risultati e la documentazione. Le raccomandazioni euristiche di cui sopra rimangono autorevoli anche offline.",
+    "troubleshootingDocs": "Documenti per la risoluzione dei problemi ↗",
+    "aiNeedsFindings": "L'analisi con l'IA richiede almeno un risultato basato su regole. L'analisi integrata non ha già segnalato alcun problema."
   },
   "logAnalyzer": {
     "categories": {
@@ -5495,7 +5520,39 @@
     "senderKeyPrefix": "Chiave mittente (prefisso):",
     "control": "Controllo:",
     "advertTs": "Data/ora ADVERT:",
-    "advertLatLon": "Lat/lon ADVERT:"
+    "advertLatLon": "Lat/lon ADVERT:",
+    "meshcomKind": {
+      "msg": "MSG",
+      "pos": "POS",
+      "tele": "TELE",
+      "ack": "ACK",
+      "other": "ALTRO"
+    },
+    "meshcomKindTooltip": {
+      "msg": "Messaggio di testo o chat",
+      "pos": "Rapporto di posizione",
+      "tele": "Telemetria (EXTUDP)",
+      "ack": "Conferma di consegna o di instradamento",
+      "other": "Altro tipo di montatura"
+    },
+    "meshcomTransport": {
+      "extudp": "EXTUDP",
+      "kiss": "KISS",
+      "ble": "BLE",
+      "serial": "MATR.",
+      "serverTooltip": "Inoltrato tramite server o gateway (non metadati RF diretti)."
+    },
+    "meshcomTransportTooltip": {
+      "extudp": "MeshCom EXTUDP JSON",
+      "kiss": "Frame APRS KISS/TCP",
+      "ble": "Notifica APRS del telefono BLE",
+      "serial": "Riga JSON seriale o netconsole"
+    },
+    "meshcomLegendHint": "Le righe mostrano il traffico MeshCom in entrata (EXTUDP, KISS, BLE APRS o JSON seriale). Il percorso elenca i nominativi di origine e dei digipeater.",
+    "meshcomTransportColumn": "Link",
+    "meshcomTransportColumnTooltip": "Come questo frame ha raggiunto l'app (EXTUDP, KISS, BLE o seriale).",
+    "meshcomPathColumnTooltip": "Indicativo di chiamata di origine e percorso digipeater, se presenti.",
+    "meshcomPathEmpty": "Nessun percorso digipeater su questo frame."
   },
   "remoteAdmin": {
     "errors": {
@@ -8469,7 +8526,9 @@
       "invalidResponse": "Il motore ha restituito una risposta incompleta o non supportata.",
       "cancelled": "Riepilogo annullato.",
       "error": "Impossibile riepilogare. Controlla le impostazioni AI e riprova.",
-      "repetitiveOutput": "Il modello ha iniziato a ripetersi. Prova un modello più grande o una gamma più corta."
+      "repetitiveOutput": "Il modello ha iniziato a ripetersi. Prova un modello più grande o una gamma più corta.",
+      "docsUnavailable": "Impossibile caricare i documenti per la risoluzione dei problemi. Controlla la connessione Internet e riprova ad analizzare con l'IA.",
+      "noFindings": "Nessun risultato basato su regole da analizzare. L'analisi integrata non ha già rilevato alcun problema."
     },
     "loadingModel": "Caricamento del modello su questo dispositivo in corso...",
     "readingMessages": "Lettura dei messaggi su questo dispositivo. L'elaborazione della CPU potrebbe richiedere alcuni minuti...",
@@ -9119,7 +9178,7 @@
     "connectionHint": "MeshCom utilizza la banda radioamatoriale LoRa tramite l'impostazione del Paese (--setctry). Assicurati che il profilo del paese del tuo nodo corrisponda alla tua licenza.",
     "countrySettingLabel": "Impostazione del paese (--setctry)",
     "extUdpHint": "EXTUDP richiede che il nodo sia configurato con --extudp attivo e --extudpip puntato su questo computer (UDP 1799).",
-    "kissTcpHint": "KISS/TCP utilizza la porta MeshCom 8001, non Reticulum KISS/AX.25.",
+    "kissTcpHint": "KISS/TCP usa la porta MeshCom 8001 — non Reticulum KISS/AX.25. --passwd facoltativo quando --kiss auth è attivo. Solo LAN/VPN attendibili (senza TLS).",
     "channelAll": "TUTTE",
     "channelGroup": "Gruppo {{id}}",
     "callsignFieldLabel": "Nominativo (--setcall)",
@@ -9252,14 +9311,19 @@
       "removeGroupListenNotUpdated": "{{name}} era nascosto qui, ma il filtro di ascolto del nodo non è stato aggiornato (comandi radio non disponibili).",
       "removeGroupListenRadioChanged": "{{name}} era nascosto qui, ma il filtro di ascolto del nodo non è stato aggiornato (radio collegata modificata)."
     },
-    "netConsoleHint": "La console NET è TCP porta 2323 (LAN in chiaro). Abilita --netconsole sul nodo; --passwd facoltativo per l'accesso HMAC."
+    "netConsoleHint": "La console NET è TCP porta 2323 (LAN in chiaro). Abilita --netconsole sul nodo; --passwd facoltativo per l'accesso HMAC.",
+    "importInvalidJson": "Impossibile leggere il file: JSON non valido.",
+    "importNoContactRows": "Il file non contiene un elenco di contatti.",
+    "importCsvEmpty": "Il file CSV non contiene righe di contatti.",
+    "importSkippedCallsign": "Elemento \"{{callsign}}\" ignorato: indicativo di chiamata non valido.",
+    "importSaveFailed": "Impossibile salvare \"{{callsign}}\" nel database."
   },
   "meshcomDeviceCommands": {
     "description": "Invia i comandi del nodo ICSSW (--help, --settime, --setctry, …) tramite seriale o BLE. I comandi compatibili con l'app corrispondono a quelli dell'app ufficiale MeshCom; i comandi solo seriali richiedono un collegamento alla console USB.",
     "autoSettime": "Imposta automaticamente l'ora del nodo al momento della connessione",
     "autoSettimeHint": "Quando si effettua la connessione tramite porta seriale o BLE, inviare --settime con l'orologio UTC di questo computer (ad es. {{example}}).",
     "settimeNow": "Imposta l'ora attuale (UTC)",
-    "requiresSerialBle": "Connettiti tramite porta seriale o BLE per inviare comandi al dispositivo. EXTUDP e KISS/TCP supportano solo la chat.",
+    "requiresSerialBle": "Connettiti via Serial, BLE o NET Console per inviare comandi al dispositivo. EXTUDP e KISS/TCP trasportano solo la chat.",
     "filter": "Filtra comandi",
     "filterPlaceholder": "Cerca --settime, gateway, neighbor...",
     "serialOnly": "Console seriale USB (legacy)",

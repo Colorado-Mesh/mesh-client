@@ -470,7 +470,8 @@ async function main() {
       input: body,
       encoding: 'utf8',
       maxBuffer: 50 * 1024 * 1024,
-      timeout: 60_000,
+      // Large locale JSON + antivirus/FS latency can exceed 60s on some hosts.
+      timeout: 180_000,
     });
     if (persist.error) {
       throw persist.error;

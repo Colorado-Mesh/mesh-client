@@ -273,7 +273,7 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     slot: 'Connection',
     labelKey: 'connectionPanel.topicPrefix',
     sectionKey: MQTT,
-    keywords: ['mqtt', 'topic', 'root', 'msh', 'iata'],
+    keywords: ['mqtt', 'topic', 'root', 'msh', 'iata', 'airport', 'area'],
     visible: hasMqtt,
   },
   {
@@ -376,6 +376,8 @@ export const connectionSurface: SettingsSearchSurface = {
     'connectionPanel.channelPsks*':
       'help, placeholder and validation text of the indexed channel PSKs field',
     'connectionPanel.topicPrefix*': 'help and validation text of the indexed topic prefix field',
+    'connectionPanel.iataPicklist*':
+      'MeshCore Area IATA picklist chrome for the indexed topic prefix row',
     'connectionPanel.coloradoRegionGate*': 'one-time Colorado region confirmation dialog',
     'connectionPanel.broker': 'visible caption of the indexed MeshCore.CA broker group',
     'connectionPanel.region': 'visible caption of the indexed LetsMesh region group',

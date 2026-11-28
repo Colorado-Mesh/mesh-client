@@ -66,6 +66,11 @@ export interface MessageRecord {
   hopCount?: number;
   /** RF-derived hops away for this receive when known (Meshtastic hopStart−hopLimit; MeshCore path hops). */
   rxHops?: number;
+  /**
+   * MeshCom digipeater callsigns after the origin (durable chat hop-pill tooltip).
+   * Empty/absent when direct or path not stored.
+   */
+  rxPathCallsigns?: string[];
   /** MeshCore on-air path hash width (1/2/3 bytes) for this receive when known. */
   rxPathHashSizeBytes?: 1 | 2 | 3;
   tapback?: boolean;
@@ -169,6 +174,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'rxRadioTransport',
   'hopCount',
   'rxHops',
+  'rxPathCallsigns',
   'rxPathHashSizeBytes',
   'tapback',
   'replyTo',
@@ -205,6 +211,12 @@ function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {
         JSON.stringify(a.reticulumAttachments ?? null) !==
         JSON.stringify(b.reticulumAttachments ?? null)
       ) {
+        return false;
+      }
+      continue;
+    }
+    if (key === 'rxPathCallsigns') {
+      if (JSON.stringify(a.rxPathCallsigns ?? null) !== JSON.stringify(b.rxPathCallsigns ?? null)) {
         return false;
       }
       continue;

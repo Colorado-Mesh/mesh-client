@@ -5,6 +5,7 @@ import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import type {
+  MeshcomRawPacketEntry,
   MeshtasticRawPacketEntry,
   ReticulumRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
@@ -13,7 +14,7 @@ import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Variant = 'meshtastic' | 'meshcore' | 'reticulum';
+type Variant = 'meshtastic' | 'meshcore' | 'reticulum' | 'meshcom';
 
 export type PacketDistributionPanelProps =
   | {
@@ -24,6 +25,11 @@ export type PacketDistributionPanelProps =
   | {
       variant: 'meshcore';
       packets: RxPacketEntry[];
+      getNodeLabel: (id: number) => string;
+    }
+  | {
+      variant: 'meshcom';
+      packets: MeshcomRawPacketEntry[];
       getNodeLabel: (id: number) => string;
     }
   | {
@@ -80,8 +86,20 @@ const TOOLTIP_STYLE = {
 
 function normalize(
   variant: Variant,
-  packets: MeshtasticRawPacketEntry[] | RxPacketEntry[] | ReticulumRawPacketEntry[],
+  packets:
+    | MeshtasticRawPacketEntry[]
+    | RxPacketEntry[]
+    | ReticulumRawPacketEntry[]
+    | MeshcomRawPacketEntry[],
 ): NormalizedPacket[] {
+  if (variant === 'meshcom') {
+    return (packets as MeshcomRawPacketEntry[]).map((p) => ({
+      ts: p.ts,
+      fromNodeId: p.fromNodeId,
+      packetType: p.kind,
+      viaMqtt: !!p.viaServer,
+    }));
+  }
   if (variant === 'reticulum') {
     return (packets as ReticulumRawPacketEntry[]).map((p) => ({
       ts: p.ts,
@@ -123,7 +141,8 @@ function applySourceFilter(
   filter: SourceFilter,
   variant: Variant,
 ): NormalizedPacket[] {
-  if (variant === 'meshcore' || variant === 'reticulum') return packets;
+  // Source control is Meshtastic-only; ignore stale filter state for other variants.
+  if (variant === 'meshcore' || variant === 'reticulum' || variant === 'meshcom') return packets;
   const nonLocal = packets.filter((p) => !p.isLocal);
   if (filter === 'all') return nonLocal;
   if (filter === 'rf') return nonLocal.filter((p) => !p.viaMqtt);
@@ -305,8 +324,12 @@ export default function PacketDistributionPanel({
     const sorted = [...counts.entries()]
       .map(([k, count]) => ({ key: k, count }))
       .sort((a, b) => b.count - a.count);
-    return buildSlices(sorted, (k) => k, t('packetDistribution.other'));
-  }, [filtered, t]);
+    const labelFn =
+      variant === 'meshcom'
+        ? (k: string) => t(`rawPacketLog.meshcomKind.${k}`, { defaultValue: k.toUpperCase() })
+        : (k: string) => k;
+    return buildSlices(sorted, labelFn, t('packetDistribution.other'));
+  }, [filtered, t, variant]);
 
   // ── Distribution by Type data ─────────────────────────────────────────────
 

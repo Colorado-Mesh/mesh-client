@@ -6,11 +6,15 @@
 import type { MeshComDeviceHandle } from '../protocols/MeshComProtocol';
 import { encodeMeshcomBleCommand } from './meshcomBleFrame';
 import {
+  buildMeshcomSettimeCommand,
   isMeshcomSensitiveCommand,
   normalizeMeshcomCommandInput,
   redactMeshcomCommandForLog,
 } from './meshcomCommandWire';
 import { encodeMeshcomSerialLine } from './meshcomSerial';
+
+/** Re-export so callers can dynamic-import this module once (not meshcomCommandWire). */
+export { buildMeshcomSettimeCommand };
 
 export type MeshcomDeviceCommandTransport = MeshComDeviceHandle['transport'];
 

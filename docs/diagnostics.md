@@ -414,9 +414,9 @@ A 24-hour CU timeline chart in DiagnosticsPanel showing the connected node's cha
 
 Open it from Monitor > RF.
 
-A **Local noise floor** card plus bar charts built from live node data (Meshtastic and MeshCore; Reticulum has no RF tab):
+A **Local noise floor** card plus bar charts built from live node data (Meshtastic, MeshCore, and MeshCom; Reticulum has no RF tab):
 
-- **Local noise floor**: measured receiver floor from Meshtastic `LocalStats.noise_floor` (protobuf field 15) or MeshCore companion radio stats (`meshcore_local_stats.noiseFloor`). Session-only; values outside −140…−20 dBm (including firmware default `0`) are treated as not reported. When the radio does not report a floor, the card falls back to a labelled median estimate from per-node `RSSI − SNR` (≥3 peers) or an explicit empty state.
+- **Local noise floor**: measured receiver floor from Meshtastic `LocalStats.noise_floor` (protobuf field 15) or MeshCore companion radio stats (`meshcore_local_stats.noiseFloor`). Session-only; values outside −140…−20 dBm (including firmware default `0`) are treated as not reported. MeshCom firmware does not report LocalStats — the card uses only the labelled median estimate from per-node `RSSI − SNR` (≥3 peers) or an explicit empty state. When Meshtastic/MeshCore do not report a floor, they fall back the same way.
 - **SNR histogram**: distribution of last-heard SNR values in 5 dB buckets
 - **RSSI histogram**: distribution of last-heard RSSI values in 10 dBm buckets
 - **Estimated noise floor histogram**: distribution of per-node `RSSI − SNR` estimates in 10 dBm buckets

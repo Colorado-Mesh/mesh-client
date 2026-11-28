@@ -15,10 +15,19 @@ function meshcomTransportParams(
     blePeripheralId?: string;
     host?: string;
     portSignature?: string | null;
+    /** When false, MeshCom serial auto paths must not open the Web Serial picker. */
+    allowPortPicker?: boolean;
   },
 ): TransportParams {
   if (type === 'netconsole') {
     return { type: 'netconsole', host: opts.host ?? '' };
+  }
+  if (type === 'serial') {
+    return {
+      type: 'serial',
+      portSignature: opts.portSignature ?? undefined,
+      ...(opts.allowPortPicker === false ? { allowPortPicker: false } : {}),
+    };
   }
   // KISS UI uses `'http'` like MeshCore companion TCP; map to `'tcp'` params.
   const connectionType: ConnectionType = type === 'http' ? 'tcp' : type;
@@ -40,6 +49,7 @@ export async function openMeshComTransport(
     blePeripheralId?: string;
     host?: string;
     portSignature?: string | null;
+    allowPortPicker?: boolean;
   } = {},
 ): Promise<OpenMeshComTransportResult> {
   const params = meshcomTransportParams(type, opts);

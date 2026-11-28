@@ -64,6 +64,26 @@ export interface MeshtasticRawPacketEntry {
   relayNode?: number;
 }
 
+export type MeshcomRawPacketKind = 'msg' | 'pos' | 'tele' | 'ack' | 'other';
+export type MeshcomRawPacketTransport = 'extudp' | 'kiss' | 'ble' | 'serial';
+
+/** MeshCom inbound capture (EXTUDP, KISS, BLE phone APRS, serial JSON). */
+export interface MeshcomRawPacketEntry {
+  ts: number;
+  snr: number | null;
+  rssi: number | null;
+  kind: MeshcomRawPacketKind;
+  transport: MeshcomRawPacketTransport;
+  originCallsign: string;
+  digis: string[];
+  hopsAway: number;
+  fromNodeId: number | null;
+  msgId?: number | string;
+  viaServer?: boolean;
+  /** Wire bytes when available; may be empty for EXTUDP JSON-only. */
+  raw: Uint8Array;
+}
+
 /** Reticulum RNS wire frame from sidecar packet tap. */
 export interface ReticulumRawPacketEntry {
   ts: number;

@@ -23,7 +23,6 @@ import {
   aiSummaryPromptBudget,
   aiSummaryTimeoutMs,
   clampAiMaxCollectedMessages,
-  resolveAiSummaryFinalStyle,
 } from '../../shared/ai-types';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '../../shared/timeConstants';
 import { AiClient } from '../ai/aiClient';
@@ -31,9 +30,8 @@ import { AiConfig } from '../ai/config';
 import { aiErrorReason, AiFailure } from '../ai/errors';
 import { querySummaryHistory, validateHistoryQuery } from '../ai/history';
 import { loadAiLocalModels } from '../ai/loadAiLocalModels';
-import { loadBuildAiFollowUpPrompt } from '../ai/loadFollowUpPrompt';
+import { loadSummarizePromptPrepare } from '../ai/loadFollowUpPrompt';
 import { loadNativeAiRuntime } from '../ai/loadNativeAiRuntime';
-import { loadBuildAiSummaryPrompt } from '../ai/loadSummaryPrompt';
 import { isAppleSiliconMac, isCatalogPackAvailable } from '../ai/local/modelManifest';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { createAiModelProtocol } from '../ai/local/protocol';
@@ -557,53 +555,20 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: false, reason: 'notConfigured' };
     }
     const budget = aiSummaryPromptBudget(c.engine);
-    let finalStyle =
-      mode === 'final'
-        ? resolveAiSummaryFinalStyle(request.messages.length, !!request.jobId)
-        : 'compact';
-    const buildSummaryPrompt = await loadBuildAiSummaryPrompt();
-    const buildCatchUpPrompt = (style: typeof finalStyle) => ({
-      ...buildSummaryPrompt({
-        ...request,
-        digests: mode === 'reduce' || (mode === 'final' && !!request.jobId),
-        mode: request.mode ?? 'final',
-        finalStyle: style,
-        maxChars: budget.maxChars,
-        maxPromptBytes: budget.maxPromptBytes,
-      }),
-      fits: true as const,
-    });
-    let prompt = followUp
-      ? (await loadBuildAiFollowUpPrompt())({
-          conversationLabel: request.conversationLabel,
-          protocol: request.protocol,
-          surface: request.surface,
-          locale: request.locale,
-          summary: followUp.summary,
-          question: followUp.question,
-          turns: followUp.turns,
-          messages: request.messages,
-          contextKind: followUp.contextKind,
-          maxChars: budget.maxChars,
-          maxPromptBytes: budget.maxPromptBytes,
-        })
-      : buildCatchUpPrompt(finalStyle);
-    // Structured finals cost ~512 B more system text; fall back to compact when that
-    // would truncate digests/transcript and fail multi-pass requireFullCoverage.
-    if (
-      !followUp &&
-      mode === 'final' &&
-      finalStyle === 'structured' &&
-      (prompt.truncated || prompt.included !== request.messages.length || !prompt.included)
-    ) {
-      finalStyle = 'compact';
-      prompt = buildCatchUpPrompt('compact');
-    }
-    if (!prompt.fits || (!followUp && !prompt.included)) {
+    const { prepareSummarizePrompt } = await loadSummarizePromptPrepare();
+    const prepared = await prepareSummarizePrompt(request, budget, () => net.isOnline());
+    if (controller.signal.aborted) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
       if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);
-      return { ok: false, reason: 'tooLarge' };
+      return { ok: false, reason: 'cancelled' };
     }
+    if (!prepared.ok) {
+      if (active.get(request.requestId) === controller) active.delete(request.requestId);
+      if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);
+      return { ok: false, reason: prepared.reason };
+    }
+    let prompt = prepared.prompt;
+    const finalStyle = prepared.finalStyle;
     // Qwen3 defaults to thinking mode; disable it so Catch up stays within completion budgets.
     if (
       c.engine === 'bundled' &&

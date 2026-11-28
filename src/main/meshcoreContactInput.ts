@@ -4,6 +4,11 @@ import {
 } from '../shared/meshcoreContactSanitize';
 import type { MeshcoreContactUpsertParams } from './database';
 
+/** Null/omitted is allowed. Any other non-string must not pass (it clears or restamps sync). */
+export function isMeshcoreLastSyncedFromRadioValue(value: unknown): boolean {
+  return value == null || (typeof value === 'string' && value.length <= 128);
+}
+
 /** Normalize validated IPC writes; live radio rows inherit their local receive time. */
 export function meshcoreContactInputToUpsertParams(
   c: Record<string, unknown>,

@@ -1,2 +1,2 @@
-# Pinned Semgrep for CI, release, and setup-semgrep (update version + re-verify in workflows).
+# Pinned Semgrep for local pre-commit and local release only (not GitHub Actions).
 semgrep==1.186.0

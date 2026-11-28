@@ -467,6 +467,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       openJsonFile: async () => null,
     },
     meshcom: {
+      openContactsImportFile: async () => null,
       udp: {
         connect: noopAsync,
         write: noopAsync,

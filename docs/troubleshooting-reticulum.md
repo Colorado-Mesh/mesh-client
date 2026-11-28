@@ -472,9 +472,9 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 **Symptoms**: MeshCore MQTT preset worked before upgrade; broker connection fails on port **1883** or wrong topic.
 
-**Cause**: Colorado Mesh moved to **wss port 443** with topic **`meshcore/DEN`**; LetsMesh uses **`meshcore/test`**. Stale `mesh-client:mqttSettings:meshcore` may retain old port/topic. Malformed topic prefixes (not `meshcore/{IATA}` or `meshcore/test`) also block Connect on device-signing brokers. A **stale WebSocket path** blocks Connect too: LetsMesh / MeshMapper / Colorado use `/ws`, while Waev / Meshat.se / MeshCore.CA / EastMesh use `/mqtt` — a mismatch gives a clear "requires WebSocket path …" error plus the amber deviation banner.
+**Cause**: Colorado Mesh moved to **wss port 443**; device-signing brokers require a user-picked **Area IATA** (`meshcore/{IATA}` or explicit `test`) — presets no longer invent DEN or test. Stale `mesh-client:mqttSettings:meshcore` may retain an old port or an unset/invalid topic. Malformed topic prefixes also block Connect on device-signing brokers. A **stale WebSocket path** blocks Connect too: LetsMesh / MeshMapper / Colorado use `/ws`, while Waev / Meshat.se / MeshCore.CA / EastMesh use `/mqtt` — a mismatch gives a clear "requires WebSocket path …" error plus the amber deviation banner.
 
-**Fix**: Re-select the preset on the Connection tab (or, for MeshCore.CA/LetsMesh, click the broker/region toggle) to repair `wsPath`/`tlsEnabled`, or clear `mesh-client:mqttSettings:meshcore` in devtools Application → Local Storage and reconnect. Migrations run on app start via `connectionPanelStorageMigrations.ts` (port/topic repair + IATA shape normalize + preset reconcile).
+**Fix**: Re-select the preset on the Connection tab (or, for MeshCore.CA/LetsMesh, click the broker/region toggle) to repair `wsPath`/`tlsEnabled`, then pick your area IATA from the Connection MQTT picklist before reconnecting. Clearing `mesh-client:mqttSettings:meshcore` in devtools Application → Local Storage restores an empty topic prefix — select an Area IATA before reconnecting, or connect preparation will fail validation. Migrations run on app start via `connectionPanelStorageMigrations.ts` (port repair + bare-prefix clear + IATA uppercase normalize + preset reconcile).
 
 ## MeshCore Colorado Mesh one-time region prompt
 
@@ -482,7 +482,7 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 **Cause**: Colorado Mesh is a **regional** broker. mesh-client prompts existing Colorado-preset (or Colorado host) users once so non-Colorado users can switch to **LetsMesh**. Auto-launch will not connect to Colorado until that choice is stored.
 
-**Fix**: Choose **I am in Colorado** to keep the preset (Auto-connect resumes if enabled), or **Switch to LetsMesh**. The choice is stored in `mesh-client:coloradoMqttRegionAck-v1` and is not shown again. Selecting Colorado Mesh later shows a confirm that the preset is for Colorado-area users and publishes under `meshcore/DEN`.
+**Fix**: Choose **I am in Colorado** to keep the preset (Auto-connect resumes if enabled), or **Switch to LetsMesh**. The choice is stored in `mesh-client:coloradoMqttRegionAck-v1` and is not shown again. Selecting Colorado Mesh later shows a confirm that the preset is for Colorado-area users; pick your local airport IATA for the topic prefix.
 
 ## Reticulum: announces / Nomad / RRC work but Chat fails both ways
 

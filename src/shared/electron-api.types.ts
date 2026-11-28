@@ -1615,6 +1615,7 @@ export interface ElectronAPI {
 
   /** MeshCom EXTUDP (:1799) + KISS/TCP (:8001) bridges. */
   meshcom: {
+    openContactsImportFile: () => Promise<string | null>;
     udp: {
       connect: (host: string) => Promise<void>;
       write: (bytes: number[]) => Promise<void>;

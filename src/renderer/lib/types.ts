@@ -29,7 +29,15 @@ export type TransportStatus =
 /** Transport-specific connect parameters. Open union — additional protocols add their own variants. */
 export type TransportParams =
   | { type: 'ble'; peripheralId?: string }
-  | { type: 'serial'; portSignature?: string }
+  | {
+      type: 'serial';
+      portSignature?: string;
+      /**
+       * When false, Web Serial auto-reconnect must not call `requestPort()` (needs a user
+       * gesture). MeshCom serial auto-connect / reconnect sets this; manual Connect omits it.
+       */
+      allowPortPicker?: boolean;
+    }
   | { type: 'http'; host: string }
   | { type: 'tcp'; host: string }
   | { type: 'udp'; host: string }
@@ -471,6 +479,11 @@ export interface ChatMessage {
   replyPreviewSender?: string;
   /** RF-derived hops away for this receive when known (Meshtastic hopStart−hopLimit; MeshCore path hops). */
   rxHops?: number;
+  /**
+   * MeshCom digipeater callsigns after the origin (chat hop-pill route tooltip).
+   * Empty/absent when heard direct or path not stored.
+   */
+  rxPathCallsigns?: string[];
   /** MeshCore on-air path hash width (1/2/3 bytes) for this receive when known. */
   rxPathHashSizeBytes?: 1 | 2 | 3;
   /** Signal measurements recorded for this message's RF reception, not current node telemetry. */

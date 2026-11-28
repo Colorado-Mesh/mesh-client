@@ -14,7 +14,8 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Terrain LOS elevation (Open-Meteo sample + SRTM HGT offline DEM IPC) adds ~6 KiB
  * (HGT offset reader + clearance/bulge math follow-ups).
  * Catch up summary / follow-up prompt text ships as sibling `ai-summary-prompt.js` and
- * `ai-follow-up-prompt.js`; the offline model catalog as `ai-local-models.js`; OS AI / MLX
+ * `ai-follow-up-prompt.js`; summarize prompt dispatch (incl. log Analyze with AI) as
+ * `ai-summarize-prompt-prepare.js`; the offline model catalog as `ai-local-models.js`; OS AI / MLX
  * Metal ensure+spawn as `ai-native-runtime.js`; combined identity hydration SQL as
  * `identity-hydration.js` (not in index.js). Thin install-path checks stay in index.js for
  * sync status. Keep HF catalog / prompt / native runtime / identity hydration in siblings.
@@ -185,13 +186,19 @@ describe('esbuild-main-build', () => {
     async () => {
       tempDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-main-bundle-'));
       const outfile = path.join(tempDir, 'index.js');
-      await buildMainProcess({ minify: true, outfile });
+      const indexMetaPath = path.join(tempDir, 'index.meta.json');
+      await buildMainProcess({ minify: true, outfile, metafilePath: indexMetaPath });
       const summaryPromptBytes = fs.readFileSync(path.join(tempDir, 'ai-summary-prompt.js'));
       expect(summaryPromptBytes.length).toBeGreaterThan(1_000);
       expect(summaryPromptBytes.toString('utf8')).toContain('buildAiSummaryPrompt');
       const followUpPromptBytes = fs.readFileSync(path.join(tempDir, 'ai-follow-up-prompt.js'));
       expect(followUpPromptBytes.length).toBeGreaterThan(1_000);
       expect(followUpPromptBytes.toString('utf8')).toContain('buildAiFollowUpPrompt');
+      const summarizePrepareBytes = fs.readFileSync(
+        path.join(tempDir, 'ai-summarize-prompt-prepare.js'),
+      );
+      expect(summarizePrepareBytes.length).toBeGreaterThan(500);
+      expect(summarizePrepareBytes.toString('utf8')).toContain('prepareSummarizePrompt');
       const localModelsBytes = fs.readFileSync(path.join(tempDir, 'ai-local-models.js'));
       expect(localModelsBytes.length).toBeGreaterThan(1_000);
       expect(localModelsBytes.toString('utf8')).toContain('AI_LOCAL_MODELS');
@@ -289,6 +296,20 @@ describe('esbuild-main-build', () => {
       expect(meshcoreMqttPoolBytes.length).toBeGreaterThan(500);
       expect(meshcoreMqttPoolBytes.toString('utf8')).toContain('MeshcoreMqttPool');
       expect(meshcoreMqttPoolBytes.toString('utf8')).toContain('publishPacketPayload');
+      // Adapter (+ MeshCom MQTT) contributes bytes to the sibling metafile, not index.js.
+      const poolMeta = JSON.parse(
+        fs.readFileSync(path.join(tempDir, 'meshcore-mqtt-pool.meta.json'), 'utf8'),
+      );
+      const indexMeta = JSON.parse(fs.readFileSync(indexMetaPath, 'utf8'));
+      const adapterInPool = Object.entries(poolMeta.inputs).find(([inputPath]) =>
+        inputPath.replace(/\\/g, '/').includes('src/main/meshcore-mqtt-adapter'),
+      );
+      expect(adapterInPool?.[1]?.bytes).toBeGreaterThan(0);
+      expect(
+        Object.keys(indexMeta.inputs).some((inputPath) =>
+          inputPath.replace(/\\/g, '/').includes('src/main/meshcore-mqtt-adapter'),
+        ),
+      ).toBe(false);
       const indexSource = fs.readFileSync(outfile, 'utf8');
       expect(indexSource).not.toContain('waypoint.geofenceRadius invalid');
       expect(mqttWaypointValidationBytes.toString('utf8')).toContain(

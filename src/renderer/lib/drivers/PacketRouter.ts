@@ -34,6 +34,7 @@ import {
 import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { isLoraSenderBlocked } from '../loraBlocklist';
+import { meshcomIncomingStoreId } from '../meshcom/meshcomMessageId';
 import { noteMeshcomNetworkTimeFromText } from '../meshcom/meshcomNetworkTime';
 import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import { nextMeshcoreMessageLocalOrder } from '../meshcoreMessageOrder';
@@ -409,6 +410,18 @@ class PacketRouter {
     if (protocolType === 'meshcom' && noteMeshcomNetworkTimeFromText(event.payload.payload)) {
       return true;
     }
+    if (protocolType === 'meshcom' && event.payload.id) {
+      const bucket = useMessageStore.getState().messages[identityId] ?? {};
+      const nextId = meshcomIncomingStoreId(bucket, {
+        id: event.payload.id,
+        from: event.payload.from,
+        payload: event.payload.payload,
+        channelIndex: event.payload.channelIndex,
+        timestamp: event.payload.timestamp,
+      });
+      // Choose a free id before renaming an in-flight send onto this wire id.
+      if (nextId !== event.payload.id) event.payload.id = nextId;
+    }
     if (event.payload.id) {
       this.mergeOptimisticTextMessage(event, identityId, isMeshtastic);
     }
@@ -524,6 +537,12 @@ class PacketRouter {
       rxSnr: event.payload.rxSnr,
       rxRssi: event.payload.rxRssi,
       hopCount: event.payload.hopCount,
+      // Always write the path (including []) so a later direct reception cannot keep an old digi route.
+      ...(event.payload.rxPathCallsigns != null
+        ? { rxPathCallsigns: [...event.payload.rxPathCallsigns] }
+        : protocolType === 'meshcom'
+          ? { rxPathCallsigns: [] }
+          : {}),
       ...(event.payload.pathHashSizeBytes === 1 ||
       event.payload.pathHashSizeBytes === 2 ||
       event.payload.pathHashSizeBytes === 3

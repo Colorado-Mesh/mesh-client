@@ -13,14 +13,18 @@ const GIPHY_PAGE_ORIGIN = 'https://giphy.com';
 function readHttpUrl(text: string): URL | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
+  const hasScheme = /^https?:\/\//i.test(trimmed);
+  // Chat payloads are scanned for GIF wires; skip anything that cannot be a Giphy URL.
+  if (!hasScheme && !/^(?:media\.)?giphy\.com\//i.test(trimmed)) {
+    return null;
+  }
   try {
-    const href = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const href = hasScheme ? trimmed : `https://${trimmed}`;
     const url = new URL(href);
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
     return url;
-  } catch (e: unknown) {
-    console.debug('[renderer/lib/meshcoreGifWire] catch:', e);
-
+  } catch {
+    // catch-no-log-ok non-URL chat text is not a MeshCore GIF wire
     return null;
   }
 }

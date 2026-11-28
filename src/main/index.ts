@@ -199,7 +199,7 @@ import { registerWeatherIpcHandlers } from './ipc/weather-handlers';
 import { createIpcRateLimiter } from './ipcRateLimit';
 import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
 import { snapshotLiveSessionMeter } from './live-session-meter';
-import { loadMeshcoreMqttPoolClass } from './loadMeshcoreMqttPool';
+import { loadMeshcoreMqttAdapterClass, loadMeshcoreMqttPoolClass } from './loadMeshcoreMqttPool';
 import { loadValidateMqttPublishWaypointArgs } from './loadMqttPublishWaypointValidation';
 import { loadPaintTrayUnreadDot } from './loadTrayUnreadDot';
 import {
@@ -224,13 +224,13 @@ import {
   isValidMecpAppendPayload,
   readMecpReceivedLogForExport,
 } from './mecp-received-log';
-import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import {
   normalizeOptionalMeshcoreConnectionId,
   resolveMeshcoreConnectionId,
   resolveMeshcoreConnectTarget,
 } from './meshcore-mqtt-connection-id';
 import type {
+  MeshcoreMqttAdapter,
   MeshcoreMqttClientIdEvent,
   MeshcoreMqttErrorEvent,
   MeshcoreMqttStatusEvent,
@@ -238,7 +238,10 @@ import type {
   MeshcoreMqttWarningEvent,
 } from './meshcore-mqtt-pool';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
-import { meshcoreContactInputToUpsertParams } from './meshcoreContactInput';
+import {
+  isMeshcoreLastSyncedFromRadioValue,
+  meshcoreContactInputToUpsertParams,
+} from './meshcoreContactInput';
 import {
   clearMeshcoreMessagesByChannel,
   MESHCORE_MESSAGE_CHANNEL_SQL,
@@ -250,6 +253,7 @@ import { migrateMeshtasticNodeNumInDb } from './meshtasticNodeRenumber';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
+import { isPublishProxyDataWithinLimit } from './mqtt-packet-limits';
 import { CustomMapSourceStore } from './offline-maps/custom-sources';
 import { CustomMapSourcesService } from './offline-maps/custom-sources-service';
 import { createMeshTilesProtocolHandler } from './offline-maps/protocol';
@@ -383,7 +387,7 @@ const mqttManager = new MQTTManager();
 /** Chat connection + publish-only analyzer feeds (N brokers). */
 const meshcoreMqttPool = new (loadMeshcoreMqttPoolClass())();
 /** MeshCom uses the same generic MQTT.js adapter; envelopes are MeshCore-specific and ignored. */
-const meshcomMqttAdapter = new MeshcoreMqttAdapter();
+const meshcomMqttAdapter = new (loadMeshcoreMqttAdapterClass())();
 
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
@@ -1095,7 +1099,7 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
       'db:saveMeshcoreContact: on_radio must be 0 or 1',
     ],
     [
-      isOptionalStringWithin(c.last_synced_from_radio, 128),
+      isMeshcoreLastSyncedFromRadioValue(c.last_synced_from_radio),
       'db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128',
     ],
   ]);
@@ -1487,11 +1491,6 @@ function validateMqttPublishArgs(args: unknown): void {
     throw new Error('mqtt:publish: publishJsonMirror must be a boolean');
   }
   validateOptionalPskBase64(a.pskBase64, 'mqtt:publish');
-}
-
-function isPublishProxyDataWithinLimit(data: unknown): boolean {
-  if (data instanceof Uint8Array) return data.byteLength <= 512 * 1024;
-  return new Uint8Array(data as ArrayBuffer).byteLength <= 512 * 1024;
 }
 
 function validateMqttPublishProxyArgs(args: unknown): void {
@@ -6210,6 +6209,39 @@ ipcMain.handle('meshcore:openJsonFile', async (event) => {
   }
 });
 
+ipcMain.handle('meshcom:openContactsImportFile', async (event) => {
+  assertIpcSender(event, 'meshcom:openContactsImportFile');
+  try {
+    if (!mainWindow) return null;
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Import MeshCom Contacts',
+      filters: [
+        { name: 'JSON / CSV', extensions: ['json', 'csv'] },
+        { name: 'JSON', extensions: ['json'] },
+        { name: 'CSV', extensions: ['csv'] },
+      ],
+      properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    const CONTACT_IMPORT_MAX_BYTES = 5 * 1024 * 1024;
+    try {
+      const buf = await readFileUpTo(result.filePaths[0], CONTACT_IMPORT_MAX_BYTES);
+      return buf.toString('utf-8');
+    } catch (err) {
+      if (err instanceof Error && err.message === 'File too large') {
+        throw new Error('File too large (max 5 MB)');
+      }
+      throw err;
+    }
+  } catch (err) {
+    console.error(
+      'mcL1515 [IPC] meshcom:openContactsImportFile failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
 ipcMain.handle(
   'db:updateMeshcoreMessageSender',
   (event, messageId: number, senderId: number, senderName: string) => {
@@ -7418,7 +7450,7 @@ async function registerReachCheckIpc(): Promise<void> {
     mod.registerReachCheckIpcHandlers({ ipcMain, assertIpcSender, isPackaged: app.isPackaged });
   } catch (err: unknown) {
     console.error(
-      'mcL1515 [main] reach check IPC registration failed:',
+      'mcL1520 [main] reach check IPC registration failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
   }
