@@ -47,6 +47,8 @@ export interface ParsedMessage {
     timestamp: string | null;
     /** Sender callsign from ~CALLSIGN pattern */
     callsign: string | null;
+    /** Private Use (§U) app designator when a U## code is present */
+    appDesignator: string | null;
   };
   /** Parse warnings (e.g., invalid severity, unknown codes) */
   warnings: string[];

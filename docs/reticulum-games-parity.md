@@ -7,7 +7,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns only when a **published** Ratspeak GitHub Release is newer than the `reviewed-ref` pin on the `games-parity` entry in `scripts/update.sh` (bump that pin after review). Tags, `main`, and RCs without a GitHub Release are ignored.
 
-**Last review:** 2026-11-19 (mesh-client ↔ mesh-client Four in a Row challenge→accept wire automated via hub TCP `dual_tcp_four_in_a_row_wire_interop`; play-to-win still blocked by loopback Direct multi-message limits; Ratspeak cross-client row still `todo`). Prior: 2026-11-16 (Ratspeak **v1.1.0** — Games API / wire surface reviewed against v1.0.42; Four in a Row UI `done`); 2026-11-08 (v1.0.42); 2026-11-02 (v1.0.37).
+**Last review:** 2026-11-28 (Ratspeak **v1.1.1** — Games delivery/Activity polish only; no new LRGP game types or wire changes vs v1.1.0; Four in a Row UI still `done`, mesh-client↔mesh-client challenge→accept still `partial`, Ratspeak cross-client still `todo`). Prior: 2026-11-19 (mesh-client ↔ mesh-client Four in a Row challenge→accept wire automated via hub TCP `dual_tcp_four_in_a_row_wire_interop`; play-to-win still blocked by loopback Direct multi-message limits; Ratspeak cross-client row still `todo`); 2026-11-16 (Ratspeak **v1.1.0** — Games API / wire surface reviewed against v1.0.42; Four in a Row UI `done`); 2026-11-08 (v1.0.42); 2026-11-02 (v1.0.37).
 
 Status: `done` | `partial` | `wontfix` | `todo`
 

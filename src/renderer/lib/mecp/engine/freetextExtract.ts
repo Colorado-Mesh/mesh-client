@@ -2,6 +2,7 @@
  * MECP 1.4.1 §6.1 freetext convention extraction.
  * Patterns and semantics from https://github.com/mecp-org/MECP (freetext/patterns.json,
  * scripts/check-freetext.mjs). Additional Validation failures are ignored; freetext is preserved.
+ * Decode order and token claiming follow §6.1 rule 5 (claimed ranges; later overlaps fail).
  */
 
 import patternsJson from './freetext/patterns.json';
@@ -18,6 +19,20 @@ const B_ONE = new RegExp(`^${B_CLASS}$`);
 
 const PATTERNS = patternsJson;
 
+/** §6.1 rule 5 decode order (claimed tokens; later overlaps fail). */
+const DECODE_ORDER = [
+  'appDesignator',
+  'gps',
+  'timestamp',
+  'language',
+  'callsign',
+  'reference',
+  'pax',
+  'duration',
+] as const;
+
+type ConventionName = (typeof DECODE_ORDER)[number];
+
 export interface FreetextExtracted {
   count: number | null;
   gps: { lat: number; lon: number } | null;
@@ -28,6 +43,8 @@ export interface FreetextExtracted {
   language: string | null;
   timestamp: string | null;
   callsign: string | null;
+  /** Private Use (§U) app designator — first freetext token when a U## code is present. */
+  appDesignator: string | null;
 }
 
 type RegExpMatch = RegExpMatchArray;
@@ -38,12 +55,38 @@ interface MatchValidateContext {
   pos: number;
 }
 
-interface BoundedMatch {
+interface ClaimedMatch {
   match: RegExpMatch;
-  /** Match excluding one-code-point boundary on each side, when present. */
-  token: string;
   /** Absolute start index of the full match (including left boundary). */
   index: number;
+  tokenLo: number;
+  tokenHi: number;
+}
+
+interface ConventionResult {
+  value: Partial<FreetextExtracted> & { pax?: number };
+  lo: number;
+  hi: number;
+}
+
+function overlapsClaimed(lo: number, hi: number, claimed: ReadonlySet<number>): boolean {
+  for (let i = lo; i < hi; i++) {
+    if (claimed.has(i)) return true;
+  }
+  return false;
+}
+
+function claimRange(claimed: Set<number>, lo: number, hi: number): void {
+  for (let i = lo; i < hi; i++) claimed.add(i);
+}
+
+function tokenSpan(m: RegExpMatch, absIndex: number): [number, number] {
+  const full = m[0];
+  let lo = absIndex;
+  let hi = absIndex + full.length;
+  if (full.length > 0 && B_ONE.test(full[0])) lo += 1;
+  if (hi > lo && B_ONE.test(full[full.length - 1])) hi -= 1;
+  return [lo, hi];
 }
 
 function validateGps(m: RegExpMatch): boolean {
@@ -61,6 +104,32 @@ function validateGps(m: RegExpMatch): boolean {
 
 function validateCallsign(m: RegExpMatch): boolean {
   return m[1].length <= 12;
+}
+
+/** True when group 1 is the fractional part of a decimal (digit + .|, before it). */
+function isDecimalFraction(freetext: string, group1Start: number): boolean {
+  const before = freetext[group1Start - 1];
+  const before2 = freetext[group1Start - 2];
+  return (before === '.' || before === ',') && before2 >= '0' && before2 <= '9';
+}
+
+/**
+ * True when group 1 is the minute field of an `H:MM` / `@H:MM` clock
+ * (with or without `@`; covers glued forms where timestamp cannot claim).
+ */
+function isColonClockMinutes(freetext: string, group1Start: number, digits: string): boolean {
+  if (freetext[group1Start - 1] !== ':') return false;
+  if (!/^[0-5][0-9]$/.test(digits)) return false;
+  return /(?:^|[^0-9])([01]?[0-9]|2[0-3])$/.test(freetext.slice(0, group1Start - 1));
+}
+
+function validatePax(m: RegExpMatch, ctx: MatchValidateContext): boolean {
+  const indices = m.indices;
+  if (!indices?.[1]) return false;
+  const group1Start = ctx.pos + indices[1][0];
+  if (isDecimalFraction(ctx.freetext, group1Start)) return false;
+  if (isColonClockMinutes(ctx.freetext, group1Start, m[1])) return false;
+  return true;
 }
 
 function toMinutes(kind: string, m: RegExpMatch): number {
@@ -82,23 +151,17 @@ function toMinutes(kind: string, m: RegExpMatch): number {
   }
 }
 
-/** True when group 1 is the fractional part of a decimal (digit + .|, before it). */
-function isDecimalFraction(freetext: string, group1Start: number): boolean {
-  const before = freetext[group1Start - 1];
-  const before2 = freetext[group1Start - 2];
-  return (before === '.' || before === ',') && before2 >= '0' && before2 <= '9';
-}
-
 /**
- * Find the first decode match that passes validate().
- * Wrapped as (?:^|B)(pattern)(?:B|$). On validation failure, resume after the
+ * Find the first decode match that passes validate() and does not overlap claimed.
+ * Wrapped as (?:^|B)(pattern)(?:B|$). On validation/overlap failure, resume after the
  * token (full match minus trailing B), per rule 6.
  */
 function firstValidMatch(
   pattern: string,
   freetext: string,
   validate: ((m: RegExpMatch, ctx: MatchValidateContext) => boolean) | null,
-): BoundedMatch | null {
+  claimed: ReadonlySet<number>,
+): ClaimedMatch | null {
   // `d` gives capture indices so Additional Validation can inspect characters
   // before/after group 1 (e.g. R03 decimal-fraction rejection).
   // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
@@ -111,107 +174,172 @@ function firstValidMatch(
 
     const abs = pos + m.index;
     const full = m[0];
-    const usedLeftB = abs > 0 && full.length > 0 && B_ONE.test(full[0]);
     const usedRightB = full.length > 0 && B_ONE.test(full[full.length - 1]);
+    const [lo, hi] = tokenSpan(m, abs);
+    const resume = Math.max(abs + full.length - (usedRightB ? 1 : 0), abs + 1);
 
-    let tokenEnd = abs + full.length - (usedRightB ? 1 : 0);
-    const tokenStart = abs + (usedLeftB ? 1 : 0);
-    if (tokenEnd < tokenStart) tokenEnd = tokenStart;
-
-    if (validate && !validate(m, { freetext, pos })) {
-      pos = Math.max(tokenEnd, abs + 1);
+    if (overlapsClaimed(lo, hi, claimed)) {
+      pos = resume;
       continue;
     }
-    return { match: m, token: freetext.slice(tokenStart, tokenEnd), index: abs };
+    if (validate && !validate(m, { freetext, pos })) {
+      pos = resume;
+      continue;
+    }
+    return { match: m, index: abs, tokenLo: lo, tokenHi: hi };
   }
   return null;
 }
 
-/**
- * R03 Duration: first unit-bearing match by position wins; pattern order breaks
- * ties at the same index. Bare number is a fallback only when no unit-bearing
- * value matches. Decimal fractions fail Additional Validation (no match) —
- * unit patterns must not read digits after `.`/`,` (`1.5h` is not 5 h), and bare
- * must not take the integer before that mark (`1.5h` is not 1 min).
- */
+interface PatternSpec {
+  encode?: string | string[];
+  decode: string | string[];
+  validate?: string;
+  scope?: string;
+  scopeCategory?: string;
+}
+
+function scopeApplies(spec: PatternSpec, codes: readonly string[]): boolean {
+  if (spec.scopeCategory) {
+    const letter = spec.scopeCategory;
+    return codes.some((c) => c.startsWith(letter) && /^[A-Z][0-9]{2}$/.test(c));
+  }
+  if (spec.scope) return codes.includes(spec.scope);
+  return true;
+}
+
+function looksLikeMinuteDigits(text: string): boolean {
+  return text.length >= 2 && text[0] >= '0' && text[0] <= '5' && text[1] >= '0' && text[1] <= '9';
+}
+
 function decodeDuration(
   freetext: string,
   codes: readonly string[],
-): { minutes: number; token: string } | null {
-  const spec = PATTERNS.duration;
-  if (spec.scope && !codes.includes(spec.scope)) return null;
+  claimed: ReadonlySet<number>,
+): ConventionResult | null {
+  const spec = PATTERNS.duration as PatternSpec;
+  if (!scopeApplies(spec, codes)) return null;
   const decodeList = spec.decode;
+  if (!Array.isArray(decodeList)) return null;
   const kinds = ['hm', 'h', 'min', 'd', 'bare'] as const;
 
-  let best: { minutes: number; token: string; index: number } | null = null;
+  let best: { minutes: number; token: string; index: number; lo: number; hi: number } | null = null;
 
   for (let i = 0; i < decodeList.length; i++) {
     const kind = kinds[i];
     const pat = decodeList[i];
-    // Bare number is only used when no unit-bearing value matched.
     if (best && kind === 'bare') break;
 
-    const found = firstValidMatch(pat, freetext, (mm, ctx) => {
-      if (!(toMinutes(kind, mm) > 0)) return false;
-      const indices = mm.indices;
-      if (!indices?.[1]) return false;
-      if (kind === 'bare') {
-        // Group 2 present (47.3769), or `.`/`,` used as B before more digits (1.5h).
-        if (indices[2]) return false;
-        const group1End = ctx.pos + indices[1][1];
-        const sep = freetext[group1End];
-        const next = freetext[group1End + 1];
-        if ((sep === '.' || sep === ',') && next >= '0' && next <= '9') return false;
-        return true;
-      }
-      // Patterns 1–4: reject a number that is only the fractional part of a decimal.
-      const group1Start = ctx.pos + indices[1][0];
-      return !isDecimalFraction(freetext, group1Start);
-    });
+    const found = firstValidMatch(
+      pat,
+      freetext,
+      (mm, ctx) => {
+        if (!(toMinutes(kind, mm) > 0)) return false;
+        const indices = mm.indices;
+        if (!indices?.[1]) return false;
+        const group1Start = ctx.pos + indices[1][0];
+        if (isColonClockMinutes(freetext, group1Start, mm[1])) return false;
+        if (kind === 'bare') {
+          if (indices[2]) return false;
+          const group1End = ctx.pos + indices[1][1];
+          const sep = freetext[group1End];
+          const next = freetext[group1End + 1];
+          if ((sep === '.' || sep === ',') && next >= '0' && next <= '9') return false;
+          if (sep === ':' && looksLikeMinuteDigits(freetext.slice(group1End + 1))) return false;
+          return true;
+        }
+        return !isDecimalFraction(freetext, group1Start);
+      },
+      claimed,
+    );
     if (found && (!best || found.index < best.index)) {
       best = {
         minutes: toMinutes(kind, found.match),
-        token: found.token,
+        token: freetext.slice(found.tokenLo, found.tokenHi),
         index: found.index,
+        lo: found.tokenLo,
+        hi: found.tokenHi,
       };
     }
   }
-  return best ? { minutes: best.minutes, token: best.token } : null;
+  if (!best) return null;
+  return {
+    value: { duration: best.minutes, durationToken: best.token },
+    lo: best.lo,
+    hi: best.hi,
+  };
 }
 
-function decodePax(freetext: string): number | null {
-  const found = firstValidMatch(PATTERNS.pax.decode, freetext, null);
+function patternSpec(name: ConventionName): PatternSpec {
+  return (PATTERNS as Record<ConventionName, PatternSpec>)[name];
+}
+
+function decodeConvention(
+  name: ConventionName,
+  freetext: string,
+  codes: readonly string[],
+  claimed: ReadonlySet<number>,
+): ConventionResult | null {
+  const spec = patternSpec(name);
+  if (!scopeApplies(spec, codes)) return null;
+
+  if (name === 'appDesignator') {
+    const decodePat = typeof spec.decode === 'string' ? spec.decode : null;
+    if (!decodePat) return null;
+    const found = firstValidMatch(decodePat, freetext, null, claimed);
+    if (found?.index !== 0) return null;
+    return {
+      value: { appDesignator: found.match[1] },
+      lo: found.tokenLo,
+      hi: found.tokenHi,
+    };
+  }
+
+  if (name === 'duration') {
+    return decodeDuration(freetext, codes, claimed);
+  }
+
+  const decodePat = typeof spec.decode === 'string' ? spec.decode : null;
+  if (!decodePat) return null;
+
+  const validate =
+    spec.validate === 'gps'
+      ? validateGps
+      : spec.validate === 'callsign'
+        ? validateCallsign
+        : spec.validate === 'pax'
+          ? validatePax
+          : null;
+
+  const found = firstValidMatch(decodePat, freetext, validate, claimed);
   if (!found) return null;
-  return Number(found.match[1]);
-}
 
-function decodeGps(freetext: string): { lat: number; lon: number } | null {
-  const found = firstValidMatch(PATTERNS.gps.decode, freetext, validateGps);
-  if (!found) return null;
-  return { lat: Number(found.match[1]), lon: Number(found.match[2]) };
-}
-
-function decodeTimestamp(freetext: string): string | null {
-  const found = firstValidMatch(PATTERNS.timestamp.decode, freetext, null);
-  if (!found) return null;
-  return `${String(Number(found.match[1])).padStart(2, '0')}:${found.match[2]}`;
-}
-
-function decodeLanguage(freetext: string): string | null {
-  const found = firstValidMatch(PATTERNS.language.decode, freetext, null);
-  if (!found) return null;
-  return found.match[1].toLowerCase().replace(/_/g, '-');
-}
-
-function decodeCallsign(freetext: string): string | null {
-  const found = firstValidMatch(PATTERNS.callsign.decode, freetext, validateCallsign);
-  if (!found) return null;
-  return found.match[1].toUpperCase();
-}
-
-function decodeReference(freetext: string): string | null {
-  const found = firstValidMatch(PATTERNS.reference.decode, freetext, null);
-  return found ? found.match[1] : null;
+  let value: ConventionResult['value'];
+  switch (name) {
+    case 'timestamp':
+      value = {
+        timestamp: `${String(Number(found.match[1])).padStart(2, '0')}:${found.match[2]}`,
+      };
+      break;
+    case 'pax':
+      value = { count: Number(found.match[1]), pax: Number(found.match[1]) };
+      break;
+    case 'gps':
+      value = { gps: { lat: Number(found.match[1]), lon: Number(found.match[2]) } };
+      break;
+    case 'language':
+      value = { language: found.match[1].toLowerCase().replace(/_/g, '-') };
+      break;
+    case 'callsign':
+      value = { callsign: found.match[1].toUpperCase() };
+      break;
+    case 'reference':
+      value = { reference: found.match[1] };
+      break;
+    default:
+      return null;
+  }
+  return { value, lo: found.tokenLo, hi: found.tokenHi };
 }
 
 const EMPTY_EXTRACTED: FreetextExtracted = {
@@ -223,25 +351,32 @@ const EMPTY_EXTRACTED: FreetextExtracted = {
   language: null,
   timestamp: null,
   callsign: null,
+  appDesignator: null,
 };
 
-/** Extract structured conventions from MECP freetext (codes needed for scoped Duration). */
+/** Extract structured conventions from MECP freetext (codes needed for scoped Duration / U). */
 export function extractFreetextConventions(
   freetext: string,
   codes: readonly string[],
 ): FreetextExtracted {
   if (!freetext) return { ...EMPTY_EXTRACTED };
-  const duration = decodeDuration(freetext, codes);
-  return {
-    count: decodePax(freetext),
-    gps: decodeGps(freetext),
-    duration: duration?.minutes ?? null,
-    durationToken: duration?.token ?? null,
-    reference: decodeReference(freetext),
-    language: decodeLanguage(freetext),
-    timestamp: decodeTimestamp(freetext),
-    callsign: decodeCallsign(freetext),
-  };
+  const out: FreetextExtracted = { ...EMPTY_EXTRACTED };
+  const claimed = new Set<number>();
+  for (const name of DECODE_ORDER) {
+    const result = decodeConvention(name, freetext, codes, claimed);
+    if (!result) continue;
+    if (result.value.count != null) out.count = result.value.count;
+    if (result.value.gps != null) out.gps = result.value.gps;
+    if (result.value.duration != null) out.duration = result.value.duration;
+    if (result.value.durationToken != null) out.durationToken = result.value.durationToken;
+    if (result.value.reference != null) out.reference = result.value.reference;
+    if (result.value.language != null) out.language = result.value.language;
+    if (result.value.timestamp != null) out.timestamp = result.value.timestamp;
+    if (result.value.callsign != null) out.callsign = result.value.callsign;
+    if (result.value.appDesignator != null) out.appDesignator = result.value.appDesignator;
+    claimRange(claimed, result.lo, result.hi);
+  }
+  return out;
 }
 
 /** §6.1 decoder preprocessing: remove at most one trailing `\n`, `\r`, or `\r\n`. */
