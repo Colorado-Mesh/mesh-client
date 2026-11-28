@@ -8,7 +8,8 @@
  *
  * Each file write replaces the whole file: OPFS writes go to a `.tmp` sibling first and are moved
  * over the original only after a complete write + flush, so a crash mid-write keeps the previous
- * version.
+ * version. Where move() will not replace an existing file, the original is moved aside to
+ * `<name>.mesh-prev` first and `loadAll()` restores it if the swap is interrupted.
  */
 import { Buffer } from 'buffer';
 
@@ -26,6 +27,34 @@ async function opfsRoot(): Promise<Dir> {
 
 function segments(path: string): string[] {
   return path.split('/').filter((s) => s.length > 0);
+}
+
+/** The previous version of a file while it is being replaced (see `writeFile`). No app file uses it. */
+const BAK_SUFFIX = '.mesh-prev';
+
+interface Movable {
+  move?: (d: Dir, n: string) => Promise<void>;
+}
+
+function isNotFound(e: unknown): boolean {
+  return e instanceof DOMException && e.name === 'NotFoundError';
+}
+
+async function fileIfPresent(dir: Dir, name: string): Promise<FileSystemFileHandle | null> {
+  try {
+    return await dir.getFileHandle(name);
+  } catch (e) {
+    if (isNotFound(e)) return null;
+    throw e;
+  }
+}
+
+async function removeIfPresent(dir: Dir, name: string): Promise<void> {
+  try {
+    await dir.removeEntry(name);
+  } catch (e) {
+    if (!isNotFound(e)) throw e;
+  }
 }
 
 async function dirFor(root: Dir, segs: string[], create: boolean): Promise<Dir | null> {
@@ -79,11 +108,26 @@ export class OpfsPersistBackend implements PersistBackend {
   async loadAll(): Promise<{ path: string; kind: 'file' | 'dir'; bytes?: Uint8Array }[]> {
     const out: { path: string; kind: 'file' | 'dir'; bytes?: Uint8Array }[] = [];
     const walk = async (dir: Dir, prefix: string): Promise<void> => {
-      for await (const [name, handle] of (
+      const entries: [string, FileSystemHandle][] = [];
+      for await (const entry of (
         dir as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }
       ).entries()) {
+        entries.push(entry);
+      }
+      const names = new Set(entries.map(([n]) => n));
+      for (const [name, handle] of entries) {
+        // A `.tmp` may be a partial write: never trusted. A `.bak` is a complete previous
+        // version: it stands in for its file only when a replace stopped between its two moves.
         if (name.endsWith('.tmp') || name === '.probe') continue;
-        const p = `${prefix}/${name}`;
+        let fileName = name;
+        if (handle.kind === 'file' && name.endsWith(BAK_SUFFIX)) {
+          fileName = name.slice(0, -BAK_SUFFIX.length);
+          if (names.has(fileName)) {
+            await removeIfPresent(dir, name);
+            continue;
+          }
+        }
+        const p = `${prefix}/${fileName}`;
         if (handle.kind === 'directory') {
           out.push({ path: p, kind: 'dir' });
           await walk(handle as Dir, p);
@@ -120,16 +164,29 @@ export class OpfsPersistBackend implements PersistBackend {
     } finally {
       h.close();
     }
-    // Replace atomically when the platform supports move(); otherwise rewrite in place.
-    const movable = tmp as unknown as { move?: (d: Dir, n: string) => Promise<void> };
+    // Replace without ever leaving neither copy on disk. move() onto the existing name replaces it
+    // in one step where the platform allows (Chromium, so Android WebView). Where it refuses, the
+    // previous version is moved aside to `<name>.bak` first; loadAll() restores a `.bak` whose
+    // file is missing, so an interruption between the two moves keeps the previous version.
+    const movable = tmp as unknown as Movable;
     if (typeof movable.move === 'function') {
       try {
-        await dir.removeEntry(name);
-      } catch {
-        // catch-no-log-ok first write: no previous file to replace
+        await movable.move(dir, name);
+        return;
+      } catch (direct) {
+        const previous = await fileIfPresent(dir, name);
+        if (!previous) throw direct;
+        const aside = previous as unknown as Movable;
+        await aside.move!(dir, `${name}${BAK_SUFFIX}`);
+        try {
+          await movable.move(dir, name);
+        } catch (e) {
+          await aside.move!(dir, name);
+          throw e;
+        }
+        await removeIfPresent(dir, `${name}${BAK_SUFFIX}`);
+        return;
       }
-      await movable.move(dir, name);
-      return;
     }
     const target = await dir.getFileHandle(name, { create: true });
     const th = await (

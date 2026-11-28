@@ -54,6 +54,38 @@ export function setMemorySnapshotWriter(
   memorySnapshotWriter = writer;
 }
 
+/**
+ * Where a `VACUUM INTO` snapshot goes. The fs shim registers a sink that takes destinations it
+ * owns (the share-sheet exports folder) and returns true; any other destination becomes a file
+ * in the SQLite store, where the fs overlay and `DatabaseSync` both find it.
+ */
+let snapshotSink: ((path: string, bytes: Uint8Array) => boolean) | null = null;
+
+export function setSnapshotSink(sink: (path: string, bytes: Uint8Array) => boolean): void {
+  snapshotSink = sink;
+}
+
+/** `VACUUM INTO '<path>'` (the desktop backup statement): the unescaped path, else null. */
+export function vacuumIntoTarget(sql: string): string | null {
+  const head = /^\s*VACUUM\s+INTO\s+'/i.exec(sql);
+  if (!head) return null;
+  let path = '';
+  for (let i = head[0].length; i < sql.length; i += 1) {
+    if (sql[i] !== "'") {
+      path += sql[i];
+      continue;
+    }
+    if (sql[i + 1] === "'") {
+      path += "'";
+      i += 1;
+      continue;
+    }
+    // Closing quote: only an optional `;` and whitespace may follow.
+    return /^\s*;?\s*$/.test(sql.slice(i + 1)) ? path : null;
+  }
+  return null; // unterminated string literal
+}
+
 /** Serialize every dirty in-memory database now (app pause / before quit). */
 export async function flushMemoryDatabases(): Promise<void> {
   await Promise.all([...openMemoryDbs].map((d) => d.flushSnapshot()));
@@ -338,6 +370,14 @@ export class DatabaseSyncShim {
   }
 
   exec(sql: string): void {
+    // Running VACUUM INTO in WASM would write the snapshot into SQLite's own storage, past the
+    // fs shim that delivers exports; hand a database image to the snapshot sink instead.
+    const into = vacuumIntoTarget(sql);
+    if (into !== null) {
+      const bytes = this.serialize();
+      if (!snapshotSink?.(into, bytes)) importSqliteFile(into, bytes);
+      return;
+    }
     this.oo1().exec(sql);
     this.noteMaybeWrite(sql);
   }

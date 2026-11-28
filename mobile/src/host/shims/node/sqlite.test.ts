@@ -1,6 +1,8 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { routeNodeSqliteToShim } from '../../testing/routeNodeSqlite';
+import * as sqliteShim from './sqlite';
 import {
   DatabaseSyncShim,
   exportSqliteFile,
@@ -14,8 +16,9 @@ import {
   unlinkSqliteFile,
 } from './sqlite';
 
-// The desktop db-compat layer runs unmodified on top of the mobile node:sqlite shim.
-vi.mock('node:sqlite', async () => await import('./sqlite'));
+// The desktop db-compat layer runs unmodified on top of the mobile node:sqlite shim. It loads
+// SQLite with require(), which vi.mock does not reach, so the request is routed at the loader.
+let restoreSqlite: () => void = () => undefined;
 
 beforeAll(async () => {
   const sqlite3 = await (sqlite3InitModule as unknown as (o?: unknown) => Promise<unknown>)({
@@ -23,6 +26,10 @@ beforeAll(async () => {
     printErr: () => {},
   });
   setSqliteRuntime({ sqlite3, pool: null });
+  restoreSqlite = routeNodeSqliteToShim(sqliteShim);
+});
+afterAll(() => {
+  restoreSqlite();
 });
 
 describe('node:sqlite shim (memory backend)', () => {
@@ -103,6 +110,7 @@ describe('desktop db-compat on the mobile shim', () => {
   it('runs pragmas, transactions with rollback, and cached statements', async () => {
     const { NodeSqliteDB } = await import('@/main/db-compat');
     const db = new NodeSqliteDB(':memory:');
+    expect((db as unknown as { db: unknown }).db).toBeInstanceOf(DatabaseSyncShim);
     // WAL is not available in the WASM VFS; the pragma must not throw (rollback journal stays).
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');

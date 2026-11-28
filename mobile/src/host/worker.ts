@@ -40,6 +40,7 @@ import {
   flushFs,
   mountPersistence,
   type PersistBackend,
+  placeImportedFile,
   setExportSink,
   setMirrorHook,
   writeImportedFile,
@@ -193,12 +194,9 @@ async function boot(
   });
 
   // UI file pickers copy picked bytes into the host filesystem (dialog.showOpenDialog contract).
-  registerInvokeHandler('__mobile:importFile', (_event, name, bytes) => {
-    const safe = String(name).replace(/[\\/:*?"<>|]/g, '_') || 'file';
-    const path = `/imports/${crypto.randomUUID()}/${safe}`;
-    writeImportedFile(path, bytes as Uint8Array);
-    return path;
-  });
+  registerInvokeHandler('__mobile:importFile', (_event, name, bytes) =>
+    placeImportedFile(String(name), bytes as Uint8Array),
+  );
 
   // Custom schemes main serves (`mesh-tiles:`, `mesh-weather:`): the WebView cannot load them,
   // so the UI resolves image URLs through this handler (see bridge/customSchemes.ts).
@@ -233,6 +231,9 @@ async function boot(
 }
 
 self.onmessage = (ev: MessageEvent<UiToHostMessage>) => {
+  // A dedicated worker hears only the page that created it, and those messages carry an empty
+  // origin (or this worker's own). Refuse anything that names another origin.
+  if (ev.origin !== '' && ev.origin !== self.location.origin) return;
   const msg = ev.data;
   if (msg.t === 'boot') {
     boot(msg.config as HostBootConfig & { wasmUrl: string; sidecarAvailable: boolean }).catch(

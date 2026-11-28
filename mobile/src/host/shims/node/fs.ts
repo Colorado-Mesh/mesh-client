@@ -23,7 +23,14 @@ import { createFsFromVolume, Volume } from 'memfs';
 
 import { isOpfsDirectPath, opfsDirect } from '../../opfsDirect';
 import { EXPORTS_ROOT, isPersistedPath, isSqliteManagedPath, MOBILE_PATHS } from '../paths';
-import { exportSqliteFile, importSqliteFile, sqliteFileExists, unlinkSqliteFile } from './sqlite';
+import {
+  exportSqliteFile,
+  importSqliteFile,
+  listSqliteFiles,
+  setSnapshotSink,
+  sqliteFileExists,
+  unlinkSqliteFile,
+} from './sqlite';
 
 export interface PersistBackend {
   readonly name: string;
@@ -239,6 +246,46 @@ export function writeImportedFile(path: string, bytes: Uint8Array): void {
   mfs.mkdirSync(path.slice(0, path.lastIndexOf('/')) || '/', { recursive: true });
   mfs.writeFileSync(path, bytes);
 }
+
+const IMPORTS_ROOT = '/imports';
+const SQLITE_HEADER = 'SQLite format 3\0';
+
+function isSqliteImage(bytes: Uint8Array): boolean {
+  if (bytes.byteLength < SQLITE_HEADER.length) return false;
+  return Buffer.from(bytes.subarray(0, SQLITE_HEADER.length)).toString('latin1') === SQLITE_HEADER;
+}
+
+/**
+ * Store a user-picked file and return the path the desktop code should open. A SQLite database
+ * goes into the SQLite store (under a `.db` name), because `DatabaseSync` opens files only there
+ * (Import Database's read-only merge); the fs overlay serves the same path to stat and read. An
+ * earlier import's database is removed first: the store has a fixed number of file slots.
+ */
+export function placeImportedFile(name: string, bytes: Uint8Array): string {
+  const safe = name.replace(/[\\/:*?"<>|]/g, '_') || 'file';
+  const dir = `${IMPORTS_ROOT}/${crypto.randomUUID()}`;
+  if (!isSqliteImage(bytes)) {
+    const path = `${dir}/${safe}`;
+    writeImportedFile(path, bytes);
+    return path;
+  }
+  for (const old of listSqliteFiles()) {
+    if (old.startsWith(`${IMPORTS_ROOT}/`)) unlinkSqliteFile(old);
+  }
+  const path = `${dir}/${isSqliteManagedPath(safe) ? safe : `${safe}.db`}`;
+  importSqliteFile(path, bytes);
+  return path;
+}
+
+// `VACUUM INTO` a file in the exports folder (Export Database): write the image through the
+// volume, which delivers it to the share sheet like any other export.
+setSnapshotSink((path, bytes) => {
+  if (path !== EXPORTS_ROOT && !path.startsWith(`${EXPORTS_ROOT}/`)) return false;
+  mfs.mkdirSync(path.slice(0, path.lastIndexOf('/')) || '/', { recursive: true });
+  mfs.writeFileSync(path, bytes);
+  markDirty(path);
+  return true;
+});
 
 export function ensureBaseDirectories(): void {
   for (const p of [

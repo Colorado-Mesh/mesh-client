@@ -282,6 +282,19 @@ function underRoot(root, posixRel) {
 }
 
 /**
+ * The file's bytes, or null when it does not exist; any other read error propagates.
+ * @param {string} file
+ */
+function readIfPresent(file) {
+  try {
+    return readFileSync(file);
+  } catch (err) {
+    if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+/**
  * Write the mobile stage crate (see the file header). Computes every file first and throws before
  * writing anything when the desktop crate no longer matches; then writes only files whose bytes
  * changed and removes stale ones, so a second run with no upstream change touches nothing.
@@ -347,7 +360,8 @@ export function stageSidecarCrate(roots = {}) {
   const written = [];
   for (const [rel, contents] of desired) {
     const file = underRoot(stageRoot, rel);
-    if (existsSync(file) && readFileSync(file).equals(contents)) continue;
+    // Read rather than test-then-read: no window between an existence check and the use.
+    if (readIfPresent(file)?.equals(contents)) continue;
     mkdirSync(path.dirname(file), { recursive: true });
     writeFileSync(file, contents);
     written.push(rel);
