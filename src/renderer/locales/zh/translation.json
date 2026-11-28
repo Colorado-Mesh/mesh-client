@@ -9369,7 +9369,7 @@
     "addAndRun": "添加并运行",
     "turnstileBody": "{{host}} 要求先进行浏览器检查，然后再发放代码。在浏览器中打开它，在那里获取代码，然后将其发送到刚刚打开的频道聊天中。",
     "openHost": "打开{{host}}",
-    "confirmAddBody": "此服务器侦听{{name}}，该频道不在您的无线电上。要将其添加到频道插槽{{slot}}吗？",
+    "confirmAddBody": "此服务器侦听{{name}}，该频道不在您的无线电上。要将其添加到频道插槽⁠{{slot}}吗？",
     "pasteKeyBody": "此服务器侦听{{name}}，这是一个有自己密钥的频道。粘贴 32 个字符的密钥以添加。",
     "keyLabel": "频道密钥",
     "keyBadFormat": "输入 32 个字符的密钥，使用 0-9 和 a-f。",

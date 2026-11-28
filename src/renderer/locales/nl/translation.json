@@ -9369,7 +9369,7 @@
     "addAndRun": "Toevoegen en uitvoeren",
     "turnstileBody": "{{host}} vraagt om een browsercontrole voordat het codes uitgeeft. Open het in je browser, ontvang daar een code en stuur deze in het zojuist geopende chatkanaal.",
     "openHost": "{{host}} openen",
-    "confirmAddBody": "Deze server luistert op {{name}}, wat niet op je radio staat. Deze toevoegen aan kanaalslot {{slot}}?",
+    "confirmAddBody": "Deze server luistert op {{name}}, wat niet op je radio staat. Deze toevoegen aan kanaalslot {{slot}}?",
     "pasteKeyBody": "Deze server luistert op {{name}}, een kanaal met een eigen sleutel. Plak de sleutel van 32 tekens om deze toe te voegen.",
     "keyLabel": "Kanaalsleutel",
     "keyBadFormat": "Voer de sleutel van 32 tekens in, met behulp van 0-9 en a-f.",

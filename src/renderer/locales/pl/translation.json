@@ -9517,7 +9517,7 @@
     "addAndRun": "Dodaj i uruchom",
     "turnstileBody": "{{host}} prosi o sprawdzenie przeglądarki, zanim wyda kody. Otwórz go w przeglądarce, uzyskaj tam kod i wyślij go na właśnie otwartym kanale czatu.",
     "openHost": "Otwórz {{host}}",
-    "confirmAddBody": "Ten serwer nasłuchuje na {{name}}, który nie znajduje się w Twoim radiu. Dodać go do gniazda kanału {{slot}}?",
+    "confirmAddBody": "Ten serwer nasłuchuje na {{name}}, który nie znajduje się w Twoim radiu. Dodać go do gniazda kanału {{slot}}?",
     "pasteKeyBody": "Ten serwer nasłuchuje na {{name}}, kanale z własnym kluczem. Wklej 32-znakowy klucz, aby go dodać.",
     "keyLabel": "Przycisk [ CHANNEL ] (KANAŁ)",
     "keyBadFormat": "Wprowadź klucz składający się z 32 znaków, używając cyfr 0-9 i liter a-f.",

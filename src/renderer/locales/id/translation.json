@@ -9369,7 +9369,7 @@
     "addAndRun": "Tambahkan dan jalankan",
     "turnstileBody": "{{host}} meminta pemeriksaan browser sebelum memberikan kode. Buka di peramban Anda, dapatkan kode di sana, dan kirimkan di Obrolan saluran yang baru saja dibuka.",
     "openHost": "Buka {{host}}",
-    "confirmAddBody": "Server ini mendengarkan di {{name}}, yang tidak ada di radio Anda. Tambahkan ke slot saluran {{slot}}?",
+    "confirmAddBody": "Server ini mendengarkan di {{name}}, yang tidak ada di radio Anda. Tambahkan ke slot saluran {{slot}}?",
     "pasteKeyBody": "Server ini mendengarkan di {{name}}, saluran dengan kuncinya sendiri. Tempelkan kunci 32 karakter untuk menambahkannya.",
     "keyLabel": "Kunci saluran",
     "keyBadFormat": "Masukkan kunci 32 karakter, menggunakan 0-9 dan a-f.",

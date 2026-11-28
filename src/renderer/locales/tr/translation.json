@@ -9369,7 +9369,7 @@
     "addAndRun": "Ekle ve çalıştır",
     "turnstileBody": "{{host}}, kodları vermeden önce bir tarayıcı kontrolü ister. Tarayıcınızda açın, oradan bir kod alın ve az önce açılan Sohbet kanalına gönderin.",
     "openHost": "{{host}} öğesini açın",
-    "confirmAddBody": "Bu sunucu, telsizinizde olmayan {{name}} kanalını dinliyor. {{slot}} kanal yuvasına eklensin mi?",
+    "confirmAddBody": "Bu sunucu, telsizinizde olmayan {{name}} kanalını dinliyor. {{slot}} kanal yuvasına eklensin mi?",
     "pasteKeyBody": "Bu sunucu, kendi anahtarına sahip bir kanal olan {{name}} üzerinden dinleme yapar. Eklemek için 32 karakterlik anahtarı yapıştırın.",
     "keyLabel": "Kanal anahtarı",
     "keyBadFormat": "0-9 ve a-f kullanarak 32 karakterlik anahtarı girin.",

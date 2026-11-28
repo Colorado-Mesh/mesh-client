@@ -6319,7 +6319,7 @@
     "addAndRun": "Add and run",
     "turnstileBody": "{{host}} asks for a browser check before it gives out codes. Open it in your browser, get a code there, and send it in the channel Chat just opened.",
     "openHost": "Open {{host}}",
-    "confirmAddBody": "This server listens on {{name}}, which is not on your radio. Add it to channel slot {{slot}}?",
+    "confirmAddBody": "This server listens on {{name}}, which is not on your radio. Add it to channel slot {{slot}}?",
     "pasteKeyBody": "This server listens on {{name}}, a channel with its own key. Paste the 32-character key to add it.",
     "keyLabel": "Channel key",
     "keyBadFormat": "Enter the 32-character key, using 0-9 and a-f.",

@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { ReachCheckDialogState } from '../hooks/useReachCheck';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { SUPPORTED_LANGUAGES } from '../locales/languages';
 import { ReachCheckDialog } from './ReachCheckDialog';
 
 function renderDialog(state: ReachCheckDialogState) {
@@ -68,6 +72,28 @@ describe('ReachCheckDialog', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Add and run' }));
     expect(onAnswer).toHaveBeenLastCalledWith({ kind: 'confirm' });
+  });
+
+  it('keeps the slot number joined to its word in every locale', () => {
+    // At 390 px the German body broke between "Kanal-Slot" and its "5". Each locale joins
+    // {{slot}} to the word beside it with a no-break space, or with a word joiner where the
+    // script puts no space there (ja, zh), so a line never starts or ends with the bare number.
+    const joiners = new Set([String.fromCharCode(0xa0), String.fromCharCode(0x2060)]);
+    const placeholder = '{{slot}}';
+    for (const { code } of SUPPORTED_LANGUAGES) {
+      const file = path.resolve(import.meta.dirname, '../locales', code, 'translation.json');
+      const strings = JSON.parse(readFileSync(file, 'utf8')) as {
+        reachCheck: { confirmAddBody: string };
+      };
+      const body = strings.reachCheck.confirmAddBody;
+      const at = body.indexOf(placeholder);
+      expect(at, `${code} has no ${placeholder}`).toBeGreaterThan(0);
+      const before = body.charAt(at - 1);
+      const after = body.charAt(at + placeholder.length);
+      expect(joiners.has(before) || joiners.has(after), `${code}: ${JSON.stringify(body)}`).toBe(
+        true,
+      );
+    }
   });
 
   it('asks for a private channel key and shows a hash mismatch', () => {

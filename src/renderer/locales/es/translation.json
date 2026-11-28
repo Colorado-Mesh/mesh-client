@@ -9369,7 +9369,7 @@
     "addAndRun": "Añadir y ejecutar",
     "turnstileBody": "{{host}} solicita una comprobación del navegador antes de proporcionar códigos. Ábrelo en tu navegador, obtén un código allí y envíalo en el canal de chat que acabas de abrir.",
     "openHost": "Abrir {{host}}",
-    "confirmAddBody": "Este servidor escucha en {{name}}, que no está en su radio. ¿Desea añadirlo a la ranura de canal {{slot}}?",
+    "confirmAddBody": "Este servidor escucha en {{name}}, que no está en su radio. ¿Desea añadirlo a la ranura de canal {{slot}}?",
     "pasteKeyBody": "Este servidor escucha en {{name}}, un canal con su propia clave. Pegue la clave de 32 caracteres para añadirla.",
     "keyLabel": "Canal \"-\" clave",
     "keyBadFormat": "Introduce la clave de 32 caracteres, utilizando los números del 0 al 9 y las letras de la a a la f.",

@@ -9369,7 +9369,7 @@
     "addAndRun": "Hinzufügen und ausführen",
     "turnstileBody": "{{host}} fordert eine Browserprüfung an, bevor Codes ausgegeben werden. Öffnen Sie die Seite in Ihrem Browser, holen Sie sich dort einen Code und senden Sie ihn im Kanal, den der Chat gerade geöffnet hat.",
     "openHost": "{{host}} öffnen",
-    "confirmAddBody": "Dieser Server hört auf {{name}}, was sich nicht auf Ihrem Funkgerät befindet. Zum Kanal-Slot {{slot}} hinzufügen?",
+    "confirmAddBody": "Dieser Server hört auf {{name}}, was sich nicht auf Ihrem Funkgerät befindet. Zum Kanal-Slot {{slot}} hinzufügen?",
     "pasteKeyBody": "Dieser Server hört auf {{name}}, einen Kanal mit eigenem Schlüssel. Fügen Sie den 32-stelligen Schlüssel ein, um ihn hinzuzufügen.",
     "keyLabel": "Kanalschlüssel",
     "keyBadFormat": "Geben Sie den 32-stelligen Schlüssel ein, wobei Sie die Zeichen 0-9 und a-f verwenden.",

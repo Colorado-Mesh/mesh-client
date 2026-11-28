@@ -9456,7 +9456,7 @@
     "addAndRun": "Přidat a spustit",
     "turnstileBody": "{{host}} před vydáním kódů požaduje kontrolu prohlížeče. Otevřete jej v prohlížeči, získejte kód a pošlete jej do právě otevřeného chatu kanálu.",
     "openHost": "Otevřít {{host}}",
-    "confirmAddBody": "Tento server naslouchá na {{name}}, což není na vašem rádiu. Přidat jej do slotu kanálu {{slot}}?",
+    "confirmAddBody": "Tento server naslouchá na {{name}}, což není na vašem rádiu. Přidat jej do slotu kanálu {{slot}}?",
     "pasteKeyBody": "Tento server naslouchá na {{name}}, kanálu s vlastním klíčem. Pro přidání vložte 32znakový klíč.",
     "keyLabel": "Klíč kanálu",
     "keyBadFormat": "Zadejte 32znakový klíč pomocí znaků 0-9 a a-f.",
