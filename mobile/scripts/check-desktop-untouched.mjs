@@ -67,6 +67,10 @@ const dropMobileLines = (text) =>
 export const ALLOWED_DESKTOP_EDITS = {
   // Root fallow leaves mobile/** to the package's own config.
   '.fallowrc.jsonc': dropMobileLines,
+  // Root ESLint leaves mobile/** to the package's own config. The CI lint shards (and the
+  // pre-push check) pass `--config eslint.ci.config.mjs`, which would otherwise apply the
+  // desktop's type-aware rules to mobile files no desktop tsconfig covers.
+  'eslint.config.mjs': dropMobileLines,
   // The wasm scan for translation binaries skips the mobile build output.
   'src/main/translation/noBundledTranslations.test.ts': (text) =>
     dropMobileLines(text.replace(", 'mobile/**']", ']')),

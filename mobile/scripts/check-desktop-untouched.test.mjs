@@ -44,6 +44,18 @@ describe('desktop-untouched guard', () => {
     ).toHaveLength(1);
   });
 
+  it('root ESLint config may only leave mobile/** to the package', () => {
+    const base = "    ignores: [\n      'test-results/**',\n    ],\n";
+    const ok =
+      "    ignores: [\n      'test-results/**',\n      'mobile/**', // own config\n    ],\n";
+    expect(isAllowedPath('eslint.config.mjs')).toBe(true);
+    expect(desktopEditProblems('eslint.config.mjs', base, ok)).toEqual([]);
+    // Any other rule change in the same edit is refused.
+    expect(
+      desktopEditProblems('eslint.config.mjs', base, `${ok}    rules: { 'no-console': 'off' },\n`),
+    ).toHaveLength(1);
+  });
+
   it('the translation wasm scan may only exclude mobile/**', () => {
     const file = 'src/main/translation/noBundledTranslations.test.ts';
     const base = "  { cwd: root, exclude: ['node_modules/**', '.git/**'] },\n";

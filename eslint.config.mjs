@@ -35,6 +35,7 @@ export default tseslint.config(
       'coverage/**',
       'playwright-report/**',
       'test-results/**',
+      'mobile/**', // the mobile app package lints with its own config (pnpm -C mobile run lint)
     ],
   },
 
