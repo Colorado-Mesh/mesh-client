@@ -41,7 +41,12 @@ vi.mock('../../meshtastic/meshtasticTransportLossDetection', () => ({
 }));
 
 import { connectGattWithScanBusyRetry } from '../../bleReconnectHelper';
-import { createMeshComConnection, transportParamsToMeshCom } from './MeshComTransport';
+import {
+  createMeshComConnection,
+  isMeshcomSerialNeedsReselectError,
+  MESHCOM_SERIAL_NEEDS_RESELECT,
+  transportParamsToMeshCom,
+} from './MeshComTransport';
 
 const connectGattWithScanBusyRetryMock = vi.mocked(connectGattWithScanBusyRetry);
 const openMock = vi.mocked(openSerialPortWithTimeout);
@@ -86,6 +91,17 @@ describe('MeshComTransport', () => {
     expect(transportParamsToMeshCom({ type: 'serial', portSignature: 'port-1' })).toEqual({
       transport: 'serial',
       portSignature: 'port-1',
+    });
+    expect(
+      transportParamsToMeshCom({
+        type: 'serial',
+        portSignature: 'port-1',
+        allowPortPicker: false,
+      }),
+    ).toEqual({
+      transport: 'serial',
+      portSignature: 'port-1',
+      allowPortPicker: false,
     });
     expect(transportParamsToMeshCom({ type: 'ble', peripheralId: 'aa:bb' })).toEqual({
       transport: 'ble',
@@ -305,6 +321,53 @@ describe('MeshComTransport', () => {
     expect(openMock).toHaveBeenCalledWith(port, 115200, 'MeshCom serial open');
     expect(conn.getSerialPort?.()).toBe(port);
     await conn.close();
+    warn.mockRestore();
+  });
+
+  it('serial auto path with no matching port does not call requestPort', async () => {
+    openMock.mockClear();
+
+    const other = mockSerialPort({ portId: 'other-device' });
+    const requestPort = vi.fn();
+    const getPorts = vi.fn().mockResolvedValue([other]);
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: { requestPort, getPorts },
+    });
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(
+      createMeshComConnection({
+        transport: 'serial',
+        portSignature: 'stale-flasher-port',
+        allowPortPicker: false,
+      }),
+    ).rejects.toThrow(MESHCOM_SERIAL_NEEDS_RESELECT);
+    expect(requestPort).not.toHaveBeenCalled();
+    expect(openMock).not.toHaveBeenCalled();
+    expect(isMeshcomSerialNeedsReselectError(new Error(MESHCOM_SERIAL_NEEDS_RESELECT))).toBe(true);
+    warn.mockRestore();
+  });
+
+  it('serial auto path with empty granted list does not call requestPort', async () => {
+    openMock.mockClear();
+
+    const requestPort = vi.fn();
+    const getPorts = vi.fn().mockResolvedValue([]);
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: { requestPort, getPorts },
+    });
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(
+      createMeshComConnection({
+        transport: 'serial',
+        portSignature: 'saved-but-ungranted',
+        allowPortPicker: false,
+      }),
+    ).rejects.toThrow(MESHCOM_SERIAL_NEEDS_RESELECT);
+    expect(requestPort).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 

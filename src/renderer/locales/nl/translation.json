@@ -1762,7 +1762,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Land]/[Staat], b.v. msh/CO/US",
-      "meshcoreLetsmesh": "meshcore/{IATA}, b.v. meshcore/DEN",
+      "meshcoreLetsmesh": "Kies de luchthaven-IATA het dichtst bij jouw gebied (meshcore/{IATA}). Gebruik test alleen om de analyzer te testen.",
       "meshcoreDefault": "MESHCORE/[Land]/[Staat], b.v. MESHCORE/US/CO",
       "meshcom": "Broker-hoofdonderwerp voor je MeshCom-gateway, bijv. meshcom"
     },
@@ -1860,13 +1860,12 @@
       "syncFailed": "Synchronisatie van RMAP-detectie mislukt.",
       "publishingOf": "RMAP v4: publicatie van {{current}} van {{total}}"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT is voor gebruikers van Colorado-zone mesh. De preset publiceert onder meshcore/DEN (Denver IATA). Als je niet in Colorado bent, gebruik dan LetsMesh of MeshMapper. Doorgaan?",
-    "coloradoServerNote": "Colorado Mesh is voor meshgebruikers in de regio Colorado. Onderwerpvoorvoegsel gebruikt de Denver IATA (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT is voor mesh-gebruikers in de regio Colorado. Kies de IATA van je lokale luchthaven als topicprefix. Als je niet in Colorado bent, gebruik dan LetsMesh of MeshMapper. Doorgaan?",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT is voor Colorado-area mesh-gebruikers en publiceert onder meshcore/DEN. Als je buiten Colorado bent, schakel dan over naar LetsMesh (global public broker).",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT is voor mesh-gebruikers in de regio Colorado. Buiten Colorado schakel je over naar LetsMesh (wereldwijde openbare broker).",
     "coloradoRegionGateStay": "Ik ben in Colorado",
     "coloradoRegionGateSwitch": "Overschakelen naar LetsMesh",
-    "topicPrefixInvalidIata": "Onderwerpvoorvoegsel moet meshcore/test of meshcore/{IATA} zijn (3 letters), bijv. meshcore/DEN.",
+    "topicPrefixInvalidIata": "Kies vóór het verbinden een luchthaven-IATA uit de lijst (of de testoptie).",
     "maxRetriesHelpConnected": {
       "meshcore": "Probeer het opnieuw voordat je het opgeeft (1–{{max}}). Opgeslagen met instellingen; druk opnieuw op Verbinden na het wijzigen, zodat het hoofdproces het oppikt.",
       "meshtastic": "Beide protocollen staan 1–{{max}} toe. Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de lopende sessie de nieuwe waarde gebruikt.",
@@ -2009,7 +2008,21 @@
       "done": "Klaar",
       "cancelAria": "Annuleren {{name}}",
       "duplicateWarning": "Een andere ingeschakelde verbinding richt zich op dezelfde broker (server en poort), dus pakketten zouden twee keer worden gepubliceerd."
-    }
+    },
+    "iataPicklist": {
+      "label": "Regio IATA",
+      "placeholder": "Selecteer je regio IATA…",
+      "aria": "MeshCore MQTT gebied IATA",
+      "searchAria": "Luchthaven-IATA-codes zoeken",
+      "searchPlaceholder": "Zoek op code, plaats of naam...",
+      "listAria": "IATA-luchthavencodes",
+      "empty": "Geen luchthavens komen overeen met die zoekopdracht.",
+      "loadFailed": "Kan de lijst met luchthavens niet laden.",
+      "testOption": "test — alleen voor analyse/testen",
+      "nearestBadge": "Dichtbijzijnd",
+      "nearestOption": "{{label}} (dichtstbijzijnd)"
+    },
+    "coloradoServerNote": "Colorado Mesh is voor mesh-gebruikers in de regio Colorado. Kies hieronder de IATA-code van je lokale luchthaven voor het onderwerpvoorvoegsel MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -2578,7 +2591,18 @@
     "evidence": "Bekijk bewijsmateriaal voor {{category}}",
     "evidenceShown": "Toont {{shown}} van {{total}} overeenkomende inzendingen, nieuwste eerst.",
     "ignoredOtherProtocol": "{{count}} regels van andere radioprotocollen zijn uitgesloten.",
-    "protocolNote": "Gebruikt het actieve radioprotocol. Lijnen die eigendom zijn van een andere radio worden uitgesloten; gedeelde app-brede lijnen blijven bestaan."
+    "protocolNote": "Gebruikt het actieve radioprotocol. Lijnen die eigendom zijn van een andere radio worden uitgesloten; gedeelde app-brede lijnen blijven bestaan.",
+    "aiAnalyze": "Analyseren met AI",
+    "aiSetup": "AI instellen voor loganalyse",
+    "aiFixEngine": "AI-engine repareren",
+    "aiNeedsNetwork": "Analyseren met AI vereist een internetverbinding om documenten voor probleemoplossing te laden. De ingebouwde analyse werkt nog steeds offline.",
+    "aiPrivacyHint": "Verstuurt verpakte bevindingen naar uw AI-engine en haalt openbare documenten voor probleemoplossing op. Bekijk voorbeelden voordat u ze deelt.",
+    "aiConversationLabel": "{{protocol}} loganalyse",
+    "aiResultHeading": "AI-triage",
+    "aiWorking": "Documenten ophalen en analyseren…",
+    "aiVerify": "Verifieer de AI-triage aan de hand van de bevindingen en documenten. Bovenstaande heuristische aanbevelingen blijven gezaghebbend wanneer ze offline zijn.",
+    "troubleshootingDocs": "Documenten voor probleemoplossing ↗",
+    "aiNeedsFindings": "Analyseren met AI vereist ten minste één op regels gebaseerde bevinding. De ingebouwde analyse heeft al gemeld dat er geen problemen zijn."
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8525,9 @@
       "invalidResponse": "De motor heeft een onvolledig of niet-ondersteund antwoord geretourneerd",
       "cancelled": "Samenvatting geannuleerd.",
       "error": "Kon het niet samenvatten. Controleer de AI-instellingen en probeer het opnieuw.",
-      "repetitiveOutput": "Het model begon zich te herhalen. Probeer een groter model of een korter bereik."
+      "repetitiveOutput": "Het model begon zich te herhalen. Probeer een groter model of een korter bereik.",
+      "docsUnavailable": "Kan documenten voor probleemoplossing niet laden. Controleer uw internetverbinding en probeer Analyseren met AI opnieuw.",
+      "noFindings": "Geen op regels gebaseerde bevindingen om te analyseren. De ingebouwde analyse heeft al geen problemen gemeld."
     },
     "loadingModel": "Model laden op dit apparaat...",
     "readingMessages": "Berichten lezen op dit apparaat. CPU-verwerking kan een paar minuten duren...",
@@ -9151,7 +9177,7 @@
     "connectionHint": "MeshCom gebruikt amateurradioband LoRa via Landinstelling (--setctry). Zorg ervoor dat het landprofiel van je node overeenkomt met je licentie.",
     "countrySettingLabel": "Landinstelling (--setctry)",
     "extUdpHint": "EXTUDP heeft de node nodig die is geconfigureerd met --extudp aan en --extudpip die naar deze computer wijst (UDP 1799).",
-    "kissTcpHint": "KISS/TCP gebruikt MeshCom-poort 8001 — niet Reticulum KISS/AX.25.",
+    "kissTcpHint": "KISS/TCP gebruikt MeshCom-poort 8001 — niet Reticulum KISS/AX.25. Optioneel --passwd als --kiss auth aan staat. Alleen vertrouwd LAN/VPN (geen TLS).",
     "channelAll": "ALLE",
     "channelGroup": "Groep {{id}}",
     "callsignFieldLabel": "Roepnaam (--setcall)",
@@ -9296,7 +9322,7 @@
     "autoSettime": "Stel de knooppunttijd automatisch in bij verbinding",
     "autoSettimeHint": "Wanneer u via seriële verbinding of BLE bent verbonden, verzendt u --settime met de UTC-klok van deze computer (bijv. {{example}}).",
     "settimeNow": "Stel nu de tijd in (UTC)",
-    "requiresSerialBle": "Maak verbinding via seriële poort of BLE om apparaatopdrachten te verzenden. EXTUDP en KISS/TCP ondersteunen alleen chat.",
+    "requiresSerialBle": "Verbind via Serial, BLE of NET Console om apparaatopdrachten te sturen. EXTUDP en KISS/TCP dragen alleen chat.",
     "filter": "Opdrachten filteren",
     "filterPlaceholder": "Zoeken --settime, gateway, buren…",
     "serialOnly": "USB seriële console (verouderd)",

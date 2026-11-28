@@ -375,6 +375,8 @@ export function aiReady(status: AiProviderStatus | null): boolean {
 export function cancelSummary(key: string): void {
   const entry = useAiSummaryStore.getState().summaries[key];
   if (!entry) return;
+  // Leave completed summaries unchanged (modal close / unmount must not wipe results).
+  if (!entry.streaming) return;
   controllers.get(key)?.abort();
   for (const turn of entry.followUps ?? []) {
     if (turn.streaming) cancelFollowUp(key, turn.id);
@@ -439,6 +441,8 @@ export function mapAiError(
         'httpError',
         'invalidResponse',
         'cancelled',
+        'docsUnavailable',
+        'noFindings',
       ].includes(message)
     )
       return message as AiSummaryErrorReason;
@@ -571,7 +575,10 @@ export async function runSummary(
     patch(key, id, { phase: undefined });
     signal.removeEventListener('abort', onAbort);
     signal.removeEventListener('abort', rejectAbort);
-    const multiPass = status.engine && shouldUseMultiPass(request.messages, status.engine, request);
+    const multiPass =
+      request.surface !== 'log' &&
+      status.engine &&
+      shouldUseMultiPass(request.messages, status.engine, request);
     signal = AbortSignal.any([
       controller.signal,
       AbortSignal.timeout(aiSummaryTimeoutMs(status.engine, status.timeoutSeconds)),

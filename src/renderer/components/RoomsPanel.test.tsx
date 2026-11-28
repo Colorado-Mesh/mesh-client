@@ -2501,6 +2501,22 @@ describe('RoomsPanel layout', () => {
     expect(screen.getByRole('complementary', { name: 'roomsPanel.title' })).toBeInTheDocument();
   });
 
+  it('does not clear search on Escape while the rooms tab is inactive', async () => {
+    const room = makeRoom(0x1042, 'Kept Alive');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, isActive: false });
+    await userEvent.click(screen.getByRole('button', { name: 'chatPanel.searchMessages' }));
+    const search = screen.getByRole('textbox', { name: 'chatPanel.searchMessagesPlaceholder' });
+    await userEvent.type(search, 'hello');
+    await userEvent.keyboard('{Escape}');
+    expect(search).toHaveValue('hello');
+  });
+
   it('opens room details as a sheet below 1280px and closes it with Escape', async () => {
     stubMatchMedia(['(max-width: 1279px)']);
     const room = makeRoom(0x1043, 'Sheet Room');

@@ -187,6 +187,17 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          // Sibling Catch-up / log prompt prepare chunk (esbuild-main-build entry).
+          const summarizePreparePad = 'x'.repeat(600);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ai/summarizePromptPrepare.ts'),
+            [
+              'export function prepareSummarizePrompt() {',
+              `  return '${summarizePreparePad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
           const identityHydrationPad = 'x'.repeat(600);
           fs.writeFileSync(
             path.join(fixture, 'src/main/identityHydrationSnapshot.ts'),

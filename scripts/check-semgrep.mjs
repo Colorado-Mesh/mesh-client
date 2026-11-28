@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Semgrep gate (pre-commit / release / CI).
+ * Semgrep gate (local pre-commit / local release only — not GitHub Actions).
  *
- * Full scan (release / CI / manual):
+ * Full scan (local release / manual):
  *   pnpm run check:semgrep
  *     -> semgrep scan --config p/typescript --config p/javascript --config p/nodejs --config p/security-audit --config .semgrep.yml --error --disable-version-check --metrics=off
  *
@@ -116,7 +116,7 @@ function main() {
     }
     process.exit(0);
   } else {
-    // Full repository scan (no targets) — used by CI policy-scanners and release.sh.
+    // Full repository scan (no targets) — local release only, not GitHub Actions.
     const result = spawnSync(bin, args, { cwd: ROOT, encoding: 'utf8', stdio: 'inherit' });
 
     if (result.error) {

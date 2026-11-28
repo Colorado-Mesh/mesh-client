@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   isMqttPacketTooLargeError,
+  isPublishProxyDataWithinLimit,
   MQTT_MAX_PACKET_BYTES,
   MQTT_PACKET_TOO_LARGE_ERROR_CODE,
+  MQTT_PUBLISH_PROXY_MAX_BYTES,
   MQTT_WEBSOCKET_PACKET_TOO_LARGE_ERROR_CODE,
   mqttPayloadByteLength,
 } from './mqtt-packet-limits';
@@ -21,6 +23,20 @@ function encodeRemainingLength(value: number): Buffer {
   } while (remaining > 0);
   return Buffer.from(bytes);
 }
+
+describe('mqtt publish proxy payload limit', () => {
+  it('rejects a numeric length without allocating', () => {
+    expect(isPublishProxyDataWithinLimit(1_500_000_000)).toBe(false);
+    expect(isPublishProxyDataWithinLimit({ byteLength: 1 })).toBe(false);
+  });
+
+  it('uses the view byteLength', () => {
+    expect(isPublishProxyDataWithinLimit(new Uint8Array(4))).toBe(true);
+    expect(isPublishProxyDataWithinLimit(new Uint8Array(MQTT_PUBLISH_PROXY_MAX_BYTES + 1))).toBe(
+      false,
+    );
+  });
+});
 
 describe('mqtt-packet inbound size limit', () => {
   it.each([MQTT_PACKET_TOO_LARGE_ERROR_CODE, MQTT_WEBSOCKET_PACKET_TOO_LARGE_ERROR_CODE])(

@@ -6,6 +6,11 @@ import { describe, expect, it } from 'vitest';
 
 import { docsSitePageToRepoPath } from './docLinks';
 import {
+  DOCS_MARKDOWN_RAW_BASE,
+  docsMarkdownRawUrl,
+  troubleshootingMarkdownRawUrl,
+} from './docsMarkdownRaw';
+import {
   CHAT_DOCS_URL,
   DIAGNOSTICS_DOCS_URL,
   DOCS_SITE_URL,
@@ -62,5 +67,19 @@ describe('troubleshootingDocsUrl', () => {
     const page = TROUBLESHOOTING_PAGE_BY_PROTOCOL[protocol];
     expect(troubleshootingDocsUrl(protocol)).toBe(`${DOCS_SITE_URL}${page}/`);
     expect(existsSync(resolveUnderRoot(repoRoot, docsSitePageToRepoPath(page)))).toBe(true);
+  });
+});
+
+describe('docs markdown raw URLs', () => {
+  it.each(REGISTERED_MESH_PROTOCOLS)('%s raw markdown maps to the same page file', (protocol) => {
+    const page = TROUBLESHOOTING_PAGE_BY_PROTOCOL[protocol];
+    expect(troubleshootingMarkdownRawUrl(protocol)).toBe(`${DOCS_MARKDOWN_RAW_BASE}/${page}.md`);
+    expect(docsMarkdownRawUrl(page)).toBe(troubleshootingMarkdownRawUrl(protocol));
+    expect(existsSync(resolveUnderRoot(repoRoot, docsSitePageToRepoPath(page)))).toBe(true);
+  });
+
+  it('rejects unsafe page ids', () => {
+    expect(() => docsMarkdownRawUrl('../secrets')).toThrow('Invalid docs page id');
+    expect(() => docsMarkdownRawUrl('a/b')).toThrow('Invalid docs page id');
   });
 });

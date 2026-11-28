@@ -1763,7 +1763,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[País]/[Estado], p.e. msh/CO/EE.UU.",
-      "meshcoreLetsmesh": "meshcore/{IATA}, p. núcleo de malla/DEN",
+      "meshcoreLetsmesh": "Elija el IATA de aeropuerto más cercano a su zona (meshcore/{IATA}). Use test solo para probar el analizador.",
       "meshcoreDefault": "MESHCORE/[País]/[Estado], p. MESHCORE/EE.UU./CO",
       "meshcom": "Tema raíz del bróker para su pasarela MeshCom, por ejemplo, meshcom"
     },
@@ -1861,13 +1861,12 @@
       "syncFailed": "Error de sincronización de descubrimiento de RMAP.",
       "publishingOf": "RMAP v4: publicación {{current}} de {{total}}"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT es para usuarios de malla del área de Colorado. El preset se publica en meshcore/DEN (Denver IATA). Si no estás en Colorado, usa LetsMesh o MeshMapper en su lugar. ¿Continuar?",
-    "coloradoServerNote": "Colorado Mesh es para usuarios de malla del área de Colorado. El prefijo del tema utiliza la IATA de Denver (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT es para usuarios de mesh del área de Colorado. Elija el IATA del aeropuerto local como prefijo del tema. Si no está en Colorado, use LetsMesh o MeshMapper. ¿Continuar?",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT es para usuarios de malla del área de Colorado y se publica bajo meshcore/DEN. Si se encuentra fuera de Colorado, cambie a LetsMesh (bróker público global).",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT es para usuarios de mesh del área de Colorado. Si está fuera de Colorado, cambie a LetsMesh (broker público global).",
     "coloradoRegionGateStay": "Estoy en Colorado",
     "coloradoRegionGateSwitch": "Cambiar a LetsMesh",
-    "topicPrefixInvalidIata": "El prefijo del tema debe ser meshcore/test o meshcore/{IATA} (3 letras), por ejemplo, meshcore/DEN.",
+    "topicPrefixInvalidIata": "Elija un IATA de aeropuerto de la lista (o la opción de prueba) antes de conectar.",
     "maxRetriesHelpConnected": {
       "meshcore": "Vuelve a conectar los intentos antes de darte por vencido (1–{{max}}). Guardado con la configuración; pulse Conectar de nuevo después de cambiar para que el proceso principal lo recoja.",
       "meshtastic": "Ambos protocolos permiten 1–{{max}}. Guardado con la configuración; desconéctese y conéctese de nuevo para que la sesión en ejecución use el nuevo valor.",
@@ -2009,7 +2008,21 @@
       "done": "Terminado",
       "cancelAria": "Cancelar {{name}}",
       "duplicateWarning": "Otra conexión habilitada se dirige al mismo bróker (servidor y puerto), por lo que los paquetes se publicarían dos veces."
-    }
+    },
+    "iataPicklist": {
+      "label": "Zona IATA",
+      "placeholder": "Seleccione su área",
+      "aria": "MeshCore MQTT zona IATA",
+      "searchAria": "Buscar códigos IATA de aeropuertos",
+      "searchPlaceholder": "Buscar código, ciudad o nombre…",
+      "listAria": "Códigos IATA de los aeropuertos",
+      "empty": "No hay aeropuertos que coincidan con esa búsqueda.",
+      "loadFailed": "No se ha podido cargar la lista de aeropuertos.",
+      "testOption": "prueba — solo analizador/pruebas",
+      "nearestBadge": "Más próximo",
+      "nearestOption": "{{label}} (el más cercano)"
+    },
+    "coloradoServerNote": "Colorado Mesh es para los usuarios de la red mesh de la zona de Colorado. Elige a continuación el código IATA de tu aeropuerto local para el prefijo del tema MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -2578,7 +2591,18 @@
     "evidence": "Ver pruebas de {{category}}",
     "evidenceShown": "Mostrando {{shown}} de {{total}} entradas coincidentes, la más reciente primero.",
     "ignoredOtherProtocol": "{{count}} líneas de otros protocolos de radio se excluyeron.",
-    "protocolNote": "Utiliza el protocolo de radio activo. Se excluyen las líneas que pertenecen a otra radio; se mantienen las líneas compartidas en toda la aplicación."
+    "protocolNote": "Utiliza el protocolo de radio activo. Se excluyen las líneas que pertenecen a otra radio; se mantienen las líneas compartidas en toda la aplicación.",
+    "aiAnalyze": "Analizar con IA",
+    "aiSetup": "Configurar la IA para el análisis de registros",
+    "aiFixEngine": "Reparar el motor de IA",
+    "aiNeedsNetwork": "La función «Analizar con IA» necesita una conexión a internet para cargar los documentos de resolución de problemas. El análisis integrado sigue funcionando sin conexión.",
+    "aiPrivacyHint": "Envía los resultados empaquetados a su motor de IA y busca documentos públicos de resolución de problemas. Revise las muestras antes de compartirlas.",
+    "aiConversationLabel": "{{protocol}} análisis de registros",
+    "aiResultHeading": "Triaje con IA",
+    "aiWorking": "Obteniendo documentos y analizando...",
+    "aiVerify": "Verifique el triaje de la IA con los hallazgos y los documentos. Las recomendaciones heurísticas anteriores siguen siendo válidas cuando se está sin conexión.",
+    "troubleshootingDocs": "Documentos de resolución de problemas ↗",
+    "aiNeedsFindings": "La función «Analizar con IA» necesita al menos un resultado basado en reglas. La función «Analizar» integrada ya ha indicado que no hay problemas."
   },
   "logAnalyzer": {
     "categories": {
@@ -8501,7 +8525,9 @@
       "invalidResponse": "El motor devolvió una respuesta incompleta o no admitida.",
       "cancelled": "Resumen cancelado.",
       "error": "No se ha podido resumir. Compruebe la configuración de IA y vuelva a intentarlo.",
-      "repetitiveOutput": "El modelo comenzó a repetirse. Prueba con un modelo más grande o de menor alcance."
+      "repetitiveOutput": "El modelo comenzó a repetirse. Prueba con un modelo más grande o de menor alcance.",
+      "docsUnavailable": "No se han podido cargar los documentos de resolución de problemas. Comprueba tu conexión a internet y vuelve a intentar «Analizar con IA».",
+      "noFindings": "No hay resultados basados en reglas que analizar. La función de análisis integrada ya ha indicado que no hay problemas."
     },
     "loadingModel": "Cargando modelo en este dispositivo...",
     "readingMessages": "Leyendo mensajes en este dispositivo. El procesamiento de la CPU puede tardar unos minutos...",
@@ -9151,7 +9177,7 @@
     "connectionHint": "MeshCom utiliza la banda de radioaficionados LoRa a través de la configuración de país (--setctry). Asegúrese de que el perfil de país de su nodo coincida con su licencia.",
     "countrySettingLabel": "Configuración del país (--setctry)",
     "extUdpHint": "EXTUDP necesita que el nodo esté configurado con --extudp activado y --extudpip apuntando a este ordenador (UDP 1799).",
-    "kissTcpHint": "KISS/TCP utiliza el puerto MeshCom 8001, no Reticulum KISS/AX.25.",
+    "kissTcpHint": "KISS/TCP usa el puerto MeshCom 8001 — no Reticulum KISS/AX.25. --passwd opcional cuando --kiss auth está activo. Solo LAN/VPN de confianza (sin TLS).",
     "channelAll": "TODO",
     "channelGroup": "Grupo {{id}}",
     "callsignFieldLabel": "Indicativo de llamada (--setcall)",
@@ -9296,7 +9322,7 @@
     "autoSettime": "Ajustar la hora del nodo automáticamente al conectarse",
     "autoSettimeHint": "Cuando se conecte a través de un puerto serie o BLE, envíe --settime con el reloj UTC de este ordenador (por ejemplo, {{example}}).",
     "settimeNow": "Establecer la hora ahora (UTC)",
-    "requiresSerialBle": "Conéctese a través de serie o BLE para enviar comandos al dispositivo. EXTUDP y KISS/TCP solo transmiten el chat.",
+    "requiresSerialBle": "Conéctese por Serial, BLE o NET Console para enviar comandos del dispositivo. EXTUDP y KISS/TCP solo llevan el chat.",
     "filter": "Filtrar comandos",
     "filterPlaceholder": "Buscar --settime, puerta de enlace, vecinos…",
     "serialOnly": "Consola de serie USB (heredada)",

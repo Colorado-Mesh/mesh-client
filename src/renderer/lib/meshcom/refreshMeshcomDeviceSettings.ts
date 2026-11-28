@@ -13,7 +13,6 @@ import {
 import type { IdentityId } from '../types';
 import { encodeMeshcomBleTimestamp, MESHCOM_BLE_HELLO } from './meshcomBleFrame';
 import { collectMeshcomMheardStations } from './meshcomCollectMheardStations';
-import { sendMeshcomDeviceCommand } from './meshcomDeviceCommands';
 import {
   emptyMeshcomDeviceSettingsAccum,
   mergeMeshcomSerialInfoText,
@@ -26,6 +25,11 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+async function loadSendMeshcomDeviceCommand() {
+  const { sendMeshcomDeviceCommand } = await import('./meshcomDeviceCommands');
+  return sendMeshcomDeviceCommand;
 }
 
 function waitForBleConffin(handle: MeshComDeviceHandle, timeoutMs: number): Promise<void> {
@@ -57,6 +61,7 @@ async function refreshViaSerialInfo(
   });
   let mheard: MeshcomDeviceSettingsSnapshot['mheard'];
   try {
+    const sendMeshcomDeviceCommand = await loadSendMeshcomDeviceCommand();
     await sendMeshcomDeviceCommand(handle, '--info');
     await sleep(MESHCOM_SERIAL_INFO_COLLECT_MS);
     mergeMeshcomSerialInfoText(handle.deviceSettings, lines.join('\n'));
@@ -82,6 +87,7 @@ async function refreshViaBle(handle: MeshComDeviceHandle): Promise<MeshcomDevice
     await handle.connection.write(MESHCOM_BLE_HELLO);
   }
   await waitForBleConffin(handle, MESHCOM_BLE_SETTINGS_WAIT_MS);
+  const sendMeshcomDeviceCommand = await loadSendMeshcomDeviceCommand();
   if (!handle.deviceSettings.call) {
     // Fallback: `--info` returns TYP I over BLE even when HELLO burst was missed.
     await sendMeshcomDeviceCommand(handle, '--info');

@@ -1801,7 +1801,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Kraj]/[Stan], np. msh/CO/US",
-      "meshcoreLetsmesh": "meshcore/{IATA}, np. siatkacore/DEN",
+      "meshcoreLetsmesh": "Wybierz kod IATA lotniska najbliższego Twojemu obszarowi (meshcore/{IATA}). test tylko do testów analizatora.",
       "meshcoreDefault": "MESHCORE/[Kraj]/[Stan], np. MESHCORE/US/CO",
       "meshcom": "Temat główny brokera dla Twojej bramki MeshCom, np. meshcom"
     },
@@ -1899,13 +1899,12 @@
       "syncFailed": "Synchronizacja wykrywania RMAP nie powiodła się.",
       "publishingOf": "RMAP v4: publikowanie {{current}} z {{total}}"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT jest przeznaczony dla użytkowników sieci mesh z obszaru Kolorado. Ustawienie wstępne jest publikowane w ramach meshcore/DEN (Denver IATA). Jeśli nie jesteś w Kolorado, użyj LetsMesh lub MeshMapper. Kontynuować?",
-    "coloradoServerNote": "Colorado Mesh jest przeznaczony dla użytkowników sieci mesh z obszaru Kolorado. Prefiks tematu używa Denver IATA (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT jest dla użytkowników mesh w regionie Kolorado. Jako prefiks tematu wybierz lokalny kod IATA lotniska. Jeśli nie jesteś w Kolorado, użyj LetsMesh albo MeshMapper. Kontynuować?",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT jest przeznaczony dla użytkowników Colorado-area mesh i publikuje w ramach meshcore/DEN. Jeśli jesteś poza Kolorado, przełącz się na LetsMesh (globalny broker publiczny).",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT jest dla użytkowników mesh w regionie Kolorado. Poza Kolorado przełącz się na LetsMesh (globalny publiczny broker).",
     "coloradoRegionGateStay": "Jestem w Kolorado",
     "coloradoRegionGateSwitch": "Przełącz na LetsMesh",
-    "topicPrefixInvalidIata": "Prefiks tematu musi być meshcore/test lub meshcore/{IATA} (3 litery), np. meshcore/DEN.",
+    "topicPrefixInvalidIata": "Przed połączeniem wybierz kod IATA lotniska z listy (albo opcję test).",
     "maxRetriesHelpConnected": {
       "meshcore": "Ponownie połącz próby przed rezygnacją (1–{{max}}). Zapisano z ustawieniami; naciśnij ponownie Połącz po zmianie, aby główny proces go podniósł.",
       "meshtastic": "Oba protokoły umożliwiają 1–{{max}}. Zapisano z ustawieniami; odłącz i połącz ponownie, aby uruchomiona sesja używała nowej wartości.",
@@ -2049,7 +2048,21 @@
       "done": "Gotowe",
       "cancelAria": "Anuluj {{name}}",
       "duplicateWarning": "Inne włączone połączenie jest skierowane do tego samego brokera (serwer i port), więc pakiety byłyby publikowane dwukrotnie."
-    }
+    },
+    "iataPicklist": {
+      "label": "Obszar IATA",
+      "placeholder": "Wybierz swój obszar IATA…",
+      "aria": "MeshCore MQTT obszar IATA",
+      "searchAria": "Wyszukaj kody IATA lotnisk",
+      "searchPlaceholder": "Wyszukaj kod, miasto lub nazwę…",
+      "listAria": "Kody IATA lotnisk",
+      "empty": "Brak lotnisk pasujących do tego wyszukiwania.",
+      "loadFailed": "Nie udało się wczytać listy lotnisk.",
+      "testOption": "test – analizator / tylko testowanie",
+      "nearestBadge": "Replika",
+      "nearestOption": "{{label}} (najbliżej)"
+    },
+    "coloradoServerNote": "Colorado Mesh jest przeznaczone dla użytkowników sieci mesh w regionie stanu Kolorado. Wybierz poniżej kod IATA swojego lokalnego lotniska, aby uzyskać prefiks tematu MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -2632,7 +2645,18 @@
     "evidence": "Zobacz dowody dla {{category}}",
     "evidenceShown": "Pokazuje {{shown}} z {{total}} pasujących wpisów, najpierw najnowsze.",
     "ignoredOtherProtocol": "Wykluczono {{count}} linii z innych protokołów radiowych.",
-    "protocolNote": "Używa aktywnego protokołu radiowego. Linie należące do innego radia są wykluczone; linie współdzielone w całej aplikacji pozostają."
+    "protocolNote": "Używa aktywnego protokołu radiowego. Linie należące do innego radia są wykluczone; linie współdzielone w całej aplikacji pozostają.",
+    "aiAnalyze": "Analizuj za pomocą sztucznej inteligencji",
+    "aiSetup": "Konfiguracja sztucznej inteligencji do analizy dzienników",
+    "aiFixEngine": "Napraw silnik AI",
+    "aiNeedsNetwork": "Funkcja „Analizuj za pomocą sztucznej inteligencji” wymaga połączenia z Internetem, aby załadować dokumenty dotyczące rozwiązywania problemów. Wbudowana funkcja analizy działa również w trybie offline.",
+    "aiPrivacyHint": "Wysyła spakowane wyniki do Twojego silnika AI i pobiera publiczne dokumenty dotyczące rozwiązywania problemów. Przejrzyj przykłady przed udostępnieniem.",
+    "aiConversationLabel": "{{protocol}} analiza dziennika",
+    "aiResultHeading": "Triaż oparty na sztucznej inteligencji",
+    "aiWorking": "Pobieranie dokumentów i analizowanie…",
+    "aiVerify": "Porównaj triaż przeprowadzony przez sztuczną inteligencję z ustaleniami i dokumentacją. Powyższe zalecenia heurystyczne pozostają wiążące w trybie offline.",
+    "troubleshootingDocs": "Dokumenty dotyczące rozwiązywania problemów ↗",
+    "aiNeedsFindings": "Analiza z wykorzystaniem sztucznej inteligencji wymaga co najmniej jednego wyniku opartego na regułach. Wbudowana funkcja Analizuj już zgłosiła brak problemów."
   },
   "logAnalyzer": {
     "categories": {
@@ -8629,7 +8653,9 @@
       "invalidResponse": "Silnik zwrócił niekompletną lub nieobsługiwaną odpowiedź.",
       "cancelled": "Podsumowanie anulowane.",
       "error": "Nie można podsumować. Sprawdź ustawienia sztucznej inteligencji i spróbuj ponownie.",
-      "repetitiveOutput": "Model zaczął się powtarzać. Wypróbuj większy model lub krótszy zasięg."
+      "repetitiveOutput": "Model zaczął się powtarzać. Wypróbuj większy model lub krótszy zasięg.",
+      "docsUnavailable": "Nie udało się załadować dokumentów dotyczących rozwiązywania problemów. Sprawdź połączenie internetowe i ponów próbę analizy za pomocą sztucznej inteligencji.",
+      "noFindings": "Brak wyników opartych na regułach do analizy. Wbudowana funkcja analizy już zgłosiła brak problemów."
     },
     "hours_many": "Ostatnie {{count}} godzin",
     "hours_few": "Ostatnie {{count}} godziny",
@@ -9295,7 +9321,7 @@
     "connectionHint": "MeshCom korzysta z pasm amatorskich LoRa za pośrednictwem ustawienia kraju (--setctry). Upewnij się, że profil kraju Twojego węzła jest zgodny z Twoją licencją.",
     "countrySettingLabel": "Ustawienie kraju (--setctry)",
     "extUdpHint": "EXTUDP wymaga skonfigurowania węzła z włączoną opcją --extudp i opcją --extudpip wskazującą na ten komputer (UDP 1799).",
-    "kissTcpHint": "KISS/TCP używa portu MeshCom 8001 – nie Reticulum KISS/AX.25.",
+    "kissTcpHint": "KISS/TCP używa portu MeshCom 8001 — nie Reticulum KISS/AX.25. Opcjonalne --passwd, gdy włączone jest --kiss auth. Tylko zaufane LAN/VPN (bez TLS).",
     "channelAll": "WSZYSTKO",
     "channelGroup": "Grupa {{id}}",
     "callsignFieldLabel": "Znak wywoławczy (--setcall)",
@@ -9440,7 +9466,7 @@
     "autoSettime": "Automatyczne ustawianie czasu węzła podczas łączenia",
     "autoSettimeHint": "W przypadku połączenia przez port szeregowy lub BLE wyślij polecenie --settime z godziną UTC tego komputera (np. {{example}}).",
     "settimeNow": "Ustaw godzinę teraz (UTC)",
-    "requiresSerialBle": "Połącz się przez port szeregowy lub BLE, aby wysyłać polecenia do urządzenia. EXTUDP i KISS/TCP obsługują wyłącznie czat.",
+    "requiresSerialBle": "Połącz się przez Serial, BLE albo NET Console, aby wysyłać polecenia urządzenia. EXTUDP i KISS/TCP przenoszą tylko czat.",
     "filter": "Filtruj polecenia",
     "filterPlaceholder": "Wyszukaj --settime, bramę, sąsiadów…",
     "serialOnly": "Konsola szeregowa USB (starsza wersja)",

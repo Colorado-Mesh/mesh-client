@@ -31,16 +31,21 @@ describe('meshcomHwIds', () => {
     expect(meshcomFirmwareDisplay(undefined)).toBeNull();
   });
 
-  it('formats installed firmware as MeshCom-Firmware release tags', () => {
-    expect(formatMeshcomInstalledFirmware('4.40 a', '20261122-065703')).toBe('4.40a.11.22');
+  it('formats installed firmware with the build year kept', () => {
+    expect(formatMeshcomInstalledFirmware('4.40 a', '20261122-065703')).toBe('4.40a.2026.11.22');
     expect(formatMeshcomInstalledFirmware('4.40 a')).toBe('4.40a');
     expect(formatMeshcomInstalledFirmware('4.40a (build: Nov 22 2026 / 14:30:00)')).toBe(
-      '4.40a.11.22',
+      '4.40a.2026.11.22',
     );
-    expect(formatMeshcomInstalledFirmware('4.40 a (build: Mar 5 2026)')).toBe('4.40a.03.05');
-    expect(formatMeshcomInstalledFirmware('4.40a-rm5', '20261122-065703')).toBe('4.40a.11.22-rm5');
+    expect(formatMeshcomInstalledFirmware('4.40 a (build: Mar 5 2026)')).toBe('4.40a.2026.03.05');
+    expect(formatMeshcomInstalledFirmware('4.40a-rm5', '20261122-065703')).toBe(
+      '4.40a.2026.11.22-rm5',
+    );
     expect(formatMeshcomInstalledFirmware('4.40a.11.22')).toBe('4.40a.11.22');
-    expect(formatMeshcomInstalledFirmware(undefined, '20261122-065703')).toBe('11.22');
+    expect(formatMeshcomInstalledFirmware('4.40a.11.22', '20261122-065703')).toBe(
+      '4.40a.2026.11.22',
+    );
+    expect(formatMeshcomInstalledFirmware(undefined, '20261122-065703')).toBe('2026.11.22');
     expect(formatMeshcomInstalledFirmware(null)).toBeNull();
   });
 });

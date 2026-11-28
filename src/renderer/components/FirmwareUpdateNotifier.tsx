@@ -35,7 +35,7 @@ function isUpdateAvailable(
 ): boolean {
   // MeshCom also sets prefersDeviceOwnerLongNameInHeader — check before MeshCore.
   if (capabilities.hasMeshcomDeviceCommands) {
-    return meshComFirmwareUpdateAvailable(firmwareVersion, release.version);
+    return meshComFirmwareUpdateAvailable(firmwareVersion, release.version, release.publishedAt);
   }
   if (capabilities.prefersDeviceOwnerLongNameInHeader) {
     return meshCoreFirmwareUpdateAvailable(firmwareVersion, {

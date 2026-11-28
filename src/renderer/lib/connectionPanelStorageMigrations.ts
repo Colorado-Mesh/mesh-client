@@ -13,7 +13,7 @@ import {
   readStoredMeshcoreMqttPreset,
 } from './meshcoreMqttPresets';
 import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
-import { parseMeshcoreIataTopicPrefix } from './meshcoreMqttTopicPrefix';
+import { isIataScopedMeshcoreMqtt, parseMeshcoreIataTopicPrefix } from './meshcoreMqttTopicPrefix';
 import { parseStoredJson } from './parseStoredJson';
 import {
   getCachedSecureSecret,
@@ -86,12 +86,19 @@ function migrateMeshcoreTopicIataOnce(): void {
   const raw = localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY);
   if (raw) {
     const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'migrateMeshcoreTopicIataOnce');
-    if (parsed?.topicPrefix === 'meshcore' && typeof parsed.server === 'string') {
-      const iata = parsed.server.trim() === COLORADO_MESH_HOST ? 'DEN' : 'test';
-      localStorage.setItem(
-        MESHCORE_MQTT_SETTINGS_KEY,
-        JSON.stringify({ ...parsed, topicPrefix: `meshcore/${iata}` }),
-      );
+    // Bare `meshcore` is not a valid IATA area on device-signing brokers — clear so the
+    // picklist can require a choice. Non-IATA / Custom brokers keep `meshcore` as the root.
+    // Preserve prefixes that already contain a valid area (e.g. meshcore/DEN).
+    if (parsed?.topicPrefix === 'meshcore') {
+      // MESHCORE_MQTT_PRESET_STORAGE_KEY via readStoredMeshcoreMqttPreset + server host.
+      const preset = readStoredMeshcoreMqttPreset();
+      const server = typeof parsed.server === 'string' ? parsed.server : '';
+      if (isIataScopedMeshcoreMqtt(preset, { server })) {
+        localStorage.setItem(
+          MESHCORE_MQTT_SETTINGS_KEY,
+          JSON.stringify({ ...parsed, topicPrefix: '' }),
+        );
+      }
     }
   }
   localStorage.setItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY, '1');
@@ -132,7 +139,11 @@ function seedMeshcoreLetsMeshDefaultOnce(): void {
     } else {
       localStorage.setItem(MESHCORE_MQTT_PRESET_STORAGE_KEY, 'letsmesh');
       const next = applyMeshcoreMqttPreset('letsmesh', (parsed ?? {}) as MQTTSettings);
-      localStorage.setItem(MESHCORE_MQTT_SETTINGS_KEY, JSON.stringify(next));
+      // IATA-scoped seed: do not keep the non-IATA `meshcore` default prefix.
+      localStorage.setItem(
+        MESHCORE_MQTT_SETTINGS_KEY,
+        JSON.stringify({ ...next, topicPrefix: '' }),
+      );
     }
   }
 
@@ -140,8 +151,9 @@ function seedMeshcoreLetsMeshDefaultOnce(): void {
 }
 
 /**
- * Repair malformed IATA-scoped topic prefixes; uppercase 3-letter segments.
- * Colorado host → meshcore/DEN; other device-signing hosts → meshcore/test.
+ * Repair valid IATA-scoped topic prefixes (uppercase 3-letter segments).
+ * Malformed prefixes are left as-is so the Connection panel IATA picklist can prompt;
+ * do not invent meshcore/DEN or meshcore/test.
  */
 function migrateMeshcoreTopicIataShapeOnce(): void {
   if (localStorage.getItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY) !== null) return;
@@ -152,18 +164,10 @@ function migrateMeshcoreTopicIataShapeOnce(): void {
     const topicPrefix = typeof parsed?.topicPrefix === 'string' ? parsed.topicPrefix : '';
     if (parsed && server && isLetsMeshSettings(server) && topicPrefix) {
       const result = parseMeshcoreIataTopicPrefix(topicPrefix);
-      if (result.ok) {
-        if (result.normalized !== topicPrefix) {
-          localStorage.setItem(
-            MESHCORE_MQTT_SETTINGS_KEY,
-            JSON.stringify({ ...parsed, topicPrefix: result.normalized }),
-          );
-        }
-      } else {
-        const fallback = server === COLORADO_MESH_HOST ? 'meshcore/DEN' : 'meshcore/test';
+      if (result.ok && result.normalized !== topicPrefix) {
         localStorage.setItem(
           MESHCORE_MQTT_SETTINGS_KEY,
-          JSON.stringify({ ...parsed, topicPrefix: fallback }),
+          JSON.stringify({ ...parsed, topicPrefix: result.normalized }),
         );
       }
     }

@@ -680,4 +680,20 @@ describe('renderer preference recovery', () => {
       expect(localStorage.getItem(key)).toBe(JSON.stringify(value));
     }
   });
+
+  it('keeps plain scalar preference strings without logging JSON SyntaxErrors', async () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    localStorage.setItem('mesh-client:launcherSection', 'general');
+    localStorage.setItem('mesh-client:notificationFilter', 'mentions');
+    localStorage.setItem('mesh-client:rrcNickname', 'NV0N-Joey');
+    localStorage.setItem('mesh-client:protocol', 'meshtastic');
+    await boot();
+    expect(localStorage.getItem('mesh-client:rrcNickname')).toBe('NV0N-Joey');
+    expect(localStorage.getItem('mesh-client:protocol')).toBe('meshtastic');
+    expect(
+      debug.mock.calls.some((args) =>
+        args.some((arg) => arg instanceof SyntaxError || String(arg).includes('is not valid JSON')),
+      ),
+    ).toBe(false);
+  });
 });

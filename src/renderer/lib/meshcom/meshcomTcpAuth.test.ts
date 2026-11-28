@@ -33,6 +33,26 @@ describe('runMeshcomTcpAuth', () => {
     expect(result).toEqual({ status: 'ok', leftover: new Uint8Array(0) });
   });
 
+  it('preserves an oversized KISS tail after OK', async () => {
+    const kiss = 'K'.repeat(200);
+    const result = await runMeshcomTcpAuth(
+      {
+        write: vi.fn(),
+        onData: (handler) => {
+          queueMicrotask(() => {
+            handler(new TextEncoder().encode(`OK\n${kiss}`));
+          });
+          return () => {};
+        },
+      },
+      '',
+      500,
+    );
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(new TextDecoder().decode(result.leftover)).toBe(kiss);
+  });
+
   it('preserves raw bytes after the OK line', async () => {
     const result = await runMeshcomTcpAuth(
       {

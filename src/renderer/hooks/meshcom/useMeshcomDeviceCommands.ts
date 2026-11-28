@@ -118,7 +118,7 @@ export function useMeshcomDeviceCommands(
   );
 
   const settimeNow = useCallback(async () => {
-    const { buildMeshcomSettimeCommand } = await import('../../lib/meshcom/meshcomCommandWire');
+    const { buildMeshcomSettimeCommand } = await import('../../lib/meshcom/meshcomDeviceCommands');
     return run(buildMeshcomSettimeCommand());
   }, [run]);
 

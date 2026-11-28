@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   formatMeshcoreGifWire,
@@ -19,15 +19,28 @@ describe('parseMeshcoreGifId', () => {
     );
   });
 
+  it('parses scheme-less Giphy media host path', () => {
+    expect(parseMeshcoreGifId('media.giphy.com/media/a5viI92PAF89q/giphy.gif')).toBe(
+      'a5viI92PAF89q',
+    );
+  });
+
   it('parses Giphy page URL', () => {
     expect(parseMeshcoreGifId('https://giphy.com/gifs/funny-cat-a5viI92PAF89q')).toBe(
       'a5viI92PAF89q',
     );
   });
 
-  it('returns null for plain chat text', () => {
+  it('returns null for plain chat text without logging Invalid URL', () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
     expect(parseMeshcoreGifId('hello mesh')).toBeNull();
     expect(parseMeshcoreGifId('g:')).toBeNull();
+    expect(parseMeshcoreGifId('https://not a url')).toBeNull();
+    expect(
+      debug.mock.calls.some((args) =>
+        args.some((arg) => arg instanceof TypeError && String(arg).includes('Invalid URL')),
+      ),
+    ).toBe(false);
   });
 
   it('rejects hostname bypass via substring prefix checks', () => {
