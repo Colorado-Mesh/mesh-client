@@ -84,6 +84,46 @@ export const INVARIANTS = [
     '<div data-setting-anchor="app.gps.savedLocations">',
     'mobileShell.css sizes the saved location rows under this anchor',
   ],
+  [
+    'src/renderer/components/ChatPanel.tsx',
+    'className={`message-actions-bar flex shrink-0 gap-0.5 rounded transition-all ${',
+    'touchMessageActions.ts and mobileShell.css open this hover-only bar by tap on phones',
+  ],
+  [
+    'src/renderer/components/ChatPanel.tsx',
+    ": 'opacity-0 group-focus-within/msg:opacity-100 group-hover/msg:opacity-100'",
+    'mobileShell.css keys the hidden state of the actions bar on opacity-0',
+  ],
+  [
+    'src/renderer/components/ChatPanel.tsx',
+    '<div className="mt-0.5 flex items-center justify-end gap-1">',
+    'mobileShell.css lets this own-message delivery row wrap inside the bubble',
+  ],
+  [
+    'src/renderer/components/RoomsPanel.tsx',
+    'className={`message-actions-bar ml-auto flex items-center gap-1 rounded transition-opacity ${',
+    'touchMessageActions.ts and mobileShell.css open this hover-only bar by tap on phones',
+  ],
+  [
+    'src/renderer/components/rrc/RrcChatView.tsx',
+    ": 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'",
+    'touchMessageActions.ts and mobileShell.css open these hover-only RRC actions by tap on phones',
+  ],
+  [
+    'src/renderer/components/ChatComposer.tsx',
+    'inline-flex h-[2.625rem] items-center gap-1.5 rounded-l-lg px-4`;',
+    'mobileShell.css shows the Send button as its icon on phone widths',
+  ],
+  [
+    'src/renderer/components/ChatComposer.tsx',
+    'inline-flex h-[2.625rem] items-center gap-1.5 rounded-lg px-4`;',
+    'mobileShell.css shows the Send button as its icon on phone widths',
+  ],
+  [
+    'src/renderer/components/ChatComposer.tsx',
+    'aria-label={sendLabel}',
+    'the icon-only Send button on phones keeps its name from this label',
+  ],
 ];
 
 const OVERRIDES_EN = path.join(MOBILE_ROOT, 'src/locales/desktop-overrides/en.json');

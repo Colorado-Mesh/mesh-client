@@ -100,6 +100,15 @@ test('connects to meshtasticd over TCP, loads the node, and sends on the primary
   const text = `mobile e2e ${Date.now()}`;
   const composer = page.getByRole('textbox', { name: /message/i }).first();
   await composer.fill(text);
+  // Phone widths show Send as its icon only (mobileShell.css); the button keeps its name.
+  const send = page.getByRole('button', { name: 'Send', exact: true });
+  const sendShape = await send.evaluate((b) => ({
+    icon: b.querySelector('svg') !== null,
+    labelSize: getComputedStyle(b).fontSize,
+    width: b.getBoundingClientRect().width,
+  }));
+  expect(sendShape).toEqual({ icon: true, labelSize: '0px', width: expect.any(Number) });
+  expect(sendShape.width).toBeLessThan(64);
   await composer.press('Enter');
   await expect(page.getByText(text).first()).toBeVisible({ timeout: 20_000 });
   await expect
@@ -114,6 +123,68 @@ test('connects to meshtasticd over TCP, loads the node, and sends on the primary
       { timeout: 20_000 },
     )
     .toBe(true);
+
+  // Touch screens (viewport/touchMessageActions.ts): the hover-only message actions take no width
+  // and no taps until the message is tapped; then each is on screen, hit-testable and touch-sized.
+  const row = page.locator('[class~="group/msg"]').filter({ hasText: text }).last();
+  const measure = () =>
+    row.evaluate((r) => {
+      const bar = r.querySelector('.message-actions-bar');
+      if (!bar) return null;
+      const buttons = [...bar.querySelectorAll('button')];
+      const boxes = buttons.map((b) => b.getBoundingClientRect());
+      const hits = buttons.filter((b, i) => {
+        const x = boxes[i];
+        const el = document.elementFromPoint(x.left + x.width / 2, x.top + x.height / 2);
+        return el?.closest('button') === b;
+      }).length;
+      return {
+        touch: window.matchMedia('(hover: none)').matches,
+        barWidth: bar.getBoundingClientRect().width,
+        count: buttons.length,
+        hits,
+        minSide: Math.min(...boxes.map((x) => Math.min(x.width, x.height))),
+        onScreen: boxes.every((x) => x.left >= 0 && x.right <= window.innerWidth),
+      };
+    });
+  const closed = await measure();
+  expect(closed).not.toBeNull();
+  expect(closed?.touch).toBe(true);
+  expect(closed?.barWidth).toBeLessThanOrEqual(1);
+  expect(closed?.hits).toBe(0);
+  await row.getByText(text, { exact: true }).tap();
+  await expect(row).toHaveAttribute('data-mobile-actions-open', '');
+  const opened = await measure();
+  expect(opened?.count).toBeGreaterThanOrEqual(5);
+  expect(opened?.hits).toBe(opened?.count);
+  expect(opened?.minSide).toBeGreaterThanOrEqual(44);
+  expect(opened?.onScreen).toBe(true);
+  await page.screenshot({ path: test.info().outputPath('meshtastic-tcp-actions-open.png') });
+  await row.getByText(text, { exact: true }).tap();
+  await expect(row).not.toHaveAttribute('data-mobile-actions-open');
+
+  // Keyboard and screen reader focus still reveal the closed actions: the hidden rule ends at
+  // :focus-within (display: none would have made them unfocusable).
+  await row.locator('.message-actions-bar button').first().focus();
+  const focusState = () =>
+    row.evaluate((r) => {
+      const bar = r.querySelector('.message-actions-bar');
+      const first = bar?.querySelector('button');
+      if (!bar || !first) return null;
+      const box = first.getBoundingClientRect();
+      const el = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return {
+        active: document.activeElement === first,
+        wide: bar.getBoundingClientRect().width > 1,
+        opacity: Number(getComputedStyle(bar).opacity),
+        hit: el?.closest('button') === first,
+      };
+    });
+  await expect
+    .poll(focusState, { timeout: 5_000 })
+    .toEqual({ active: true, wide: true, opacity: 1, hit: true });
+  await expect(row).not.toHaveAttribute('data-mobile-actions-open');
+  await row.locator('.message-actions-bar button').first().blur();
 
   await page.screenshot({ path: test.info().outputPath('meshtastic-tcp-chat.png') });
   expect(unexpectedErrors(boot.pageErrors)).toEqual([]);

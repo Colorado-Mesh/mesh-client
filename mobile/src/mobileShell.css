@@ -270,3 +270,111 @@ html[data-mesh-mobile] [data-mobile-location-body] button {
 html[data-mesh-mobile] [data-app-shell] main {
   scroll-padding-bottom: var(--mobile-keyboard-inset, 0px);
 }
+
+/*
+ * Message actions on touch screens (viewport/touchMessageActions.ts). Chat, Rooms and RRC rows
+ * reveal their actions on hover or keyboard focus. With no hover they stayed invisible but kept
+ * 142 px beside every chat bubble and took taps there (Delete locally among them). Until a tap on
+ * the message opens its row they take no space and no taps; they stay focusable, so keyboard and
+ * TalkBack focus still reveal them (focus-within). "Always show message actions" renders them
+ * without opacity-0 and is left as it is. Desktop class names pinned in scripts/audit.mjs.
+ */
+@media (hover: none) {
+  html[data-mesh-mobile]
+    [class~='group/msg']:not(:focus-within):not([data-mobile-actions-open])
+    .message-actions-bar.opacity-0,
+  html[data-mesh-mobile]
+    .group:not(:focus-within):not([data-mobile-actions-open])
+    .opacity-0[class~='group-hover:opacity-100'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /*
+   * Open: shown on their own line under the message, with touch-sized targets. The clip is undone
+   * explicitly (not only by the hidden rule ceasing to match): an RRC line inside a closed outer
+   * `group` would otherwise stay clipped.
+   */
+  html[data-mesh-mobile] [data-mobile-actions-open] .message-actions-bar,
+  html[data-mesh-mobile] [data-mobile-actions-open] .opacity-0[class~='group-hover:opacity-100'] {
+    opacity: 1;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    clip-path: none !important;
+    pointer-events: auto !important;
+  }
+  /*
+   * The chat row wraps without :has() (iOS 15.0 to 15.3 WebKit has no :has()). Kept as its own
+   * rule: a selector list holding an unsupported :has() is dropped whole.
+   */
+  html[data-mesh-mobile] [class~='group/msg'][data-mobile-actions-open] {
+    flex-wrap: wrap;
+  }
+  html[data-mesh-mobile] [data-mobile-actions-open] :has(> .message-actions-bar),
+  html[data-mesh-mobile]
+    [data-mobile-actions-open]
+    :has(> .opacity-0[class~='group-hover:opacity-100']) {
+    flex-wrap: wrap;
+  }
+  html[data-mesh-mobile] [data-mobile-actions-open] .message-actions-bar {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-inline-start: 0;
+  }
+  html[data-mesh-mobile] [data-mobile-actions-open].flex-row-reverse > .message-actions-bar {
+    justify-content: flex-end;
+  }
+  /* RRC lines are a grid (time, nick, body, actions): open actions take a full row below. */
+  html[data-mesh-mobile]
+    [data-mobile-actions-open].grid
+    > :has(> .opacity-0[class~='group-hover:opacity-100']) {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  html[data-mesh-mobile] [data-mobile-actions-open] .message-actions-bar button,
+  html[data-mesh-mobile]
+    [data-mobile-actions-open]
+    button.opacity-0[class~='group-hover:opacity-100'],
+  html[data-mesh-mobile]
+    [data-mobile-actions-open]
+    .opacity-0[class~='group-hover:opacity-100']
+    button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+/*
+ * Phone widths: the composer's Send button shows only its icon (its aria-label keeps the name). With
+ * a long label at large text (the Ukrainian label at 1.5x on a 361 px screen) the label took 223
+ * of the row's 337 px and left a 44 px text box. The queue variant has no icon and keeps its label.
+ * Without :has() (iOS 15.0 to 15.3) the rule is dropped and the label stays. Classes pinned in
+ * scripts/audit.mjs.
+ */
+@media (max-width: 639.98px) {
+  html[data-mesh-mobile] button[class~='h-[2.625rem]'][class~='gap-1.5']:has(> svg) {
+    font-size: 0;
+    gap: 0;
+  }
+}
+
+/*
+ * The own-message delivery row (retry countdown, Cancel retry, transport status, heard state) may
+ * wrap: four items in a narrow bubble ran past its left border (a flex row ending at its right
+ * edge). Desktop class list pinned in scripts/audit.mjs.
+ */
+html[data-mesh-mobile] [class~='group/msg'] .mt-0\.5.flex.items-center.justify-end {
+  flex-wrap: wrap;
+  row-gap: 0.125rem;
+}

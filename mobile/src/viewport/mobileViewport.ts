@@ -19,6 +19,8 @@ import {
   setMobileViewport,
 } from '../platform/mobileViewport';
 import { createKeyboardFocusGuard } from './keyboardFocusGuard';
+import { installKeyboardPopupTap } from './keyboardPopupTap';
+import { installTouchMessageActions } from './touchMessageActions';
 
 interface NativeFold {
   /** Bounds in CSS px (native divides by density). */
@@ -166,6 +168,8 @@ export function installMobileViewport(): void {
   window.addEventListener('orientationchange', schedule);
   window.visualViewport?.addEventListener('resize', schedule);
   window.visualViewport?.addEventListener('scroll', schedule);
+  installTouchMessageActions();
+  installKeyboardPopupTap();
   const keyboard = getPlugin('Keyboard') as unknown as { hide?: () => Promise<void> };
   const focusGuard = createKeyboardFocusGuard(() => {
     void keyboard.hide?.().catch((e: unknown) => {

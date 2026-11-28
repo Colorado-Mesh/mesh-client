@@ -25,6 +25,7 @@ export const RENDERER_OVERRIDES = {
   'src/renderer/hooks/useMediaQuery.ts': 'useMediaQuery.ts',
   'src/renderer/lib/settingsSearchEntries/app.ts': 'settingsSearchApp.ts',
   'src/renderer/components/UpdateStatusIndicator.tsx': 'UpdateStatusIndicator.tsx',
+  'src/renderer/components/MeshcoreMqttIataSelect.tsx': 'MeshcoreMqttIataSelect.tsx',
 };
 
 const byAbsolute = new Map(
