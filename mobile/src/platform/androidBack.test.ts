@@ -47,6 +47,28 @@ describe('android back', () => {
     expect(background).toHaveBeenCalledTimes(1);
   });
 
+  it('closes message actions opened by a tap before leaving the app', () => {
+    const row = document.createElement('div');
+    row.setAttribute('data-mobile-actions-open', '');
+    document.body.append(row);
+    const background = vi.fn();
+    expect(handleAndroidBack(background)).toBe('closed-actions');
+    expect(row.hasAttribute('data-mobile-actions-open')).toBe(false);
+    expect(background).not.toHaveBeenCalled();
+    // The next press leaves the app.
+    expect(handleAndroidBack(background)).toBe('background');
+    expect(background).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes a dialog before message actions open under it', () => {
+    const row = document.createElement('div');
+    row.setAttribute('data-mobile-actions-open', '');
+    document.body.append(row);
+    dialog({ role: 'dialog' });
+    expect(handleAndroidBack(vi.fn())).toBe('closed-dialog');
+    expect(row.hasAttribute('data-mobile-actions-open')).toBe(true);
+  });
+
   it('ignores an expanded disclosure that opens no popup (Hide macros)', () => {
     const disclosure = document.createElement('button');
     disclosure.setAttribute('aria-expanded', 'true');
@@ -103,6 +125,26 @@ describe('android back with a popup open', () => {
     await vi.advanceTimersByTimeAsync(200);
     expect(presses).toHaveBeenCalledTimes(1);
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('sends Escape for an open reaction emoji picker (opened with no popup trigger)', () => {
+    const picker = document.createElement('emoji-picker');
+    document.body.append(picker);
+    const seen: string[] = [];
+    document.addEventListener(
+      'keydown',
+      (e) => {
+        seen.push(e.key);
+        picker.remove(); // the chat panel closes its picker on Escape
+      },
+      { once: true },
+    );
+    const background = vi.fn();
+    expect(handleAndroidBack(background)).toBe('closed-popup');
+    expect(seen).toEqual(['Escape']);
+    expect(background).not.toHaveBeenCalled();
+    // The next press, with the picker gone, leaves the app as before.
+    expect(handleAndroidBack(background)).toBe('background');
   });
 
   it('closes the popup before the dialog that holds it', () => {

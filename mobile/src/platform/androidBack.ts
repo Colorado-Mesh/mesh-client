@@ -6,12 +6,18 @@
  * 1. An open popup (a menu or list a button opened: a visible trigger with `aria-expanded="true"`
  *    and `aria-haspopup`) gets Escape; popups that ignore Escape (the language picker closes only on
  *    an outside press or its own button) are closed by pressing their trigger button again.
- * 2. Otherwise the topmost shown dialog gets Escape.
- * 3. With nothing open the app moves to the background (the Android convention at a root screen),
+ * 2. An open inline emoji picker (the chat reaction and compose pickers, opened by buttons that
+ *    carry no `aria-expanded`) gets Escape, which the chat panel closes it on.
+ * 3. Otherwise the topmost shown dialog gets Escape.
+ * 4. Message actions opened by a tap (viewport/touchMessageActions.ts) close.
+ * 5. With nothing open the app moves to the background (the Android convention at a root screen),
  *    which keeps radio connections running instead of finishing the activity.
  */
 
+import { ACTIONS_OPEN_ATTR } from '../viewport/touchMessageActions';
+
 const DIALOG_SELECTOR = '[aria-modal="true"], [role="dialog"], [role="alertdialog"]';
+const INLINE_PICKER_SELECTOR = 'emoji-picker';
 const POPUP_TRIGGER_SELECTOR = '[aria-expanded="true"][aria-haspopup]:not([aria-haspopup="false"])';
 /** How long a popup gets to close on Escape before its trigger is pressed instead. */
 export const POPUP_ESCAPE_MS = 80;
@@ -55,7 +61,7 @@ function sendEscape(target: EventTarget): void {
   );
 }
 
-export type BackOutcome = 'closed-popup' | 'closed-dialog' | 'background';
+export type BackOutcome = 'closed-popup' | 'closed-dialog' | 'closed-actions' | 'background';
 
 export function handleAndroidBack(
   moveToBackground: () => void,
@@ -75,6 +81,11 @@ export function handleAndroidBack(
     }, POPUP_ESCAPE_MS);
     return 'closed-popup';
   }
+  const picker = lastShown(root, INLINE_PICKER_SELECTOR);
+  if (picker) {
+    sendEscape(picker);
+    return 'closed-popup';
+  }
   const dialog = topDialog(root);
   if (dialog) {
     // Dispatch from inside the dialog so element-level (React onKeyDown) and document-level
@@ -82,6 +93,11 @@ export function handleAndroidBack(
     const active = root.activeElement;
     sendEscape(active && dialog.contains(active) ? active : dialog);
     return 'closed-dialog';
+  }
+  const openRows = root.querySelectorAll(`[${ACTIONS_OPEN_ATTR}]`);
+  if (openRows.length > 0) {
+    for (const row of openRows) row.removeAttribute(ACTIONS_OPEN_ATTR);
+    return 'closed-actions';
   }
   moveToBackground();
   return 'background';
