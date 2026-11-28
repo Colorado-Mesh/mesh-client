@@ -1,0 +1,17 @@
+{
+  "appPanel": {
+    "shareMyLocationHint": "Když je zapnuto, může tato aplikace zjistit vaši polohu v tomto telefonu a odeslat ji přes Meshtastic, MeshCore nebo Reticulum (sdílení v chatu, odeslání do rádia, RMAP). Když je vypnuto, zjišťování polohy v tomto telefonu a odesílání z aplikace jsou vypnuté; GPS rádia a uložené či statické souřadnice dál fungují pro vaši místní mapu a filtry vzdálenosti. Firmware zařízení může dál vysílat, dokud neupravíte nastavení rádia nebo modulů."
+  },
+  "chatPanel": {
+    "clearChannelMessagesMessage": "Smaže z tohoto telefonu všechny uložené zprávy v {{name}}. Kanál zůstane a nové zprávy dál přicházejí."
+  },
+  "locationPrompt": {
+    "fixedLabel": "Tento telefon se nepohybuje (neptat se při každém spuštění)",
+    "listDesc": "Uložte místa, ze kterých tento telefon používáte, například domov a EOC. Když rádio nemá GPS, použije se aktivní poloha a při každém spuštění budete požádáni o její potvrzení."
+  },
+  "reticulumSetup": {
+    "backupBody": "Tato slova obnoví vaši identitu, pokud tento telefon ztratíte. Uložte si je teď na soukromé místo. Nikdy je nedávejte nikomu, kdo vás žádá o adresu pro zasílání zpráv. Chráněnou zálohu můžete později exportovat také ze sítě.",
+    "identityBody": "Vaše identita je váš účet v této síti. Je uložena v tomto telefonu, bez registrace a bez centrálního poskytovatele účtu. Vaše adresa pro zasílání zpráv zůstane po změně jména stejná.",
+    "startBody": "Reticulum spojuje lidi a aplikace přes internet, místní sítě nebo kompatibilní rádia. Můžete to zkusit jen s tímto telefonem a připojením k internetu."
+  }
+}

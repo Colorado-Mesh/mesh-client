@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification small icon (monochrome; the system tints it). Mountain and beacon silhouette. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="860"
+    android:viewportHeight="860"
+    android:tint="#FFFFFFFF">
+    <group android:translateX="-90" android:translateY="-70">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M138,738 L468,428 Q505,388 542,424 L905,715 L650,562 L642,606 L628,550 L548,512 L520,532 L492,537 L466,490 Z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M479,295 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z" />
+        <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M463,295 a42,42 0 1,0 84,0 a42,42 0 1,0 -84,0 Z M473,295 a32,32 0 1,1 64,0 a32,32 0 1,1 -64,0 Z" />
+    </group>
+</vector>

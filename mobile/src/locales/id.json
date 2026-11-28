@@ -1,0 +1,24 @@
+{
+  "mobile": {
+    "starting": "Memulai Mesh Client…",
+    "startFailed": "Mesh Client tidak dapat dimulai.",
+    "tryAgain": "Coba lagi",
+    "backgroundTitle": "Mesh Client terhubung",
+    "backgroundText": "Menjaga tautan radio dan jaringan tetap terbuka.",
+    "messagesChannel": "Pesan",
+    "alertsChannel": "Peringatan",
+    "chooseRadioTitle": "Pilih radio",
+    "chooseRadioMessage": "Pilih perangkat USB yang akan dihubungkan",
+    "noUsbDevice": "Tidak ada perangkat serial USB yang terhubung. Hubungkan radio dengan kabel USB OTG.",
+    "usbPermissionDenied": "Izin USB ditolak.",
+    "folderUnavailable": "Memilih folder tidak tersedia di seluler."
+  },
+  "locationPrompt": {
+    "usePhoneLocation": "Gunakan lokasi ponsel ini",
+    "phoneLocationName": "Ponsel ini",
+    "phoneLocationFailed": "Tidak dapat mengambil lokasi ponsel ini. Izinkan akses lokasi untuk Mesh Client di pengaturan sistem, atau masukkan lokasi.",
+    "bodyUnknownPhone": "Radio Anda tidak melaporkan GPS. Gunakan lokasi ponsel ini atau masukkan lokasi agar jarak node dan pemeriksaan perutean akurat.",
+    "bodyConfirmPhone": "Radio Anda tidak melaporkan GPS. Pastikan ponsel ini masih berada di posisi tersimpan ({{coords}}) atau pilih tempat lain.",
+    "enterManually": "Masukkan secara manual"
+  }
+}

@@ -1,0 +1,127 @@
+name: Mobile iOS
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+# Builds the Capacitor iOS app (mobile/ios) for the iOS Simulator without code signing, boots it,
+# and checks that it gets past the boot screen with SQLite on OPFS (installOpfsSAHPoolVfs in
+# WKWebView at capacitor://). Screenshots, xcodebuild.log, app stdout/stderr, device logs and crash
+# reports are uploaded for every leg. Logic: mobile/ios/scripts/ci-simulator-smoke.sh.
+# scripts/mobile-ios-workflow.test.mjs checks the path filters and the job wiring.
+on:
+  pull_request:
+    paths:
+      # The mobile workspace package (web shell, host shims, native projects, build scripts).
+      - 'mobile/**'
+      # The unmodified desktop code the mobile host runs.
+      - 'src/main/**'
+      - 'src/renderer/**'
+      - 'src/preload/**'
+      - 'src/shared/**'
+      - 'reticulum-sidecar/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/mobile-ios.yaml'
+      - '!src/**/*.test.ts'
+      - '!src/**/*.test.tsx'
+  workflow_dispatch:
+    inputs:
+      build_sidecar:
+        description: Link the in-process Reticulum sidecar into the app (Xcode 27 leg)
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator:
+    name: iOS simulator (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # GitHub's Xcode 27 image (label `xcode-27`, Xcode 27.1 default): iOS 27.1 SDK
+          # (UIView.reservedRegions for the iPhone Duo fold; the app extends under the Duo status
+          # bar / camera column) and the iPhone Duo simulator. The repository variable
+          # MESH_IOS_XCODE27_RUNNER can point this leg at another image. (`xcode-27` is not in
+          # actionlint's built-in label list yet, hence the expression.)
+          - name: Xcode 27, iPhone Duo + iPad
+            slug: xcode27
+            runner: ${{ vars.MESH_IOS_XCODE27_RUNNER || 'xcode-27' }}
+            devices: duo ipad
+          # Default image (Xcode 26.x): proves the pre-27.1 fallback compiles and boots.
+          - name: macos-latest, iPhone
+            slug: macos-latest
+            runner: macos-latest
+            devices: iphone
+    env:
+      MESH_SMOKE_OUT: build/ios-smoke/${{ matrix.slug }}
+    steps:
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Show Xcode and simulator inventory
+        run: |
+          xcodebuild -version
+          xcrun swiftc --version
+          xcrun --sdk iphonesimulator --show-sdk-version
+          # The App target's Xcode 27.0 guard keys on XCODE_VERSION_MINOR (mobile/ios/mesh.xcconfig).
+          xcodebuild -project mobile/ios/App/App.xcodeproj -target App -sdk iphonesimulator \
+            -showBuildSettings 2>/dev/null \
+            | grep -E ' (XCODE_VERSION_[A-Z]+|SDK_VERSION[A-Z_]*|SWIFT_VERSION|OTHER_SWIFT_FLAGS) = ' || true
+          xcrun simctl list runtimes
+          xcrun simctl list devicetypes
+
+      - name: Build mobile web bundle
+        run: pnpm -C mobile run build
+
+      # ── OPTIONAL: in-process Reticulum sidecar library for iOS ─────────────────────────────
+      # Builds mobile/ios/App/MeshReticulum.xcframework once the sidecar build script exists
+      # (Xcode 27 leg only). continue-on-error and the separate, opt-in link step keep this
+      # check independent of the sidecar: the app is linked against the library only on a
+      # manual run with build_sidecar=true (mobile/ios/scripts/configure-sidecar.sh writes the
+      # gitignored mobile/ios/mesh-sidecar.xcconfig); otherwise it builds with
+      # sidecarAvailable=false.
+      - name: Build iOS Reticulum sidecar library (optional)
+        id: sidecar
+        # A full Rust build for three Apple triples (~45 min); pull requests skip it. The
+        # Android workflow builds the same staged crate for Android on every pull request.
+        if: matrix.slug == 'xcode27' && inputs.build_sidecar
+        continue-on-error: true
+        timeout-minutes: 45
+        run: |
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+          node mobile/scripts/build-sidecar.mjs ios
+
+      - name: Link the iOS Reticulum sidecar (opt-in)
+        if: inputs.build_sidecar && steps.sidecar.outcome == 'success'
+        run: bash mobile/ios/scripts/configure-sidecar.sh
+
+      - name: Sync Capacitor iOS project
+        run: pnpm -C mobile exec cap sync ios
+
+      - name: Build app for the iOS Simulator
+        run: bash mobile/ios/scripts/ci-simulator-smoke.sh build
+
+      - name: Boot, launch and verify on simulators
+        run: bash mobile/ios/scripts/ci-simulator-smoke.sh run ${{ matrix.devices }}
+
+      - name: Upload screenshots and logs
+        if: always() && github.actor != 'nektos/act'
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ios-simulator-${{ matrix.slug }}
+          path: build/ios-smoke/
+          retention-days: 14
+          if-no-files-found: warn

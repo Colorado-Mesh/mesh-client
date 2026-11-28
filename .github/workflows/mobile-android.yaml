@@ -1,0 +1,224 @@
+name: Mobile Android and web
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+# The mobile workspace package (mobile/): desktop-untouched guard, upstream drift audit, typecheck,
+# lint, Vitest, the web bundle and the browser harness (phones, foldables incl. iPhone Duo, tablets,
+# Meshtastic over TCP against a simulated meshtasticd and over MQTT against Mosquitto, MeshCore
+# over TCP against the companion fixture, map tiles), then the Capacitor Android app
+# (JVM unit tests, lint, debug APK). The Reticulum sidecar job builds the staged crate for Android,
+# runs the iOS FFI host tests and the harness's sidecar spec when sidecar code changes or on a
+# manual run. iOS lives in mobile-ios.yaml. mobile/scripts/android-workflow.test.mjs checks the
+# wiring.
+on:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - 'src/main/**'
+      - 'src/renderer/**'
+      - 'src/preload/**'
+      - 'src/shared/**'
+      - 'reticulum-sidecar/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/mobile-android.yaml'
+  workflow_dispatch:
+    inputs:
+      build_sidecar:
+        description: Build the Reticulum sidecar for Android and run its harness spec
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect sidecar changes
+    runs-on: ubuntu-latest
+    outputs:
+      sidecar: ${{ steps.filter.outputs.sidecar }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+      # dorny/paths-filter v4.0.0
+      - uses: dorny/paths-filter@9d7afb8d214ad99e78fbd4247752c4caed2b6e4c
+        id: filter
+        with:
+          filters: |
+            sidecar:
+              - 'reticulum-sidecar/**'
+              - 'mobile/native/**'
+              - 'mobile/scripts/build-sidecar.mjs'
+              - 'scripts/clone-ratspeak-stack.sh'
+              - '.github/workflows/mobile-android.yaml'
+
+  web:
+    name: Guard, audit, tests and browser harness
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Desktop app untouched
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          git fetch --no-tags origin "$BASE_REF"
+          MOBILE_GUARD_BASE="$(git merge-base HEAD "origin/$BASE_REF")" \
+            pnpm -C mobile run check:desktop-untouched
+
+      - name: Typecheck
+        run: pnpm -C mobile run typecheck
+      - name: Lint
+        run: pnpm -C mobile run lint
+      - name: Log message ids
+        run: pnpm -C mobile run check:log-ids
+      - name: Vitest
+        run: pnpm -C mobile exec vitest run
+      - name: Upstream drift audit
+        run: pnpm -C mobile run audit
+
+      - name: Build mobile web bundle
+        run: pnpm -C mobile run build
+
+      - name: Start simulated meshtasticd
+        # meshtastic/meshtasticd, simulated radio (no hardware), TCP API on 4403.
+        run: |
+          docker run -d --name meshtasticd -p 127.0.0.1:4403:4403 \
+            meshtastic/meshtasticd@sha256:23e92b1331a3a471eaef0c63cbca4365ca40b3111a9781cfdbe5a5114e5773d4 \
+            sh -c 'meshtasticd -s --fsdir=/var/lib/meshtasticd'
+          for _ in $(seq 1 30); do
+            if (exec 3<>/dev/tcp/127.0.0.1/4403) 2> /dev/null; then exit 0; fi
+            sleep 2
+          done
+          docker logs meshtasticd
+          exit 1
+
+      - name: Start MQTT broker
+        # Eclipse Mosquitto 2, anonymous listener on 1883 (the image's no-auth config).
+        run: |
+          docker run -d --name mosquitto -p 127.0.0.1:1883:1883 \
+            eclipse-mosquitto@sha256:fa12172a051310efe5bcb7a6a11b77bd5faacb82cbacd7742aa758bf024fd8e4 \
+            mosquitto -c /mosquitto-no-auth.conf
+
+      - name: Install Chromium for the harness
+        run: pnpm -C mobile exec playwright install --with-deps chromium
+
+      - name: Browser harness
+        env:
+          # Fail, not skip, when a service this job provides is missing.
+          MOBILE_E2E_REQUIRE: meshtasticd,mqtt,tiles
+        run: pnpm -C mobile exec playwright test
+
+      - name: Upload harness results
+        if: always()
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mobile-harness-${{ github.run_id }}
+          path: |
+            mobile/test-results/
+            mobile/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  android:
+    name: Android app (unit tests, lint, debug APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Build mobile web bundle
+        run: pnpm -C mobile run build
+      - name: Sync Capacitor Android project
+        run: pnpm -C mobile exec cap sync android
+
+      - name: Gradle unit tests, lint and debug build
+        working-directory: mobile/android
+        run: |
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+
+      - name: Upload APK and reports
+        if: always()
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mobile-android-${{ github.run_id }}
+          path: |
+            mobile/android/app/build/outputs/apk/debug/*.apk
+            mobile/android/app/build/reports/
+            mobile/android/app/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  sidecar:
+    name: Reticulum sidecar for mobile
+    needs: changes
+    if: needs.changes.outputs.sidecar == 'true' || inputs.build_sidecar
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: ./.github/actions/setup-node-pnpm
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        env:
+          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
+        run: bash scripts/clone-ratspeak-stack.sh
+
+      - name: Build the Android executables from the staged crate
+        # ANDROID_NDK_LATEST_HOME is set by the runner image, so it is read in the shell (a
+        # workflow `env` expression would only see this file's env and resolve empty).
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          test -d "$ANDROID_NDK_HOME"
+          node mobile/scripts/build-sidecar.mjs android --skip-clone
+
+      - name: iOS in-process library host tests (C ABI)
+        run: |
+          node mobile/scripts/build-sidecar.mjs stage
+          cargo test --manifest-path mobile/native/reticulum-ffi/Cargo.toml \
+            --target-dir reticulum-sidecar/target
+
+      - name: Desktop sidecar for the harness spec
+        # The crate's default feature set is empty (no Reticulum stack, so identity generation
+        # cannot succeed). Build with the mobile feature set (MOBILE_SIDECAR_FEATURES in
+        # mobile/scripts/build-sidecar.mjs): the stack and RNode TCP, no BLE (which needs dbus).
+        run: >-
+          cargo build --release --manifest-path reticulum-sidecar/Cargo.toml
+          --features rns-stack,rns-rnode-tcp
+
+      - name: Install Chromium for the harness
+        run: pnpm -C mobile exec playwright install --with-deps chromium
+      - name: Build mobile web bundle
+        run: pnpm -C mobile run build
+      - name: Reticulum harness spec
+        env:
+          MOBILE_E2E_REQUIRE: sidecar
+        run: pnpm -C mobile exec playwright test e2e/reticulum.spec.ts
+
+      - name: Upload Android sidecar executables
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mobile-android-sidecar-${{ github.run_id }}
+          path: mobile/android/app/src/main/jniLibs/
+          if-no-files-found: error
+          retention-days: 14

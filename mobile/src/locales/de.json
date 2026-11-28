@@ -1,0 +1,24 @@
+{
+  "mobile": {
+    "starting": "Mesh Client wird gestartet…",
+    "startFailed": "Mesh Client konnte nicht gestartet werden.",
+    "tryAgain": "Erneut versuchen",
+    "backgroundTitle": "Mesh Client ist verbunden",
+    "backgroundText": "Funk- und Netzwerkverbindungen bleiben offen.",
+    "messagesChannel": "Nachrichten",
+    "alertsChannel": "Warnungen",
+    "chooseRadioTitle": "Funkgerät auswählen",
+    "chooseRadioMessage": "Wähle das USB-Gerät für die Verbindung",
+    "noUsbDevice": "Kein serielles USB-Gerät verbunden. Schließe das Funkgerät mit einem USB-OTG-Kabel an.",
+    "usbPermissionDenied": "Die USB-Berechtigung wurde verweigert.",
+    "folderUnavailable": "Ordner können auf Mobilgeräten nicht ausgewählt werden."
+  },
+  "locationPrompt": {
+    "usePhoneLocation": "Standort dieses Telefons verwenden",
+    "phoneLocationName": "Dieses Telefon",
+    "phoneLocationFailed": "Der Standort dieses Telefons konnte nicht ermittelt werden. Erlaube Mesh Client in den Systemeinstellungen den Zugriff auf den Standort oder gib einen Standort ein.",
+    "bodyUnknownPhone": "Dein Funkgerät meldet kein GPS. Verwende den Standort dieses Telefons oder gib einen ein, damit Knotenentfernungen und Routing-Prüfungen stimmen.",
+    "bodyConfirmPhone": "Dein Funkgerät meldet kein GPS. Bestätige, dass dieses Telefon noch an der gespeicherten Position ({{coords}}) ist, oder wähle einen anderen Ort.",
+    "enterManually": "Manuell eingeben"
+  }
+}

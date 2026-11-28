@@ -1,0 +1,17 @@
+{
+  "appPanel": {
+    "shareMyLocationHint": "Si está activado, esta aplicación puede consultar tu ubicación en este teléfono y enviarla por Meshtastic, MeshCore o Reticulum (compartir en el chat, envío a la radio, RMAP). Si está desactivado, las consultas de ubicación en este teléfono y los envíos de la aplicación se desactivan; el GPS de la radio y las coordenadas guardadas o estáticas siguen funcionando para tu mapa local y los filtros de distancia. El firmware del dispositivo puede seguir emitiendo hasta que ajustes la configuración de Radio o Módulos."
+  },
+  "chatPanel": {
+    "clearChannelMessagesMessage": "Borra de este teléfono todos los mensajes guardados de {{name}}. El canal se mantiene y los mensajes nuevos siguen llegando."
+  },
+  "locationPrompt": {
+    "fixedLabel": "Este teléfono no se mueve (no preguntar en cada inicio)",
+    "listDesc": "Guarda los lugares desde los que usas este teléfono, como Home y un EOC. Cuando la radio no tiene GPS, se usa la ubicación activa y se te pide que la confirmes en cada inicio."
+  },
+  "reticulumSetup": {
+    "backupBody": "Estas palabras restauran tu identidad si pierdes este teléfono. Guárdalas ahora en un lugar privado. Nunca se las des a nadie que te pida tu dirección de mensajería. También puedes exportar más adelante una copia de seguridad protegida desde la red.",
+    "identityBody": "Tu identidad es tu cuenta en esta red. Se guarda en este teléfono, sin registro ni proveedor de cuentas central. Tu dirección de mensajería sigue siendo la misma cuando cambias tu nombre.",
+    "startBody": "Reticulum conecta personas y aplicaciones a través de Internet, redes locales o radios compatibles. Puedes probarlo solo con este teléfono y una conexión a Internet."
+  }
+}

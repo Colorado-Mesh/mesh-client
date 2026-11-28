@@ -1,0 +1,380 @@
+/*
+ * Mobile-only base styles (loaded only by mobile/src/main.tsx, never by the desktop renderer).
+ * Safe-area padding, dynamic viewport sizing, and the host message box.
+ */
+html[data-mesh-mobile] {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+html[data-mesh-mobile] body {
+  height: 100dvh;
+  min-height: 100dvh;
+  width: 100vw;
+  overscroll-behavior: none;
+}
+
+.mobile-boot {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: var(--color-app-bg, #0f172a);
+  color: var(--color-ink-100, #f1f5f9);
+  font-family: system-ui, sans-serif;
+  text-align: center;
+}
+
+.mobile-boot__mark {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background: var(--color-ink-700, #334155);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-boot__mark {
+    animation: mobile-boot-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes mobile-boot-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.mobile-boot__error {
+  max-width: 32rem;
+  white-space: pre-wrap;
+  font-size: 0.875rem;
+  color: var(--color-ink-300, #cbd5e1);
+}
+
+.mobile-boot button,
+.mobile-msgbox button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-ink-600, #475569);
+  background: var(--color-ink-800, #1e293b);
+  color: var(--color-ink-100, #f1f5f9);
+  font: inherit;
+}
+
+.mobile-boot button[data-default='true'],
+.mobile-msgbox button[data-default='true'] {
+  background: var(--color-brand-green, #38bdf8);
+  border-color: transparent;
+  color: var(--color-app-bg, #0f172a);
+  font-weight: 600;
+}
+
+.mobile-msgbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  background: rgb(2 6 23 / 0.6);
+}
+
+@media (min-width: 640px) {
+  .mobile-msgbox-backdrop {
+    align-items: center;
+  }
+}
+
+.mobile-msgbox {
+  width: min(28rem, 100%);
+  margin: 1rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: var(--color-ink-900, #0f172a);
+  border: 1px solid var(--color-ink-700, #334155);
+  color: var(--color-ink-100, #f1f5f9);
+  font-family: system-ui, sans-serif;
+}
+
+.mobile-msgbox h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.mobile-msgbox p {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--color-ink-300, #cbd5e1);
+  white-space: pre-wrap;
+}
+
+.mobile-msgbox-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/*
+ * App shell edges (mobile only). The desktop shell is `h-screen w-screen`; on phones the shell
+ * fills the dynamic viewport and keeps clear of the status bar, display cutouts, the iPhone Duo's
+ * trailing system column (right inset), and the home indicator / gesture bar. The bottom nav
+ * already pads itself with env(safe-area-inset-bottom); when the rail is shown instead (wide
+ * windows), the shell pads the bottom edge.
+ */
+html[data-mesh-mobile] [data-app-shell] {
+  height: 100dvh;
+  width: 100%;
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+html[data-mesh-mobile][data-mobile-nav='rail'] [data-app-shell],
+html[data-mesh-mobile][data-mobile-side-column] [data-app-shell] {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/*
+ * iPhone Duo system side column (outer display, Split View): the bottom bar stands upright in the
+ * column the shell already leaves free (its safe-area padding), one uniform strip from the top of
+ * the screen, tabs at the bottom below the status bar and camera / Dynamic Island. The column
+ * geometry comes from mobile/src/viewport/mobileViewport.ts.
+ */
+html[data-mesh-mobile] [data-mobile-side-nav] {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  width: var(--mobile-side-column-width);
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav='right'] {
+  right: 0;
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav='left'] {
+  left: 0;
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav] > nav {
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  border-top-width: 0;
+  padding: var(--mobile-side-column-top) 0 calc(var(--mobile-side-column-bottom) + 0.5rem);
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav='right'] > nav {
+  border-left-width: 1px;
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav='left'] > nav {
+  border-right-width: 1px;
+}
+
+html[data-mesh-mobile] [data-mobile-side-nav] > nav > button {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+/*
+ * Typing: the keyboard needs the height; navigation returns when it closes. The bar is the shell's
+ * nav that holds the More button (BottomNav), found with :has() so no wrapper element is needed.
+ * Collapse and slide rather than display:none: toggling display re-creates the nav's accessibility
+ * nodes, and the Android WebView tree then went stale, leaving the visible bar out of TalkBack's
+ * view after the keyboard closed (seen on the emulator for 20 s and more).
+ */
+html[data-mesh-mobile][data-mobile-keyboard='open']
+  [data-app-shell]
+  > nav:has(> [data-nav-section='more']) {
+  max-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+  border-top-width: 0;
+}
+
+/* The startup location strip (its wrapper div above the panel) folds away the same way. */
+html[data-mesh-mobile][data-mobile-keyboard='open'] div:has(> [data-mobile-location-prompt]) {
+  max-height: 0;
+  overflow: hidden;
+  padding-block: 0;
+  border-bottom-width: 0;
+}
+
+html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav='right'] {
+  transform: translateX(100%);
+}
+
+html[data-mesh-mobile][data-mobile-keyboard='open'] [data-mobile-side-nav='left'] {
+  transform: translateX(-100%);
+}
+
+/*
+ * App > Saved locations: each row is a wrapping flex line, and its coordinates (the span after the
+ * name field) may shrink to nothing (min-width 0), so on a phone the active row showed one
+ * character of them. fit-content keeps the whole pair (in any coordinate format and text size)
+ * and makes the row wrap instead, truncating only if the pair is wider than the row itself.
+ * Pinned by e2e/layout.spec.ts.
+ */
+html[data-mesh-mobile]
+  [data-setting-anchor='app.gps.savedLocations']
+  li
+  > input[type='text']
+  + span {
+  min-width: fit-content;
+}
+
+/*
+ * App settings with no effect in the mobile apps (see overrides/renderer/settingsSearchApp.ts,
+ * which also drops them from the launcher search): the "Close to tray" row, and the whole Updates
+ * section, which holds only the automatic download option. Pinned by e2e/layout.spec.ts.
+ */
+html[data-mesh-mobile] [data-setting-anchor='app.window.closeToTray'],
+html[data-mesh-mobile] details:has([data-setting-anchor='app.updates.autoDownload']) {
+  display: none;
+}
+
+/*
+ * Location card buttons (overrides/renderer/SetLocationCard.tsx) wrap their label inside the card:
+ * the shared button base is `shrink-0 whitespace-nowrap`, and at the largest text size on a 361 px
+ * cover screen "Use this phone's location" ran past the card's edge. Pinned by e2e/layout.spec.ts.
+ */
+html[data-mesh-mobile] [data-mobile-location-body] button {
+  flex-shrink: 1;
+  max-width: 100%;
+  white-space: normal;
+  text-align: start;
+  /* The small size is a fixed h-7.5; a wrapped label needs the button to grow with it. */
+  height: auto;
+  min-height: 1.875rem;
+  padding-block: 0.25rem;
+}
+
+/* Keep the keyboard from covering composers on WebViews that only shrink the visual viewport. */
+html[data-mesh-mobile] [data-app-shell] main {
+  scroll-padding-bottom: var(--mobile-keyboard-inset, 0px);
+}
+
+/*
+ * Message actions on touch screens (viewport/touchMessageActions.ts). Chat, Rooms and RRC rows
+ * reveal their actions on hover or keyboard focus. With no hover they stayed invisible but kept
+ * 142 px beside every chat bubble and took taps there (Delete locally among them). Until a tap on
+ * the message opens its row they take no space and no taps; they stay focusable, so keyboard and
+ * TalkBack focus still reveal them (focus-within). "Always show message actions" renders them
+ * without opacity-0 and is left as it is. Desktop class names pinned in scripts/audit.mjs.
+ */
+@media (hover: none) {
+  html[data-mesh-mobile]
+    [class~='group/msg']:not(:focus-within):not([data-mobile-actions-open])
+    .message-actions-bar.opacity-0,
+  html[data-mesh-mobile]
+    .group:not(:focus-within):not([data-mobile-actions-open])
+    .opacity-0[class~='group-hover:opacity-100'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /*
+   * Open: shown on their own line under the message, with touch-sized targets. The clip is undone
+   * explicitly (not only by the hidden rule ceasing to match): an RRC line inside a closed outer
+   * `group` would otherwise stay clipped.
+   */
+  html[data-mesh-mobile] [data-mobile-actions-open] .message-actions-bar,
+  html[data-mesh-mobile] [data-mobile-actions-open] .opacity-0[class~='group-hover:opacity-100'] {
+    opacity: 1;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    clip-path: none !important;
+    pointer-events: auto !important;
+  }
+  /*
+   * The chat row wraps without :has() (iOS 15.0 to 15.3 WebKit has no :has()). Kept as its own
+   * rule: a selector list holding an unsupported :has() is dropped whole.
+   */
+  html[data-mesh-mobile] [class~='group/msg'][data-mobile-actions-open] {
+    flex-wrap: wrap;
+  }
+  html[data-mesh-mobile] [data-mobile-actions-open] :has(> .message-actions-bar),
+  html[data-mesh-mobile]
+    [data-mobile-actions-open]
+    :has(> .opacity-0[class~='group-hover:opacity-100']) {
+    flex-wrap: wrap;
+  }
+  html[data-mesh-mobile] [data-mobile-actions-open] .message-actions-bar {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-inline-start: 0;
+  }
+  html[data-mesh-mobile] [data-mobile-actions-open].flex-row-reverse > .message-actions-bar {
+    justify-content: flex-end;
+  }
+  /* RRC lines are a grid (time, nick, body, actions): open actions take a full row below. */
+  html[data-mesh-mobile]
+    [data-mobile-actions-open].grid
+    > :has(> .opacity-0[class~='group-hover:opacity-100']) {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  html[data-mesh-mobile] [data-mobile-actions-open] .message-actions-bar button,
+  html[data-mesh-mobile]
+    [data-mobile-actions-open]
+    button.opacity-0[class~='group-hover:opacity-100'],
+  html[data-mesh-mobile]
+    [data-mobile-actions-open]
+    .opacity-0[class~='group-hover:opacity-100']
+    button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+/*
+ * Phone widths: the composer's Send button shows only its icon (its aria-label keeps the name). With
+ * a long label at large text (the Ukrainian label at 1.5x on a 361 px screen) the label took 223
+ * of the row's 337 px and left a 44 px text box. The queue variant has no icon and keeps its label.
+ * Without :has() (iOS 15.0 to 15.3) the rule is dropped and the label stays. Classes pinned in
+ * scripts/audit.mjs.
+ */
+@media (max-width: 639.98px) {
+  html[data-mesh-mobile] button[class~='h-[2.625rem]'][class~='gap-1.5']:has(> svg) {
+    font-size: 0;
+    gap: 0;
+  }
+}
+
+/*
+ * The own-message delivery row (retry countdown, Cancel retry, transport status, heard state) may
+ * wrap: four items in a narrow bubble ran past its left border (a flex row ending at its right
+ * edge). Desktop class list pinned in scripts/audit.mjs.
+ */
+html[data-mesh-mobile] [class~='group/msg'] .mt-0\.5.flex.items-center.justify-end {
+  flex-wrap: wrap;
+  row-gap: 0.125rem;
+}

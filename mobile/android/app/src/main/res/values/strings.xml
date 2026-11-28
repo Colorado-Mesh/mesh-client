@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mesh Client</string>
+    <string name="title_activity_main">Mesh Client</string>
+    <string name="package_name">org.coloradomesh.meshclient</string>
+    <string name="custom_url_scheme">org.coloradomesh.meshclient</string>
+    <string name="background_channel_name">Background connection</string>
+    <string name="background_channel_description">Shown while Mesh Client keeps radio connections open in the background.</string>
+    <string name="background_notification_title">Mesh Client</string>
+    <string name="background_notification_text">Keeping radio connections active</string>
+</resources>

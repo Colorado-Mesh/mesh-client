@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client", "vitest/globals", "@playwright/test"],
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "rootDir": ".."
+  },
+  "include": [
+    "src/**/*",
+    "e2e/**/*",
+    "capacitor.config.ts",
+    "playwright.config.ts",
+    "../src/renderer/globals.d.ts",
+    "../src/renderer/types.d.ts",
+    "../src/renderer/types/**/*.d.ts",
+    "../src/renderer/vitest.setup.ts"
+  ],
+  "exclude": ["node_modules", "dist", "src/host/**/*"]
+}

@@ -27,6 +27,8 @@
     // Vendored third-party sources (Micron parser, translation engines).
     "src/renderer/lib/nomad/vendor/**",
     "src/main/translation/vendor/**",
+    // Mobile app workspace package: analysed by its own config (mobile/.fallowrc.jsonc).
+    "mobile/**",
   ],
   "ignoreDependencies": [
     // Direct production deps kept for packaged Windows/asar resolution; contract tests enforce them.

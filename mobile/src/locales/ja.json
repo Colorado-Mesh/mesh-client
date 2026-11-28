@@ -1,0 +1,24 @@
+{
+  "mobile": {
+    "starting": "Mesh Client を起動しています…",
+    "startFailed": "Mesh Client を起動できませんでした。",
+    "tryAgain": "再試行",
+    "backgroundTitle": "Mesh Client は接続中です",
+    "backgroundText": "無線機とネットワークの接続を維持しています。",
+    "messagesChannel": "メッセージ",
+    "alertsChannel": "アラート",
+    "chooseRadioTitle": "無線機を選択",
+    "chooseRadioMessage": "接続する USB デバイスを選択してください",
+    "noUsbDevice": "USB シリアルデバイスが接続されていません。USB OTG ケーブルで無線機を接続してください。",
+    "usbPermissionDenied": "USB の権限が拒否されました。",
+    "folderUnavailable": "モバイルではフォルダーを選択できません。"
+  },
+  "locationPrompt": {
+    "usePhoneLocation": "このスマートフォンの位置情報を使用",
+    "phoneLocationName": "このスマートフォン",
+    "phoneLocationFailed": "このスマートフォンの位置情報を取得できませんでした。システム設定で Mesh Client の位置情報へのアクセスを許可するか、位置を入力してください。",
+    "bodyUnknownPhone": "無線機が GPS を報告していません。ノード間の距離とルーティングのチェックを正確にするため、このスマートフォンの位置情報を使用するか、位置を入力してください。",
+    "bodyConfirmPhone": "無線機が GPS を報告していません。このスマートフォンが保存した位置（{{coords}}）にあることを確認するか、別の場所を選択してください。",
+    "enterManually": "手動で入力"
+  }
+}

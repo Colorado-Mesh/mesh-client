@@ -1,0 +1,24 @@
+{
+  "mobile": {
+    "starting": "Starting Mesh Client…",
+    "startFailed": "Mesh Client could not start.",
+    "tryAgain": "Try again",
+    "backgroundTitle": "Mesh Client is connected",
+    "backgroundText": "Keeping your radio and network links open.",
+    "messagesChannel": "Messages",
+    "alertsChannel": "Alerts",
+    "chooseRadioTitle": "Choose a radio",
+    "chooseRadioMessage": "Choose the USB device to connect",
+    "noUsbDevice": "No USB serial device is connected. Connect the radio with a USB OTG cable.",
+    "usbPermissionDenied": "USB permission was denied.",
+    "folderUnavailable": "Choosing a folder is not available on mobile."
+  },
+  "locationPrompt": {
+    "usePhoneLocation": "Use this phone's location",
+    "phoneLocationName": "This phone",
+    "phoneLocationFailed": "Couldn't get this phone's location. Allow location access for Mesh Client in system settings, or enter a location.",
+    "bodyUnknownPhone": "Your radio isn't reporting GPS. Use this phone's location or enter one so node distances and routing checks are accurate.",
+    "bodyConfirmPhone": "Your radio isn't reporting GPS. Confirm this phone is still at the saved position ({{coords}}) or pick another place.",
+    "enterManually": "Enter manually"
+  }
+}

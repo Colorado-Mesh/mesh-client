@@ -1,0 +1,24 @@
+{
+  "mobile": {
+    "starting": "Avvio di Mesh Client…",
+    "startFailed": "Impossibile avviare Mesh Client.",
+    "tryAgain": "Riprova",
+    "backgroundTitle": "Mesh Client è connesso",
+    "backgroundText": "I collegamenti radio e di rete restano aperti.",
+    "messagesChannel": "Messaggi",
+    "alertsChannel": "Avvisi",
+    "chooseRadioTitle": "Scegli una radio",
+    "chooseRadioMessage": "Scegli il dispositivo USB da collegare",
+    "noUsbDevice": "Nessun dispositivo seriale USB collegato. Collega la radio con un cavo USB OTG.",
+    "usbPermissionDenied": "L'autorizzazione USB è stata negata.",
+    "folderUnavailable": "La scelta di una cartella non è disponibile su mobile."
+  },
+  "locationPrompt": {
+    "usePhoneLocation": "Usa la posizione di questo telefono",
+    "phoneLocationName": "Questo telefono",
+    "phoneLocationFailed": "Impossibile ottenere la posizione di questo telefono. Consenti l'accesso alla posizione per Mesh Client nelle impostazioni di sistema oppure inserisci una posizione.",
+    "bodyUnknownPhone": "La tua radio non segnala il GPS. Usa la posizione di questo telefono o inseriscine una affinché le distanze tra i nodi e i controlli di instradamento siano accurati.",
+    "bodyConfirmPhone": "La tua radio non segnala il GPS. Conferma che questo telefono è ancora nella posizione salvata ({{coords}}) o scegli un altro posto.",
+    "enterManually": "Inserisci manualmente"
+  }
+}

@@ -18,7 +18,8 @@ describe('translation packaging boundary', () => {
   it('contains no translation model, vocabulary, LID or engine binaries', () => {
     const files = globSync(
       ['**/*.wasm', '**/model*.bin', '**/lex.*', '**/*vocab*.spm', '**/lid*.ftz'],
-      { cwd: root, exclude: ['node_modules/**', '.git/**', '**/target/**'] },
+      // mobile/: the separate mobile app package (its build copies the renderer's wasm assets).
+      { cwd: root, exclude: ['node_modules/**', '.git/**', '**/target/**', 'mobile/**'] },
     );
     // MeshCore signatures and the AI inference runtime are independent of translation.
     const signatureAssets = new Set([

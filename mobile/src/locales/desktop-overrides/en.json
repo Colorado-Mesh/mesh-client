@@ -1,0 +1,17 @@
+{
+  "appPanel": {
+    "shareMyLocationHint": "When enabled, this app may look up your location on this phone and send it over Meshtastic, MeshCore, or Reticulum (chat share, radio push, RMAP). When disabled, location lookups on this phone and app sending are off; radio GPS and saved/static coordinates still work for your local map and distance filters. Device firmware may still broadcast until you adjust Radio or Modules settings."
+  },
+  "chatPanel": {
+    "clearChannelMessagesMessage": "Deletes every saved message in {{name}} from this phone. The channel stays, and new messages keep arriving."
+  },
+  "locationPrompt": {
+    "fixedLabel": "This phone doesn't move (don't ask each launch)",
+    "listDesc": "Save the places this phone is used from, such as Home and an EOC. When the radio has no GPS, the active location is used and you're asked to confirm it each launch."
+  },
+  "reticulumSetup": {
+    "backupBody": "These words restore your identity if you lose this phone. Save them somewhere private now. Never give them to someone who asks for your messaging address. You can also export a protected backup from Network later.",
+    "identityBody": "Your identity is your account on this network. It lives on this phone, with no signup or central account provider. Your messaging address stays the same when you change your name.",
+    "startBody": "Reticulum connects people and apps over the internet, local networks, or compatible radios. You can try it with just this phone and an internet connection."
+  }
+}

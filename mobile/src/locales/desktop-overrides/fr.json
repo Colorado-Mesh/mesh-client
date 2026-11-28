@@ -1,0 +1,17 @@
+{
+  "appPanel": {
+    "shareMyLocationHint": "Lorsqu'elle est activée, cette application peut rechercher votre position sur ce téléphone et l'envoyer via Meshtastic, MeshCore ou Reticulum (partage dans le chat, envoi à la radio, RMAP). Lorsqu'elle est désactivée, la recherche de position sur ce téléphone et les envois de l'application sont coupés ; le GPS de la radio et les coordonnées enregistrées ou statiques fonctionnent toujours pour votre carte locale et les filtres de distance. Le micrologiciel de l'appareil peut continuer à diffuser jusqu'à ce que vous ajustiez les paramètres Radio ou Modules."
+  },
+  "chatPanel": {
+    "clearChannelMessagesMessage": "Supprime de ce téléphone tous les messages enregistrés de {{name}}. Le canal reste et les nouveaux messages continuent d'arriver."
+  },
+  "locationPrompt": {
+    "fixedLabel": "Ce téléphone ne bouge pas (ne pas demander à chaque lancement)",
+    "listDesc": "Enregistrez les lieux où vous utilisez ce téléphone, comme Home et un EOC. Lorsque la radio n'a pas de GPS, la position active est utilisée et il vous est demandé de la confirmer à chaque lancement."
+  },
+  "reticulumSetup": {
+    "backupBody": "Ces mots restaurent votre identité si vous perdez ce téléphone. Enregistrez-les maintenant dans un endroit privé. Ne les donnez jamais à quelqu'un qui vous demande votre adresse de messagerie. Vous pouvez également exporter plus tard une sauvegarde protégée depuis le réseau.",
+    "identityBody": "Votre identité est votre compte sur ce réseau. Elle est stockée sur ce téléphone, sans inscription ni fournisseur de compte central. Votre adresse de messagerie reste la même lorsque vous changez de nom.",
+    "startBody": "Reticulum connecte les personnes et les applications via Internet, les réseaux locaux ou des radios compatibles. Vous pouvez l'essayer avec seulement ce téléphone et une connexion Internet."
+  }
+}
