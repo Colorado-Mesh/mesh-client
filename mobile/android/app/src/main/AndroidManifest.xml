@@ -91,6 +91,12 @@
         android:maxSdkVersion="30" />
     <!-- GPS position sharing; also required for BLE scanning on Android 11 and older. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Scan QR with the camera (getUserMedia): Capacitor's WebChromeClient asks for this at the
+         first scan, and Android refuses a runtime request for a permission the manifest omits. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Reticulum voice messages and calls (getUserMedia audio): Capacitor asks for both. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Notifications, background radio links. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -99,7 +105,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 
     <!-- All hardware is optional (MQTT / internet-only use works anywhere); without these the
-         BLUETOOTH and location permissions would imply required features and filter devices. -->
+         BLUETOOTH, location, CAMERA and RECORD_AUDIO permissions would imply required features
+         and filter devices. -->
     <uses-feature
         android:name="android.hardware.bluetooth"
         android:required="false" />
@@ -117,5 +124,11 @@
         android:required="false" />
     <uses-feature
         android:name="android.hardware.wifi"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.microphone"
         android:required="false" />
 </manifest>
