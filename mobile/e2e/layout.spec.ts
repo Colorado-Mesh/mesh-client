@@ -22,7 +22,9 @@ const DEVICES: Device[] = [
   { name: 'Galaxy Z Flip cover', width: 361, height: 399, nav: 'bar', panes: '1' },
   { name: 'iPhone Duo unfolded portrait', width: 669, height: 951, nav: 'bar', panes: '2' },
   { name: 'iPhone Duo unfolded landscape', width: 951, height: 669, nav: 'rail', panes: '2' },
-  { name: 'Pixel 9 Pro Fold inner', width: 836, height: 842, nav: 'bar', panes: '2' },
+  // The Pixel 9 Pro Fold emulator profile (2076x2152 px at 390 dpi) gives the WebView 852x796:
+  // past the 840 px rail threshold (Material 3's expanded class), as the emulator showed.
+  { name: 'Pixel 9 Pro Fold inner', width: 852, height: 796, nav: 'rail', panes: '2' },
   { name: 'Galaxy Z Fold inner', width: 744, height: 860, nav: 'bar', panes: '2' },
   { name: 'Pixel Tablet landscape', width: 1280, height: 800, nav: 'rail', panes: '2' },
   { name: 'iPad portrait', width: 820, height: 1180, nav: 'bar', panes: '2' },
