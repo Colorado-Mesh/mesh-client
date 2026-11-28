@@ -185,10 +185,13 @@ export interface MeshCoreConnection {
   exportContact(pubKey?: Uint8Array | null): Promise<Uint8Array>;
   shareContact(pubKey: Uint8Array): Promise<void>;
   // Statistics
-  getStats(statsType: number): Promise<MeshCoreStatsResponse<Record<string, unknown>>>;
-  getStatsCore(): Promise<MeshCoreStatsResponse<MeshCoreCoreStatsData>>;
-  getStatsRadio(): Promise<MeshCoreStatsResponse<MeshCoreRadioStatsData>>;
-  getStatsPackets(): Promise<MeshCoreStatsResponse<MeshCorePacketStatsData>>;
+  getStats(
+    statsType: number,
+    timeoutMs?: number,
+  ): Promise<MeshCoreStatsResponse<Record<string, unknown>>>;
+  getStatsCore(timeoutMs?: number): Promise<MeshCoreStatsResponse<MeshCoreCoreStatsData>>;
+  getStatsRadio(timeoutMs?: number): Promise<MeshCoreStatsResponse<MeshCoreRadioStatsData>>;
+  getStatsPackets(timeoutMs?: number): Promise<MeshCoreStatsResponse<MeshCorePacketStatsData>>;
   // Channel data
   sendChannelData(
     channelIdx: number,

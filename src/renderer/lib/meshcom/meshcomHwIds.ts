@@ -326,9 +326,15 @@ const MESHCOM_BUILD_MONTH_ABBR: Readonly<Record<string, number>> = {
   dec: 12,
 };
 
+function meshcomCalendarSuffix(year: number, month: number, day: number): string | null {
+  if (year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return `.${year}.${String(month).padStart(2, '0')}.${String(day).padStart(2, '0')}`;
+}
+
 /**
- * Convert a device build stamp into the GitHub release calendar suffix (`.MM.DD`).
+ * Convert a device build stamp into a calendar suffix (`.YYYY.MM.DD`).
  * Accepts BLE `BDATE` (`YYYYMMDD-HHMMSS`) or serial `(build: Nov 22 2026 / …)` text.
+ * The year is kept so a January release can be newer than a November device.
  */
 function meshcomBuildStampToReleaseSuffix(stamp: string | null | undefined): string | null {
   const raw = typeof stamp === 'string' ? stamp.trim() : '';
@@ -338,7 +344,11 @@ function meshcomBuildStampToReleaseSuffix(stamp: string | null | undefined): str
   if (ymd) {
     const rest = raw.slice(8);
     if (rest === '' || (/^-\d{6}$/.test(rest) && rest.length === 7)) {
-      return `.${ymd[2]}.${ymd[3]}`;
+      return meshcomCalendarSuffix(
+        Number.parseInt(ymd[1], 10),
+        Number.parseInt(ymd[2], 10),
+        Number.parseInt(ymd[3], 10),
+      );
     }
   }
   // Serial build text: "Nov 22 2026" (fixed 3-letter month + day + year).
@@ -348,14 +358,14 @@ function meshcomBuildStampToReleaseSuffix(stamp: string | null | undefined): str
   if (!Object.hasOwn(MESHCOM_BUILD_MONTH_ABBR, monthKey)) return null;
   const month = MESHCOM_BUILD_MONTH_ABBR[monthKey];
   const day = Number.parseInt(serial[2], 10);
-  if (!Number.isFinite(day) || day < 1 || day > 31) return null;
-  return `.${String(month).padStart(2, '0')}.${String(day).padStart(2, '0')}`;
+  const year = Number.parseInt(serial[3], 10);
+  return meshcomCalendarSuffix(year, month, day);
 }
 
 /**
  * Connection / metadata display for installed MeshCom firmware.
- * Matches MeshCom-Firmware release tags (`4.40a.11.22`): collapses BLE spaced FWVER
- * (`4.40 a` → `4.40a`) and maps BLE `BDATE` / serial `(build: …)` to `.MM.DD`.
+ * Collapses BLE spaced FWVER (`4.40 a` → `4.40a`) and maps BLE `BDATE` /
+ * serial `(build: …)` to `.YYYY.MM.DD` so firmware compare keeps the calendar year.
  */
 export function formatMeshcomInstalledFirmware(
   fwver?: string | null,
@@ -379,11 +389,24 @@ export function formatMeshcomInstalledFirmware(
   if (baseMatch) {
     const letterBase = `${baseMatch[1]}${baseMatch[2]}`.toLowerCase();
     let rest = collapsed.slice(baseMatch[0].length);
+    const yearDate = /^\.(\d{4})\.(\d{1,2})\.(\d{1,2})/.exec(rest);
+    if (yearDate) {
+      rest = rest.slice(yearDate[0].length);
+      const rmTail = /^-rm\d*$/i.test(rest) ? rest : '';
+      if (rest === '' || rmTail) {
+        const month = yearDate[2].padStart(2, '0');
+        const day = yearDate[3].padStart(2, '0');
+        return `${letterBase}.${yearDate[1]}.${month}.${day}${rmTail}`;
+      }
+    }
     const dateMatch = /^\.(\d\d?)\.(\d\d?)/.exec(rest);
     if (dateMatch) {
       rest = rest.slice(dateMatch[0].length);
       const rmTail = /^-rm\d*$/i.test(rest) ? rest : '';
       if (rest === '' || rmTail) {
+        const stamped =
+          meshcomBuildStampToReleaseSuffix(bdate) ?? meshcomBuildStampToReleaseSuffix(parenBuild);
+        if (stamped) return `${letterBase}${stamped}${rmTail}`;
         return `${letterBase}.${dateMatch[1]}.${dateMatch[2]}${rmTail}`;
       }
     }

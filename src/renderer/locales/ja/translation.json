@@ -1763,7 +1763,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[国]/[州]、例: msh/コロラド州/米国",
-      "meshcoreLetsmesh": "メッシュコア/{IATA}、例:メッシュコア/DEN",
+      "meshcoreLetsmesh": "お住まいの地域に最も近い空港の IATA を選んでください（meshcore/{IATA}）。test はアナライザの試験だけに使ってください。",
       "meshcoreDefault": "MESHCORE/[国]/[州]、例:メッシュコア/米国/コロラド州",
       "meshcom": "MeshComゲートウェイのブローカルートトピック（例：meshcom）"
     },
@@ -1861,12 +1861,12 @@
       "syncFailed": "RMAP検出の同期に失敗しました。",
       "publishingOf": "RMAP v4: {{total}} 中 {{current}} を公開しています"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けです。プリセットはmeshcore/DEN（デンバーIATA）で公開されています。コロラド州にいない場合は、代わりにLetsMeshまたはMeshMapperを使用してください。続行しますか？",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT はコロラド地域のメッシュ利用者向けです。トピック接頭辞には最寄りの空港 IATA を選んでください。コロラド以外の場合は LetsMesh または MeshMapper を使ってください。続行しますか？",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けで、meshcore/DENの下で公開されています。コロラド州外にいる場合は、LetsMesh（グローバルパブリックブローカー）に切り替えます。",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT はコロラド地域のメッシュ利用者向けです。コロラド以外の場合は LetsMesh（世界向けの公開ブローカ）に切り替えてください。",
     "coloradoRegionGateStay": "私はコロラド州にいます",
     "coloradoRegionGateSwitch": "LetsMeshに切り替える",
-    "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。",
+    "topicPrefixInvalidIata": "接続する前に、一覧から空港の IATA（または test）を選んでください。",
     "maxRetriesHelpConnected": {
       "meshcore": "諦める前に再接続を試みます（ 1 - {{max}} ）。設定が保存されました。変更後にもう一度接続を押して、メインプロセスがそれをピックアップします。",
       "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。",
@@ -9177,7 +9177,7 @@
     "connectionHint": "MeshComは、国設定（--setctry）を介してハムバンドLoRaを使用します。ノードの国プロファイルがライセンスと一致していることを確認してください。",
     "countrySettingLabel": "国/地域の設定（--setctry）",
     "extUdpHint": "EXTUDPには、--extudpがオンで、--extudpipがこのコンピュータ (UDP 1799)を指すように構成されたノードが必要です。",
-    "kissTcpHint": "KISS/TCPはMeshComポート8001を使用します。Reticulum KISS/AX.25ではありません。",
+    "kissTcpHint": "KISS/TCP は MeshCom のポート 8001 を使います — Reticulum KISS/AX.25 ではありません。--kiss auth が有効なときの --passwd は任意です。信頼できる LAN/VPN のみ（TLS なし）。",
     "channelAll": "すべて",
     "channelGroup": "グループ{{id}}",
     "callsignFieldLabel": "コールサイン（--setcall）",
@@ -9322,7 +9322,7 @@
     "autoSettime": "接続時にノード時刻を自動的に設定する",
     "autoSettimeHint": "シリアルまたはBLE経由で接続している場合は、このコンピュータのUTCクロック（例：{{example}}）で--settimeを送信します。",
     "settimeNow": "現在時刻を設定（UTC）",
-    "requiresSerialBle": "シリアルまたはBLEを介して接続し、デバイスコマンドを送信します。EXTUDPおよびKISS/TCPはチャットのみを伝送します。",
+    "requiresSerialBle": "デバイスコマンドを送るには Serial、BLE、または NET Console で接続してください。EXTUDP と KISS/TCP はチャットのみです。",
     "filter": "コマンドを絞り込む",
     "filterPlaceholder": "--settime、ゲートウェイ、ネイバーを検索…",
     "serialOnly": "USBシリアルコンソール（レガシー）",

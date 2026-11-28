@@ -1284,7 +1284,7 @@ export default function RoomsPanel({
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
+      if (!isActive || e.key !== 'Escape') return;
       if (filterSender != null) {
         setFilterSender(null);
         return;
@@ -1301,7 +1301,7 @@ export default function RoomsPanel({
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [closeSearch, filterSender, showDatePicker, showSearch]);
+  }, [closeSearch, filterSender, isActive, showDatePicker, showSearch]);
 
   const starredIdSet = useMemo(() => new Set(starred.map((s) => s.starId)), [starred]);
   const roomStarred = useMemo(

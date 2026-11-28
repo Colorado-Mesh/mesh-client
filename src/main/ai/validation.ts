@@ -15,6 +15,8 @@ import {
   type AiSummaryPassMode,
   type AiSummaryRequest,
 } from '../../shared/ai-types';
+import { redactMeshcomSecretsInText } from '../../shared/meshcomCommandSecrets';
+import { redactMeshcoreCliSecretsInText } from '../../shared/meshcoreCliSecrets';
 
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -30,6 +32,11 @@ const CHAT_SURFACES = new Set(['channel', 'dm', 'room', 'rrc']);
 export const stripNonprinting = (value: string): string =>
   // eslint-disable-next-line no-control-regex -- strip nonprinting controls from untrusted text
   value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');
+
+/** Same secret scrub as the support bundle, applied before a log is sent to a model. */
+function redactLogAnalysisText(value: string): string {
+  return redactMeshcomSecretsInText(redactMeshcoreCliSecretsInText(value));
+}
 
 export function validateAiConfig(value: unknown): AiEndpointConfig {
   if (
@@ -181,10 +188,11 @@ export function validateAiRequest(value: unknown): AiSummaryRequest {
       throw new Error('Invalid AI message');
     chars += message.body.length;
     if (chars > AI_MAX_TOTAL_CHARS) throw new Error('Invalid AI message size');
+    const body = stripNonprinting(message.body);
     return {
       at: message.at,
-      sender: message.sender,
-      body: stripNonprinting(message.body),
+      sender: isLog ? redactLogAnalysisText(stripNonprinting(message.sender)) : message.sender,
+      body: isLog ? redactLogAnalysisText(body) : body,
     };
   });
   return {

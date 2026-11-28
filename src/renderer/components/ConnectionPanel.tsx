@@ -3232,7 +3232,8 @@ export default function ConnectionPanel({
 
   const deleteMeshcoreFeedNow = (feed: MeshcoreMqttFeed) => {
     meshcoreFeedAttemptRef.current[feed.id] = -1;
-    if (meshcoreConnectionStatus(feed.id) !== 'disconnected') disconnectMeshcoreFeed(feed.id);
+    // Status is `disconnected` during reconnect backoff while lastSettings is still set.
+    disconnectMeshcoreFeed(feed.id);
     setMeshcoreFeeds((prev) => deleteMeshcoreMqttFeed(prev, feed.id));
     if (meshcoreEditorTarget === feed.id) setMeshcoreEditorTarget(null);
   };

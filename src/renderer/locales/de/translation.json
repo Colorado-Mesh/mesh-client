@@ -1761,7 +1761,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Land]/[Bundesland], z.B. msh/CO/US",
-      "meshcoreLetsmesh": "meshcore/{IATA}, z.B. Meshcore/DEN",
+      "meshcoreLetsmesh": "Wählen Sie den Flughafen-IATA, der Ihrer Gegend am nächsten liegt (meshcore/{IATA}). test nur zum Testen des Analyzers verwenden.",
       "meshcoreDefault": "MESHCORE/[Land]/[Staat], z.B. MESHCORE/US/CO",
       "meshcom": "Broker-Stam-Topic für Ihr MeshCom-Gateway, z. B. meshcom"
     },
@@ -1859,12 +1859,12 @@
       "syncFailed": "RMAP-Erkennungssynchronisierung fehlgeschlagen.",
       "publishingOf": "RMAP v4: {{current}} von {{total}} veröffentlichen"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT ist für Mesh-Nutzer im Raum Colorado. Die Voreinstellung wird unter meshcore/DEN (Denver IATA) veröffentlicht. Wenn Sie nicht in Colorado sind, verwenden Sie stattdessen LetsMesh oder MeshMapper. Fortfahren?",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT ist für Mesh-Nutzer im Raum Colorado. Wählen Sie für das Topic-Präfix den IATA-Code Ihres lokalen Flughafens. Wenn Sie nicht in Colorado sind, verwenden Sie stattdessen LetsMesh oder MeshMapper. Fortfahren?",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT ist für Colorado-area Mesh-Benutzer und veröffentlicht unter meshcore/DEN. Wenn Sie sich außerhalb von Colorado befinden, wechseln Sie zu LetsMesh (globaler öffentlicher Broker).",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT ist für Mesh-Nutzer im Raum Colorado. Wenn Sie sich außerhalb von Colorado befinden, wechseln Sie zu LetsMesh (globaler öffentlicher Broker).",
     "coloradoRegionGateStay": "Ich bin in Colorado",
     "coloradoRegionGateSwitch": "Zu LetsMesh wechseln",
-    "topicPrefixInvalidIata": "Das Themenpräfix muss meshcore/test oder meshcore/{IATA} (3 Buchstaben) sein, z. B. meshcore/DEN.",
+    "topicPrefixInvalidIata": "Wählen Sie vor dem Verbinden einen Flughafen-IATA aus der Liste (oder die Testoption).",
     "maxRetriesHelpConnected": {
       "meshcore": "Versuche erneut verbinden, bevor du aufgibst (1–{{max}}). Mit Einstellungen gespeichert; drücken Sie nach dem Ändern erneut auf Verbinden, damit der Hauptprozess ihn aufnimmt.",
       "meshtastic": "Beide Protokolle erlauben 1–{{max}}. Mit Einstellungen gespeichert; trennen und erneut verbinden, damit die laufende Sitzung den neuen Wert verwendet.",
@@ -9177,7 +9177,7 @@
     "connectionHint": "MeshCom verwendet das Amateurfunkband LoRa über die Ländereinstellung (--setctry). Stellen Sie sicher, dass das Länderprofil Ihres Knotens mit Ihrer Lizenz übereinstimmt.",
     "countrySettingLabel": "Ländereinstellung (--setctry)",
     "extUdpHint": "EXTUDP benötigt den Knoten, der mit --extudp on und --extudpip konfiguriert ist, der auf diesen Computer verweist (UDP 1799).",
-    "kissTcpHint": "KISS/TCP verwendet den MeshCom-Port 8001 – nicht Reticulum KISS/AX.25.",
+    "kissTcpHint": "KISS/TCP verwendet MeshCom-Port 8001 — nicht Reticulum KISS/AX.25. Optionales --passwd, wenn --kiss auth aktiv ist. Nur vertrauenswürdiges LAN/VPN (kein TLS).",
     "channelAll": "ALLE",
     "channelGroup": "Gruppe {{id}}",
     "callsignFieldLabel": "Rufzeichen (--setcall)",
@@ -9322,7 +9322,7 @@
     "autoSettime": "Knotenzeit bei Verbindung automatisch einstellen",
     "autoSettimeHint": "Wenn die Verbindung über seriell oder BLE hergestellt wird, senden Sie --settime mit der UTC-Uhr dieses Computers (z. B. {{example}}).",
     "settimeNow": "Zeit jetzt einstellen (UTC)",
-    "requiresSerialBle": "Stellen Sie eine Verbindung über Serial oder BLE her, um Gerätebefehle zu senden. EXTUDP und KISS/TCP übertragen nur den Chat.",
+    "requiresSerialBle": "Verbinden Sie sich über Serial, BLE oder NET Console, um Gerätebefehle zu senden. EXTUDP und KISS/TCP übertragen nur Chat.",
     "filter": "Befehle filtern",
     "filterPlaceholder": "Suche --settime, Gateway, Nachbarn …",
     "serialOnly": "USB serielle Konsole (Legacy)",

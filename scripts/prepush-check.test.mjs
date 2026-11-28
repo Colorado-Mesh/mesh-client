@@ -88,19 +88,20 @@ describe('prepush-check', () => {
     expect(spawnSyncFn).not.toHaveBeenCalledWith('pnpm', ['run', 'typecheck'], expect.anything());
   });
 
-  it('prepush cache key tracks HEAD, merge-base and working-tree content', () => {
+  it('prepush cache key tracks HEAD, path names, and content hashes', () => {
     const makeSpawn = (state) => (cmd, args) => {
       if (args[0] === 'rev-parse' && args[1] === 'HEAD') return { status: 0, stdout: state.head };
-      if (args[0] === 'diff' && args[1] === 'HEAD') return { status: 0, stdout: state.diff };
+      if (args[0] === 'diff' && args[1] === '--name-only')
+        return { status: 0, stdout: state.names };
       if (args[0] === 'ls-files') return { status: 0, stdout: state.untracked };
-      if (args[0] === 'hash-object') return { status: 0, stdout: state.untrackedHashes };
+      if (args[0] === 'hash-object') return { status: 0, stdout: state.hashes };
       return { status: 0, stdout: '' };
     };
     const base = {
       head: 'abc',
-      diff: '',
+      names: '',
       untracked: '',
-      untrackedHashes: '',
+      hashes: 'hash\n',
     };
     const keyOf = (state) =>
       computePrepushCacheKey({
@@ -112,8 +113,26 @@ describe('prepush-check', () => {
     const a = keyOf(base);
     expect(keyOf({ ...base })).toBe(a);
     expect(keyOf({ ...base, head: 'def' })).not.toBe(a);
-    expect(keyOf({ ...base, diff: 'diff --git a/x b/x' })).not.toBe(a);
+    expect(keyOf({ ...base, names: 'package.json\n' })).not.toBe(a);
+    expect(keyOf({ ...base, names: 'package.json\n', hashes: 'other\n' })).not.toBe(
+      keyOf({ ...base, names: 'package.json\n' }),
+    );
     expect(keyOf({ ...base, untracked: 'new.test.ts\n' })).not.toBe(a);
+  });
+
+  it('returns null when a git command fails so the cache cannot hit', () => {
+    const spawnSyncFn = () => ({
+      status: null,
+      stdout: '',
+      error: Object.assign(new Error('spawn ENOBUFS'), { code: 'ENOBUFS' }),
+    });
+    expect(
+      computePrepushCacheKey({
+        mergeBase: 'merge-base',
+        cwd: process.cwd(),
+        spawnSyncFn,
+      }),
+    ).toBeNull();
   });
 
   it('prepush cache key changes with the merge-base', () => {

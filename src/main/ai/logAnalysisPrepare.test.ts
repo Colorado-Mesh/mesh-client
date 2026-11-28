@@ -98,4 +98,36 @@ describe('prepareLogAnalysisPrompt', () => {
       expect.objectContaining({ isOnline: expect.any(Function) }),
     );
   });
+
+  it('redacts MeshCore and MeshCom secrets before the prompt is built', async () => {
+    mockedFetch.mockResolvedValue({
+      docsText: '## CLI\n\n',
+      docsUrl: 'https://docs.example/troubleshooting/',
+      truncated: false,
+    });
+    const prepared = await prepareLogAnalysisPrompt(
+      {
+        conversationLabel: 'meshcore log analysis',
+        protocol: 'meshcore',
+        locale: 'en',
+        messages: [
+          {
+            at: 1,
+            sender: 'cli',
+            body: 'set pin 123456 and --setpwd meshcom-secret',
+          },
+        ],
+      },
+      { maxChars: 4_000, maxPromptBytes: 12_000 },
+      () => true,
+    );
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.prompt.user).not.toContain('123456');
+    expect(prepared.prompt.user).not.toContain('meshcom-secret');
+    expect(prepared.prompt.user).toContain('[redacted]');
+    const hints = JSON.stringify(mockedFetch.mock.calls[0]?.[1] ?? null);
+    expect(hints).not.toContain('123456');
+    expect(hints).not.toContain('meshcom-secret');
+  });
 });

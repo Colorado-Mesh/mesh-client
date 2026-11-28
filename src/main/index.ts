@@ -239,7 +239,10 @@ import type {
   MeshcoreMqttWarningEvent,
 } from './meshcore-mqtt-pool';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
-import { meshcoreContactInputToUpsertParams } from './meshcoreContactInput';
+import {
+  isMeshcoreLastSyncedFromRadioValue,
+  meshcoreContactInputToUpsertParams,
+} from './meshcoreContactInput';
 import {
   clearMeshcoreMessagesByChannel,
   MESHCORE_MESSAGE_CHANNEL_SQL,
@@ -251,6 +254,7 @@ import { migrateMeshtasticNodeNumInDb } from './meshtasticNodeRenumber';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
+import { isPublishProxyDataWithinLimit } from './mqtt-packet-limits';
 import { CustomMapSourceStore } from './offline-maps/custom-sources';
 import { CustomMapSourcesService } from './offline-maps/custom-sources-service';
 import { createMeshTilesProtocolHandler } from './offline-maps/protocol';
@@ -1096,7 +1100,7 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
       'db:saveMeshcoreContact: on_radio must be 0 or 1',
     ],
     [
-      isOptionalStringWithin(c.last_synced_from_radio, 128),
+      isMeshcoreLastSyncedFromRadioValue(c.last_synced_from_radio),
       'db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128',
     ],
   ]);
@@ -1488,11 +1492,6 @@ function validateMqttPublishArgs(args: unknown): void {
     throw new Error('mqtt:publish: publishJsonMirror must be a boolean');
   }
   validateOptionalPskBase64(a.pskBase64, 'mqtt:publish');
-}
-
-function isPublishProxyDataWithinLimit(data: unknown): boolean {
-  if (data instanceof Uint8Array) return data.byteLength <= 512 * 1024;
-  return new Uint8Array(data as ArrayBuffer).byteLength <= 512 * 1024;
 }
 
 function validateMqttPublishProxyArgs(args: unknown): void {

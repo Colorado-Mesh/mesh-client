@@ -268,6 +268,7 @@ describe('fetchLatestMeshComRelease', () => {
         JSON.stringify({
           tag_name: 'v4.40a.11.14',
           html_url: 'https://github.com/icssw-org/MeshCom-Firmware/releases/tag/v4.40a.11.14',
+          published_at: '2026-11-14T18:00:00Z',
         }),
         { status: 200 },
       ),
@@ -275,6 +276,7 @@ describe('fetchLatestMeshComRelease', () => {
 
     const result = await fetchLatestMeshComRelease();
     expect(result.version).toBe('4.40a.11.14');
+    expect(result.publishedAt.toISOString()).toBe('2026-11-14T00:00:00.000Z');
     expect(result.releaseUrl).toBe(
       'https://github.com/icssw-org/MeshCom-Firmware/releases/tag/v4.40a.11.14',
     );
@@ -320,6 +322,7 @@ describe('parseMeshComVersion', () => {
       major: 4,
       minor: 40,
       letter: 'a',
+      year: null,
       month: null,
       day: null,
     });
@@ -327,8 +330,17 @@ describe('parseMeshComVersion', () => {
       major: 4,
       minor: 40,
       letter: 'a',
+      year: null,
       month: 11,
       day: 14,
+    });
+    expect(parseMeshComVersion('4.40a.2025.11.22')).toEqual({
+      major: 4,
+      minor: 40,
+      letter: 'a',
+      year: 2025,
+      month: 11,
+      day: 22,
     });
   });
 
@@ -356,6 +368,15 @@ describe('meshComFirmwareUpdateAvailable', () => {
   it('compares MM.DD only when the device reports a date', () => {
     expect(meshComFirmwareUpdateAvailable('4.40a.11.07', '4.40a.11.22')).toBe(true);
     expect(meshComFirmwareUpdateAvailable('4.40a.11.22', '4.40a.11.22')).toBe(false);
+  });
+
+  it('treats a January release as newer than a November device when years are known', () => {
+    const published = new Date(Date.UTC(2026, 0, 15));
+    expect(meshComFirmwareUpdateAvailable('4.40a.2025.11.22', '4.40a.01.15', published)).toBe(true);
+    expect(meshComFirmwareUpdateAvailable('4.40a.2026.11.22', '4.40a.01.15', published)).toBe(
+      false,
+    );
+    expect(meshComFirmwareUpdateAvailable('4.40a.2025.11.22', '4.40a.2026.01.15')).toBe(true);
   });
 
   it('returns false for unparseable device or release', () => {

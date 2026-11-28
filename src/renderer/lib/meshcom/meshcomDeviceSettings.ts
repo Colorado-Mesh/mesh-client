@@ -81,7 +81,7 @@ export interface MeshcomDeviceSettingsSnapshot {
   countryCode: string;
   /**
    * Firmware revision for Connection / update-check display
-   * (release-tag shape, e.g. `4.40a.11.22`).
+   * (calendar shape, e.g. `4.40a.2026.11.22`).
    */
   firmwareVersion?: string;
   batteryLevel?: number;

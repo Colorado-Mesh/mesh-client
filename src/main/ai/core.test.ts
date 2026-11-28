@@ -416,6 +416,19 @@ describe('AI prompts and validation', () => {
       scope: { kind: 'loaded' as const },
     };
     expect(validateAiRequest(logRequest).surface).toBe('log');
+    const secretLog = validateAiRequest({
+      ...logRequest,
+      messages: [
+        {
+          at: 1,
+          sender: 'cli',
+          body: 'set wifi.pwd hunter2\n--passwd meshcom-secret',
+        },
+      ],
+    });
+    expect(secretLog.messages[0]?.body).not.toContain('hunter2');
+    expect(secretLog.messages[0]?.body).not.toContain('meshcom-secret');
+    expect(secretLog.messages[0]?.body).toContain('[redacted]');
     expect(() =>
       validateAiRequest({
         ...logRequest,

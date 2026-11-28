@@ -1763,7 +1763,7 @@
     },
     "topicPrefixHelp": {
       "meshtastic": "msh/[Negara]/[Negara Bagian], mis. msh/CO/AS",
-      "meshcoreLetsmesh": "meshcore/{IATA}, mis. inti jaring/DEN",
+      "meshcoreLetsmesh": "Pilih IATA bandara terdekat dengan wilayah Anda (meshcore/{IATA}). Gunakan test hanya untuk pengujian analyzer.",
       "meshcoreDefault": "MESHCORE/[Negara]/[Negara Bagian], mis. MESHCORE/AS/CO",
       "meshcom": "Topik root broker untuk gateway MeshCom Anda, misalnya meshcom"
     },
@@ -1861,12 +1861,12 @@
       "syncFailed": "Sinkronisasi penemuan RMAP gagal.",
       "publishingOf": "RMAP v4: menerbitkan {{current}} dari {{total}}"
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT ditujukan bagi pengguna mesh di wilayah Colorado. Prasetel diterbitkan di bawah meshcore/DEN (Denver IATA). Jika Anda tidak berada di Colorado, gunakan LetsMesh atau MeshMapper sebagai gantinya. Lanjutkan?",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT untuk pengguna mesh di wilayah Colorado. Pilih IATA bandara lokal sebagai awalan topik. Jika Anda tidak berada di Colorado, gunakan LetsMesh atau MeshMapper. Lanjutkan?",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
-    "coloradoRegionGateMessage": "Colorado Mesh MQTT adalah untuk pengguna mesh area Colorado dan dipublikasikan di bawah meshcore/DEN. Jika Anda berada di luar Colorado, beralihlah ke LetsMesh (broker publik global).",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT untuk pengguna mesh di wilayah Colorado. Jika Anda berada di luar Colorado, beralihlah ke LetsMesh (broker publik global).",
     "coloradoRegionGateStay": "Saya di Colorado",
     "coloradoRegionGateSwitch": "Beralih ke LetsMesh",
-    "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore/{IATA} (3 huruf), misalnya meshcore/DEN.",
+    "topicPrefixInvalidIata": "Pilih IATA bandara dari daftar (atau opsi test) sebelum menghubungkan.",
     "maxRetriesHelpConnected": {
       "meshcore": "Sambungkan kembali percobaan sebelum menyerah (1 -{{max}}). Disimpan dengan pengaturan; tekan Hubungkan lagi setelah berubah sehingga proses utama mengambilnya.",
       "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru.",
@@ -9177,7 +9177,7 @@
     "connectionHint": "MeshCom menggunakan pita frekuensi amatir LoRa melalui Pengaturan Negara (--setctry). Pastikan profil negara node Anda sesuai dengan lisensi Anda.",
     "countrySettingLabel": "Pengaturan Negara (--setctry)",
     "extUdpHint": "EXTUDP memerlukan node yang dikonfigurasi dengan --extudp aktif dan --extudpip mengarah ke komputer ini (UDP 1799).",
-    "kissTcpHint": "KISS/TCP menggunakan port MeshCom 8001 — bukan Reticulum KISS/AX.25.",
+    "kissTcpHint": "KISS/TCP memakai port MeshCom 8001 — bukan Reticulum KISS/AX.25. --passwd opsional saat --kiss auth aktif. Hanya LAN/VPN tepercaya (tanpa TLS).",
     "channelAll": "SEMUA",
     "channelGroup": "Grup {{id}}",
     "callsignFieldLabel": "Panggilan tanda (--setcall)",
@@ -9322,7 +9322,7 @@
     "autoSettime": "Atur waktu node secara otomatis saat terhubung",
     "autoSettimeHint": "Saat terhubung melalui Serial atau BLE, kirim --settime dengan jam UTC komputer ini (misalnya {{example}}).",
     "settimeNow": "Atur waktu sekarang (UTC)",
-    "requiresSerialBle": "Sambungkan melalui Serial atau BLE untuk mengirim perintah perangkat. EXTUDP dan KISS/TCP hanya untuk obrolan.",
+    "requiresSerialBle": "Hubungkan lewat Serial, BLE, atau NET Console untuk mengirim perintah perangkat. EXTUDP dan KISS/TCP hanya membawa chat.",
     "filter": "Perintah filter",
     "filterPlaceholder": "Cari --settime, gateway, tetangga…",
     "serialOnly": "Konsol serial USB (lama)",

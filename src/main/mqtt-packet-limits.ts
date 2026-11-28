@@ -3,6 +3,18 @@ import type { IClientOptions } from 'mqtt';
 /** Maximum complete MQTT packet and WebSocket message accepted from an untrusted broker. */
 export const MQTT_MAX_PACKET_BYTES = 1024 * 1024;
 
+/** Renderer `mqtt:publishProxy` payload cap. Checked on the view length — never allocate. */
+export const MQTT_PUBLISH_PROXY_MAX_BYTES = 512 * 1024;
+
+/**
+ * True when `data` is a typed-array view no larger than {@link MQTT_PUBLISH_PROXY_MAX_BYTES}.
+ * Non-views return false without constructing a buffer (a numeric length would OOM).
+ */
+export function isPublishProxyDataWithinLimit(data: unknown): boolean {
+  if (!ArrayBuffer.isView(data)) return false;
+  return data.byteLength <= MQTT_PUBLISH_PROXY_MAX_BYTES;
+}
+
 export const MQTT_PACKET_TOO_LARGE_ERROR_CODE = 'MQTT_PACKET_TOO_LARGE';
 
 /** Error code emitted by `ws` when a complete message exceeds `maxPayload`. */
