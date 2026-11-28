@@ -38,6 +38,8 @@ interface AdapterPrivate {
   status: string;
   lastSettings: MQTTSettings | null;
   pendingReconnect: boolean;
+  retryCount: number;
+  lastConnected: number | null;
   _doConnect: (s: MQTTSettings) => void;
 }
 
@@ -353,7 +355,19 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
   });
 
   describe('scheduleTokenRefresh via updateToken', () => {
-    it('emits EVENT_PROACTIVE_TOKEN_REFRESH after the grace-period offset', () => {
+    async function connackAfterProactiveUpdate(expiresAt: number): Promise<void> {
+      const mqttMod = await import('mqtt');
+      seedConnected(adapter, expiresAt);
+      adapter.updateToken('new-token', expiresAt);
+      const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      const connectHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'connect');
+      const connectFn = connectHits[connectHits.length - 1]?.[1] as () => void;
+      connectFn();
+    }
+
+    it('emits EVENT_PROACTIVE_TOKEN_REFRESH after the grace-period offset', async () => {
       // Use 30-min expiry so grace-period logic is the binding constraint,
       // not the 54-min PROACTIVE_REFRESH_MS cap.
       const TOKEN_GRACE_PERIOD_MS = 5 * 60 * 1000;
@@ -361,12 +375,9 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
       const scheduleMs = expiresInMs - TOKEN_GRACE_PERIOD_MS; // 25 min
       const expiresAt = Date.now() + expiresInMs;
 
-      seedConnected(adapter, expiresAt);
-
       const handler = vi.fn();
       adapter.on(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, handler);
-
-      adapter.updateToken('new-token', expiresAt);
+      await connackAfterProactiveUpdate(expiresAt);
 
       expect(handler).not.toHaveBeenCalled();
 
@@ -378,15 +389,13 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
       expect(handler).toHaveBeenCalledWith(BASE_SETTINGS.server);
     });
 
-    it('caps schedule at PROACTIVE_REFRESH_MS (54 min) for long-lived tokens', () => {
+    it('caps schedule at PROACTIVE_REFRESH_MS (54 min) for long-lived tokens', async () => {
       const PROACTIVE_REFRESH_MS = 54 * 60 * 1000;
       const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 h from now
 
-      seedConnected(adapter, expiresAt);
-
       const handler = vi.fn();
       adapter.on(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, handler);
-      adapter.updateToken('new-token', expiresAt);
+      await connackAfterProactiveUpdate(expiresAt);
 
       vi.advanceTimersByTime(PROACTIVE_REFRESH_MS - 1);
       expect(handler).not.toHaveBeenCalled();
@@ -395,14 +404,12 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
       expect(handler).toHaveBeenCalledOnce();
     });
 
-    it('does not schedule when token is already within grace period', () => {
+    it('does not schedule when token is already within grace period', async () => {
       const expiresAt = Date.now() + 4 * 60 * 1000; // 4 min — inside 5-min grace
-
-      seedConnected(adapter, expiresAt);
 
       const handler = vi.fn();
       adapter.on(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, handler);
-      adapter.updateToken('new-token', expiresAt);
+      await connackAfterProactiveUpdate(expiresAt);
 
       vi.advanceTimersByTime(10 * 60 * 1000);
       expect(handler).not.toHaveBeenCalled();
@@ -433,14 +440,19 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
   });
 
   describe('disconnect() clears pending token timer', () => {
-    it('cancels the refresh timer so the event never fires', () => {
+    it('cancels the refresh timer so the event never fires', async () => {
       const expiresAt = Date.now() + 60 * 60 * 1000;
-
-      seedConnected(adapter, expiresAt);
-
+      const mqttMod = await import('mqtt');
       const handler = vi.fn();
       adapter.on(MeshcoreMqttAdapter.EVENT_PROACTIVE_TOKEN_REFRESH, handler);
+
+      seedConnected(adapter, expiresAt);
       adapter.updateToken('token', expiresAt);
+      const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      const connectHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'connect');
+      (connectHits[connectHits.length - 1]?.[1] as () => void)();
 
       adapter.disconnect();
 
@@ -564,6 +576,67 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
     });
   });
 
+  describe('transient client errors', () => {
+    async function emitClientError(message: string, code?: string) {
+      const mqttMod = await import('mqtt');
+      adapter.on('error', () => {});
+      adapter.connect({ ...BASE_SETTINGS, tokenExpiresAt: Date.now() + 60 * 60 * 1000 });
+      const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      const errorHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'error');
+      const errorFn = errorHits[errorHits.length - 1]?.[1] as (
+        err: Error & { code?: string },
+      ) => void;
+      const err = Object.assign(new Error(message), code ? { code } : {});
+      errorFn(err);
+    }
+
+    it('demotes Keepalive timeout to warn (mcL1518), not error', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      await emitClientError('Keepalive timeout');
+      expect(warnSpy).toHaveBeenCalledWith(
+        'mcL1518 [MeshCore MQTT] Connection timeout (will reconnect):',
+        'Keepalive timeout',
+      );
+      expect(errorSpy.mock.calls.some((c) => String(c[0]).includes('mcL0234'))).toBe(false);
+    });
+
+    it('demotes connack timeout to warn (mcL1518)', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      await emitClientError('connack timeout');
+      expect(warnSpy).toHaveBeenCalledWith(
+        'mcL1518 [MeshCore MQTT] Connection timeout (will reconnect):',
+        'connack timeout',
+      );
+      expect(errorSpy.mock.calls.some((c) => String(c[0]).includes('mcL0234'))).toBe(false);
+    });
+
+    it('demotes coded network errors to warn (mcL1519)', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      await emitClientError('read ETIMEDOUT', 'ETIMEDOUT');
+      expect(warnSpy).toHaveBeenCalledWith(
+        'mcL1519 [MeshCore MQTT] Network error (will reconnect):',
+        'read ETIMEDOUT',
+      );
+      expect(errorSpy.mock.calls.some((c) => String(c[0]).includes('mcL0234'))).toBe(false);
+    });
+
+    it('keeps non-transient failures as error (mcL0234)', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      await emitClientError('Not authorized');
+      expect(errorSpy).toHaveBeenCalledWith(
+        'mcL0234 [MeshCore MQTT] client error',
+        'Not authorized',
+      );
+      expect(warnSpy.mock.calls.some((c) => /mcL151[89]/.test(String(c[0])))).toBe(false);
+    });
+  });
+
   describe('connack timeout during connect', () => {
     it('schedules JWT token refresh after error then close while status is disconnected', async () => {
       vi.spyOn(Math, 'random').mockReturnValue(0);
@@ -639,7 +712,7 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
       expect(doConnectSpy).toHaveBeenCalledOnce();
     });
 
-    it('does not call _doConnect when pendingReconnect is false', () => {
+    it('does not call _doConnect when disconnected and pendingReconnect is false', () => {
       const expiresAt = Date.now() + 60 * 60 * 1000;
       const a = adapter as unknown as AdapterPrivate;
       a.lastSettings = { ...BASE_SETTINGS, tokenExpiresAt: expiresAt };
@@ -649,6 +722,68 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
       adapter.updateToken('token', expiresAt);
 
       expect(doConnectSpy).not.toHaveBeenCalled();
+    });
+
+    it('reconnects a connected session so the new JWT is sent at CONNECT', async () => {
+      const mqttMod = await import('mqtt');
+      const expiresAt = Date.now() + 60 * 60 * 1000;
+      seedConnected(adapter, expiresAt);
+      vi.mocked(mqttMod.connect).mockClear();
+
+      adapter.updateToken('fresh-jwt', expiresAt + 60_000);
+
+      expect(adapter.getSettings()?.password).toBe('fresh-jwt');
+      expect(adapter.getStatus()).toBe('connecting');
+      expect(mqttMod.connect).toHaveBeenCalledOnce();
+      const opts = vi.mocked(mqttMod.connect).mock.calls.at(-1)?.[0] as { password?: string };
+      expect(opts.password).toBe('fresh-jwt');
+    });
+
+    async function connectAndConnack(expiresAt: number) {
+      const mqttMod = await import('mqtt');
+      adapter.connect({
+        ...BASE_SETTINGS,
+        username: `v1_${'A'.repeat(64)}`,
+        tokenExpiresAt: expiresAt,
+      });
+      const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      const connectHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'connect');
+      (connectHits[connectHits.length - 1]?.[1] as () => void)();
+      return mqttMod;
+    }
+
+    it('resets retryCount on JWT reconnect after a stable session and clears lastConnected', async () => {
+      const expiresAt = Date.now() + 60 * 60 * 1000;
+      const mqttMod = await connectAndConnack(expiresAt);
+      const priv = adapter as unknown as AdapterPrivate;
+      priv.retryCount = 2;
+      expect(priv.lastConnected).not.toBeNull();
+
+      vi.advanceTimersByTime(30_000);
+      vi.mocked(mqttMod.connect).mockClear();
+      adapter.updateToken('fresh-jwt', expiresAt + 60_000);
+
+      expect(priv.retryCount).toBe(0);
+      expect(priv.lastConnected).toBeNull();
+      expect(adapter.getStatus()).toBe('connecting');
+      expect(mqttMod.connect).toHaveBeenCalledOnce();
+    });
+
+    it('preserves retryCount on JWT reconnect when the prior session was unstable', async () => {
+      const expiresAt = Date.now() + 60 * 60 * 1000;
+      const mqttMod = await connectAndConnack(expiresAt);
+      const priv = adapter as unknown as AdapterPrivate;
+      priv.retryCount = 2;
+
+      vi.advanceTimersByTime(29_000);
+      vi.mocked(mqttMod.connect).mockClear();
+      adapter.updateToken('fresh-jwt', expiresAt + 60_000);
+
+      expect(priv.retryCount).toBe(2);
+      expect(priv.lastConnected).toBeNull();
+      expect(mqttMod.connect).toHaveBeenCalledOnce();
     });
   });
 });

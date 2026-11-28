@@ -351,10 +351,25 @@ describe('always-on bundle workflow', () => {
               '',
             ].join('\n'),
           );
+          const meshcoreAdapterPad = 'x'.repeat(400);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/meshcore-mqtt-adapter.ts'),
+            [
+              'export class MeshcoreMqttAdapter {',
+              '  connect() {',
+              `    return 'MeshcoreMqttAdapter ${meshcoreAdapterPad}';`,
+              '  }',
+              '}',
+              '',
+            ].join('\n'),
+          );
           const meshcorePoolPad = 'x'.repeat(600);
           fs.writeFileSync(
             path.join(fixture, 'src/main/meshcore-mqtt-pool.ts'),
             [
+              // Pull adapter into the sibling metafile (esbuild-main-build.test asserts this).
+              "import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';",
+              'export { MeshcoreMqttAdapter };',
               'export class MeshcoreMqttPool {',
               '  publishPacketPayload() {',
               `    return 'MeshcoreMqttPool publishPacketPayload ${meshcorePoolPad}';`,

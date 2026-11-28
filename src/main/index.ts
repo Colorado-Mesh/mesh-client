@@ -200,7 +200,7 @@ import { registerWeatherIpcHandlers } from './ipc/weather-handlers';
 import { createIpcRateLimiter } from './ipcRateLimit';
 import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
 import { snapshotLiveSessionMeter } from './live-session-meter';
-import { loadMeshcoreMqttPoolClass } from './loadMeshcoreMqttPool';
+import { loadMeshcoreMqttAdapterClass, loadMeshcoreMqttPoolClass } from './loadMeshcoreMqttPool';
 import { loadValidateMqttPublishWaypointArgs } from './loadMqttPublishWaypointValidation';
 import { loadPaintTrayUnreadDot } from './loadTrayUnreadDot';
 import {
@@ -225,13 +225,13 @@ import {
   isValidMecpAppendPayload,
   readMecpReceivedLogForExport,
 } from './mecp-received-log';
-import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import {
   normalizeOptionalMeshcoreConnectionId,
   resolveMeshcoreConnectionId,
   resolveMeshcoreConnectTarget,
 } from './meshcore-mqtt-connection-id';
 import type {
+  MeshcoreMqttAdapter,
   MeshcoreMqttClientIdEvent,
   MeshcoreMqttErrorEvent,
   MeshcoreMqttStatusEvent,
@@ -388,7 +388,7 @@ const mqttManager = new MQTTManager();
 /** Chat connection + publish-only analyzer feeds (N brokers). */
 const meshcoreMqttPool = new (loadMeshcoreMqttPoolClass())();
 /** MeshCom uses the same generic MQTT.js adapter; envelopes are MeshCore-specific and ignored. */
-const meshcomMqttAdapter = new MeshcoreMqttAdapter();
+const meshcomMqttAdapter = new (loadMeshcoreMqttAdapterClass())();
 
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };

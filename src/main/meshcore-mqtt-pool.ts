@@ -20,6 +20,8 @@ import {
 export type MeshcoreMqttRole = MeshcoreMqttConnectionRole;
 
 export { MAX_MESHCORE_MQTT_CONNECTIONS, MESHCORE_MQTT_CHAT_CONNECTION_ID };
+/** Re-export so MeshCom can construct an adapter from the sibling pool chunk (out of index.js budget). */
+export { MeshcoreMqttAdapterClass as MeshcoreMqttAdapter };
 
 interface PoolEntry {
   adapter: MeshcoreMqttAdapterClass;
