@@ -22,7 +22,10 @@ import { desktopOverridesPlugin } from './scripts/desktop-overrides.mjs';
 const REPO = path.resolve(import.meta.dirname, '..');
 const OUT_DIR = path.resolve(import.meta.dirname, 'dist');
 const ORLP_WASM_NAME = 'orlp-ed25519.wasm';
-const ORLP_WASM_SRC = path.resolve(REPO, `node_modules/@michaelhart/meshcore-decoder/lib/${ORLP_WASM_NAME}`);
+const ORLP_WASM_SRC = path.resolve(
+  REPO,
+  `node_modules/@michaelhart/meshcore-decoder/lib/${ORLP_WASM_NAME}`,
+);
 
 function mobileOrlpWasmPlugin(): Plugin {
   return {
