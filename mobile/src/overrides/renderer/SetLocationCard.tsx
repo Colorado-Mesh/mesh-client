@@ -135,6 +135,11 @@ function LocationCard(props: SetLocationCardProps) {
     }
   };
 
+  // Phone layout: the icon, title and close button share the first row, and the text and buttons
+  // below use the card's full width (the desktop card keeps a column for each). On a 361 px cover
+  // screen at the largest text size the desktop columns left the text a third of the card, and
+  // button labels ran past its edge; mobileShell.css wraps the labels in the body (Tailwind only
+  // generates classes found in src/renderer, so the rule is plain CSS on data-mobile-location-body).
   return (
     <section
       aria-labelledby={headingId}
@@ -142,54 +147,149 @@ function LocationCard(props: SetLocationCardProps) {
     >
       <div className="flex items-start gap-2.5">
         <MapPin aria-hidden size={16} className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <h3 id={headingId} className="text-body font-medium text-orange-200">
-            {confirming
-              ? t('locationPrompt.titleConfirm', { name: savedLocationDisplayName(active, t) })
-              : t(
-                  trust === 'approximate'
-                    ? 'locationPrompt.titleApproximate'
-                    : 'locationPrompt.titleUnknown',
-                )}
-          </h3>
-          <p className="text-body text-orange-200">
-            {confirming
-              ? t('locationPrompt.bodyConfirmPhone', {
-                  coords: formatCoordPair(active.lat, active.lon, coordinateFormat),
-                })
-              : t('locationPrompt.bodyUnknownPhone')}
-          </p>
-          {variant === 'diagnostics' && (
-            <p className="text-label text-orange-300">{t('locationPrompt.diagnosticsPaused')}</p>
-          )}
-          {confirming ? (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
+        <h3 id={headingId} className="text-body min-w-0 flex-1 font-medium text-orange-200">
+          {confirming
+            ? t('locationPrompt.titleConfirm', { name: savedLocationDisplayName(active, t) })
+            : t(
+                trust === 'approximate'
+                  ? 'locationPrompt.titleApproximate'
+                  : 'locationPrompt.titleUnknown',
+              )}
+        </h3>
+        {variant === 'startup' && onDismiss && (
+          <IconButton
+            icon={<X aria-hidden size={16} />}
+            onClick={onDismiss}
+            aria-label={t('locationPrompt.dismiss')}
+            size="sm"
+          />
+        )}
+      </div>
+      <div className="mt-2 space-y-2" data-mobile-location-body="">
+        <p className="text-body text-orange-200">
+          {confirming
+            ? t('locationPrompt.bodyConfirmPhone', {
+                coords: formatCoordPair(active.lat, active.lon, coordinateFormat),
+              })
+            : t('locationPrompt.bodyUnknownPhone')}
+        </p>
+        {variant === 'diagnostics' && (
+          <p className="text-label text-orange-300">{t('locationPrompt.diagnosticsPaused')}</p>
+        )}
+        {confirming ? (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  selectLocation(active);
+                }}
+                aria-label={t('locationPrompt.confirmYesAria', {
+                  name: savedLocationDisplayName(active, t),
+                })}
+                className={buttonClassName('primary', 'sm')}
+              >
+                {t('locationPrompt.confirmYes')}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                aria-busy={busy}
+                onClick={() => {
+                  void fillFromPhone();
+                }}
+                aria-label={t('locationPrompt.usePhoneLocation')}
+                className={buttonClassName('secondary', 'sm')}
+              >
+                {t('locationPrompt.usePhoneLocation')}
+              </button>
+              {others.map((location) => (
                 <button
+                  key={location.id}
                   type="button"
                   onClick={() => {
-                    selectLocation(active);
+                    selectLocation(location);
                   }}
-                  aria-label={t('locationPrompt.confirmYesAria', {
-                    name: savedLocationDisplayName(active, t),
+                  aria-label={t('locationPrompt.switchTo', {
+                    name: savedLocationDisplayName(location, t),
                   })}
-                  className={buttonClassName('primary', 'sm')}
-                >
-                  {t('locationPrompt.confirmYes')}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  aria-busy={busy}
-                  onClick={() => {
-                    void fillFromPhone();
-                  }}
-                  aria-label={t('locationPrompt.usePhoneLocation')}
                   className={buttonClassName('secondary', 'sm')}
                 >
-                  {t('locationPrompt.usePhoneLocation')}
+                  {savedLocationDisplayName(location, t)}
                 </button>
-                {others.map((location) => (
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setFailed(false);
+                  setChoosing(true);
+                }}
+                aria-label={t('locationPrompt.newLocation')}
+                className={buttonClassName('ghost', 'sm')}
+              >
+                {t('locationPrompt.newLocation')}
+              </button>
+            </div>
+            {failed && (
+              <p role="alert" className="text-label text-orange-300">
+                {t('locationPrompt.phoneLocationFailed')}
+              </p>
+            )}
+          </>
+        ) : manual ? (
+          <SavedLocationForm
+            approximatePosition={trust === 'approximate' ? ourPosition : null}
+            onSaved={selectLocation}
+            onCancel={() => {
+              setManual(false);
+            }}
+          />
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                aria-busy={busy}
+                onClick={() => {
+                  void fillFromPhone();
+                }}
+                aria-label={t('locationPrompt.usePhoneLocation')}
+                className={buttonClassName('primary', 'sm')}
+              >
+                {t('locationPrompt.usePhoneLocation')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFailed(false);
+                  setManual(true);
+                }}
+                aria-label={t('locationPrompt.enterManually')}
+                className={buttonClassName('ghost', 'sm')}
+              >
+                {t('locationPrompt.enterManually')}
+              </button>
+              {choosing && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFailed(false);
+                    setChoosing(false);
+                  }}
+                  aria-label={t('common.cancel')}
+                  className={buttonClassName('ghost', 'sm')}
+                >
+                  {t('common.cancel')}
+                </button>
+              )}
+            </div>
+            {saved.locations.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-label text-orange-300">
+                  {t('locationPrompt.savedLocationsLabel')}
+                </span>
+                {saved.locations.map((location) => (
                   <button
                     key={location.id}
                     type="button"
@@ -204,109 +304,14 @@ function LocationCard(props: SetLocationCardProps) {
                     {savedLocationDisplayName(location, t)}
                   </button>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFailed(false);
-                    setChoosing(true);
-                  }}
-                  aria-label={t('locationPrompt.newLocation')}
-                  className={buttonClassName('ghost', 'sm')}
-                >
-                  {t('locationPrompt.newLocation')}
-                </button>
               </div>
-              {failed && (
-                <p role="alert" className="text-label text-orange-300">
-                  {t('locationPrompt.phoneLocationFailed')}
-                </p>
-              )}
-            </>
-          ) : manual ? (
-            <SavedLocationForm
-              approximatePosition={trust === 'approximate' ? ourPosition : null}
-              onSaved={selectLocation}
-              onCancel={() => {
-                setManual(false);
-              }}
-            />
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  aria-busy={busy}
-                  onClick={() => {
-                    void fillFromPhone();
-                  }}
-                  aria-label={t('locationPrompt.usePhoneLocation')}
-                  className={buttonClassName('primary', 'sm')}
-                >
-                  {t('locationPrompt.usePhoneLocation')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFailed(false);
-                    setManual(true);
-                  }}
-                  aria-label={t('locationPrompt.enterManually')}
-                  className={buttonClassName('ghost', 'sm')}
-                >
-                  {t('locationPrompt.enterManually')}
-                </button>
-                {choosing && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFailed(false);
-                      setChoosing(false);
-                    }}
-                    aria-label={t('common.cancel')}
-                    className={buttonClassName('ghost', 'sm')}
-                  >
-                    {t('common.cancel')}
-                  </button>
-                )}
-              </div>
-              {saved.locations.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-label text-orange-300">
-                    {t('locationPrompt.savedLocationsLabel')}
-                  </span>
-                  {saved.locations.map((location) => (
-                    <button
-                      key={location.id}
-                      type="button"
-                      onClick={() => {
-                        selectLocation(location);
-                      }}
-                      aria-label={t('locationPrompt.switchTo', {
-                        name: savedLocationDisplayName(location, t),
-                      })}
-                      className={buttonClassName('secondary', 'sm')}
-                    >
-                      {savedLocationDisplayName(location, t)}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {failed && (
-                <p role="alert" className="text-label text-orange-300">
-                  {t('locationPrompt.phoneLocationFailed')}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-        {variant === 'startup' && onDismiss && (
-          <IconButton
-            icon={<X aria-hidden size={16} />}
-            onClick={onDismiss}
-            aria-label={t('locationPrompt.dismiss')}
-            size="sm"
-          />
+            )}
+            {failed && (
+              <p role="alert" className="text-label text-orange-300">
+                {t('locationPrompt.phoneLocationFailed')}
+              </p>
+            )}
+          </>
         )}
       </div>
     </section>

@@ -250,6 +250,18 @@ html[data-mesh-mobile] details:has([data-setting-anchor='app.updates.autoDownloa
   display: none;
 }
 
+/*
+ * Location card buttons (overrides/renderer/SetLocationCard.tsx) wrap their label inside the card:
+ * the shared button base is `shrink-0 whitespace-nowrap`, and at the largest text size on a 361 px
+ * cover screen "Use this phone's location" ran past the card's edge. Pinned by e2e/layout.spec.ts.
+ */
+html[data-mesh-mobile] [data-mobile-location-body] button {
+  flex-shrink: 1;
+  max-width: 100%;
+  white-space: normal;
+  text-align: start;
+}
+
 /* Keep the keyboard from covering composers on WebViews that only shrink the visual viewport. */
 html[data-mesh-mobile] [data-app-shell] main {
   scroll-padding-bottom: var(--mobile-keyboard-inset, 0px);

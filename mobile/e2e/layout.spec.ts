@@ -103,9 +103,19 @@ for (const d of DEVICES) {
 
 // App > Saved locations rows wrap rather than squeeze the coordinates: on a 375 px phone the
 // active row showed one character of them (the name field, Doesn't move, Active and the delete
-// button took the line). mobileShell.css gives the coordinates a minimum width.
-for (const width of [361, 375, 412]) {
-  test(`saved location rows show their full coordinates at ${width} px`, async ({ browser }) => {
+// button took the line). mobileShell.css gives the coordinates a minimum width. The longest pair
+// the app writes is decimal with both signs and a three-digit longitude ("-33.86880, -151.20930";
+// MGRS is one shorter token); the last case shows it at the largest text size (fontScale 1.5).
+const SAVED_LOCATION_CASES = [
+  { width: 361, fontScale: 1 },
+  { width: 375, fontScale: 1 },
+  { width: 412, fontScale: 1 },
+  { width: 361, fontScale: 1.5 },
+];
+for (const { width, fontScale } of SAVED_LOCATION_CASES) {
+  test(`saved location rows show their full coordinates at ${width} px, text ${fontScale}x`, async ({
+    browser,
+  }) => {
     const context = await browser.newContext({
       viewport: { width, height: 812 },
       isMobile: true,
@@ -113,7 +123,8 @@ for (const width of [361, 375, 412]) {
       deviceScaleFactor: 2,
     });
     const page = await context.newPage();
-    await page.addInitScript(() => {
+    await page.addInitScript((scale) => {
+      localStorage.setItem('mesh-client:fontScale', String(scale));
       localStorage.setItem(
         'mesh-client:gpsSettings',
         JSON.stringify({ staticLat: 39.75, staticLon: -105.0 }),
@@ -123,12 +134,12 @@ for (const width of [361, 375, 412]) {
         JSON.stringify({
           locations: [
             { id: 'loc-e2e-phone', name: 'This phone', lat: 39.75, lon: -105.0, fixed: false },
-            { id: 'loc-e2e-home', name: 'Home', lat: 40.0149, lon: -105.2705, fixed: true },
+            { id: 'loc-e2e-far', name: 'Sydney EOC', lat: -33.8688, lon: -151.2093, fixed: true },
           ],
           activeId: 'loc-e2e-phone',
         }),
       );
-    });
+    }, fontScale);
     const boot = await bootApp(page, h);
     await page.locator('[data-nav-section="more"]').click();
     await page.getByRole('dialog').getByRole('button', { name: /^App/ }).first().click();
@@ -137,8 +148,11 @@ for (const width of [361, 375, 412]) {
       const details = el.closest('details');
       if (details) details.open = true;
     });
+    // The text size setting scales the root font (fontScale.ts applyFontScale).
+    await expect(page.locator('html')).toHaveCSS('font-size', `${String(16 * fontScale)}px`);
     const coords = anchor.locator('li > input[type="text"] + span');
     await expect(coords).toHaveCount(2);
+    await expect(coords.nth(1)).toHaveText('-33.86880, -151.20930');
     const rows = await coords.evaluateAll((els) =>
       els.map((e) => ({
         text: e.textContent ?? '',
@@ -154,11 +168,77 @@ for (const width of [361, 375, 412]) {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(1);
-    await anchor.screenshot({ path: test.info().outputPath(`saved-locations-${width}.png`) });
+    await anchor.screenshot({
+      path: test.info().outputPath(`saved-locations-${String(width)}-${String(fontScale)}x.png`),
+    });
     expect(unexpectedErrors(boot.pageErrors)).toEqual([]);
     await context.close();
   });
 }
+
+// The launch location card at the largest text size on a 361 px cover screen: its title row holds
+// the icon and close button so the text spans the card, and button labels wrap inside the card
+// (at 1.5x, "Use this phone's location" ran past the card's edge).
+test('location card fits a 361 px screen at the largest text size', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 361, height: 812 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 2,
+  });
+  const page = await context.newPage();
+  await page.addInitScript(() => {
+    localStorage.setItem('mesh-client:fontScale', '1.5');
+    localStorage.setItem(
+      'mesh-client:gpsSettings',
+      JSON.stringify({ staticLat: 39.75, staticLon: -105.0 }),
+    );
+    localStorage.setItem(
+      'mesh-client:savedLocations',
+      JSON.stringify({
+        locations: [
+          { id: 'loc-e2e-phone', name: 'This phone', lat: 39.75, lon: -105.0, fixed: false },
+          { id: 'loc-e2e-far', name: 'Sydney EOC', lat: -33.8688, lon: -151.2093, fixed: true },
+        ],
+        activeId: 'loc-e2e-phone',
+      }),
+    );
+  });
+  const boot = await bootApp(page, h);
+  const card = page.locator('[data-mobile-location-prompt] section');
+  await expect(card.getByRole('heading', { name: 'Still at This phone?' })).toBeVisible();
+  const layout = await card.evaluate((section) => {
+    const box = section.getBoundingClientRect();
+    const titleBottom = section.querySelector('h3')?.getBoundingClientRect().bottom ?? box.top;
+    const bodyBox = section.querySelector('p')?.getBoundingClientRect();
+    const below = [...section.querySelectorAll('button')].filter(
+      (b) => b.getBoundingClientRect().top >= titleBottom,
+    );
+    const buttons = below.map((b) => {
+      const r = b.getBoundingClientRect();
+      return {
+        label: b.textContent ?? '',
+        inside: r.left >= box.left - 1 && r.right <= box.right + 1,
+        whole: b.scrollWidth <= b.clientWidth + 1,
+      };
+    });
+    const style = getComputedStyle(section);
+    return {
+      // The body text starts at the card's padding, not in a column beside the icon.
+      bodyIndent: bodyBox ? Math.round(bodyBox.left - box.left) : -1,
+      padding: Math.round(parseFloat(style.paddingLeft) + parseFloat(style.borderLeftWidth)),
+      buttons,
+    };
+  });
+  expect(layout.bodyIndent).toBeGreaterThanOrEqual(0);
+  expect(layout.bodyIndent).toBeLessThanOrEqual(layout.padding + 1);
+  expect(layout.buttons.length).toBeGreaterThanOrEqual(4);
+  for (const b of layout.buttons) {
+    expect(b.inside && b.whole, `button within the card: ${JSON.stringify(b)}`).toBe(true);
+  }
+  expect(unexpectedErrors(boot.pageErrors)).toEqual([]);
+  await context.close();
+});
 
 // "Close to tray" and automatic update downloads do nothing on a phone (no tray; the app stores
 // update the app), so App settings leaves them out; "Prevent sleep" stays (it keeps the screen on).
