@@ -10,6 +10,7 @@ import {
 } from '../lib/meshcore/heardRepeatTracker';
 import * as meshtasticMessageLoadLimit from '../lib/meshtasticMessageLoadLimit';
 import type { Protocol } from '../lib/protocols/Protocol';
+import { useReachCheckStore } from '../lib/reachCheck/reachCheckStore';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import { mockConsoleWarn } from '../lib/vitestConsoleMock';
 import { addIdentity, removeIdentity } from './identityStore';
@@ -160,6 +161,26 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
 
     expect(useRelayCoverageStore.getState().coverageFor(ID_A, pending)).toBeUndefined();
     expect(useRelayCoverageStore.getState().coverageFor(ID_A, hash)?.predictedRelayHops).toBe(2);
+  });
+
+  it('renameMessageId moves a reach check entry with the message id', () => {
+    useReachCheckStore.setState({ entries: {} });
+    const pending = 'out:1700000000000:abc';
+    const wireId = '305419896';
+    addMessage(ID_A, { ...sampleRecord(pending), status: 'sending' });
+    useReachCheckStore.getState().start(ID_A, pending, {
+      origin: 'https://rangecheck.example.org',
+      sessionId: 's1',
+      code: 'MHC-1A2B3C',
+      session: null,
+      state: 'polling',
+      startedAt: 1,
+    });
+
+    renameMessageId(ID_A, pending, wireId);
+
+    expect(useReachCheckStore.getState().entryFor(ID_A, pending)).toBeUndefined();
+    expect(useReachCheckStore.getState().entryFor(ID_A, wireId)?.sessionId).toBe('s1');
   });
 
   it('renameMessageId keeps MeshCore heard-repeat window on the new message id', () => {

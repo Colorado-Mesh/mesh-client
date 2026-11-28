@@ -55,6 +55,14 @@ const appEntries: readonly SettingSearchEntry[] = [
     visible: (ctx) => ctx.capabilities.hasCompanionContactManagementConfig,
   },
   {
+    id: 'app.reachCheck.server',
+    slot: 'App',
+    labelKey: 'reachCheck.serverLabel',
+    sectionKey: 'appPanel.reachCheckSection',
+    keywords: ['reach', 'health check', 'coverage', 'observer', 'cm-reach', 'server'],
+    visible: (ctx) => ctx.capabilities.hasCompanionContactManagementConfig,
+  },
+  {
     id: 'app.floodAdvert.type',
     slot: 'App',
     labelKey: 'appPanel.floodAdvertTypeLabel',

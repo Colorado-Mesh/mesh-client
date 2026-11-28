@@ -47,6 +47,10 @@ export function buildDevConcurrentlyArgs() {
     'esbuild src/main/ipc/environment-telemetry-handlers.ts --bundle --platform=node --outfile=dist-electron/main/environment-telemetry-handlers.js --external:electron --format=cjs --watch';
   const environmentTelemetryFallbackBuild =
     'esbuild src/main/ipc/environment-telemetry-handlers-fallback.ts --bundle --platform=node --outfile=dist-electron/main/environment-telemetry-handlers-fallback.js --external:electron --format=cjs --watch';
+  const reachCheckBuild =
+    'esbuild src/main/ipc/reach-check-handlers.ts --bundle --platform=node --outfile=dist-electron/main/reach-check-handlers.js --external:electron --format=cjs --watch';
+  const beaconBuild =
+    'esbuild src/main/ipc/beacon-handlers.ts --bundle --platform=node --outfile=dist-electron/main/beacon-handlers.js --external:electron --external:ws --format=cjs --watch';
   const trayUnreadDotBuild =
     'esbuild src/main/trayUnreadDot.ts --bundle --platform=node --outfile=dist-electron/main/tray-unread-dot.js --format=cjs --watch';
   const scheduledBroadcastsRebuildBuild =
@@ -73,7 +77,7 @@ export function buildDevConcurrentlyArgs() {
     '-s',
     'command-electron',
     '--names',
-    'main,preload,translation,summary,followup,sumprep,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,traydot,schedbc,mqttwp,mcpool,notifwav,nodeupsert,meshcomdb,meshcomdbfb,udpbridge,vite,electron',
+    'main,preload,translation,summary,followup,sumprep,models,nativeai,identity,teamroster,rosterfb,envtel,envtelfb,reachcheck,beacon,traydot,schedbc,mqttwp,mcpool,notifwav,nodeupsert,meshcomdb,meshcomdbfb,udpbridge,vite,electron',
     mainBuild,
     preloadBuild,
     translationBuild,
@@ -87,6 +91,8 @@ export function buildDevConcurrentlyArgs() {
     teamRosterFallbackBuild,
     environmentTelemetryBuild,
     environmentTelemetryFallbackBuild,
+    reachCheckBuild,
+    beaconBuild,
     trayUnreadDotBuild,
     scheduledBroadcastsRebuildBuild,
     mqttWaypointValidationBuild,

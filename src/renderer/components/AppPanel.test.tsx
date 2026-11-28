@@ -4,7 +4,10 @@ import { axe } from 'vitest-axe';
 
 import joeyPreferences from '../../../e2e/fixtures/renderer-preferences.json';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
-import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
+import {
+  APP_SETTINGS_STORAGE_KEY,
+  setMeshcoreReachCheckServerUrl,
+} from '../lib/appSettingsStorage';
 import { FONT_SCALE_STORAGE_KEY } from '../lib/fontScale';
 import { GPS_SETTINGS_STORAGE_KEY } from '../lib/gpsSource';
 import { MESSAGE_RETENTION_KEYS } from '../lib/messageRetention';
@@ -1683,4 +1686,120 @@ describe('AppPanel fresh location consent', () => {
       expect(screen.getByRole('checkbox', { name: 'Share my location' })).toBeChecked();
     },
   );
+});
+
+describe('AppPanel: reach check server address', () => {
+  const props = {
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  function renderPanel(protocol: 'meshcore' | 'meshtastic' = 'meshcore') {
+    return render(
+      <ToastProvider>
+        <AppPanel {...props} protocol={protocol} />
+      </ToastProvider>,
+    );
+  }
+
+  function storedServer(): unknown {
+    return (
+      JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<string, unknown>
+    ).meshcoreReachCheckServerUrl;
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('shows a blank field with a generic example on MeshCore', () => {
+    renderPanel('meshcore');
+    expect(screen.getByLabelText('Reach check server')).toHaveValue('');
+    expect(screen.getByLabelText('Reach check server')).toHaveAttribute(
+      'placeholder',
+      'https://healthcheck.example.org',
+    );
+  });
+
+  it('has no field on Meshtastic', () => {
+    renderPanel('meshtastic');
+    expect(screen.queryByLabelText('Reach check server')).toBeNull();
+  });
+
+  it('saves a pasted page address as its origin when the field loses focus', () => {
+    renderPanel();
+    const input = screen.getByLabelText('Reach check server');
+    fireEvent.change(input, { target: { value: 'https://rangecheck.example.org/app?x=1' } });
+    fireEvent.blur(input);
+    expect(input).toHaveValue('https://rangecheck.example.org');
+    expect(storedServer()).toBe('https://rangecheck.example.org');
+  });
+
+  it('saves on Enter', () => {
+    renderPanel();
+    const input = screen.getByLabelText('Reach check server');
+    fireEvent.change(input, { target: { value: 'https://healthcheck.example.net' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(storedServer()).toBe('https://healthcheck.example.net');
+  });
+
+  it.each([
+    ['http://rangecheck.example.org', 'Enter an https:// address.'],
+    ['https://10.0.0.5', "Use the server's public internet address."],
+  ])('refuses %s, shows why and keeps the saved address', (value, message) => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ meshcoreReachCheckServerUrl: 'https://rangecheck.example.org' }),
+    );
+    renderPanel();
+    const input = screen.getByLabelText('Reach check server');
+    fireEvent.change(input, { target: { value } });
+    fireEvent.blur(input);
+    expect(screen.getByRole('alert')).toHaveTextContent(message);
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(storedServer()).toBe('https://rangecheck.example.org');
+  });
+
+  it('shows an address the Chat setup dialog saves while the panel stays open', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ meshcoreReachCheckServerUrl: 'https://rangecheck.example.org' }),
+    );
+    renderPanel();
+    const input = screen.getByLabelText('Reach check server');
+    expect(input).toHaveValue('https://rangecheck.example.org');
+    act(() => {
+      setMeshcoreReachCheckServerUrl('https://healthcheck.example.net');
+    });
+    expect(input).toHaveValue('https://healthcheck.example.net');
+    fireEvent.blur(input);
+    expect(storedServer()).toBe('https://healthcheck.example.net');
+  });
+
+  it('clears the saved address when the field is emptied', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ meshcoreReachCheckServerUrl: 'https://rangecheck.example.org' }),
+    );
+    renderPanel();
+    const input = screen.getByLabelText('Reach check server');
+    expect(input).toHaveValue('https://rangecheck.example.org');
+    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.blur(input);
+    expect(storedServer()).toBe('');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('has no axe violations with an error shown', async () => {
+    const { container } = renderPanel();
+    const input = screen.getByLabelText('Reach check server');
+    fireEvent.change(input, { target: { value: 'http://rangecheck.example.org' } });
+    fireEvent.blur(input);
+    hydrateAxeThemeColors(container);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
 });

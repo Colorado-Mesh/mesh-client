@@ -16,8 +16,6 @@ const harness = vi.hoisted(() => ({
     update: (value: BeaconFeedUpdate) => void;
   }[],
 }));
-vi.mock('electron', () => ({ ipcMain: { handle: harness.handle } }));
-vi.mock('../validate-ipc-sender', () => ({ assertIpcSender: harness.assert }));
 vi.mock('../beacon-feed', async (importOriginal) => {
   const original = await importOriginal<typeof BeaconFeedModule>();
   return {
@@ -54,10 +52,30 @@ beforeEach(() => {
   harness.handle.mockReset();
   harness.assert.mockReset();
   harness.clients.length = 0;
-  registerBeaconIpcHandlers();
+  registerBeaconIpcHandlers({
+    ipcMain: { handle: harness.handle },
+    assertIpcSender: harness.assert,
+  });
 });
 
 const request = { baseUrl: 'https://map.meshcore.coloradomesh.org' };
+
+describe('Beacon IPC sender check', () => {
+  it('uses the injected sender check, which holds the data-reset fence in index.js', async () => {
+    harness.assert.mockImplementation((_event: unknown, channel: string) => {
+      throw new Error(`${channel}: unauthorized sender`);
+    });
+    const sender = new Sender(9);
+    await expect(handler('beacon:connect')({ sender }, request)).rejects.toThrow(
+      'beacon:connect: unauthorized sender',
+    );
+    expect(harness.assert).toHaveBeenCalledWith({ sender }, 'beacon:connect');
+    expect(harness.clients).toHaveLength(0);
+    expect(() => handler('beacon:disconnect')({ sender })).toThrow(
+      'beacon:disconnect: unauthorized sender',
+    );
+  });
+});
 
 describe('Beacon IPC ownership', () => {
   it('preserves CoreScope selection and source-tagged observations across IPC', async () => {

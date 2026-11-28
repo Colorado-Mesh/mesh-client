@@ -243,6 +243,27 @@ describe('always-on bundle workflow', () => {
             path.join(fixture, 'src/main/ipc/environment-telemetry-handlers-fallback.ts'),
             ['export function registerEnvironmentTelemetryIpcFallbackHandlers() {}', ''].join('\n'),
           );
+          const beaconPad = 'x'.repeat(600);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/beacon-handlers.ts'),
+            [
+              'export function registerBeaconIpcHandlers() {',
+              // Keep the measured-index exclusion assertion happy (the feed lives here, not index.js).
+              `  return 'beacon:connect [main/beacon-feed] ${beaconPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
+          const reachCheckPad = 'x'.repeat(600);
+          fs.writeFileSync(
+            path.join(fixture, 'src/main/ipc/reach-check-handlers.ts'),
+            [
+              'export function registerReachCheckIpcHandlers() {',
+              `  return 'reachCheck:bootstrap ${reachCheckPad}';`,
+              '}',
+              '',
+            ].join('\n'),
+          );
           const trayUnreadPad = 'x'.repeat(200);
           fs.writeFileSync(
             path.join(fixture, 'src/main/trayUnreadDot.ts'),

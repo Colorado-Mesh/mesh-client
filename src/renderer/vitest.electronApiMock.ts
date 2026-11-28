@@ -32,6 +32,11 @@ export function createElectronAPIMock(): ElectronAPI {
       disconnect: vi.fn().mockResolvedValue(undefined),
       onUpdate: vi.fn().mockReturnValue(() => {}),
     },
+    reachCheck: {
+      bootstrap: vi.fn().mockResolvedValue({ ok: false, error: 'network' }),
+      createSession: vi.fn().mockResolvedValue({ ok: false, error: 'network' }),
+      getSession: vi.fn().mockResolvedValue({ ok: false, error: 'network' }),
+    },
     liveMap: {
       available: true,
       open: vi.fn().mockResolvedValue(undefined),

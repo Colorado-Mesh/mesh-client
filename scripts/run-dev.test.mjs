@@ -41,6 +41,9 @@ describe('run-dev', () => {
           arg.includes('--external:electron'),
       ),
     ).toBe(true);
+    expect(args.some((arg) => arg.startsWith('esbuild src/main/ipc/reach-check-handlers.ts'))).toBe(
+      true,
+    );
     expect(args.some((arg) => arg.startsWith('esbuild src/main/trayUnreadDot.ts'))).toBe(true);
     expect(
       args.some((arg) => arg.startsWith('esbuild src/main/scheduledBroadcastsIntervalRebuild.ts')),
@@ -89,6 +92,31 @@ describe('run-dev', () => {
     expect(args).toContain('vite');
     expect(args.some((arg) => arg.includes('wait-for-dev.mjs'))).toBe(true);
     expect(args.some((arg) => arg.startsWith('pnpm run'))).toBe(false);
+  });
+
+  it('buildDevConcurrentlyArgs names every command, so -s command-electron watches electron', () => {
+    const args = buildDevConcurrentlyArgs();
+    const namesAt = args.indexOf('--names');
+    const names = args[namesAt + 1].split(',');
+    const commands = args.slice(namesAt + 2);
+    expect(names).toHaveLength(commands.length);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names[commands.indexOf('vite')]).toBe('vite');
+    expect(names.at(-1)).toBe('electron');
+    expect(commands.at(-1)).toContain('electron .');
+    const reachCheckAt = commands.findIndex((arg) =>
+      arg.startsWith('esbuild src/main/ipc/reach-check-handlers.ts'),
+    );
+    expect(names[reachCheckAt]).toBe('reachcheck');
+    const beaconAt = commands.findIndex(
+      (arg) =>
+        arg.startsWith('esbuild src/main/ipc/beacon-handlers.ts') &&
+        arg.includes('--outfile=dist-electron/main/beacon-handlers.js') &&
+        arg.includes('--external:electron') &&
+        arg.includes('--external:ws'),
+    );
+    expect(beaconAt).toBeGreaterThanOrEqual(0);
+    expect(names[beaconAt]).toBe('beacon');
   });
 
   it('resolveDevExitCode treats intentional signals as success', () => {

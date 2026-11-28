@@ -1,6 +1,4 @@
-import dns from 'node:dns/promises';
 import https from 'node:https';
-import type { LookupFunction } from 'node:net';
 
 import WebSocket from 'ws';
 
@@ -13,13 +11,14 @@ import {
   type BeaconJsonObject,
   type RegionalFeedProvider,
 } from '../shared/beacon';
-import { isGlobalIpLiteral, isValidIpLiteral } from '../shared/ipLiteral';
+import { isValidIpLiteral } from '../shared/ipLiteral';
 import { MS_PER_SECOND } from '../shared/timeConstants';
 import {
   coreScopeObserverRegions,
   coreScopePacket,
   readCoreScopeSnapshot,
 } from './corescope-feed-adapter';
+import { pinnedLookup, resolvePublicAddress } from './public-address';
 import {
   boundedRegionalRecord as boundedRecord,
   isRegionalObject as isObject,
@@ -107,32 +106,15 @@ export function parseBeaconConnectRequest(value: unknown): BeaconConnectRequest 
   };
 }
 
-async function resolvePublicAddress(hostname: string): Promise<BeaconAddress> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    const result = await Promise.race([
-      dns.lookup(hostname, { order: 'verbatim' }),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-          reject(new Error('Regional map DNS lookup timed out.'));
-        }, DNS_TIMEOUT_MS);
-      }),
-    ]);
-    const global = isGlobalIpLiteral(result.address) === true;
-    if (!global || (result.family !== 4 && result.family !== 6)) {
-      throw new Error('Regional maps require a public internet address.');
-    }
-    return { address: result.address, family: result.family };
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
-
-function pinnedLookup(address: BeaconAddress): LookupFunction {
-  return (_hostname, options, callback) => {
-    if (options.all) callback(null, [address]);
-    else callback(null, address.address, address.family);
-  };
+function resolveRegionalMapAddress(hostname: string): Promise<BeaconAddress> {
+  return resolvePublicAddress(
+    hostname,
+    {
+      timeout: 'Regional map DNS lookup timed out.',
+      notPublic: 'Regional maps require a public internet address.',
+    },
+    DNS_TIMEOUT_MS,
+  );
 }
 
 /** HTTPS and WS both connect to the validated DNS result, preventing DNS rebinding. */
@@ -182,7 +164,7 @@ function getJson(url: URL, address: BeaconAddress, signal: AbortSignal): Promise
 }
 
 const defaultDependencies: BeaconFeedDependencies = {
-  resolve: resolvePublicAddress,
+  resolve: resolveRegionalMapAddress,
   getJson,
   openSocket: (url, address) =>
     new WebSocket(url, {

@@ -1528,6 +1528,8 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1517: 'src/renderer/runtime/useMeshcomRuntime.ts:importContacts open file',
   mcL1518: 'src/main/meshcore-mqtt-adapter.ts:keepaliveOrConnackTimeout',
   mcL1519: 'src/main/meshcore-mqtt-adapter.ts:transientNetworkError',
+  mcL1520: 'src/main/index.ts:reachCheckIpcRegisterFailed',
+  mcL1521: 'src/main/index.ts:beaconIpcRegisterFailed',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

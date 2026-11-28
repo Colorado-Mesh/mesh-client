@@ -20,6 +20,7 @@ import type {
   MeshtasticSfppPhase,
 } from '../lib/meshtastic/meshtasticAckProof';
 import { getMeshtasticMessageLoadLimit } from '../lib/meshtasticMessageLoadLimit';
+import { reachCheckKey, useReachCheckStore } from '../lib/reachCheck/reachCheckStore';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '../lib/types';
 import { getIdentity } from './identityStore';
@@ -722,10 +723,12 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
   emitMessageStoreEvent({ type: 'renamed', identityId, fromId, toId });
   if (dropOntoAckedCompletes) {
     useRelayCoverageStore.getState().remove(identityId, fromId);
+    useReachCheckStore.getState().remove(reachCheckKey(identityId, fromId));
     clearHeardRepeatWindowIfMessage(identityId, fromId);
     return;
   }
   useRelayCoverageStore.getState().renameMessage(identityId, fromId, toId);
+  useReachCheckStore.getState().renameMessage(identityId, fromId, toId);
   renameHeardRepeatWindowMessageId(identityId, fromId, toId);
 }
 

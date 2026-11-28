@@ -22,6 +22,7 @@ import type { SupportBundleMode } from '@/shared/support-bundle.types';
 import type { LocationFilter } from '../App';
 import {
   getAppSettingsRaw,
+  getMeshcoreReachCheckServerUrl,
   getOperationalAlertSettings,
   MECP_REPEAT_ALERT_MAX_MINUTES,
   mergeAppSetting,
@@ -106,6 +107,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshComCallsignWatchlistSettings } from './MeshComCallsignWatchlistSettings';
 import NotificationSoundSettings from './NotificationSoundSettings';
+import ReachCheckServerField from './ReachCheckServerField';
 import SavedLocationsSection from './SavedLocationsSection';
 import { ThemePicker } from './ThemePicker';
 import { useToast } from './Toast';
@@ -220,6 +222,7 @@ interface AppSettings {
   /** App → Window: keep the computer awake while connected. */
   preventSleepWhileConnected: 'off' | 'rf' | 'always';
   meshcoreOpenWireCompatEnabled: boolean;
+  meshcoreReachCheckServerUrl: string;
   meshcorePathHashMode: 0 | 1 | 2;
   rrcUnreadAllRoomMessages: boolean;
   mecpComposeEnabled: boolean;
@@ -431,8 +434,13 @@ export default function AppPanel({
     };
   }, [t]);
 
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasReticulumInterfaceConfig, hasRrcPanel } =
-    useRadioProvider(protocol);
+  const {
+    nodeStaleThresholdMs,
+    nodeOfflineThresholdMs,
+    hasReticulumInterfaceConfig,
+    hasRrcPanel,
+    hasCompanionContactManagementConfig,
+  } = useRadioProvider(protocol);
   const isReticulumDmOnly = hasReticulumInterfaceConfig;
 
   // ─── Node retention settings ────────────────────────────────
@@ -458,6 +466,22 @@ export default function AppPanel({
     isMessageActionsBarBgVisible(),
   );
   const [fontScale, setFontScale] = useState<number>(loadFontScale);
+
+  // The Chat reach check setup dialog saves the server address too; follow it while App stays open.
+  useEffect(() => {
+    const syncReachCheckServer = () => {
+      const saved = getMeshcoreReachCheckServerUrl();
+      setSettings((prev) =>
+        prev.meshcoreReachCheckServerUrl === saved
+          ? prev
+          : { ...prev, meshcoreReachCheckServerUrl: saved },
+      );
+    };
+    window.addEventListener('mesh-client:appSettings', syncReachCheckServer);
+    return () => {
+      window.removeEventListener('mesh-client:appSettings', syncReachCheckServer);
+    };
+  }, []);
 
   const updateFontScale = useCallback((next: number) => {
     const clamped = clampFontScale(next);
@@ -1133,6 +1157,21 @@ export default function AppPanel({
               <option value="flood">{t('appPanel.floodAdvertTypeFlood')}</option>
               <option value="zeroHop">{t('appPanel.floodAdvertTypeZeroHop')}</option>
             </select>
+          </div>
+        </SettingsCollapsible>
+      )}
+
+      {/* Reach check server (MeshCore companion: the observers are MeshCore MQTT feeds) */}
+      {hasCompanionContactManagementConfig && (
+        <SettingsCollapsible title={t('appPanel.reachCheckSection')}>
+          <div data-setting-anchor="app.reachCheck.server">
+            <ReachCheckServerField
+              id="app-reach-check-server"
+              value={settings.meshcoreReachCheckServerUrl}
+              onCommit={(origin) => {
+                updateSetting('meshcoreReachCheckServerUrl', origin);
+              }}
+            />
           </div>
         </SettingsCollapsible>
       )}

@@ -38,6 +38,11 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       disconnect: noopAsync,
       onUpdate: noopUnsub,
     },
+    reachCheck: {
+      bootstrap: async () => ({ ok: false, error: 'network' }),
+      createSession: async () => ({ ok: false, error: 'network' }),
+      getSession: async () => ({ ok: false, error: 'network' }),
+    },
     liveMap: {
       available: false,
       open: noopAsync,

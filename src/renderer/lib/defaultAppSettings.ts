@@ -78,6 +78,11 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   shareMyLocation: false,
   /** MeshCore Open wire: keyed replies, r: reactions, g: GIF send (experimental). */
   meshcoreOpenWireCompatEnabled: false,
+  /**
+   * MeshCore reach check: origin of the community's Mesh Health Check server (`https://host`).
+   * Blank until the user enters one; nothing is preset.
+   */
+  meshcoreReachCheckServerUrl: '',
   /** MeshCore companion path hash mode: 0 = 1-byte, 1 = 2-byte, 2 = 3-byte (firmware v1.14+). */
   meshcorePathHashMode: 0 as 0 | 1 | 2,
   /** Start Reticulum sidecar automatically when opening the Reticulum tab. */

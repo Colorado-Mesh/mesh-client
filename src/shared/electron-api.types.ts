@@ -41,6 +41,7 @@ import type {
   ImportMbtilesRequest,
   MbtilesPickResult,
 } from './offlineMaps/customMapSources';
+import type { ReachCheckApi } from './reachCheck';
 import type {
   PathCapability,
   RemoteAddressBookRow,
@@ -441,6 +442,7 @@ export type BleCoexistenceAcquireScanResult =
 
 export interface ElectronAPI {
   beacon: BeaconFeedApi;
+  reachCheck: ReachCheckApi;
   liveMap: LiveMapWindowApi;
   translation: TranslationAPI;
   ai: AiAPI;

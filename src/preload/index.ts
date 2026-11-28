@@ -73,6 +73,11 @@ import type {
   AddXyzSourceRequest,
   ImportMbtilesRequest,
 } from '../shared/offlineMaps/customMapSources';
+import type {
+  ReachCheckResult,
+  ReachCheckServerInfo,
+  ReachCheckSession,
+} from '../shared/reachCheck';
 import {
   RENDERER_MEMORY_AUTO_SAMPLE_CHANNEL,
   type RendererMemoryAutoSamplePayload,
@@ -149,6 +154,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('beacon:update', handler);
       return () => ipcRenderer.removeListener('beacon:update', handler);
     },
+  },
+  reachCheck: {
+    bootstrap: (origin: string) =>
+      ipcRenderer.invoke('reachCheck:bootstrap', origin) as Promise<
+        ReachCheckResult<ReachCheckServerInfo>
+      >,
+    createSession: (origin: string) =>
+      ipcRenderer.invoke('reachCheck:createSession', origin) as Promise<
+        ReachCheckResult<ReachCheckSession>
+      >,
+    getSession: (origin: string, id: string) =>
+      ipcRenderer.invoke('reachCheck:getSession', origin, id) as Promise<
+        ReachCheckResult<ReachCheckSession>
+      >,
   },
   liveMap: {
     available: true,
