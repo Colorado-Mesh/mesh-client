@@ -28,20 +28,49 @@ export function installKeyboardPopupTap(
   isUserTap: (e: MouseEvent) => boolean = (e) => e.isTrusted,
 ): () => void {
   const view = doc.defaultView ?? window;
-  const onClick = (e: MouseEvent) => {
-    // A held tap passed on below is not trusted, so it reaches the trigger.
-    if (!touchOnly() || !isUserTap(e) || !(e.target instanceof Element)) return;
+  const focusedField = (): HTMLElement | null => {
     const field = doc.activeElement;
-    if (!(field instanceof HTMLElement) || !field.matches(TEXT_FIELD)) return;
-    const trigger = e.target.closest<HTMLElement>(POPUP_TRIGGER);
+    return field instanceof HTMLElement && field.matches(TEXT_FIELD) ? field : null;
+  };
+  const popupButton = (target: EventTarget | null): HTMLElement | null => {
+    if (!(target instanceof Element)) return null;
+    const trigger = target.closest<HTMLElement>(POPUP_TRIGGER);
     // Only buttons: click() on a combobox field would not focus it or reach what was tapped.
     const isButton =
       trigger instanceof HTMLButtonElement || trigger?.getAttribute('role') === 'button';
-    if (!trigger || !isButton || trigger.contains(field)) return;
+    // A tap on a trigger whose popup is open closes it; nothing to protect, and holding it lets a
+    // popup that closed on the keyboard's resize open again (the Area picker's own search field).
+    const opening = trigger?.getAttribute('aria-expanded') !== 'true';
+    return trigger && isButton && opening ? trigger : null;
+  };
+  // Most buttons take focus when pressed, so by the click the field has already lost it (and the
+  // keyboard is closing). Note at pointerdown that the press began while typing, and whether the
+  // window resized before the click.
+  let pressed: { trigger: HTMLElement; resized: boolean } | null = null;
+  const onPointerDown = (e: Event) => {
+    pressed = null;
+    if (!touchOnly()) return;
+    const field = focusedField();
+    const trigger = popupButton(e.target);
+    if (field && trigger && !trigger.contains(field)) pressed = { trigger, resized: false };
+  };
+  const onWindowResize = () => {
+    if (pressed) pressed.resized = true;
+  };
+  const onClick = (e: MouseEvent) => {
+    // A held tap passed on below is not trusted, so it reaches the trigger.
+    if (!touchOnly() || !isUserTap(e)) return;
+    const press = pressed;
+    pressed = null;
+    const trigger = popupButton(e.target);
+    if (!trigger) return;
+    const field = focusedField();
+    const typing = press?.trigger === trigger || (field !== null && !trigger.contains(field));
+    if (!typing) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     let passed = false;
-    let resized = false;
+    let resized = press?.resized ?? false;
     let quiet = 0;
     const pass = () => {
       if (passed) return;
@@ -69,11 +98,17 @@ export function installKeyboardPopupTap(
     const limit = view.setTimeout(pass, MAX_HOLD_MS);
     view.addEventListener('resize', onResize);
     doc.addEventListener('scroll', onScroll, true);
-    field.blur();
+    // The keyboard already closed between the press and the click: wait for the page to settle.
+    if (resized) onResize();
+    field?.blur();
   };
   // Capture on the document: ahead of React's listeners on its root.
+  doc.addEventListener('pointerdown', onPointerDown, true);
+  view.addEventListener('resize', onWindowResize);
   doc.addEventListener('click', onClick, true);
   return () => {
+    doc.removeEventListener('pointerdown', onPointerDown, true);
+    view.removeEventListener('resize', onWindowResize);
     doc.removeEventListener('click', onClick, true);
   };
 }

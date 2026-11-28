@@ -52,6 +52,36 @@ describe('popup trigger tapped while typing', () => {
     expect(opened).toHaveBeenCalledTimes(1);
   });
 
+  it('holds a tap on a button that took focus when pressed (the field blurred before the click)', () => {
+    vi.useFakeTimers();
+    const { field, trigger, icon, opened } = setup();
+    icon.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    trigger.focus();
+    expect(document.activeElement).not.toBe(field);
+    icon.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(opened).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event('resize'));
+    vi.advanceTimersByTime(LAYOUT_QUIET_MS);
+    expect(opened).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes a tap that closes an open popup straight on (its own search field may have focus)', () => {
+    const { trigger, opened } = setup();
+    trigger.setAttribute('aria-expanded', 'true');
+    trigger.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(opened).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not hold a tap that began with no text field focused', () => {
+    const { field, trigger, opened } = setup();
+    field.blur();
+    trigger.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    trigger.focus();
+    trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(opened).toHaveBeenCalledTimes(1);
+  });
+
   it('passes the tap on at the limit while the page keeps scrolling', () => {
     vi.useFakeTimers();
     const { trigger, opened } = setup();
