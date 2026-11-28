@@ -1005,6 +1005,19 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(INDEX_SOURCE).toContain('team-roster-handlers-fallback.js');
     expect(INDEX_SOURCE).toContain('reach-check-handlers.js');
     expect(INDEX_SOURCE).toContain('registerReachCheckIpcHandlers');
+    // Regional map (Beacon/CoreScope) IPC ships as sibling `beacon-handlers.js`, loaded before the
+    // window opens, with the shared sender check passed in (its data-reset fence lives in index.js).
+    expect(INDEX_SOURCE).toContain('beacon-handlers.js');
+    expect(INDEX_SOURCE).not.toContain("from './ipc/beacon-handlers'");
+    expect(INDEX_SOURCE).toContain("'mcL1521 [main] beacon IPC registration failed:'");
+    expect(INDEX_SOURCE).toMatch(
+      /registerBeaconIpcHandlers\(\{\s*ipcMain,\s*assertIpcSender\s*\}\)/,
+    );
+    const readyAt = INDEX_SOURCE.indexOf('.whenReady()');
+    const beaconLoadAt = INDEX_SOURCE.indexOf('await registerBeaconIpc();', readyAt);
+    expect(readyAt).toBeGreaterThan(-1);
+    expect(beaconLoadAt).toBeGreaterThan(readyAt);
+    expect(beaconLoadAt).toBeLessThan(INDEX_SOURCE.indexOf('createWindow();', readyAt));
     expect(INDEX_SOURCE).toContain('registerTeamRosterIpcFallbackHandlers');
     expect(INDEX_SOURCE).toContain('meshcom-db-handlers.js');
     expect(INDEX_SOURCE).toContain('registerMeshcomDbIpcHandlers');

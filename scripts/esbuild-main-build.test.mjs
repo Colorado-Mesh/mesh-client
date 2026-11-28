@@ -30,6 +30,9 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * (not in index.js).
  * MeshCore reach check IPC and its HTTPS client ship as sibling `reach-check-handlers.js`
  * (not in index.js).
+ * Regional map (Beacon/CoreScope) client and its IPC ship as sibling `beacon-handlers.js`
+ * (not in index.js): 11,991 B off index.js (838,334 to 826,343 on the reach check branch),
+ * after the reach check branch merged with main measured 838,886 B, 230 B over 819 KiB.
  * MQTT publishWaypoint arg validation (2.8 geofence fields) ships as sibling
  * `mqtt-publish-waypoint-validation.js` (not in index.js).
  * Windows notification SoundPlayer (#1487) ships as sibling
@@ -225,6 +228,10 @@ describe('esbuild-main-build', () => {
       const reachCheckBytes = fs.readFileSync(path.join(tempDir, 'reach-check-handlers.js'));
       expect(reachCheckBytes.length).toBeGreaterThan(500);
       expect(reachCheckBytes.toString('utf8')).toContain('registerReachCheckIpcHandlers');
+      const beaconBytes = fs.readFileSync(path.join(tempDir, 'beacon-handlers.js'));
+      expect(beaconBytes.length).toBeGreaterThan(500);
+      expect(beaconBytes.toString('utf8')).toContain('registerBeaconIpcHandlers');
+      expect(beaconBytes.toString('utf8')).toContain('[main/beacon-feed]');
       const trayUnreadDotBytes = fs.readFileSync(path.join(tempDir, 'tray-unread-dot.js'));
       expect(trayUnreadDotBytes.length).toBeGreaterThan(200);
       expect(trayUnreadDotBytes.toString('utf8')).toContain('paintTrayUnreadDot');
@@ -290,6 +297,9 @@ describe('esbuild-main-build', () => {
       // Windows SoundPlayer path lives in the sibling chunk, not measured index.js.
       expect(indexSource).not.toContain('MESH_NOTIF_WAV');
       expect(indexSource).not.toContain('mesh-notif-sound-');
+      // Regional map (Beacon/CoreScope) client and its IPC live in the sibling chunk, not measured index.js.
+      expect(indexSource).not.toContain('[main/beacon-feed]');
+      expect(indexSource).not.toContain('beacon:connect');
       // Team roster DDL lives in the sibling chunk, not measured index.js.
       expect(indexSource).not.toContain('CREATE TABLE IF NOT EXISTS team_members');
       expect(teamRosterBytes.toString('utf8')).toContain('CREATE TABLE IF NOT EXISTS team_members');

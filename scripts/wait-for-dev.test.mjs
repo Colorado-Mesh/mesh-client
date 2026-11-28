@@ -189,6 +189,16 @@ it('requires the reach check chunk before launching Electron', () => {
   ).toBe(false);
 });
 
+it('requires the regional map (beacon) chunk before launching Electron', () => {
+  expect(DEV_ELECTRON_BUNDLE_PATHS.beacon).toContain('beacon-handlers.js');
+  expect(
+    areElectronBundlesReady(DEV_ELECTRON_BUNDLE_PATHS, (file) => {
+      if (file.endsWith('beacon-handlers.js')) throw new Error('not built');
+      return { isFile: () => true, size: 1 };
+    }),
+  ).toBe(false);
+});
+
 it('requires the tray unread-dot chunk before launching Electron', () => {
   expect(DEV_ELECTRON_BUNDLE_PATHS.trayUnreadDot).toContain('tray-unread-dot.js');
   expect(

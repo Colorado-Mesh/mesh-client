@@ -186,6 +186,19 @@ export async function buildMainProcess(opts = {}) {
     minify,
     logLevel: 'info',
   });
+  // Regional map (Beacon/CoreScope) client + IPC — keep out of measured main `index.js`.
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/ipc/beacon-handlers.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'beacon-handlers.js'),
+    external: ['electron'],
+    minify,
+    logLevel: 'info',
+  });
+
   // MeshCore reach check IPC + HTTPS client — keep out of measured main `index.js`.
   await esbuild.build({
     absWorkingDir,

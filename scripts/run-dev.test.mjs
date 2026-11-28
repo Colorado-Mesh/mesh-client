@@ -108,6 +108,14 @@ describe('run-dev', () => {
       arg.startsWith('esbuild src/main/ipc/reach-check-handlers.ts'),
     );
     expect(names[reachCheckAt]).toBe('reachcheck');
+    const beaconAt = commands.findIndex(
+      (arg) =>
+        arg.startsWith('esbuild src/main/ipc/beacon-handlers.ts') &&
+        arg.includes('--outfile=dist-electron/main/beacon-handlers.js') &&
+        arg.includes('--external:electron'),
+    );
+    expect(beaconAt).toBeGreaterThanOrEqual(0);
+    expect(names[beaconAt]).toBe('beacon');
   });
 
   it('resolveDevExitCode treats intentional signals as success', () => {

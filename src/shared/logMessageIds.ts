@@ -1524,6 +1524,7 @@ export const LOG_MESSAGE_IDS: Readonly<Record<string, string>> = {
   mcL1513: 'src/renderer/lib/meshcoreMqttFeeds.ts:credentialRollbackFailed',
   mcL1514: 'src/renderer/components/ConnectionPanel.tsx:feedPersistFailed',
   mcL1515: 'src/main/index.ts:reachCheckIpcRegisterFailed',
+  mcL1521: 'src/main/index.ts:beaconIpcRegisterFailed',
 };
 
 /** Reserved IDs for caught-error helpers (import these at call sites when appropriate). */

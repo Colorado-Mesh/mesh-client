@@ -1,17 +1,26 @@
-import {
-  type Event,
-  ipcMain,
-  type WebContents,
-  type WebContentsDidStartNavigationEventParams,
+import type {
+  Event,
+  IpcMain,
+  IpcMainInvokeEvent,
+  WebContents,
+  WebContentsDidStartNavigationEventParams,
 } from 'electron';
 
 import { BEACON_STATUS_PUBLIC_HTTPS_REJECTED } from '../../shared/beacon';
 import { BeaconFeedClient, parseBeaconConnectRequest } from '../beacon-feed';
 import { sanitizeLogMessage } from '../sanitize-log-message';
-import { assertIpcSender } from '../validate-ipc-sender';
+
+/**
+ * Regional map (Beacon/CoreScope) IPC. Ships as sibling `beacon-handlers.js` (outside the
+ * index.js budget). The sender check comes from index.js so its data-reset fence applies here.
+ */
+export interface BeaconIpcDeps {
+  ipcMain: Pick<IpcMain, 'handle'>;
+  assertIpcSender: (event: IpcMainInvokeEvent, channel: string) => void;
+}
 
 /** Each renderer owns one opt-in feed, disposed on navigation, destruction, or disconnect. */
-export function registerBeaconIpcHandlers(): void {
+export function registerBeaconIpcHandlers({ ipcMain, assertIpcSender }: BeaconIpcDeps): void {
   const clients = new Map<number, { client: BeaconFeedClient; dispose: () => void }>();
   const disconnect = (sender: WebContents): void => {
     const active = clients.get(sender.id);

@@ -175,7 +175,6 @@ import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { seedIncidentsOn } from './incident-database';
 import { registerAiHandlers } from './ipc/ai-handlers';
-import { registerBeaconIpcHandlers } from './ipc/beacon-handlers';
 import { registerElevationIpcHandlers } from './ipc/elevation-handlers';
 import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
@@ -3897,7 +3896,6 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
 });
 
 registerGeoIpcHandlers();
-registerBeaconIpcHandlers();
 registerLiveMapWindows({
   getMainWindow: () => mainWindow,
   preloadPath: path.join(__dirname, '../preload/index.js'),
@@ -7379,6 +7377,29 @@ async function registerTeamRosterIpcWithFallback(): Promise<void> {
   }
 }
 
+async function registerBeaconIpc(): Promise<void> {
+  // Production ships `beacon-handlers.js` beside index.js (out of measured budget). No fallback:
+  // if it fails to load, beacon invokes reject and the regional map shows its error state.
+  try {
+    const mod = (
+      process.env.VITEST
+        ? await import('./ipc/beacon-handlers')
+        : await import(pathToFileURL(path.join(__dirname, 'beacon-handlers.js')).href)
+    ) as {
+      registerBeaconIpcHandlers: (deps: {
+        ipcMain: typeof ipcMain;
+        assertIpcSender: typeof assertIpcSender;
+      }) => void;
+    };
+    mod.registerBeaconIpcHandlers({ ipcMain, assertIpcSender });
+  } catch (err: unknown) {
+    console.error(
+      'mcL1521 [main] beacon IPC registration failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+  }
+}
+
 async function registerReachCheckIpc(): Promise<void> {
   // Production ships `reach-check-handlers.js` beside index.js (out of measured budget). No fallback:
   // if it fails to load, renderer invokes reject and the reach check reports the server unreachable.
@@ -7496,6 +7517,7 @@ void app
       await registerEnvironmentTelemetryIpcWithFallback();
       await registerMeshcomDbIpcWithFallback();
       await registerReachCheckIpc();
+      await registerBeaconIpc();
       const coldStartUrl = registerLxmProtocolClient();
       if (coldStartUrl) pendingOpenUrl = coldStartUrl;
       registerIncidentIpcHandlers();
