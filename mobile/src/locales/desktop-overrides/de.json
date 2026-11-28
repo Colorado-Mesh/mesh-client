@@ -1,0 +1,17 @@
+{
+  "appPanel": {
+    "shareMyLocationHint": "Wenn aktiviert, kann diese App Ihren Standort auf diesem Telefon abfragen und über Meshtastic, MeshCore oder Reticulum senden (Chat-Freigabe, Senden an das Funkgerät, RMAP). Wenn deaktiviert, sind die Standortabfrage auf diesem Telefon und das Senden durch die App aus; das GPS des Funkgeräts und gespeicherte oder statische Koordinaten funktionieren weiterhin für Ihre lokale Karte und die Entfernungsfilter. Die Geräte-Firmware kann weiterhin senden, bis Sie die Radio- oder Moduleinstellungen anpassen."
+  },
+  "chatPanel": {
+    "clearChannelMessagesMessage": "Löscht alle gespeicherten Nachrichten in {{name}} von diesem Telefon. Der Kanal bleibt, und neue Nachrichten kommen weiter an."
+  },
+  "locationPrompt": {
+    "fixedLabel": "Dieses Telefon bewegt sich nicht (nicht bei jedem Start fragen)",
+    "listDesc": "Speichern Sie die Orte, an denen dieses Telefon verwendet wird, z. B. Home und ein EOC. Wenn das Funkgerät kein GPS hat, wird der aktive Standort verwendet und Sie werden bei jedem Start gebeten, ihn zu bestätigen."
+  },
+  "reticulumSetup": {
+    "backupBody": "Diese Wörter stellen Ihre Identität wieder her, wenn Sie dieses Telefon verlieren. Speichern Sie sie jetzt an einem privaten Ort. Geben Sie sie niemals an jemanden weiter, der nach Ihrer Nachrichtenadresse fragt. Sie können ein geschütztes Backup auch später aus dem Netzwerk exportieren.",
+    "identityBody": "Ihre Identität ist Ihr Konto in diesem Netzwerk. Sie liegt auf diesem Telefon, ohne Anmeldung oder zentralen Kontoanbieter. Ihre Nachrichtenadresse bleibt gleich, wenn Sie Ihren Namen ändern.",
+    "startBody": "Reticulum verbindet Menschen und Apps über das Internet, lokale Netzwerke oder kompatible Funkgeräte. Sie können es nur mit diesem Telefon und einer Internetverbindung ausprobieren."
+  }
+}

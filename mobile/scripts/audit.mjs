@@ -86,6 +86,32 @@ export const INVARIANTS = [
   ],
 ];
 
+const OVERRIDES_EN = path.join(MOBILE_ROOT, 'src/locales/desktop-overrides/en.json');
+const DESKTOP_EN = path.join(REPO_ROOT, 'src/renderer/locales/en/translation.json');
+
+function keyPaths(obj, prefix = '') {
+  if (obj === null || typeof obj !== 'object') return [prefix];
+  return Object.entries(obj).flatMap(([k, v]) => keyPaths(v, prefix ? `${prefix}.${k}` : k));
+}
+
+/**
+ * English desktop text of each key the mobile apps write over (src/i18nMobile.ts,
+ * src/locales/desktop-overrides). Pinned so a desktop copy change asks for the overrides in all
+ * 16 languages to be reviewed.
+ */
+export function overriddenDesktopStrings() {
+  const desktop = JSON.parse(fs.readFileSync(DESKTOP_EN, 'utf8'));
+  const keys = keyPaths(JSON.parse(fs.readFileSync(OVERRIDES_EN, 'utf8'))).sort();
+  return Object.fromEntries(
+    keys.map((key) => [
+      key,
+      key
+        .split('.')
+        .reduce((o, part) => (o && typeof o === 'object' ? o[part] : undefined), desktop) ?? null,
+    ]),
+  );
+}
+
 const sha256 = (file) =>
   createHash('sha256')
     .update(fs.readFileSync(path.join(REPO_ROOT, file)))
@@ -167,11 +193,12 @@ async function main() {
     ...walk(path.join(REPO_ROOT, 'src/preload')),
   ];
   const surface = electronSurface(mainFiles);
+  const desktopStrings = overriddenDesktopStrings();
 
   if (update) {
     fs.writeFileSync(
       PINS_FILE,
-      JSON.stringify({ files, electronSurface: surface }, null, 2) + '\n',
+      JSON.stringify({ files, electronSurface: surface, desktopStrings }, null, 2) + '\n',
     );
     console.info(
       `audit: pins updated (${String(Object.keys(files).length)} files, ` +
@@ -190,6 +217,20 @@ async function main() {
   }
   for (const file of Object.keys(pins.files)) {
     if (!(file in files)) problems.push(`pinned file no longer overridden: ${file} (--update)`);
+  }
+  const pinnedStrings = pins.desktopStrings ?? {};
+  for (const [key, text] of Object.entries(desktopStrings)) {
+    if (text === null) {
+      problems.push(`desktop string gone: ${key} — remove it from src/locales/desktop-overrides`);
+    } else if (pinnedStrings[key] !== text) {
+      problems.push(
+        `desktop copy changed: ${key} — review src/locales/desktop-overrides/*.json, then --update`,
+      );
+    }
+  }
+  for (const key of Object.keys(pinnedStrings)) {
+    if (!(key in desktopStrings))
+      problems.push(`desktop string no longer overridden: ${key} (--update)`);
   }
   for (const [file, text, why] of INVARIANTS) {
     if (!fs.readFileSync(path.join(REPO_ROOT, file), 'utf8').includes(text)) {
@@ -240,7 +281,8 @@ async function main() {
   }
   console.info(
     `audit: ok (${String(Object.keys(files).length)} pinned files, ` +
-      `${String(INVARIANTS.length)} invariants, ${String(surface.length)} Electron APIs)`,
+      `${String(INVARIANTS.length)} invariants, ${String(surface.length)} Electron APIs, ` +
+      `${String(Object.keys(desktopStrings).length)} desktop strings worded for phones)`,
   );
 }
 

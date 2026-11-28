@@ -1,0 +1,17 @@
+{
+  "appPanel": {
+    "shareMyLocationHint": "Etkinleştirildiğinde bu uygulama bu telefondaki konumunuzu bulabilir ve Meshtastic, MeshCore veya Reticulum üzerinden gönderebilir (sohbette paylaşım, telsize gönderme, RMAP). Devre dışı bırakıldığında bu telefondaki konum sorgulamaları ve uygulamanın gönderimleri kapanır; telsizin GPS'i ile kayıtlı veya sabit koordinatlar yerel haritanız ve mesafe filtreleriniz için çalışmaya devam eder. Telsiz veya Modül ayarlarını değiştirene kadar cihaz yazılımı yayın yapmaya devam edebilir."
+  },
+  "chatPanel": {
+    "clearChannelMessagesMessage": "{{name}} kanalına ait kayıtlı tüm mesajları bu telefondan siler. Kanal kalır ve yeni mesajlar gelmeye devam eder."
+  },
+  "locationPrompt": {
+    "fixedLabel": "Bu telefon yer değiştirmiyor (her açılışta sorma)",
+    "listDesc": "Bu telefonu kullandığınız Ev ve EOC gibi yerleri kaydedin. Telsizde GPS olmadığında etkin konum kullanılır ve her açılışta onaylamanız istenir."
+  },
+  "reticulumSetup": {
+    "backupBody": "Bu sözcükler, bu telefonu kaybederseniz kimliğinizi geri yükler. Bunları şimdi özel bir yere kaydedin. Mesajlaşma adresinizi isteyen hiç kimseye asla vermeyin. Korumalı bir yedeği daha sonra Ağdan da dışa aktarabilirsiniz.",
+    "identityBody": "Kimliğiniz bu ağdaki hesabınızdır. Kayıt veya merkezi bir hesap sağlayıcısı olmadan bu telefonda saklanır. Adınızı değiştirdiğinizde mesajlaşma adresiniz aynı kalır.",
+    "startBody": "Reticulum insanları ve uygulamaları internet, yerel ağlar veya uyumlu telsizler üzerinden birbirine bağlar. Yalnızca bu telefon ve bir internet bağlantısıyla deneyebilirsiniz."
+  }
+}

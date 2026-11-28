@@ -154,6 +154,10 @@ for (const { width, fontScale } of SAVED_LOCATION_CASES) {
     await expect(page.locator('html')).toHaveCSS('font-size', `${String(16 * fontScale)}px`);
     const coords = anchor.locator('li > input[type="text"] + span');
     await expect(coords).toHaveCount(2);
+    // The desktop description says "this computer"; the mobile apps word it for a phone
+    // (src/locales/desktop-overrides).
+    await expect(anchor).toContainText('Save the places this phone is used from');
+    await expect(anchor).not.toContainText('computer');
     await expect(coords.nth(1)).toHaveText('-33.86880, -151.20930');
     const rows = await coords.evaluateAll((els) =>
       els.map((e) => ({

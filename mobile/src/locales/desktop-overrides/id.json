@@ -1,0 +1,17 @@
+{
+  "appPanel": {
+    "shareMyLocationHint": "Saat diaktifkan, aplikasi ini dapat mencari lokasi Anda di ponsel ini dan mengirimkannya melalui Meshtastic, MeshCore, atau Reticulum (berbagi di obrolan, kirim ke radio, RMAP). Saat dinonaktifkan, pencarian lokasi di ponsel ini dan pengiriman oleh aplikasi mati; GPS radio serta koordinat tersimpan atau statis tetap berfungsi untuk peta lokal dan filter jarak Anda. Firmware perangkat mungkin tetap menyiarkan sampai Anda menyesuaikan pengaturan Radio atau Modul."
+  },
+  "chatPanel": {
+    "clearChannelMessagesMessage": "Menghapus semua pesan tersimpan di {{name}} dari ponsel ini. Saluran tetap ada, dan pesan baru tetap masuk."
+  },
+  "locationPrompt": {
+    "fixedLabel": "Ponsel ini tidak berpindah (jangan tanya setiap kali dibuka)",
+    "listDesc": "Simpan tempat-tempat Anda menggunakan ponsel ini, seperti Rumah dan EOC. Ketika radio tidak memiliki GPS, lokasi aktif digunakan dan Anda diminta mengonfirmasinya setiap kali aplikasi dibuka."
+  },
+  "reticulumSetup": {
+    "backupBody": "Kata-kata ini memulihkan identitas Anda jika ponsel ini hilang. Simpan sekarang di tempat pribadi. Jangan pernah memberikannya kepada siapa pun yang meminta alamat pesan Anda. Anda juga dapat mengekspor cadangan yang dilindungi dari Jaringan nanti.",
+    "identityBody": "Identitas Anda adalah akun Anda di jaringan ini. Identitas ini tersimpan di ponsel ini, tanpa pendaftaran atau penyedia akun pusat. Alamat pesan Anda tetap sama saat Anda mengubah nama.",
+    "startBody": "Reticulum menghubungkan orang dan aplikasi melalui internet, jaringan lokal, atau radio yang kompatibel. Anda dapat mencobanya hanya dengan ponsel ini dan koneksi internet."
+  }
+}

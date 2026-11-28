@@ -102,5 +102,14 @@
     "systemPreferences",
     "systemPreferences.askForMediaAccess",
     "systemPreferences.getMediaAccessStatus"
-  ]
+  ],
+  "desktopStrings": {
+    "appPanel.shareMyLocationHint": "When enabled, this app may look up your location on this computer and send it over Meshtastic, MeshCore, or Reticulum (chat share, radio push, RMAP). When disabled, host GPS lookups and app sending are off; radio GPS and saved/static coordinates still work for your local map and distance filters. Device firmware may still broadcast until you adjust Radio or Modules settings.",
+    "chatPanel.clearChannelMessagesMessage": "Deletes every saved message in {{name}} from this computer. The channel stays, and new messages keep arriving.",
+    "locationPrompt.fixedLabel": "This computer doesn't move (don't ask each launch)",
+    "locationPrompt.listDesc": "Save the places this computer is used from, such as Home and an EOC. When the radio has no GPS, the active location is used and you're asked to confirm it each launch.",
+    "reticulumSetup.backupBody": "These words restore your identity if you lose this computer. Save them somewhere private now. Never give them to someone who asks for your messaging address. You can also export a protected backup from Network later.",
+    "reticulumSetup.identityBody": "Your identity is your account on this network. It lives on this computer, with no signup or central account provider. Your messaging address stays the same when you change your name.",
+    "reticulumSetup.startBody": "Reticulum connects people and apps over the internet, local networks, or compatible radios. You can try it with just this computer and an internet connection."
+  }
 }

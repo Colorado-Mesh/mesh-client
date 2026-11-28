@@ -1,0 +1,17 @@
+{
+  "appPanel": {
+    "shareMyLocationHint": "Indien ingeschakeld kan deze app je locatie op deze telefoon opzoeken en via Meshtastic, MeshCore of Reticulum versturen (delen in chat, naar de radio sturen, RMAP). Indien uitgeschakeld staan het opzoeken van de locatie op deze telefoon en het versturen door de app uit; de GPS van de radio en opgeslagen of vaste coördinaten werken nog steeds voor je lokale kaart en afstandsfilters. De firmware van het apparaat kan blijven uitzenden totdat je de radio- of module-instellingen aanpast."
+  },
+  "chatPanel": {
+    "clearChannelMessagesMessage": "Verwijdert alle opgeslagen berichten in {{name}} van deze telefoon. Het kanaal blijft en nieuwe berichten komen gewoon binnen."
+  },
+  "locationPrompt": {
+    "fixedLabel": "Deze telefoon blijft op één plek (niet bij elke start vragen)",
+    "listDesc": "Sla de plaatsen op waar je deze telefoon gebruikt, zoals Home en een EOC. Als de radio geen GPS heeft, wordt de actieve locatie gebruikt en wordt je bij elke start gevraagd die te bevestigen."
+  },
+  "reticulumSetup": {
+    "backupBody": "Deze woorden herstellen je identiteit als je deze telefoon kwijtraakt. Bewaar ze nu ergens privé. Geef ze nooit aan iemand die om je berichtadres vraagt. Je kunt later ook een beveiligde back-up vanuit het netwerk exporteren.",
+    "identityBody": "Je identiteit is je account op dit netwerk. Die staat op deze telefoon, zonder aanmelding of centrale accountprovider. Je berichtadres blijft hetzelfde als je je naam wijzigt.",
+    "startBody": "Reticulum verbindt mensen en apps via internet, lokale netwerken of compatibele radio's. Je kunt het proberen met alleen deze telefoon en een internetverbinding."
+  }
+}
