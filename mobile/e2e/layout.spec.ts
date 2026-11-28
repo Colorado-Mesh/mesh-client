@@ -3,6 +3,9 @@
  * unfolded) and tablets. Checks the shell picks the right navigation and pane mode, nothing
  * scrolls horizontally, every section opens, and touch targets in the navigation are ≥ 44px.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { expect, test } from '@playwright/test';
 
 import { bootApp, type Harness, startHarness, unexpectedErrors } from './harness';
@@ -242,6 +245,76 @@ test('location card fits a 361 px screen at the largest text size', async ({ bro
   for (const b of layout.buttons) {
     expect(b.inside && b.whole, `button within the card: ${JSON.stringify(b)}`).toBe(true);
   }
+  expect(unexpectedErrors(boot.pageErrors)).toEqual([]);
+  await context.close();
+});
+
+// A label longer than the card wraps inside it: in Ukrainian at the largest text size, "Use this
+// phone's location" (39 letters) is wider than a 361 px card, and the shared button base is
+// nowrap (mobileShell.css [data-mobile-location-body] button). Also shows a phone-worded
+// override string in another language in the built app.
+test('location card buttons wrap a long label (Ukrainian, 361 px, 1.5x)', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 361, height: 812 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 2,
+  });
+  const page = await context.newPage();
+  await page.addInitScript(() => {
+    localStorage.setItem('mesh-client:appSettings', JSON.stringify({ locale: 'uk' }));
+    localStorage.setItem('mesh-client:fontScale', '1.5');
+    localStorage.setItem(
+      'mesh-client:gpsSettings',
+      JSON.stringify({ staticLat: 39.75, staticLon: -105.0 }),
+    );
+    localStorage.setItem(
+      'mesh-client:savedLocations',
+      JSON.stringify({
+        locations: [
+          { id: 'loc-e2e-phone', name: 'This phone', lat: 39.75, lon: -105.0, fixed: false },
+        ],
+        activeId: 'loc-e2e-phone',
+      }),
+    );
+  });
+  const boot = await bootApp(page, h);
+  const uk = JSON.parse(
+    fs.readFileSync(path.resolve(import.meta.dirname, '../src/locales/uk.json'), 'utf8'),
+  ) as { locationPrompt: { usePhoneLocation: string; bodyConfirmPhone: string } };
+  const ukDesktop = JSON.parse(
+    fs.readFileSync(
+      path.resolve(import.meta.dirname, '../../src/renderer/locales/uk/translation.json'),
+      'utf8',
+    ),
+  ) as { firstRun: { skip: string } };
+  // bootApp skips first-run setup by its English label; this profile runs in Ukrainian.
+  await page.getByRole('button', { name: ukDesktop.firstRun.skip }).click();
+  const card = page.locator('[data-mobile-location-prompt] section');
+  // The phone-worded question, before its coordinates.
+  await expect(card).toContainText(uk.locationPrompt.bodyConfirmPhone.split('(')[0].trim());
+  const usePhone = card.getByRole('button', { name: uk.locationPrompt.usePhoneLocation });
+  await expect(usePhone).toBeVisible();
+  const result = await usePhone.evaluate((button) => {
+    const section = button.closest('section');
+    const box = section?.getBoundingClientRect();
+    const r = button.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(button);
+    const lineTops = new Set([...range.getClientRects()].map((rect) => Math.round(rect.top)));
+    return {
+      whiteSpace: getComputedStyle(button).whiteSpace,
+      inside: !!box && r.left >= box.left - 1 && r.right <= box.right + 1,
+      whole: button.scrollWidth <= button.clientWidth + 1,
+      // The text stays inside the button's box (a fixed height let wrapped lines spill out).
+      contained: button.scrollHeight <= button.clientHeight + 1,
+      lines: lineTops.size,
+    };
+  });
+  expect(result.whiteSpace).toBe('normal');
+  expect(result.inside && result.whole && result.contained, JSON.stringify(result)).toBe(true);
+  expect(result.lines, 'the label wrapped onto more than one line').toBeGreaterThan(1);
+  await card.screenshot({ path: test.info().outputPath('location-card-uk-361-1.5x.png') });
   expect(unexpectedErrors(boot.pageErrors)).toEqual([]);
   await context.close();
 });

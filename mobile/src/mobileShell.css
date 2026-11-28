@@ -260,6 +260,10 @@ html[data-mesh-mobile] [data-mobile-location-body] button {
   max-width: 100%;
   white-space: normal;
   text-align: start;
+  /* The small size is a fixed h-7.5; a wrapped label needs the button to grow with it. */
+  height: auto;
+  min-height: 1.875rem;
+  padding-block: 0.25rem;
 }
 
 /* Keep the keyboard from covering composers on WebViews that only shrink the visual viewport. */
