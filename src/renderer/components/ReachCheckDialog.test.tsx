@@ -96,6 +96,31 @@ describe('ReachCheckDialog', () => {
     }
   });
 
+  it('keeps the word joined to the slot number in one piece in every locale', () => {
+    // A plain hyphen inside that word is still a break point: the German body broke as
+    // "Zum Kanal-" / "Slot 3". A non-breaking hyphen (U+2011) keeps the compound whole.
+    const joiners = new Set([String.fromCharCode(0xa0), String.fromCharCode(0x2060)]);
+    const placeholder = '{{slot}}';
+    for (const { code } of SUPPORTED_LANGUAGES) {
+      const file = path.resolve(import.meta.dirname, '../locales', code, 'translation.json');
+      const strings = JSON.parse(readFileSync(file, 'utf8')) as {
+        reachCheck: { confirmAddBody: string };
+      };
+      const body = strings.reachCheck.confirmAddBody;
+      const at = body.indexOf(placeholder);
+      expect(at, `${code} has no ${placeholder}`).toBeGreaterThan(0);
+      const joinedBefore = joiners.has(body.charAt(at - 1));
+      const word = joinedBefore
+        ? (body
+            .slice(0, at - 1)
+            .split(' ')
+            .pop() ?? '')
+        : (body.slice(at + placeholder.length + 1).split(' ')[0] ?? '');
+      expect(word.length, `${code}: no word beside ${placeholder}`).toBeGreaterThan(0);
+      expect(word.includes('-'), `${code}: ${JSON.stringify(word)}`).toBe(false);
+    }
+  });
+
   it('asks for a private channel key and shows a hash mismatch', () => {
     const { onAnswer, rerender } = renderDialog({ kind: 'paste-key', name: 'ukmeshtest' });
     const input = screen.getByLabelText('Channel key');
