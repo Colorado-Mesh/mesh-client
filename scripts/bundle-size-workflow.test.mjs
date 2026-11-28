@@ -355,6 +355,13 @@ describe('always-on bundle workflow', () => {
           fs.writeFileSync(
             path.join(fixture, 'src/main/meshcore-mqtt-pool.ts'),
             [
+              // Marker must match esbuild-main-build.test.mjs sibling-chunk assert
+              // (adapter JWT reconnect string lives in the real pool chunk).
+              'export class MeshcoreMqttAdapter {',
+              '  updateToken() {',
+              "    return 'Token updated, reconnecting to apply JWT';",
+              '  }',
+              '}',
               'export class MeshcoreMqttPool {',
               '  publishPacketPayload() {',
               `    return 'MeshcoreMqttPool publishPacketPayload ${meshcorePoolPad}';`,
