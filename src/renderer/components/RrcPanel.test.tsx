@@ -976,10 +976,12 @@ describe('RrcPanel', () => {
       vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
 
       render(<RrcPanel isActive />);
+      // Pending is set synchronously before send; assert it in the same waitFor so a
+      // follow-up expect cannot race a clear under CI load after the send is visible.
       await waitFor(() => {
         expect(whoSendCalls()).toHaveLength(1);
+        expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
       });
-      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
       expect(useRrcSessionStore.getState().rooms.get('general')?.members?.length).toBeGreaterThan(
         0,
       );
@@ -1050,10 +1052,12 @@ describe('RrcPanel', () => {
       vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
 
       render(<RrcPanel isActive />);
+      // Pending is set synchronously before send; assert it in the same waitFor so a
+      // follow-up expect cannot race a clear under CI load after the send is visible.
       await waitFor(() => {
         expect(whoSendCalls()).toHaveLength(1);
+        expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
       });
-      expect(useRrcSessionStore.getState().hasWhoReplyPending('general', hubA)).toBe(true);
 
       // Hub replied with an empty roster — pending must clear so the watchdog is quiet.
       applyRrcWhoInboundNotice(
