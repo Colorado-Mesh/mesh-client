@@ -350,6 +350,16 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     // cannot tear down the new client 30s later (Bug 3 fix).
     this.clearConnectTimers();
     if (this.client) {
+      // Stale-client `close` handlers return early after replacement, so apply the same
+      // stability rule here (e.g. proactive JWT reconnect via updateToken) and drop the
+      // prior CONNACK timestamp so the successor cannot inherit it.
+      if (this.lastConnected != null) {
+        const sessionDuration = Date.now() - this.lastConnected;
+        if (sessionDuration >= MESHCORE_MQTT_CONNECTION_STABLE_THRESHOLD_MS) {
+          this.retryCount = 0;
+        }
+      }
+      this.lastConnected = null;
       forceEndMqttClient(this.client);
       this.client = null;
     }

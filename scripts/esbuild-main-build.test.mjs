@@ -181,7 +181,8 @@ describe('esbuild-main-build', () => {
     async () => {
       tempDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-main-bundle-'));
       const outfile = path.join(tempDir, 'index.js');
-      await buildMainProcess({ minify: true, outfile });
+      const indexMetaPath = path.join(tempDir, 'index.meta.json');
+      await buildMainProcess({ minify: true, outfile, metafilePath: indexMetaPath });
       const summaryPromptBytes = fs.readFileSync(path.join(tempDir, 'ai-summary-prompt.js'));
       expect(summaryPromptBytes.length).toBeGreaterThan(1_000);
       expect(summaryPromptBytes.toString('utf8')).toContain('buildAiSummaryPrompt');
@@ -283,12 +284,21 @@ describe('esbuild-main-build', () => {
       expect(meshcoreMqttPoolBytes.length).toBeGreaterThan(500);
       expect(meshcoreMqttPoolBytes.toString('utf8')).toContain('MeshcoreMqttPool');
       expect(meshcoreMqttPoolBytes.toString('utf8')).toContain('publishPacketPayload');
-      // Adapter (+ MeshCom MQTT) lives in the sibling chunk, not measured index.js.
-      expect(meshcoreMqttPoolBytes.toString('utf8')).toContain(
-        'Token updated, reconnecting to apply JWT',
+      // Adapter (+ MeshCom MQTT) contributes bytes to the sibling metafile, not index.js.
+      const poolMeta = JSON.parse(
+        fs.readFileSync(path.join(tempDir, 'meshcore-mqtt-pool.meta.json'), 'utf8'),
       );
+      const indexMeta = JSON.parse(fs.readFileSync(indexMetaPath, 'utf8'));
+      const adapterInPool = Object.entries(poolMeta.inputs).find(([inputPath]) =>
+        inputPath.replace(/\\/g, '/').includes('src/main/meshcore-mqtt-adapter'),
+      );
+      expect(adapterInPool?.[1]?.bytes).toBeGreaterThan(0);
+      expect(
+        Object.keys(indexMeta.inputs).some((inputPath) =>
+          inputPath.replace(/\\/g, '/').includes('src/main/meshcore-mqtt-adapter'),
+        ),
+      ).toBe(false);
       const indexSource = fs.readFileSync(outfile, 'utf8');
-      expect(indexSource).not.toContain('Token updated, reconnecting to apply JWT');
       expect(indexSource).not.toContain('waypoint.geofenceRadius invalid');
       expect(mqttWaypointValidationBytes.toString('utf8')).toContain(
         'waypoint.geofenceRadius invalid',

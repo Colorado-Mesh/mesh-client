@@ -38,6 +38,8 @@ interface AdapterPrivate {
   status: string;
   lastSettings: MQTTSettings | null;
   pendingReconnect: boolean;
+  retryCount: number;
+  lastConnected: number | null;
   _doConnect: (s: MQTTSettings) => void;
 }
 
@@ -735,6 +737,53 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
       expect(mqttMod.connect).toHaveBeenCalledOnce();
       const opts = vi.mocked(mqttMod.connect).mock.calls.at(-1)?.[0] as { password?: string };
       expect(opts.password).toBe('fresh-jwt');
+    });
+
+    async function connectAndConnack(expiresAt: number) {
+      const mqttMod = await import('mqtt');
+      adapter.connect({
+        ...BASE_SETTINGS,
+        username: `v1_${'A'.repeat(64)}`,
+        tokenExpiresAt: expiresAt,
+      });
+      const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      const connectHits = client.on.mock.calls.filter((c: unknown[]) => c[0] === 'connect');
+      (connectHits[connectHits.length - 1]?.[1] as () => void)();
+      return mqttMod;
+    }
+
+    it('resets retryCount on JWT reconnect after a stable session and clears lastConnected', async () => {
+      const expiresAt = Date.now() + 60 * 60 * 1000;
+      const mqttMod = await connectAndConnack(expiresAt);
+      const priv = adapter as unknown as AdapterPrivate;
+      priv.retryCount = 2;
+      expect(priv.lastConnected).not.toBeNull();
+
+      vi.advanceTimersByTime(30_000);
+      vi.mocked(mqttMod.connect).mockClear();
+      adapter.updateToken('fresh-jwt', expiresAt + 60_000);
+
+      expect(priv.retryCount).toBe(0);
+      expect(priv.lastConnected).toBeNull();
+      expect(adapter.getStatus()).toBe('connecting');
+      expect(mqttMod.connect).toHaveBeenCalledOnce();
+    });
+
+    it('preserves retryCount on JWT reconnect when the prior session was unstable', async () => {
+      const expiresAt = Date.now() + 60 * 60 * 1000;
+      const mqttMod = await connectAndConnack(expiresAt);
+      const priv = adapter as unknown as AdapterPrivate;
+      priv.retryCount = 2;
+
+      vi.advanceTimersByTime(29_000);
+      vi.mocked(mqttMod.connect).mockClear();
+      adapter.updateToken('fresh-jwt', expiresAt + 60_000);
+
+      expect(priv.retryCount).toBe(2);
+      expect(priv.lastConnected).toBeNull();
+      expect(mqttMod.connect).toHaveBeenCalledOnce();
     });
   });
 });
