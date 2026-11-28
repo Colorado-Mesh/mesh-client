@@ -123,7 +123,9 @@ final class MeshSmokeProbe {
         Task { @MainActor [weak self] in
             guard let self else { return }
             guard let webView = self.webView else {
-                self.finish(status: "no-webview", state: [:], opfs: nil, folds: [])
+                self.finish(
+                    status: "no-webview", state: [:], opfs: nil,
+                    geometry: ["folds": [], "occlusions": []])
                 return
             }
             webView.evaluateJavaScript(Self.stateScript) { [weak self] result, error in
